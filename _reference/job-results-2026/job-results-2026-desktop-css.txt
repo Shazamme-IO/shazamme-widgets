@@ -1,0 +1,36 @@
+
+div.shmRefineSearch{
+    display:none!important;
+}
+
+ul.shmRequirements {
+        display: contents;
+        width: auto;
+}
+
+
+div.shmButtonLinks a {
+    margin-right: 8px;
+}
+
+.mobile {
+    display: none !important;
+}
+
+.section-tool-bar {
+    display: flex;
+}
+
+.actionButtonRow {
+     display: flex;
+     flex-direction: row;
+     justify-content: flex-end;
+     padding-top: 8px;
+     padding-bottom: 8px;
+     width: 40%;
+ }
+ 
+ .shmResultCountContainer{
+    display: flex;
+    justify-content: left;
+ }

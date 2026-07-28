@@ -1,0 +1,24 @@
+Your steps (Railway dashboard + CLI)
+Setup (do once):
+Step 1 — railway login in terminal, authorize browser
+Step 2 — railway init → "Empty Project" → name job-ingestion-engine
+Step 3 — Railway dashboard → New → Database → PostgreSQL, copy DATABASE_URL
+Step 4 — New → Database → Redis, copy REDIS_URL
+Step 5 — App service → Variables tab, add:
+DATABASE_URL = the postgres URL but with postgresql+asyncpg:// prefix
+DATABASE_URL_SYNC = the original postgresql:// URL
+REDIS_URL = from step 4
+PORT = 8000
+Step 6 — railway link then railway up (I'll have new code ready)
+Free API keys to register (these unlock the connectors I'm building right now):
+7. Adzuna — https://developer.adzuna.com/ → add ADZUNA_APP_ID + ADZUNA_APP_KEY to Railway vars (10M+ jobs across 16 countries)
+8. USAJobs — https://developer.usajobs.gov/APIRequest/Index → add USAJOBS_API_KEY + USAJOBS_EMAIL (30K US federal)
+9. Reed.co.uk — https://www.reed.co.uk/developers → add REED_API_KEY (250K UK jobs)
+10. Jooble — https://jooble.org/api/about → add JOOBLE_API_KEY (71-country aggregator)
+11. JSearch (RapidAPI, paid $30/mo, optional) — https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch → RAPIDAPI_KEY
+Search engine submission (after first crawl populates):
+12. Google Search Console — https://search.google.com/search-console → add Railway URL → submit /sitemap.xml
+13. Bing Webmaster — https://www.bing.com/webmasters → same
+14. IndexNow — generate key at https://www.indexnow.org/ → add INDEXNOW_KEY to Railway vars
+While you do that, I'll build: Adzuna, RemoteOK, Remotive, USAJobs, Reed, Jooble, Arbeitnow, The Muse, Canada Job Bank, plus Ashby/Workable/Recruitee/SmartRecruiters ATS connectors — each emitting full job detail (title, description HTML, location, salary, employer, apply URL, posted date, employment type, remote flag) so the SSR job pages have everything needed for JobPosting JSON-LD and AI optimization.
+Starting now.

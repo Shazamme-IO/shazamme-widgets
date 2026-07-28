@@ -1,0 +1,187 @@
+ 
+<div class="job-search-root">
+<div class="mainSearchContainer {{#if columnLayout}}columnLayoutVertical{{/if}}">
+    {{#if showSearchKeyword}}
+        <div class="flex-items-js">
+            {{#if showLabels}}
+                <label class="shmJSLabel" for="searchBox">{{jobSearchText}}</label>
+            {{/if}}
+            <input class="shzmSearch jobSearch" autocomplete="off" data-autocomplete="keyword" type="text" id="searchBox" placeholder="{{keywordPlaceholder}}" autocomplete="no" style="::-webkit-input-placeholder:{{color:placeHolderColor}}" data-submit />
+            <div class="predictionResult divResult" data-prediction></div>
+        </div>
+    {{/if}}
+
+    {{#if showJobTypeDropdown}}
+        <div class="flex-items-js">
+            {{#if showLabels}}
+                <label class="shmJSLabel" for="jobTypeRedirect">{{jobTypeRedirectLabel}}</label>
+            {{/if}}
+            <select id="jobTypeRedirect" data-filter="jobType">
+                <option value="" selected="selected">{{jobTypeRedirectPlaceholder}}</option>
+            </select>
+        </div>
+    {{/if}}
+    
+    {{#if showJobType}}
+        <div class="flex-items-js">
+            {{#if showLabels}}
+                <label class="shmJSLabel" for="jobJobType">{{jobTypeText}}</label>
+            {{/if}}
+    
+            <select data-filter="jobType" name="jobJobType" id="jobJobType">
+                <option value="" selected="selected">{{JobTypesPlaceholder}}</option>
+            </select>
+        </div>
+    {{/if}}
+    
+    {{#if showJobCategories}}
+        <div class="flex-items-js multi-select-wrapper" id="classificationWrapper">
+            {{#if showLabels}}
+                <label class="shmJSLabel">{{jobCategoriesText}}</label>
+            {{/if}}
+            <div class="multi-select-box" id="classificationBox" data-multiselect="professionID" data-multiselect-legacy="category">
+                <span class="multi-select-placeholder" id="classificationPlaceholder">{{ClassificationPlaceholder}}</span>
+                <span class="multi-select-arrow">&#9660;</span>
+            </div>
+            <div class="multi-select-tags" id="classificationTags"></div>
+            <div class="multi-select-dropdown" id="classificationDropdown" data-dropdown-for="professionID"></div>
+        </div>
+    {{/if}}
+    
+    {{#if ShowSubCalssifications}}
+        <div class="flex-items-js multi-select-wrapper" id="subClassificationWrapper">
+            {{#if showLabels}}
+                <label class="shmJSLabel">{{JobSubClassificationText}}</label>
+            {{/if}}
+            <div class="multi-select-box" id="subClassificationBox" data-multiselect="roleID" data-multiselect-legacy="subCategory">
+                <span class="multi-select-placeholder" id="subClassificationPlaceholder">{{SubClassificationsPlaceholder}}</span>
+                <span class="multi-select-arrow">&#9660;</span>
+            </div>
+            <div class="multi-select-tags" id="subClassificationTags"></div>
+            <div class="multi-select-dropdown" id="subClassificationDropdown" data-dropdown-for="roleID"></div>
+        </div>
+    {{/if}}
+    
+    {{#if showWorkType}}
+        <div class="flex-items-js">
+            {{#if showLabels}}
+                <label class="shmJSLabel" for="jobWorkType">{{workTypeText}}</label>
+            {{/if}}
+    
+            <select data-filter="workType" name="jobWorkType" id="jobWorkType">
+                <option value="" selected="selected">{{WorkTypesPlaceholder}}</option>
+            </select>
+        </div>
+    {{/if}}
+    
+    {{#if showWorkModel}}
+        <div class="flex-items-js">
+            {{#if showLabels}}
+                <label class="shmJSLabel" for="jobWorkModel">{{workModelText}}</label>
+            {{/if}}
+    
+            <select data-filter="workModel" name="jobWorkModel" id="jobWorkModel">
+                <option value="" selected="selected">{{WorkModelsPlaceholder}}</option>
+            </select>
+        </div>
+    {{/if}}
+    
+    {{#if showLocationSearch}}
+        <div class="flex-items-js multi-select-wrapper" id="locationWrapper">
+            {{#if showLabels}}
+                <label class="shmJSLabel">{{jobLocationsText}}</label>
+            {{/if}}
+            
+            {{#equals layout "searchStyle"}}
+                <input class="shzmSearch locationSearch" autocomplete="off" data-autocomplete="location" id="location" name="locationName" type="text" placeholder="{{LocationsPlaceholder}}" style="::-webkit-input-placeholder:{{color:placeHolderColor}}" data-submit />
+                <div class="predictionResultLocation divResult" data-prediction></div>
+            {{/equals}}
+            
+            {{#equals layout "dropdownStyle"}}
+                <div class="multi-select-box" id="locationBox" data-multiselect="state">
+                    <span class="multi-select-placeholder" id="locationPlaceholder">{{LocationsPlaceholder}}</span>
+                    <span class="multi-select-arrow">&#9660;</span>
+                </div>
+                <div class="multi-select-tags" id="locationTags"></div>
+                <div class="multi-select-dropdown" id="locationDropdown" data-dropdown-for="state"></div>
+            {{/equals}}
+        </div>
+    {{/if}}
+    
+    {{#if showCitySearch}}
+     <div class="flex-items-js">
+            {{#if showLabels}}
+                <label class="shmJSLabel" for="location">{{cityText}}</label>
+            {{/if}}
+            
+            {{#equals layout "searchStyle"}}
+                <input class="shzmSearch citySearch" autocomplete="off" data-autocomplete="city" id="city" name="cityName" type="text" placeholder="{{CityPlaceholder}}" style="::-webkit-input-placeholder:{{color:placeHolderColor}}" data-submit />
+                <div class="predictionResultCity divResult" data-prediction></div>
+            {{/equals}}
+            
+            {{#equals layout "dropdownStyle"}}
+                <select data-filter="city"  name="jobCities" id="city">
+                    <option value="" selected="selected">{{CityPlaceholder}}</option>
+                </select>
+            {{/equals}}
+        </div>
+    {{/if}}
+    
+    {{#if showCountrySearch}}
+     <div class="flex-items-js">
+            {{#if showLabels}}
+                <label class="shmJSLabel" for="location">{{countryText}}</label>
+            {{/if}}
+            
+            {{#equals layout "searchStyle"}}
+                <input class="shzmSearch countrySearch" autocomplete="off" data-autocomplete="location" id="country" name="countryName" type="text" placeholder="{{CountryPlaceholder}}" style="::-webkit-input-placeholder:{{color:placeHolderColor}}" data-submit />
+                <div class="predictionResultCountry divResult" data-prediction></div>
+            {{/equals}}
+            
+            {{#equals layout "dropdownStyle"}}
+                <select data-filter="country"  name="jobCountries" id="country">
+                    <option value="" selected="selected">{{CountryPlaceholder}}</option>
+                </select>
+            {{/equals}}
+        </div>
+    {{/if}}
+    
+    {{#if showGeoSearch}}
+     <div class="flex-items-js">
+            {{#if showLabels}}
+                <label class="shmJSLabel" for="geoSearch">{{geoSearchText}}</label>
+            {{/if}}
+            
+            <div class="split">
+                <input class="shzmSearch countrySearch" autocomplete="off" data-gapi="geo" data-gapi-text="geoAddress" id="geoSearch" type="text" placeholder="{{geoSearchPlaceholder}}" style="::-webkit-input-placeholder:{{color:placeHolderColor}}" />
+                <select data-filter="geoRange" id="geoRange" >
+                    {{#each geoRange}}
+                        <option value="{{range}}">{{rangeLabel}}</option>
+                    {{/each}}
+                </select>
+                <div class="predictionResultCountry divResult" data-prediction></div>
+            </div>
+        </div>
+    {{/if}}
+    
+    <div class="flex-items-js">
+        {{#if showLabels}}
+                <label id="jsBtnLabel" class="shmJSLabel" for="searchBtn">asd</label>
+        {{/if}}
+        {{#if showJobCounter}}
+            <button class="searchBtn"><span class="text">Show</span></button>
+        {{else}}
+            <button class="searchBtn"><span class="text">{{buttonText}}</span></button>
+        {{/if}}
+    </div>
+
+    <!-- Active filter chips — sits inside the blue bar as a full-width bottom row -->
+    <div class="active-filters-bar" id="activeFiltersBar" style="display:none;">
+        <div class="active-filter-tags" id="activeFilterTags"></div>
+        <button class="clear-filters-btn" id="clearFiltersBtn">{{clearFiltersText}}</button>
+    </div>
+</div>
+</div>
+
+<div class="gapi-map" style="display: none;"></div>
+

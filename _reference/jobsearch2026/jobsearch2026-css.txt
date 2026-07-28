@@ -1,0 +1,468 @@
+
+/* ── Root wrapper ─────────────────────────────────────────────────────────── */
+.job-search-root {
+    width: 100%;
+    overflow: visible;
+}
+
+/* ── Container ────────────────────────────────────────────────────────────── */
+.mainSearchContainer {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    box-sizing: border-box !important;
+    padding: 8px 4px;
+    width: 100%;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    min-height: 62px;
+}
+
+/* ── Flex item (each field column) ───────────────────────────────────────── */
+.flex-items-js {
+    flex: 1;
+    min-width: 140px;
+    margin: 4px 5px;
+    box-sizing: border-box;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: stretch;
+    font-family: inherit;
+}
+
+/* ── All native inputs + selects share the same base style ───────────────── */
+.flex-items-js input,
+.flex-items-js select {
+    width: 100%;
+    height: 46px !important;
+    box-sizing: border-box !important;
+    padding: 0 14px;
+    background: #fff !important;
+    border: 1.5px solid #d1d1d1 !important;
+    font-family: inherit;
+    font-size: 14px;
+    color: #222 !important;
+    outline: none;
+    appearance: auto;
+    margin-top: 0;
+    vertical-align: middle;
+}
+
+/* ── Native select — replace browser arrow with matching filled triangle ─── */
+.flex-items-js select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding-right: 36px !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpolygon points='0,0 10,0 5,7' fill='%23666666'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 13px center !important;
+    background-size: 10px 7px !important;
+}
+
+.flex-items-js input:focus,
+.flex-items-js select:focus {
+    border-color: #666 !important;
+    box-shadow: 0 0 0 2px rgba(0,0,0,0.06);
+}
+
+/* ── Search button ───────────────────────────────────────────────────────── */
+.flex-items-js .searchBtn {
+    width: 100%;
+    height: 46px !important;
+    box-sizing: border-box !important;
+    padding: 0 20px;
+    background: #000 !important;
+    color: #fff !important;
+    border: 1.5px solid #000 !important;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0;
+    transition: opacity 0.15s ease;
+    letter-spacing: 0.01em;
+}
+
+.flex-items-js .searchBtn:hover {
+    opacity: 0.82;
+}
+
+/* ── Labels ──────────────────────────────────────────────────────────────── */
+.flex-items-js label,
+.flex-items-js .shmJSLabel {
+    display: block;
+    box-sizing: border-box;
+    border: 0 !important;
+    text-align: left !important;
+    margin-bottom: 5px;
+    width: 100% !important;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: #444;
+}
+
+#jsBtnLabel { opacity: 0 !important; }
+
+/* ── Placeholder colours ─────────────────────────────────────────────────── */
+input.jobSearch::placeholder,
+input.locationSearch::placeholder,
+input.citySearch::placeholder,
+input#geoSearch::placeholder {
+    color: #aaa;
+}
+
+/* ── Keyword input left padding ──────────────────────────────────────────── */
+input#searchBox { padding-left: 14px !important; }
+
+/* ── Geo split row ───────────────────────────────────────────────────────── */
+.mainSearchContainer .flex-items-js .split {
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
+}
+
+.mainSearchContainer .flex-items-js .split input { flex: 1; margin: 0; }
+.mainSearchContainer .flex-items-js .split select { width: auto; margin: 0; }
+
+/* ── Typeahead prediction panels ─────────────────────────────────────────── */
+.predictionResult,
+.predictionResultLocation,
+.predictionResultCity,
+.predictionResultCountry {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: #fff !important;
+    border: 1.5px solid #d1d1d1;
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+    display: none;
+    flex-direction: column;
+    overflow-y: auto;
+    max-height: 220px;
+    z-index: 99;
+    padding: 6px 0;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.resultText {
+    display: block;
+    color: #222;
+    text-decoration: none;
+    padding: 9px 16px;
+    font-family: inherit;
+    font-size: 14px;
+}
+
+.resultText:hover { background: #f5f5f5; }
+
+.resultText.close {
+    text-align: right;
+    font-size: 0.72em;
+    padding: 4px 10px;
+    color: #888;
+}
+
+/* ── Column layout ───────────────────────────────────────────────────────── */
+.columnLayoutVertical {
+    flex-direction: column !important;
+    align-items: stretch;
+}
+
+.columnLayoutVertical .flex-items-js { width: 100%; }
+
+/* ── Multi-select wrapper ────────────────────────────────────────────────── */
+.multi-select-wrapper {
+    position: relative !important;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+/* ── Multi-select trigger box ────────────────────────────────────────────── */
+.multi-select-box {
+    width: 100%;
+    height: 46px !important;
+    min-height: 46px !important;
+    max-height: 46px !important;
+    box-sizing: border-box !important;
+    padding: 0 14px;
+    background: #fff !important;
+    border: 1.5px solid #d1d1d1 !important;
+    font-family: inherit;
+    font-size: 14px;
+    color: #222 !important;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 0.15s ease;
+    margin-top: 0;
+}
+
+.multi-select-box:hover,
+.multi-select-box.open {
+    border-color: #666 !important;
+    box-shadow: 0 0 0 2px rgba(0,0,0,0.06);
+}
+
+/* Placeholder / selected-count text */
+.multi-select-box .multi-select-placeholder {
+    color: #aaa;
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    font-style: inherit;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+}
+
+/* When items are selected, count label replaces placeholder */
+.multi-select-box .ms-count {
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    font-style: inherit;
+    white-space: nowrap;
+    flex: 1;
+}
+
+/* Arrow chevron */
+.multi-select-box .multi-select-arrow {
+    font-size: 10px;
+    color: #666;
+    margin-left: 10px;
+    flex-shrink: 0;
+    transition: transform 0.18s ease;
+    line-height: 1;
+}
+
+.multi-select-box.open .multi-select-arrow {
+    transform: rotate(180deg);
+}
+
+/* Tags row hidden — count shown inline in the box instead */
+.multi-select-tags { display: none; }
+
+/* ── Dropdown panel ──────────────────────────────────────────────────────── */
+.multi-select-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 3px);
+    left: 0;
+    width: 100%;
+    min-width: 220px;
+    background: #fff;
+    border: 1.5px solid #d1d1d1;
+    border-radius: 0 !important;
+    -webkit-border-radius: 0 !important;
+    -moz-border-radius: 0 !important;
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.11);
+    z-index: 9999;
+    max-height: 300px;
+    overflow-y: auto;
+    box-sizing: border-box;
+    font-family: inherit;
+    padding: 6px 0;
+}
+
+.multi-select-wrapper .multi-select-dropdown,
+.multi-select-wrapper .multi-select-dropdown.open,
+div.multi-select-dropdown,
+div.multi-select-dropdown.open {
+    border-radius: 0 !important;
+    -webkit-border-radius: 0 !important;
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+
+.multi-select-dropdown.open { display: block; }
+
+/* ── Multi-select option row ─────────────────────────────────────────────── */
+.ms-option {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    color: #222;
+    box-sizing: border-box;
+    line-height: 1.3;
+    transition: background 0.1s ease;
+    white-space: nowrap;
+}
+
+.ms-option:hover { background: #f5f5f5; }
+
+/* Custom styled checkbox */
+.ms-option input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 13px !important;
+    height: 13px !important;
+    min-width: 13px;
+    min-height: 13px;
+    flex-shrink: 0;
+    display: inline-block !important;
+    vertical-align: middle;
+    margin: 0 8px 0 0 !important;
+    padding: 0 !important;
+    cursor: pointer;
+    border: 1.5px solid #bbb !important;
+    border-radius: 3px !important;
+    background: #fff !important;
+    position: relative;
+    transition: background 0.12s ease, border-color 0.12s ease;
+    box-sizing: border-box !important;
+}
+
+.ms-option input[type="checkbox"]:checked {
+    background: #1d4a45 !important;
+    border-color: #1d4a45 !important;
+}
+
+.ms-option input[type="checkbox"]:checked::after {
+    content: '';
+    position: absolute;
+    left: 3px;
+    top: 0px;
+    width: 4px;
+    height: 7px;
+    border: 1.5px solid #fff;
+    border-top: none;
+    border-left: none;
+    transform: rotate(45deg);
+    display: block;
+}
+
+.ms-option-label {
+    flex: 1;
+    line-height: 1.3;
+    color: #222;
+    font-size: 13px;
+    vertical-align: middle;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ms-empty {
+    padding: 14px 18px;
+    color: #999;
+    font-style: italic;
+    font-family: inherit;
+    font-size: 0.9em;
+}
+
+/* Scrollbar styling for dropdown */
+.multi-select-dropdown::-webkit-scrollbar { width: 5px; background: #f9f9f9; }
+.multi-select-dropdown::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+
+/* ── Sub-category disabled state ─────────────────────────────────────────── */
+.multi-select-box.subcategory-disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* ── Active filters bar — full-width row inside the blue container ────────── */
+/* Uses flex-basis:100% so it wraps to its own row at the bottom of the bar.  */
+/* display toggled by JS via show/hide.                                        */
+.active-filters-bar {
+    flex-basis: 100%;
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 5px 6px;
+    box-sizing: border-box;
+    margin: 0;
+}
+
+.active-filter-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    flex: 1;
+}
+
+.active-filter-tag {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255,255,255,0.18);
+    color: #fff;
+    font-family: inherit;
+    font-size: 0.82em;
+    padding: 4px 8px 4px 12px;
+    border-radius: 20px;
+    gap: 5px;
+    white-space: nowrap;
+    border: 1px solid rgba(255,255,255,0.35);
+}
+
+.active-filter-tag-remove {
+    cursor: pointer;
+    font-style: normal;
+    font-size: 1em;
+    line-height: 1;
+    opacity: 0.7;
+    flex-shrink: 0;
+    border: none;
+    background: none;
+    padding: 0 2px;
+    color: #fff;
+    font-family: inherit;
+    height: auto !important;
+    width: auto !important;
+}
+
+.active-filter-tag-remove:hover { opacity: 1; }
+
+.clear-filters-btn {
+    background: none;
+    border: none;
+    padding: 4px 6px;
+    font-family: inherit;
+    font-size: 0.82em;
+    color: rgba(255,255,255,0.8);
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration: underline;
+    height: auto !important;
+    width: auto !important;
+}
+
+.clear-filters-btn:hover { color: #fff; }
+
+/* ── Spacer ──────────────────────────────────────────────────────────────── */
+.shmSpacer {
+    display: block;
+    box-sizing: border-box;
+    opacity: 0;
+    margin-bottom: 25px;
+}
+

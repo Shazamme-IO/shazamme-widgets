@@ -1,0 +1,1147 @@
+const Path = {
+    jobResults: (data.config.customPageLink && data.config.searchResultPage) || 'job-results',
+};
+
+const Collection = {
+    jobResults: {
+        name:     'Jobs',
+        action:   'Get Jobs',
+        endpoint: data.config.jobResultsCollection,
+        useCache: true,
+        debug:    data.inEditor && data.config.debugMode,
+    },
+};
+
+function UX() {
+    this.el  = $(element);
+    this.uri = new URL(window.location.href);
+
+    this.buildHref = (path, query) => {
+        const qs = query && String(query).trim().length > 0 ? String(query).trim() : '';
+        if (data.inEditor) {
+            return `/site/${data.siteId}${path}?preview=true&insitepreview=true&dm_device=desktop${qs ? '&' + qs : ''}`;
+        }
+        const base = `${window.location.protocol}//${window.location.host}`;
+        return `${base}${path}${qs ? '?' + qs : ''}`;
+    };
+
+    this.loadScript = (src) => new Promise( (res, rej) => {
+        $.getScript(src, () => res(), () => rej());
+    });
+}
+
+const ux = new UX();
+
+// ── String normaliser (null-safe, trimmed, lowercase) ─────────────────────────
+const norm = v => String(v == null ? '' : v).trim().toLowerCase();
+
+// ── Core filter engine ────────────────────────────────────────────────────────
+function applyFilters(jobs, filters) {
+    return (jobs || []).filter( job => {
+        for (const f in filters) {
+            const fv = filters[f];
+            if (fv === undefined || fv === null || fv.length === 0) continue;
+            switch (f) {
+                case 'salaryFrom': if (job.data[f] < fv) return false; break;
+                case 'salaryTo':   if (job.data[f] > fv) return false; break;
+                case 'geo':
+                case 'geoRange':
+                case 'geoAddress': break;
+                case 'keyword': {
+                    const kw  = fv.map(norm);
+                    const hit = field => { const sv = norm(job.data[field]); return kw.some(k => sv.includes(k)); };
+                    const ok  = (
+                        (data.config.toggleCategorys          === true && hit('category'))
+                        || (data.config.toggleSubCategory     === true && hit('subCategory'))
+                        || (data.config.toggleContact         === true && hit('contactName'))
+                        || hit('contactEmail')
+                        || hit('contactPhone')
+                        || (data.config.toggleLocation        === true && hit('location'))
+                        || (data.config.toggleArea            === true && hit('city'))
+                        || (data.config.toggleCountry         === true && hit('country'))
+                        || (data.config.toggleDescription     === true && hit('fullDescription'))
+                        || (data.config.toggleReferenceNumber === true && hit('referenceNumber'))
+                        || (data.config.toggleJobName         === true && hit('jobName'))
+                        || hit('tags')
+                    );
+                    if (!ok) return false;
+                    break;
+                }
+                case 'location': {
+                    if (!fv.some( v => norm(job.data.fullAddress).includes(norm(v)) )) return false;
+                    break;
+                }
+                case 'jobTypeID':
+                case 'jobType': {
+                    if (!fv.some( v => norm(job.data.jobTypeID) === norm(v) || norm(job.data.jobType) === norm(v) )) return false;
+                    break;
+                }
+                case 'professionID': {
+                    if (!fv.some( v => norm(job.data.professionID) === norm(v) || norm(job.data.category) === norm(v) )) return false;
+                    break;
+                }
+                case 'roleID': {
+                    if (!fv.some( v => norm(job.data.roleID) === norm(v) || norm(job.data.subCategory) === norm(v) )) return false;
+                    break;
+                }
+                case 'workTypeID': {
+                    if (!fv.some( v => norm(job.data.workTypeID) === norm(v) || norm(job.data.workType) === norm(v) )) return false;
+                    break;
+                }
+                case 'workModelID': {
+                    if (!fv.some( v => norm(job.data.workModelID) === norm(v) || norm(job.data.workModel) === norm(v) )) return false;
+                    break;
+                }
+                default: {
+                    if (!fv.some( v => norm(job.data[f]) === norm(v) )) return false;
+                    break;
+                }
+            }
+        }
+        return true;
+    });
+}
+
+// ── Widget state ──────────────────────────────────────────────────────────────
+let activeFilter  = {};
+let allJobsCache  = null;
+let jobs          = [];
+
+// ── Pre-seed default job type filter ─────────────────────────────────────────
+if (data.config.txt_JobTypeFilter && String(data.config.txt_JobTypeFilter).trim() !== '') {
+    const _defaultJobType = String(data.config.txt_JobTypeFilter).trim();
+    activeFilter.jobTypeID = [_defaultJobType];
+    activeFilter.jobType   = [_defaultJobType];
+}
+
+// ── Multi-select state maps ───────────────────────────────────────────────────
+const msSelections = {
+    professionID: {},
+    category:     {},
+    roleID:       {},
+    subCategory:  {},
+    state:        {},
+};
+
+const main = (w) => {
+
+    let fuseSettings = {
+        default: {
+            caseSensitive: false, shouldSort: true, threshold: 0.2,
+            tokenize: true, matchAllTokens: true, location: 0,
+            distance: 1000, maxPatternLength: 32, minMatchCharLength: 2,
+            includeMatches: true,
+        },
+        keys: {
+            keyword:  [
+                data.config.togglePredictiveJobName          ? 'jobName'          : undefined,
+                data.config.togglePredictiveCategory         ? 'category'         : undefined,
+                data.config.togglePredictiveSubCategory      ? 'subCategory'      : undefined,
+                data.config.togglePredictiveContact          ? 'contactName'      : undefined,
+                data.config.togglePredictiveLocation         ? 'location'         : undefined,
+                data.config.togglePredictiveLocation         ? 'city'             : undefined,
+                data.config.togglePredictiveDescription      ? 'shortDescription' : undefined,
+                data.config.togglePredictiveReferenceNumber  ? 'referenceNumber'  : undefined,
+                data.config.togglePredictiveCountry === true ? 'country'          : undefined,
+            ],
+            location: ['country', 'state', 'city', 'postalCode'],
+            city:     ['city'],
+        },
+    };
+
+    let _suppress = false;
+
+    const isLegacy = data.config.legacyMode !== false;
+
+    const msClassKey    = isLegacy ? 'category'    : 'professionID';
+    const msSubClassKey = isLegacy ? 'subCategory' : 'roleID';
+    const msLocKey      = 'state';
+
+    if (!isLegacy) {
+        ux.el.find('#jobTypeRedirect').attr('data-filter', 'jobTypeID');
+        ux.el.find('#jobJobType').attr('data-filter', 'jobTypeID');
+        ux.el.find('#jobWorkType').attr('data-filter', 'workTypeID');
+        ux.el.find('#jobWorkModel').attr('data-filter', 'workModelID');
+    }
+
+    const syncFilterFromSelections = (key) => {
+        const ids = Object.keys(msSelections[key] || {});
+        if (ids.length > 0) {
+            activeFilter[key] = ids;
+        } else {
+            delete activeFilter[key];
+        }
+    };
+
+    const renderTags = (key, tagsEl, placeholderEl, boxEl) => {
+        const sel = msSelections[key] || {};
+        const ids = Object.keys(sel);
+        boxEl.find('.ms-count').remove();
+        if (ids.length === 0) {
+            placeholderEl.css('color', '').show();
+        } else {
+            placeholderEl.hide();
+            const label = ids.length === 1 ? '1 selected' : `${ids.length} selected`;
+            boxEl.find('.multi-select-arrow').before(`<span class="ms-count">${label}</span>`);
+        }
+    };
+
+    const renderDropdown = (key, map, dropdownEl, boxEl, tagsEl, placeholderEl) => {
+        const sel = msSelections[key] || {};
+        const sortedEntries = Object.entries(map).sort((a, b) =>
+            a[1].text.toLowerCase() < b[1].text.toLowerCase() ? -1 : 1
+        );
+        dropdownEl.empty();
+        if (sortedEntries.length === 0) {
+            dropdownEl.append(`<div class="ms-empty">No options available</div>`);
+            return;
+        }
+        sortedEntries.forEach(([id, { text, count }]) => {
+            const checked = sel[id] ? 'checked' : '';
+            const opt = $(`<label class="ms-option"><input type="checkbox" value="${id}" ${checked} /><span class="ms-option-label">${text}</span></label>`);
+            opt.find('input[type=checkbox]').on('change', function() {
+                if (this.checked) {
+                    msSelections[key][id] = text;
+                } else {
+                    delete msSelections[key][id];
+                }
+                syncFilterFromSelections(key);
+
+                if (!_suppress) {
+                    if (key === msClassKey) {
+                        msSelections[msSubClassKey] = {};
+                        syncFilterFromSelections(msSubClassKey);
+                        renderTags(
+                            msSubClassKey,
+                            ux.el.find('#subClassificationTags'),
+                            ux.el.find('#subClassificationPlaceholder'),
+                            ux.el.find('#subClassificationBox')
+                        );
+                    }
+                }
+
+                updateSubCategoryLock();
+                fetchValues();
+                renderTags(key, tagsEl, placeholderEl, boxEl);
+            });
+            dropdownEl.append(opt);
+        });
+    };
+
+    const toggleDropdown = (boxEl, dropdownEl) => {
+        const isOpen = dropdownEl.hasClass('open');
+        ux.el.find('.multi-select-dropdown.open').removeClass('open');
+        ux.el.find('.multi-select-box.open').removeClass('open');
+        if (!isOpen) {
+            dropdownEl.addClass('open');
+            boxEl.addClass('open');
+            dropdownEl[0].style.removeProperty('border-radius');
+            dropdownEl[0].style.removeProperty('-webkit-border-radius');
+            dropdownEl[0].style.removeProperty('border-top-left-radius');
+            dropdownEl[0].style.removeProperty('border-top-right-radius');
+            dropdownEl[0].style.removeProperty('border-bottom-left-radius');
+            dropdownEl[0].style.removeProperty('border-bottom-right-radius');
+            dropdownEl[0].style.setProperty('border-radius', '0', 'important');
+        }
+    };
+
+    const closeAllDropdowns = () => {
+        ux.el.find('.multi-select-dropdown.open').removeClass('open');
+        ux.el.find('.multi-select-box.open').removeClass('open');
+    };
+
+    $(document).off('click.msjobsearch').on('click.msjobsearch', function(e) {
+        if (!$(e.target).closest('.multi-select-wrapper').length) {
+            closeAllDropdowns();
+        }
+    });
+
+    ux.el.find('.multi-select-box').on('click', function(e) {
+        e.stopPropagation();
+        const box      = $(this);
+        const wrapper  = box.closest('.multi-select-wrapper');
+        const dropdown = wrapper.find('.multi-select-dropdown');
+        toggleDropdown(box, dropdown);
+    });
+
+    ux.el.on('click', '.multi-select-dropdown', function(e) {
+        e.stopPropagation();
+    });
+
+    ux.el.on('click', '.ms-tag-remove', function(e) {
+        e.stopPropagation();
+        const btn    = $(this);
+        const key    = btn.attr('data-key');
+        const id     = btn.attr('data-id');
+
+        delete msSelections[key][id];
+        syncFilterFromSelections(key);
+
+        if (!_suppress && key === msClassKey) {
+            msSelections[msSubClassKey] = {};
+            syncFilterFromSelections(msSubClassKey);
+            renderTags(
+                msSubClassKey,
+                ux.el.find('#subClassificationTags'),
+                ux.el.find('#subClassificationPlaceholder'),
+                ux.el.find('#subClassificationBox')
+            );
+        }
+
+        updateSubCategoryLock();
+        fetchValues();
+
+        const wrappers = {
+            [msClassKey]:    { tags: '#classificationTags',    ph: '#classificationPlaceholder',    box: '#classificationBox' },
+            [msSubClassKey]: { tags: '#subClassificationTags', ph: '#subClassificationPlaceholder', box: '#subClassificationBox' },
+            [msLocKey]:      { tags: '#locationTags',          ph: '#locationPlaceholder',          box: '#locationBox' },
+        };
+        if (wrappers[key]) {
+            renderTags(
+                key,
+                ux.el.find(wrappers[key].tags),
+                ux.el.find(wrappers[key].ph),
+                ux.el.find(wrappers[key].box)
+            );
+        }
+    });
+
+    ux.el.find('.searchBtn').click(() => submitSearch());
+
+    ux.el.find('[data-filter]').on('change', function() {
+        const field     = $(this);
+        const filterKey = field.attr('data-filter');
+        const val       = field.val();
+
+        if (val && val.length > 0) {
+            activeFilter[filterKey] = [val];
+        } else {
+            delete activeFilter[filterKey];
+        }
+
+        updateSubCategoryLock();
+        fetchValues();
+    });
+
+    // ── Proximity search (Google Places) — only if API loaded successfully ──
+    const _gapiAvailable = (
+        data.config.googleApiKey &&
+        data.config.showGeoSearch &&
+        typeof google !== 'undefined' &&
+        google.maps &&
+        google.maps.places
+    );
+
+    if (_gapiAvailable) {
+        const places       = new google.maps.places.PlacesService(document.querySelector('.gapi-map'));
+        const autocomplete = new google.maps.places.AutocompleteService();
+
+        ux.el.find('[data-gapi]').on('keyup', function() {
+            const field = $(this);
+            const range = field.siblings('[data-filter=geoRange]');
+            const menu  = field.siblings('[data-prediction]');
+
+            clearTimeout(this._debounce);
+            field.siblings('[data-prediction]').hide();
+
+            this._debounce = setTimeout( () => {
+                const value = field.val();
+                delete activeFilter.geo;
+                delete activeFilter.geoRange;
+                delete activeFilter.geoAddress;
+                delete activeFilter[range.attr('data-filter')];
+                field.attr('_last', '');
+
+                if (value.length === 0) { fetchValues(); return; }
+
+                autocomplete.getPlacePredictions({ input: value }, r => {
+                    if (r?.length > 0) {
+                        menu.empty()
+                            .append(`<a href="javascript: void(0);" class="resultText close" data-value="">x</a>`)
+                            .show()
+                            .on('click', '[data-value]', function() {
+                                const opt = $(this);
+                                const v   = opt.attr('data-value');
+                                field.val(opt.text());
+                                opt.parents('[data-prediction]').hide();
+                                if (v.length > 0) {
+                                    // Store geo as {lat, lon} object — not a comma string
+                                    const parts = v.split(',');
+                                    activeFilter.geo        = [{ lat: parseFloat(parts[0]), lon: parseFloat(parts[1]) }];
+                                    activeFilter.geoAddress = [opt.text()];
+                                    activeFilter.geoRange   = [range.val()];
+                                    field.attr('_last', opt.text());
+                                }
+                                fetchValues();
+                            });
+                        r.forEach( p => {
+                            places.getDetails({ placeId: p.place_id, fields: ['geometry'] }, d => {
+                                menu.append(`<a href="javascript: void(0);" class="resultText" data-value="${d.geometry.location.lat()},${d.geometry.location.lng()}">${p.description}</a>`);
+                            });
+                        });
+                    }
+                });
+            }, 500);
+        }).on('blur', function() {
+            const field = $(this);
+            setTimeout( () => {
+                field.val(field.attr('_last')).siblings('[data-prediction]').hide();
+                fetchValues();
+            }, 300);
+        });
+    } else if (data.config.showGeoSearch) {
+        // Google Places unavailable — hide the geo row gracefully.
+        // The location keyword input (data-keyword-field="location") remains
+        // fully independent and is unaffected.
+        ux.el.find('[data-gapi]').closest('.flex-items-js').hide();
+    }
+
+    ux.el.find('[data-autocomplete]').on('keyup', function() {
+        const field  = $(this);
+        const filter = field.attr('data-autocomplete');
+
+        if (field.val().length === 0) {
+            delete activeFilter[filter];
+            fetchValues();
+            return;
+        }
+
+        const keys     = fuseSettings.keys[filter];
+        const settings = { ...fuseSettings.default, keys: keys.filter( k => k?.length > 0 ) };
+        const matches  = [];
+
+        new Fuse(jobs.map( j => j.data ), settings).search(field.val()).forEach( m => {
+            matches.push(...m.matches.map( i => {
+                let last = 0;
+                const v = [];
+                i.indices.forEach( x => {
+                    v.push(i.value.slice(last, x[0]));
+                    v.push(`<b>${i.value.slice(x[0], x[1])}</b>`);
+                    last = x[1];
+                });
+                v.push(i.value.slice(last));
+                return `<a href="javascript: void(0);" class="resultText" data-value="${i.value}">${v.join('')}</a>`;
+            }));
+        });
+
+        const unique = (val, idx, self) => self.indexOf(val) === idx;
+        if (matches.length > 0) {
+            field.siblings('[data-prediction]')
+                .empty()
+                .append(`<a href="javascript: void(0);" class="resultText close" data-value="">x</a>`)
+                .append(matches.filter(unique).join(''))
+                .show()
+                .on('click', '[data-value]', function() {
+                    const opt = $(this);
+                    field.val(opt.attr('data-value'));
+                    opt.parents('[data-prediction]').hide();
+                });
+        } else {
+            field.siblings('[data-prediction]').hide();
+        }
+    }).on('blur', function() {
+        const field = $(this);
+        setTimeout( () => {
+            field.siblings('[data-prediction]').hide();
+            const value = field.val();
+            if (value.length > 0) {
+                activeFilter[field.attr('data-autocomplete')] = value.split(',');
+            } else {
+                delete activeFilter[field.attr('data-autocomplete')];
+            }
+            fetchValues();
+        }, 250);
+    }).on('change', function() {
+        const field = $(this);
+        if (field.val().length > 0) {
+            activeFilter[field.attr('data-autocomplete')] = field.val().split(',');
+        } else {
+            delete activeFilter[field.attr('data-autocomplete')];
+        }
+        fetchValues();
+    });
+
+    ux.el.find('input[data-submit]').on('keypress', function(e) {
+        if (e.which === 13) {
+            const field  = $(this);
+            const filter = field.attr('data-autocomplete') || field.attr('data-filter');
+            const value  = field.val();
+            if (value.length > 0) {
+                activeFilter[filter] = value.split(',');
+            } else {
+                delete activeFilter[filter];
+            }
+            field.blur();
+            field.siblings('[data-prediction]').hide();
+            submitSearch();
+        }
+    });
+
+    const updateSubCategoryLock = () => {
+        const hasCat = Object.keys(msSelections[msClassKey] || {}).length > 0;
+        const subBox = ux.el.find('#subClassificationBox');
+        if (hasCat) {
+            subBox.removeClass('subcategory-disabled');
+        } else {
+            subBox.addClass('subcategory-disabled');
+        }
+    };
+
+    // ── Active filters bar (inside the blue container) ────────────────────────
+    const msKeys = new Set(['professionID', 'category', 'roleID', 'subCategory', 'state']);
+    let lastRenderMaps = {};
+
+    const bar    = ux.el.find('#activeFiltersBar');
+    const tagsEl = ux.el.find('#activeFilterTags');
+
+    const renderActiveFilters = () => {
+        const chips = [];
+
+        for (const msKey of msKeys) {
+            const sel = msSelections[msKey] || {};
+            for (const [id, label] of Object.entries(sel)) {
+                chips.push({ key: msKey, id, label, isMs: true });
+            }
+        }
+
+        const _seenChipLabels = new Set();
+        const _hiddenDefaultKeys = new Set();
+        if (data.config.txt_JobTypeFilter && String(data.config.txt_JobTypeFilter).trim() !== '') {
+            _hiddenDefaultKeys.add('jobTypeID');
+            _hiddenDefaultKeys.add('jobType');
+        }
+        for (const key in activeFilter) {
+            if (msKeys.has(key)) continue;
+            if (_hiddenDefaultKeys.has(key)) continue;
+            const vals = activeFilter[key];
+            if (!vals || vals.length === 0) continue;
+            const rawVal = vals[0];
+            if (!rawVal || String(rawVal).trim() === '') continue;
+            const mapEntry = lastRenderMaps[key] && lastRenderMaps[key][String(rawVal)];
+            const label    = mapEntry ? mapEntry.text : String(rawVal);
+            if (_seenChipLabels.has(label)) continue;
+            _seenChipLabels.add(label);
+            chips.push({ key, id: rawVal, label, isMs: false });
+        }
+
+        tagsEl.empty();
+        if (chips.length === 0) {
+            bar.hide();
+            return;
+        }
+
+        chips.forEach(({ key, id, label, isMs }) => {
+            tagsEl.append(`<span class="active-filter-tag">${label} <button class="active-filter-tag-remove" data-key="${key}" data-id="${id}" data-is-ms="${isMs}">×</button></span>`);
+        });
+        bar.show();
+    };
+
+    // Clear-all button
+    bar.find('#clearFiltersBtn').on('click', () => {
+        for (const key of msKeys) {
+            msSelections[key] = {};
+            syncFilterFromSelections(key);
+        }
+        renderTags(msClassKey,    ux.el.find('#classificationTags'),    ux.el.find('#classificationPlaceholder'),    ux.el.find('#classificationBox'));
+        renderTags(msSubClassKey, ux.el.find('#subClassificationTags'), ux.el.find('#subClassificationPlaceholder'), ux.el.find('#subClassificationBox'));
+        renderTags(msLocKey,      ux.el.find('#locationTags'),          ux.el.find('#locationPlaceholder'),          ux.el.find('#locationBox'));
+        ux.el.find('[data-filter]').each(function() {
+            const key = $(this).attr('data-filter');
+            if (!msKeys.has(key)) { $(this).val(''); delete activeFilter[key]; }
+        });
+        ux.el.find('[data-autocomplete]').val('');
+        ux.el.find('[data-gapi]').val('');
+        for (const key in activeFilter) delete activeFilter[key];
+        if (data.config.txt_JobTypeFilter && String(data.config.txt_JobTypeFilter).trim() !== '') {
+            const _djt = String(data.config.txt_JobTypeFilter).trim();
+            activeFilter.jobTypeID = [_djt];
+            activeFilter.jobType   = [_djt];
+        }
+        updateSubCategoryLock();
+        fetchValues();
+    });
+
+    // Individual chip removal
+    bar.on('click', '.active-filter-tag-remove', function(e) {
+        e.stopPropagation();
+        const key  = $(this).attr('data-key');
+        const id   = $(this).attr('data-id');
+        const isMs = $(this).attr('data-is-ms') === 'true';
+
+        if (isMs) {
+            delete msSelections[key][id];
+            syncFilterFromSelections(key);
+            if (key === msClassKey) {
+                msSelections[msSubClassKey] = {};
+                syncFilterFromSelections(msSubClassKey);
+                renderTags(msSubClassKey, ux.el.find('#subClassificationTags'), ux.el.find('#subClassificationPlaceholder'), ux.el.find('#subClassificationBox'));
+            }
+            const tagPanels = {
+                [msClassKey]:    ['#classificationTags',    '#classificationPlaceholder',    '#classificationBox'],
+                [msSubClassKey]: ['#subClassificationTags', '#subClassificationPlaceholder', '#subClassificationBox'],
+                [msLocKey]:      ['#locationTags',          '#locationPlaceholder',          '#locationBox'],
+            };
+            if (tagPanels[key]) renderTags(key, ux.el.find(tagPanels[key][0]), ux.el.find(tagPanels[key][1]), ux.el.find(tagPanels[key][2]));
+        } else {
+            delete activeFilter[key];
+            ux.el.find(`[data-filter=${key}]`).val('');
+            ux.el.find(`[data-autocomplete=${key}]`).val('');
+        }
+        updateSubCategoryLock();
+        fetchValues();
+    });
+
+    // ── Fetch + render pipeline ───────────────────────────────────────────────
+    let fetchDebounceTimer    = null;
+    let pendingFetchResolvers = [];
+    let isFetching            = false;
+
+    const fetchValues = () => new Promise( (resolve, reject) => {
+        if (fetchDebounceTimer) clearTimeout(fetchDebounceTimer);
+        fetchDebounceTimer = setTimeout( () => {
+            fetchDebounceTimer = null;
+            _doFetch().then(resolve).catch(reject);
+        }, 80);
+    });
+
+    const _doFetch = () => new Promise( (resolve, reject) => {
+        if (isFetching) {
+            pendingFetchResolvers.push(resolve);
+            return;
+        }
+        isFetching = true;
+
+        const _flush = () => {
+            isFetching = false;
+            resolve();
+            const pending = pendingFetchResolvers.splice(0);
+            if (pending.length > 0) _doFetch().then( () => pending.forEach( r => r() ) );
+        };
+
+        const render = () => {
+            const buildMap = (src, getIdFn, getTextFn) => {
+                const map = {};
+                src.forEach( i => {
+                    const id  = getIdFn(i);
+                    const txt = getTextFn(i);
+                    if (id == null || String(id).trim() === '') return;
+                    const key = String(id);
+                    if (!map[key]) map[key] = { text: txt || key, count: 0 };
+                    map[key].count++;
+                });
+                return map;
+            };
+
+            const jForClassification = applyFilters(allJobsCache, {
+                ...activeFilter,
+                professionID: undefined,
+                category:     undefined,
+            });
+
+            const jForSubClass = applyFilters(allJobsCache, {
+                ...activeFilter,
+                roleID:      undefined,
+                subCategory: undefined,
+            });
+
+            const jForJobType = applyFilters(allJobsCache, {
+                ...activeFilter,
+                jobTypeID: undefined,
+                jobType:   undefined,
+            });
+
+            const jForLocation = applyFilters(allJobsCache, {
+                ...activeFilter,
+                state:   undefined,
+                city:    undefined,
+                country: undefined,
+            });
+
+            const jForWorkType  = applyFilters(allJobsCache, { ...activeFilter, workTypeID:  undefined, workType:  undefined });
+            const jForWorkModel = applyFilters(allJobsCache, { ...activeFilter, workModelID: undefined, workModel: undefined });
+
+            const jAll = applyFilters(allJobsCache, activeFilter);
+
+            const maps = {
+                professionID: buildMap(jForClassification, i => i.data.professionID || i.data.category,    i => i.data.category),
+                roleID:       buildMap(jForSubClass,       i => i.data.roleID       || i.data.subCategory, i => i.data.subCategory || String(i.data.roleID || '')),
+                workTypeID:   buildMap(jForWorkType,       i => i.data.workTypeID   || i.data.workType,    i => i.data.workType),
+                workModelID:  buildMap(jForWorkModel,      i => i.data.workModelID  || i.data.workModel,   i => i.data.workModel),
+                state:        buildMap(jForLocation,       i => i.data.state,        i => i.data.state),
+                city:         buildMap(jForLocation,       i => i.data.city,         i => i.data.city),
+                country:      buildMap(jForLocation,       i => i.data.country,      i => i.data.country),
+            };
+
+            const jobTypeMap = {};
+            jForJobType.forEach( i => {
+                const rawID  = i.data.jobTypeID;
+                const rawTxt = i.data.jobType;
+                const id  = (rawID != null && String(rawID).trim() !== '') ? rawID : rawTxt;
+                const txt = rawTxt || String(id || '');
+                if (id == null || String(id).trim() === '') return;
+                const key = String(id);
+                if (!jobTypeMap[key]) jobTypeMap[key] = { text: txt || key, count: 0 };
+                jobTypeMap[key].count++;
+            });
+            maps.jobTypeID = jobTypeMap;
+            maps.jobType   = jobTypeMap;
+
+            lastRenderMaps = maps;
+
+            if (isLegacy) {
+                maps.category    = buildMap(jForClassification, i => i.data.category,    i => i.data.category);
+                maps.subCategory = buildMap(jForSubClass,       i => i.data.subCategory, i => i.data.subCategory);
+                maps.workType    = buildMap(jForWorkType,       i => i.data.workType,    i => i.data.workType);
+                maps.workModel   = buildMap(jForWorkModel,      i => i.data.workModel,   i => i.data.workModel);
+            }
+
+            const placeholders = {
+                professionID: data.config.ClassificationPlaceholder     || 'All Categories',
+                roleID:       data.config.SubClassificationsPlaceholder || 'All Sub Categories',
+                workTypeID:   data.config.WorkTypesPlaceholder          || 'All Work Types',
+                workModelID:  data.config.WorkModelsPlaceholder         || 'All Work Models',
+                state:        data.config.LocationsPlaceholder          || 'All Locations',
+                city:         data.config.CityPlaceholder               || 'All Cities',
+                country:      data.config.CountryPlaceholder            || 'All Countries',
+                jobTypeID:    data.config.JobTypesPlaceholder           || 'All Job Types',
+                category:     data.config.ClassificationPlaceholder     || 'All Categories',
+                subCategory:  data.config.SubClassificationsPlaceholder || 'All Sub Categories',
+                workType:     data.config.WorkTypesPlaceholder          || 'All Work Types',
+                workModel:    data.config.WorkModelsPlaceholder         || 'All Work Models',
+                jobType:      data.config.JobTypesPlaceholder           || 'All Job Types',
+            };
+
+            const sortFn = (a, b) => a.text.toLowerCase() < b.text.toLowerCase() ? -1 : 1;
+            const multiSelectKeys = new Set([
+                'professionID', 'category', 'roleID', 'subCategory', 'state',
+            ]);
+            for (const key in maps) {
+                if (multiSelectKeys.has(key)) continue;
+                const map         = maps[key];
+                const placeholder = placeholders[key] || 'All';
+                const currentVal  = (activeFilter[key] || [''])[0];
+                const opts        = Object.entries(map)
+                    .map( ([id, { text, count }]) => ({ id, text, count }) )
+                    .sort(sortFn)
+                    .map( o => `<option value="${o.id}">${o.text}</option>` )
+                    .join('');
+
+                ux.el.find(`[data-filter=${key}]`).each(function() {
+                    const el          = $(this);
+                    const isRedirect  = el.attr('id') === 'jobTypeRedirect';
+                    const ph          = isRedirect
+                        ? (data.config.jobTypeRedirectPlaceholder || placeholder)
+                        : placeholder;
+                    el.empty()
+                      .append(`<option value="">${ph}</option>`)
+                      .append(opts)
+                      .val(currentVal);
+                });
+            }
+
+            const classMap = isLegacy ? maps.category : maps.professionID;
+            if (classMap && ux.el.find('#classificationDropdown').length) {
+                renderDropdown(
+                    msClassKey,
+                    classMap,
+                    ux.el.find('#classificationDropdown'),
+                    ux.el.find('#classificationBox'),
+                    ux.el.find('#classificationTags'),
+                    ux.el.find('#classificationPlaceholder')
+                );
+                renderTags(
+                    msClassKey,
+                    ux.el.find('#classificationTags'),
+                    ux.el.find('#classificationPlaceholder'),
+                    ux.el.find('#classificationBox')
+                );
+            }
+
+            const subMap = isLegacy ? maps.subCategory : maps.roleID;
+            if (subMap && ux.el.find('#subClassificationDropdown').length) {
+                renderDropdown(
+                    msSubClassKey,
+                    subMap,
+                    ux.el.find('#subClassificationDropdown'),
+                    ux.el.find('#subClassificationBox'),
+                    ux.el.find('#subClassificationTags'),
+                    ux.el.find('#subClassificationPlaceholder')
+                );
+                renderTags(
+                    msSubClassKey,
+                    ux.el.find('#subClassificationTags'),
+                    ux.el.find('#subClassificationPlaceholder'),
+                    ux.el.find('#subClassificationBox')
+                );
+            }
+
+            if (maps.state && ux.el.find('#locationDropdown').length) {
+                renderDropdown(
+                    msLocKey,
+                    maps.state,
+                    ux.el.find('#locationDropdown'),
+                    ux.el.find('#locationBox'),
+                    ux.el.find('#locationTags'),
+                    ux.el.find('#locationPlaceholder')
+                );
+                renderTags(
+                    msLocKey,
+                    ux.el.find('#locationTags'),
+                    ux.el.find('#locationPlaceholder'),
+                    ux.el.find('#locationBox')
+                );
+            }
+
+            jobs = jAll;
+            for (const key in fuseSettings.keys) {
+                jobs.forEach( j => fuseSettings.keys[key].forEach( k => { if (k) j.data[k] = j.data[k] || ''; } ));
+            }
+
+            updateSubCategoryLock();
+            renderActiveFilters();
+            _flush();
+        };
+
+        if (allJobsCache) {
+            render();
+        } else {
+            shazamme.fetch(Collection.jobResults).then( rawJobs => {
+                allJobsCache = (rawJobs || []).map( j => (j && j.data !== undefined) ? j : { data: j } );
+                render();
+            }).catch( err => {
+                console.error('[JobSearch] fetch failed:', err);
+                _flush();
+            });
+        }
+    });
+
+    // ── Submit / redirect ─────────────────────────────────────────────────────
+    const submitSearch = () => {
+        if (data.config.useRedirect) {
+            // Build a query-string array for redirect mode
+            const qs = [];
+            const pushQs = (n, v) => {
+                const val = Array.isArray(v) ? v[0] : v;
+                if (val != null && String(val).length > 0) qs.push(`${n}=${encodeURIComponent(val)}`);
+            };
+
+            for (const key in activeFilter) {
+                const raw = Array.isArray(activeFilter[key]) ? activeFilter[key][0] : activeFilter[key];
+                pushQs(key, raw);
+            }
+
+            if (qs.length === 0) {
+                pushQs('keyword',      data.config.txt_KeywordFilter);
+                pushQs('category',     data.config.txt_ClassificationFilter);
+                pushQs('subcategory',  data.config.txt_SubClassifyFilter);
+                pushQs('jobTypeID',    data.config.txt_JobTypeFilter);
+                pushQs('jobType',      data.config.txt_JobTypeFilter);
+                pushQs('workType',     data.config.txt_WorkTypeFilter);
+                pushQs('workModel',    data.config.txt_WorkModelFilter);
+                pushQs('location',     data.config.txt_LocationFilter);
+                pushQs('country',      data.config.txt_CountryFilter);
+                pushQs('advertiserID', data.config.txt_Advertisers);
+            }
+
+            // Always push both legacy and non-legacy category/subCategory keys
+            // so the results page restores correctly regardless of its mode.
+            const _cat = activeFilter.category    ? activeFilter.category[0]
+                       : activeFilter.professionID ? activeFilter.professionID[0] : null;
+            const _sub = activeFilter.subCategory ? activeFilter.subCategory[0]
+                       : activeFilter.roleID       ? activeFilter.roleID[0]       : null;
+            if (_cat && !qs.some(p => p.startsWith('professionID='))) pushQs('professionID', _cat);
+            if (_cat && !qs.some(p => p.startsWith('category=')))     pushQs('category',     _cat);
+            if (_sub && !qs.some(p => p.startsWith('roleID=')))       pushQs('roleID',       _sub);
+            if (_sub && !qs.some(p => p.startsWith('subCategory=')))  pushQs('subCategory',  _sub);
+
+            // Append hash fragment so the job results widget can filter by it
+            const _hash = (_cat || _sub) ? '#/' + [_cat, _sub].filter(Boolean).join('/') : '';
+            const href  = ux.buildHref('/' + Path.jobResults, qs.join('&')) + _hash;
+            window.location.replace(href);
+
+        } else {
+            // Non-redirect mode: build a proper plain object for pub/sub
+            const pubParams = {};
+
+            const hasActiveFilters = Object.keys(activeFilter).length > 0;
+            if (hasActiveFilters) {
+                for (const key in activeFilter) {
+                    // geo is stored as [{lat, lon}] — pass it through as-is
+                    if (key === 'geo') {
+                        if (activeFilter[key] && activeFilter[key].length > 0 && activeFilter[key][0] != null) {
+                            pubParams[key] = activeFilter[key];
+                        }
+                        continue;
+                    }
+                    // location keyword is independent — always pass through as array
+                    const val = Array.isArray(activeFilter[key]) ? activeFilter[key] : [activeFilter[key]];
+                    if (val[0] != null && String(val[0]).length > 0) pubParams[key] = val;
+                }
+            } else {
+                // Fall back to static config defaults
+                const addDefault = (n, v) => {
+                    if (v != null && String(v).length > 0) pubParams[n] = [String(v)];
+                };
+                addDefault('keyword',      data.config.txt_KeywordFilter);
+                addDefault('category',     data.config.txt_ClassificationFilter);
+                addDefault('subcategory',  data.config.txt_SubClassifyFilter);
+                addDefault('jobTypeID',    data.config.txt_JobTypeFilter);
+                addDefault('jobType',      data.config.txt_JobTypeFilter);
+                addDefault('workType',     data.config.txt_WorkTypeFilter);
+                addDefault('workModel',    data.config.txt_WorkModelFilter);
+                addDefault('location',     data.config.txt_LocationFilter);
+                addDefault('country',      data.config.txt_CountryFilter);
+                addDefault('advertiserID', data.config.txt_Advertisers);
+            }
+
+            w.pub('job-search-submit', pubParams);
+        }
+    };
+
+    // ── Pub/sub ───────────────────────────────────────────────────────────────
+    w.log('widget ready', w)
+     .sub('job-search-set', p => {
+         _suppress = true;
+         for (const i in p) {
+             // Skip geo/proximity keys — they are set via the Places autocomplete only
+             if (i === 'geo' || i === 'geoRange' || i === 'geoAddress') continue;
+             ux.el.find(`[data-filter=${i}]`).val(p[i][0] || '');
+             ux.el.find(`[data-autocomplete=${i}]`).val(p[i].join(', '));
+         }
+         if (!(p?.keyword?.length > 0)) ux.el.find(`[data-autocomplete=keyword]`).val('');
+         // Restore location keyword filter independently of proximity geo
+         if (p?.location?.length > 0) {
+             activeFilter.location = p.location;
+         } else {
+             delete activeFilter.location;
+         }
+         ux.el.find('[data-filter], [data-autocomplete]').trigger('change');
+         _suppress = false;
+     });
+
+    w.sub('site-config-ready', () => {
+        const site = shazamme.bag('site-config');
+        if (site?.configuration?.jobLocalization || site?.configuration?.jobFieldMap) {
+            shazamme.site().then( sc => {
+                Collection.jobResults = {
+                    path:       `/job-results/${sc.siteID}`,
+                    useCache:   true,
+                    isExternal: true,
+                    lang:       site?.configuration?.jobLocalization && data.locale,
+                    fieldMap:   site?.configuration?.jobFieldMap,
+                };
+                allJobsCache = null;
+                fetchValues();
+            });
+        }
+    });
+
+    return shazamme.site().then( sc => {
+        Collection.jobResults = {
+            path:       `/job-results/${sc.siteID}`,
+            useCache:   true,
+            isExternal: true,
+        };
+        return { fetchValues, restoreFromUrl, _suppress: (v) => { _suppress = v; } };
+    }).catch( () => {
+        return { fetchValues, restoreFromUrl, _suppress: (v) => { _suppress = v; } };
+    });
+
+    function restoreFromUrl() {
+        const get = key => ux.uri.searchParams.get(key);
+
+        // Restore multi-select keys using the correct legacy/non-legacy key
+        const multiRestoreKeys = [
+            { urlKey: isLegacy ? 'category'    : 'professionID', msKey: msClassKey    },
+            { urlKey: isLegacy ? 'subCategory' : 'roleID',       msKey: msSubClassKey },
+            // Also read the alternate key in case URL was generated by non-legacy or legacy widget
+            { urlKey: 'professionID', msKey: msClassKey    },
+            { urlKey: 'category',     msKey: msClassKey    },
+            { urlKey: 'roleID',       msKey: msSubClassKey },
+            { urlKey: 'subCategory',  msKey: msSubClassKey },
+            { urlKey: 'state',        msKey: 'state'       },
+        ];
+
+        _suppress = true;
+
+        multiRestoreKeys.forEach(({ urlKey, msKey }) => {
+            const val = get(urlKey);
+            if (val) {
+                msSelections[msKey][val] = val;
+                syncFilterFromSelections(msKey);
+            }
+        });
+
+        const paramMap = {
+            keyword:     get('keyword'),
+            workTypeID:  get('workTypeID'),
+            workModelID: get('workModelID'),
+            jobTypeID:   get('jobTypeID'),
+            jobType:     get('jobType'),
+            workType:    get('workType'),
+            workModel:   get('workModel'),
+            city:        get('city'),
+            country:     get('country'),
+        };
+
+        for (const key in paramMap) {
+            if (paramMap[key]) {
+                activeFilter[key] = [paramMap[key]];
+                ux.el.find(`[data-filter=${key}]`).val(paramMap[key]);
+                ux.el.find(`[data-autocomplete=${key}]`).val(paramMap[key]);
+            }
+        }
+
+        // ── Write filters to sessionStorage IMMEDIATELY (synchronous) ─────────
+        // The job results widget reads this key on its own init before rendering,
+        // so it never shows a flash of unfiltered/zero results.
+        const _earlyParams = {};
+        for (const key in activeFilter) {
+            const v = Array.isArray(activeFilter[key]) ? activeFilter[key] : [activeFilter[key]];
+            if (v[0] != null && String(v[0]).length > 0) _earlyParams[key] = v;
+        }
+        if (Object.keys(_earlyParams).length > 0) {
+            try {
+                sessionStorage.setItem('job-search-pending', JSON.stringify(_earlyParams));
+            } catch(e) {}
+        }
+
+        _suppress = false;
+        return fetchValues().then(() => {
+            const resolveKeys = [
+                { msKey: msClassKey,    mapKey: isLegacy ? 'category'    : 'professionID' },
+                { msKey: msSubClassKey, mapKey: isLegacy ? 'subCategory' : 'roleID' },
+                { msKey: msLocKey,      mapKey: 'state' },
+            ];
+            let labelsUpdated = false;
+            resolveKeys.forEach(({ msKey, mapKey }) => {
+                const sel = msSelections[msKey];
+                const map = lastRenderMaps[mapKey];
+                if (!sel || !map) return;
+                for (const id in sel) {
+                    const entry = map[id];
+                    if (entry && entry.text && entry.text !== id) {
+                        sel[id] = entry.text;
+                        labelsUpdated = true;
+                    }
+                }
+            });
+            if (labelsUpdated) {
+                renderTags(msClassKey,    ux.el.find('#classificationTags'),    ux.el.find('#classificationPlaceholder'),    ux.el.find('#classificationBox'));
+                renderTags(msSubClassKey, ux.el.find('#subClassificationTags'), ux.el.find('#subClassificationPlaceholder'), ux.el.find('#subClassificationBox'));
+                renderTags(msLocKey,      ux.el.find('#locationTags'),          ux.el.find('#locationPlaceholder'),          ux.el.find('#locationBox'));
+                renderActiveFilters();
+            }
+
+            // If URL params are present we are on the results page after a
+            // redirect. Ensure the hash fragment exists (job results widget
+            // reads the hash) then broadcast job-search-submit using the same
+            // path as the Search button so the job results widget receives
+            // exactly the format it expects.
+            const hasUrlParams = [
+                'professionID','category','roleID','subCategory','state',
+                'jobTypeID','jobType','workTypeID','workModelID','workType',
+                'workModel','keyword','city','country','location',
+            ].some(k => ux.uri.searchParams.get(k));
+
+            if (hasUrlParams) {
+                // Step 1: write the hash into the URL RIGHT NOW so the job
+                // results widget can read it synchronously on its own init.
+                const _cat = (activeFilter.professionID || activeFilter.category || [])[0];
+                const _sub = (activeFilter.roleID       || activeFilter.subCategory || [])[0];
+                if (_cat || _sub) {
+                    const desiredHash = '#/' + [_cat, _sub].filter(Boolean).join('/');
+                    if (window.location.hash !== desiredHash) {
+                        window.history.replaceState(null, '', window.location.href.split('#')[0] + desiredHash);
+                    }
+                }
+
+                // Step 2: build the pub payload exactly like submitSearch does
+                // in non-redirect mode — a plain object { key: [value] }.
+                const buildPubParams = () => {
+                    const p = {};
+                    for (const key in activeFilter) {
+                        if (key === 'geo') {
+                            if (activeFilter[key] && activeFilter[key].length > 0 && activeFilter[key][0] != null) {
+                                p[key] = activeFilter[key];
+                            }
+                            continue;
+                        }
+                        const val = Array.isArray(activeFilter[key]) ? activeFilter[key] : [activeFilter[key]];
+                        if (val[0] != null && String(val[0]).length > 0) p[key] = val;
+                    }
+                    return p;
+                };
+
+                // Step 3: broadcast immediately and at intervals — the job
+                // results widget may subscribe at any point during page load.
+                // Use both w.pub (scoped) and shazamme.pub (global) to maximise
+                // the chance the job results widget receives the event.
+                const _broadcast = () => {
+                    const p = buildPubParams();
+                    w.pub('job-search-submit', p);
+                    if (typeof shazamme.pub === 'function') shazamme.pub('job-search-submit', p);
+                };
+                _broadcast();                        // fire immediately (sync)
+                setTimeout(_broadcast,  300);
+                setTimeout(_broadcast,  800);
+                setTimeout(_broadcast, 2000);
+                // Clean up sessionStorage after all retries are done
+                setTimeout(() => { try { sessionStorage.removeItem('job-search-pending'); } catch(e) {} }, 2100);
+            }
+        });
+    }
+};
+
+// ── Enforce square dropdown panels ────────────────────────────────────────────
+const enforceSquareDropdowns = () => {
+    const panels = element.querySelectorAll('.multi-select-dropdown');
+    panels.forEach(p => {
+        p.style.setProperty('border-radius', '0', 'important');
+        p.style.setProperty('border-top-left-radius', '0', 'important');
+        p.style.setProperty('border-top-right-radius', '0', 'important');
+        p.style.setProperty('border-bottom-left-radius', '0', 'important');
+        p.style.setProperty('border-bottom-right-radius', '0', 'important');
+    });
+};
+
+if (window.MutationObserver) {
+    const _dropdownObserver = new MutationObserver(mutations => {
+        mutations.forEach(m => {
+            if (m.type === 'attributes' && m.attributeName === 'style') {
+                const t = m.target;
+                if (t.classList && t.classList.contains('multi-select-dropdown')) {
+                    setTimeout(() => { t.style.setProperty('border-radius', '0', 'important'); }, 0);
+                }
+            }
+        });
+    });
+    $(function() {
+        element.querySelectorAll('.multi-select-dropdown').forEach(p => {
+            _dropdownObserver.observe(p, { attributes: true, attributeFilter: ['style'] });
+        });
+        enforceSquareDropdowns();
+    });
+}
+
+// ── Bootstrap ─────────────────────────────────────────────────────────────────
+Promise.all([
+    ux.loadScript('https://cdn.jsdelivr.net/npm/fuse.js@6.4.0'),
+    ux.loadScript('https://sdk.shazamme.io/js/shazamme-1.0.3.min.js'),
+])
+.then( () => shazamme.ready((data.inEditor && data.config.debugSiteID) || data.siteId, data.page) )
+.then( () => {
+    if (data.config.googleApiKey && data.config.showGeoSearch) {
+        return shazamme.gapi(data.config.googleApiKey).maps(['places']).catch(() => Promise.resolve());
+    }
+    return Promise.resolve();
+})
+.then( () => {
+    main(shazamme.register('job-search', data))
+        .then( w => {
+            if (!w) return;
+            w.restoreFromUrl();
+        })
+        .catch( err => console.error('[JobSearch] bootstrap error:', err) );
+});
+

@@ -1,0 +1,688 @@
+div.shmMainContainer{
+    display:block;
+    text-align: center;
+    padding-top: 20px;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.section-job-result-filter {
+    position: fixed;
+    display:block;
+    background-color: transparent;
+    z-index: 1;
+    bottom: 0px;
+    left: -100%;
+    max-height: 100%;
+    max-width:100%;
+    overflow: auto;
+    padding: 50px 20px;
+    transition:all .35s;
+    width: 100% !important;
+    height: auto;
+}
+
+.section-job-result-filter.active {
+    left: 0px;
+    top: 50px;
+    z-index: 201;
+}
+
+.button-filter-toggle {
+    display: inline-block;
+    padding: 3px;
+    height: 45px;
+    width: 175px;
+    background: #333;
+    color: white;
+}
+
+.button-filter-toggle.close {
+    position: absolute;
+    right: 20px;
+    width: auto;
+    height: auto;
+    padding: 5px 8px;
+    font-family: Arial;
+    font-weight: bold;
+}
+
+.shmResultCountContainer{
+    display: flex;
+    justify-content: center !important;
+}
+
+.action-bar .action-item button {
+    max-width: 400px;
+    min-width: 60px;
+    width: 175px;
+    height: 45px;
+}
+
+div.shmPanelRight, 
+div.shmJobDetailsLeft, 
+div.shmJobDetailsRight{
+    max-width:100%;
+}
+
+
+div.shmButtonList, 
+div.shmJobItemUpper {
+    display: block;
+}
+div.shmButtonList div, 
+div.shmButtonList select, 
+a.shmJobtitle, 
+div.shmUpperRight, 
+div.shmResultViewtrue div {
+    max-width:100%;
+}
+
+.shmResultViewtrue .shmJobResultStd {
+    width: 100%;
+}
+
+.shmJobResultStd .shmCTA {
+    display: flex;
+    margin-bottom: 0px; 
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.shmJobResultStd .shmUpperRight {
+    display: flex;
+    justify-content: var(--alignSaveJobAndEmail);
+    width: 100%;
+
+}
+
+.shmJobResultStd .shmDivider {
+  line-height: inherit;
+  font-size: inherit;
+  padding-left: 0px;
+  padding-right: 0px;
+  margin: 0px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-content: center;
+}
+
+.shmJobResultStd .shmDividerContainer {
+  line-height: inherit;
+  font-size: inherit;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+.shmJobResultStd .shmJobtitle {
+  font-size: 25px;
+  transition: all 0.25s;
+  color: #333;
+  text-align: center !important;
+  width: 100%;
+}
+
+.shmJobResultStd .shmJobtitle.over {
+  max-width: 69%;
+  font-size: 25px;
+  transition: all 0.25s;
+  color: #333;
+  line-height: inherit;
+  width: inherit;
+  text-align: center !important;
+}
+
+
+.timeSincePosted {
+    font-weight: normal !important;
+    line-height: normal !important;
+    font-size: 14px;
+    text-align: left;
+}
+
+.shmJobResultSimple .jobResultTitle {
+    text-align: left;
+    height: 100%;
+    width: 100%;
+}
+
+.jobCategory {
+    text-align:left;
+}
+
+.workType {
+    text-align:left;
+}
+
+div.shmJobDetails {
+    display:block;
+    text-align: left;
+}
+
+.shmLocation {
+     text-align: left;
+}
+
+.shmSalary {
+     text-align: left;
+}
+
+.shmJobDateCreated {
+     text-align: left;
+}
+
+.shmRequirements {
+    text-align: left;
+}
+
+.shmJobResultStd .shmJobItemUpper {
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column-reverse;
+}
+
+
+div.shmUpperRight div, 
+div.shmCTA a.shmSendEmail{
+    text-align:left;
+}
+
+.shmJobResultSimple .shmSendEmail, 
+.shmJobResultSimple .shmSaveJob {
+    max-width: 49%;
+    cursor: pointer;
+    width: auto;
+    text-decoration: none;
+    line-height: normal;
+    padding: 0px;
+}
+
+div.shmButtonList div, 
+div.shmButtonList select{
+    margin-bottom:5px;
+    margin-right:0px;
+}
+
+
+div.shmPopup {
+    max-width: 90%;
+    max-height: 90%;
+}
+
+span.shmDivider{
+    padding-left:10px;
+    padding-right:10px;
+}
+
+/*Grid Layout*/
+div.shmResultViewtrue div, 
+div.shmResultViewtrue a{
+    max-width:100%!important;
+}
+
+.shmResultViewtrue .shmJobResult {
+    Width:100% !important;
+    padding: 10px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    text-align: center;
+}
+
+div.div.shmButtonLinks{
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: space-evenly;
+}
+    
+div.shmButtonLinks {
+    display: flex;
+    flex-wrap: nowrap;
+    align-content: space-evenly;
+    flex-direction: row;
+    justify-content: space-between;
+    
+}
+div.shmButtonLinks a{
+    margin-right:0px !important;
+}
+
+/* Search Button*/
+
+div.shmRefineSearch{
+    position:fixed!important;
+    bottom:0px;
+    left:0px;
+    padding:5px 30px;
+    text-align:center;
+    width:auto!important;
+    background-color:#000;
+    color:#fff;
+    z-index:999999999;
+}
+
+div.shmResultCountContainer {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+    margin-top: 10px;
+    padding-top: 3px;
+}
+
+div.shmResultCountContainer div {
+    width: auto;
+}
+
+div.shmJobDetailsPanel.shmJobDetailsLeft {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+div.shmDetailsDivider.shmDividerEnabled{
+    margin:5px 20px;
+    display:none;
+}
+
+div.shmDivider {
+    display: none;
+}
+
+ul.shmRequirements {
+        display: contents;
+        width: auto;
+}
+
+div.shmButtonLinks a {
+    margin-right: 8px;
+}
+
+.section-details {
+    width: 100% !important;
+}
+
+.action-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.action-bar .action-item-favorite-search,
+.action-bar .action-item-sort-by {
+    display: none;
+}
+
+.desktop {
+    display: none !important;
+}
+
+.shmJobResultSimple div.jobDescription {
+    display: none;
+}
+
+.shmJobResultStd .icon-action,
+.shmJobResultSimple .icon-action {
+    display: inline-block;
+    vertical-align: middle;
+    width: 25px;
+    margin: 0px;
+    fill: #333;
+    text-align: left;
+}
+
+
+.shmJobResultSimple .topRow {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    /*width: 95%;*/
+    align-items: center;
+    padding-right: 15px;
+    padding-left: 15px;
+}
+
+
+.shmJobResultSimple .timeSincePostedRow {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    width: 30%;
+    align-items: flex-start;
+    text-align: left;
+}
+
+.shmJobResultSimple .actionItemsRow {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    Padding-left: 8px;
+    /*Padding-right: 8px;*/
+    width: 70%;
+    height: 100%;
+}
+
+.shmJobResultSimple .shmSendEmail, 
+.shmJobResultSimple .shmSaveJob {
+    cursor: pointer;
+    width: auto;
+    text-decoration: none;
+    line-height: normal;
+    padding-left: 5px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+}
+
+
+.shmJobResultSimple .bottomRow {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    width: 100%;
+    height: 100%;
+}
+
+.shmJobResultSimple .bottomRow {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    width: 100%;
+    height: 100%;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+}
+
+.shmJobResultSimple .locationContainer {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: 8px 8px 8px 0px;
+    width: 100%;
+    line-height: normal;
+
+}
+
+.shmJobResultSimple .salaryContainer {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: 8px 8px 8px 0px;
+    width: 100%;
+    line-height: normal;
+}
+
+.shmJobResultSimple .actionButtonRow {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    width: 100%;
+    flex-wrap: nowrap;
+    align-items: center;
+}
+
+*#dm *.dmBody .actionButtonRow .applyActionButton,
+*#dm *.dmBody .actionButtonRow .readMoreActionButton {
+    width: 100% !important;
+    margin: 5px 0px;
+}
+
+.shmJobResultSimple .hrDivider {
+     margin-top: 5px;
+     margin-bottom: 5px;
+ }
+ 
+ .shmJobResultSimple .locationIcon, .shmJobResultSimple .salaryIcon {
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 8px;
+    width: 20px;
+}
+
+.shmResultStaticText.mobile {
+    margin-right: 20px;
+}
+
+/* === Modern Layout Styling -- Start === */
+
+.shmJobResultModern {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    line-height: 1.4;
+    box-sizing: border-box;
+    position: relative;
+    min-height: 1px;
+    float: left;
+    width: 100%;
+    margin-bottom: 10px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.shmJobResultModern .label-job-results-count {
+    color: #333;
+    font-size: 15px;
+    line-height: 1;
+    margin: 10px 20px;
+    text-align: left;
+}
+
+.shmJobResultModern .job-category {
+    color: #333;
+    font-size: 13px;
+    line-height: 1;
+    margin-left: 3px;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    text-align: left;
+}
+
+.shmJobResultModern .job-detail .job-title {
+    font-size: 27px;
+    line-height: 1.2;
+    margin-bottom: 15px;
+    color: #333;
+    text-align: left;
+    text-decoration: none;
+    word-break: break-word;
+    hyphens: auto;
+
+
+}
+
+.shmJobResultModern .job-detail .job-title a {
+    text-decoration: none;
+}
+
+.shmJobResultModern .job-detail {
+    background-color: #f8f6f5;
+    position: relative;
+    padding: 10px 30px;
+}
+
+.shmJobResultModern .job-detail .section-main {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+}
+
+.shmJobResultModern .job-detail .description .label-job-description {
+    display: -webkit-box;
+    -webkit-line-clamp: var(--shaz-job-result-lines);
+    -webkit-box-orient: vertical;
+    overflow: hidden;    
+    text-align: left;    
+}
+
+.shmJobResultModern .job-detail .side-bar {
+     margin-left: 0px;
+     margin-top: 20px; 
+     margin-bottom: 20px; 
+     display: flex; 
+     flex-direction: column; 
+     align-items: flex-start;
+}
+
+.shmJobResultModern .job-detail .image-logo,
+img.image-logo {
+    max-width: 50px;
+    max-height: 50px;
+    margin-bottom: 20px;
+}
+
+.shmJobResultModern .job-detail .label-salary, 
+.shmJobResultModern .job-detail .label-posted {
+    margin: 0px;
+    padding: 0px;
+    text-align: left;
+    color: #333;
+}
+
+.shmJobResultModern .job-detail .label-posted {
+    font-size: 11px;
+}
+
+.shmJobResultModern .label-posted {
+    padding-top: 0px;
+    padding-bottom: 0px;
+}
+
+.shmJobResultModern .category-meta-container {
+    display: flex;
+    justify-content: flex-start;
+    align-items: flex-start;
+    flex-direction: column;
+}
+
+.shmJobResultModern .meta {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    line-height: 1.42857143;
+    color: #333;
+    font-size: 15px;
+    box-sizing: border-box;
+    margin-top: 3px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.shmJobResultModern .meta-value {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    box-sizing: border-box;
+    border: 1px solid #333;
+    border-radius: 0px;
+    color: #333;
+    font-size: 10px;
+    line-height: 15px;
+    text-align: center;
+    text-transform: uppercase;
+    display: inline-block;
+    padding: 5px 10px;
+    margin: 3px;
+
+}
+
+.shmJobResultModern .recruiter-detail {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    width: 100%;
+    background-color: #e4e7eb;
+    padding: 15px 30px;
+    align-items: stretch;
+}
+
+.shmJobResultModern .recruiter-detail .section-bio {
+    -webkit-tap-highlight-color: transparent;
+    color: #333;
+    font-size: 15px;
+    text-align: right;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    margin-right: 0px;
+}
+
+.shmJobResultModern .recruiter-detail .section-bio .bio-name {
+    display: inline-block;
+    padding-top: 3px;
+    padding-bottom: 3px;
+    width: 100%;
+    margin-left: 50px;
+}
+
+.shmJobResultModern .recruiter-detail .section-bio .bio-name p {
+    margin: 0px;
+    padding: 0px;
+}
+
+.shmJobResultModern .recruiter-detail .section-bio .image-head-shot {
+    position: absolute;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    top: 0px;
+    left: 10px;
+    bottom: 0px;
+    margin: auto 0px;
+    margin-right: 20px;
+}
+
+.shmJobResultModern .recruiter-detail .section-contact a {
+    display: block;
+    margin:  2px 0px;
+    text-decoration: none;
+    text-align: right;
+}
+
+.shmJobResultModern .phone a,
+.shmJobResultModern .email a {
+    text-decoration: none;
+}
+
+/* === Modern Layout Styling -- Start === */
+
+.shmJobResultModern {
+    margin-top: 15px;
+
+}
+
+/* === Modern Layout Styling -- End === */
+
+
+/* === Standard Mobile Fix 1-column Start === */
+
+.shmSearchResults.shmResultView.true.grid, 
+.shmSearchResults.grid {
+    grid-template-columns: 100% !important;
+    column-gap: 0px !important;
+}
+
+.toolbar-main .button-toolbar {
+    width: 32px;
+    height: 32px;
+    margin: 5px;
+    background: transparent;
+    border: 1px solid white;
+    color: inherit;
+    vertical-align: middle;
+    text-align: center !important;
+    display: inline-flex;
+    justify-content: space-evenly;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+}
+
+.shmSearchResults, .shmSearchMapResults{
+        margin-top: 40px;
+}
+
+/* === Standard Mobile Fix 1-column End === */
+

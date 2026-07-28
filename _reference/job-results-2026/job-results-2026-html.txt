@@ -1,0 +1,252 @@
+
+<link rel="preconnect" href="https://sdk.shazamme.io" crossorigin>
+<style>
+  /*
+   * Hard-lock every Duda ancestor from first paint.
+   * height forces the column to its full size immediately — no JS needed.
+   */
+  .dmWidget:has(.widget-527234),
+  .dmColumn:has(.widget-527234),
+  .dmRow:has(.widget-527234) {
+    min-height: 900px !important;
+    box-sizing: border-box !important;
+  }
+  .widget-527234 {
+    min-height: 900px !important;
+  }
+</style>
+
+{{#equals layout "simple"}}
+<div class="section-tool-bar desktop" style="justify-content: {{toolbarJustifyContent}}">
+    {{#if showViewToggle}}
+    <div class="button-toggle-view list" data-rel="action-toggle-view" data-view="list" data-device-default="mobile">
+        {{#if toggleViewIcon}}
+        <span class="icon-toggle" style="--shazamme-icon-size: {{toggleViewIconSize}}px;">
+            <span class="active">{{{activetoggleViewListIcon}}}</span>
+            <span class="inactive">{{{toggleViewListIcon}}}</span>
+        </span>
+        {{/if}}
+
+        {{#if toggleViewText}}
+            <span>{{toggleViewList}}</span>
+        {{/if}}
+    </div>
+
+    <div class="button-toggle-view grid active" data-rel="action-toggle-view" data-view="grid">
+        {{#if toggleViewIcon}}
+        <span class="icon-toggle" style="--shazamme-icon-size: {{toggleViewIconSize}}px;">
+            <span class="active">{{{activetoggleViewGridIcon}}}</span>
+            <span class="inactive">{{{toggleViewGridIcon}}}</span>
+        </span>
+        {{/if}}
+
+        {{#if toggleViewText}}
+            <span>{{toggleViewGrid}}</span>
+        {{/if}}
+    </div>
+    {{/if}}
+</div>
+{{/equals}}
+
+<div class="toolbar-main mobile">
+    <span class="shmResultCount">
+        <span data-rel="label-results-count">0</span>
+        <span data-rel="label-results-message">{{resultMessage}}</span>
+    </span>
+
+    <div>        
+        {{#if showMobileFilter}}
+        <button class="button-toolbar filter" data-rel="button-toggle-filter">{{filterButtonText}}</button>
+        {{/if}}
+        
+        {{#if showMobileFavorite}}
+        <button class="button-toolbar favorite" style="--shaz-icon: '{{IconFavorite}}'" data-rel="action-mobile-save-search" data-modal="favorite"></button>
+        {{/if}}
+        
+        {{#if showMobileAlert}}
+        <button class="button-toolbar alert" style="--shaz-icon: '{{IconAlert}}'" data-rel="action-mobile-save-search" data-modal="favorite" data-save-alert></button>
+        {{/if}}
+        
+        {{#if showMobileSort}}
+        <button class="button-toolbar sort" style="--shaz-icon: '{{IconSort}}'" data-rel="action-menu" data-menu="sort" data-modal="sort"></button>
+        {{/if}}
+    </div>
+</div>
+
+<div class="shmMainContainer" style="--shaz-filter-pct: {{filterWidth}}%;" data-shm-main>
+    <div class="section-job-result-filter">
+        <div class="shade mobile"></div>
+        
+        <!-- START SIDE FILTER HERE -->
+        <div class="shmFiltersContainer">
+
+            {{#if showKeywordFilter}}
+            <p class="filter-title">{{keyword}}</p>
+            <div class="section-keyword-search">
+                <input class="filter-field" data-rel="job-result-filter-keyword" data-keyword-field="keyword" autocomplete="off" placeholder="{{keywordPlaceholder}}" />
+                <button class="filter-keyword-clear" data-rel="job-result-filter-keyword-clear" data-keyword-field="keyword" aria-label="Clear"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+            </div>
+            {{/if}}
+
+            {{#if showLocationKeywordFilter}}
+            <p class="filter-title">{{locationFilter}}</p>
+            <div class="section-keyword-search">
+                <input class="filter-field" data-rel="job-result-filter-keyword" data-keyword-field="location" autocomplete="off" placeholder="{{locationPlaceholder}}" />
+                <button class="filter-keyword-clear" data-rel="job-result-filter-keyword-clear" data-keyword-field="location" aria-label="Clear"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+            </div>
+            {{/if}}
+
+            {{#if enableProximitySearch}}
+            <p class="filter-title">{{geoFilter}}</p>
+            <div class="section-keyword-search">
+                <div class="section-keyword-search">
+                    <input class="filter-field" data-gapi="geo" data-gapi-text="geoAddress" autocomplete="off" placeholder="{{geoPlaceholder}}" />
+                    <div class="prediction-result" data-prediction></div>
+                </div>
+                <label class="filter-label">{{radius}}</label>
+                <div class="stack geo-range">
+                    <input type="range" class="field" placeholder="{{geoRangePlaceHolder}}" value="{{geoRangeValue}}" min="{{geoRangeMin}}" max="{{geoRangeMax}}" data-filter="geoRange" />
+                    <label class="text" data-rel="geo-range-display">{{geoRangeMin}} mi</label>
+                </div>
+                <button class="filter-keyword-clear" data-rel="job-result-filter-geo-clear" data-geo-field="geo" aria-label="Clear"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+            </div>
+            {{/if}}
+
+            <div data-rel="filter-attribute"></div>
+
+            {{#if showDateFilter}}
+            <p class="filter-title">{{startDate}}</p>
+            <div class="section-keyword-search">
+                <input type="date" class="filter-field" data-rel="job-result-filter-keyword" data-keyword-field="jobStartDate" autocomplete="no" placeholder="{{startDatePlaceholder}}" />
+                <button class="filter-keyword-clear" data-rel="job-result-filter-keyword-clear" data-keyword-field="jobStartDate" aria-label="Clear"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+            </div>
+
+            <p class="filter-title">{{endDate}}</p>
+            <div class="section-keyword-search">
+                <input type="date" class="filter-field" data-rel="job-result-filter-keyword" data-keyword-field="jobEndDate" autocomplete="no" placeholder="{{endDatePlaceholder}}" />
+                <button class="filter-keyword-clear" data-rel="job-result-filter-keyword-clear" data-keyword-field="jobEndDate" aria-label="Clear"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+            </div>
+            {{/if}}
+
+            {{#if showSalaryFilter}}
+            <div data-rel="filter-salary-wrapper">
+                <p class="filter-title">{{salary}}</p>
+                <div data-rel="salary-toggle-host"></div>
+                <div data-rel="filter-salary"></div>
+            </div>
+            {{/if}}
+
+
+            <div class="editor-only section-editor" data-rel="default-filter">
+                <button class="button-editor" data-rel="action-set-default-filter">Save as Default Filter</button>
+                <button class="button-editor" data-rel="action-remove-default-filter">Remove Default Filter</button>
+            </div>
+        </div>
+        <!-- END SIDE FILTER HERE -->
+
+        <div class="toolbar mobile">
+            <button class="submit full" data-rel="button-toggle-filter"><span class="text">{{filterCloseButton}}</span></button>
+        </div>
+    </div>
+
+    <div class="section-details" style="min-width: 0; flex: 1 1 0; box-sizing: border-box;">
+
+        {{#if shmTopResultsRow}}
+          <div class="shmResultCountContainer desktop" style="justify-content: {{alignResultCount}}">
+            <div class="shmResultStaticText">{{searchResultsText}} <span class="shmResultCount" data-rel="label-results-count">0</span><span data-rel="label-results-message"></span></div>
+          </div>
+        {{/if}}
+
+         {{#if showActionBar}}
+            <div class="action-bar desktop" data-rel="action-bar" style="justify-content: {{actionItemsAlignment}}">
+                {{#if showSaveSearch}}
+                <div class="action-item">
+                    <button data-rel="action-save-search">{{favoriteSearch}}</button>
+                </div>
+                {{/if}}
+
+                {{#if showSaveAlert}}
+                <div class="action-item">
+                    <button data-rel="action-save-search" data-save-alert>{{createAlertBtn}}</button>
+                </div>
+                {{/if}}
+
+                <div class="action-item">
+                    <button data-rel="action-menu" data-menu="sort">{{sortBy}}</button>
+
+                    <div data-rel="menu" data-menu="sort" class="menu menu-sort">
+                        <a href="javascript:void(0);" class="menu-option active" style="text-transform: {{sortMenuTextTransform}}" data-rel="menu-option" data-sort-field="changedOnUTC" data-sort-direction="desc">{{recentPosts}}</a>
+                        <a href="javascript:void(0);" class="menu-option" style="text-transform: {{sortMenuTextTransform}}" data-rel="menu-option" data-sort-field="changedOnUTC" data-sort-direction="asc">{{olderPosts}}</a>
+                        <a href="javascript:void(0);" class="menu-option" style="text-transform: {{sortMenuTextTransform}}" data-rel="menu-option" data-sort-field="jobName" data-sort-direction="asc">{{atoz}}</a>
+                        <a href="javascript:void(0);" class="menu-option" style="text-transform: {{sortMenuTextTransform}}" data-rel="menu-option" data-sort-field="jobName" data-sort-direction="desc">{{ztoa}}</a>
+                        <a href="javascript:void(0);" class="menu-option" style="text-transform: {{sortMenuTextTransform}}" data-rel="menu-option" data-sort-field="salaryFrom" data-sort-direction="desc">{{salaryHTL}}</a>
+                        <a href="javascript:void(0);" class="menu-option" style="text-transform: {{sortMenuTextTransform}}" data-rel="menu-option" data-sort-field="salaryFrom" data-sort-direction="asc">{{salaryLTH}}</a>
+                    </div>
+                </div>
+
+                <div class="action-item solid">
+                    <button class="toggle results" data-rel="button-toggle" data-toggle="results-view" data-view="List"><i class="fas fa-bars"></i></button>
+                    <button class="toggle results" data-rel="button-toggle" data-toggle="results-view" data-view="Map"><i class="fas fa-map-marker-alt"></i></button>
+                </div>
+            </div>
+         {{/if}}
+
+        <div class="shmResultViewPagination">
+            <div class="shmSearchResults shmResultView {{gridView}} grid"  data-rel="job-results-list" data-view="list"></div>
+        </div>
+        <div class="shmResultView shmSearchMapResults shmResultView {{gridView}}" data-rel="job-results-map" data-view="Map">
+            <div class="map" id="shmMap"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal favorite" data-rel="modal" data-modal="favorite">
+    <div class="content">
+        <div class="title" data-rel="title">{{favoriteSearch}}</div>
+
+        <div class="description" data-rel="description">{{favoriteDescription}}</div>
+
+        <label data-user-known="false">
+            {{userEmail}}
+            <input type="text" data-rel="value-favorite-email" />
+        </label>
+
+        <label>
+            {{favoriteName}}
+            <input type="text" data-rel="value-favorite-name" />
+        </label>
+
+        <label>
+            {{sendAlert}}
+            <input type="checkbox" data-rel="value-favorite-alert" />
+        </label>
+
+        <button class="submit" data-rel="action-save">
+            <span class="text">{{saveButton}}</span>
+            <lottie-player class="animation" data-rel="wait" src="{{dialogWaitAnimation}}" background="transparent" speed="1" loop></lottie-player>
+            <lottie-player class="animation" data-rel="okay" src="{{dialogOkayAnimation}}"  background="transparent"  speed="1" loop></lottie-player>
+        </button>
+        <button class="cancel" data-rel="action-close"><span class="text">{{closeButton}}</span></button>
+    </div>
+
+    <div class="shade"></div>
+</div>
+
+<div class="modal mobile sort" data-rel="modal" data-modal="sort">
+    <div class="content">
+        <div class="title" data-rel="title">{{sortSearch}}</div>
+
+        <button class="submit active" style="text-transform: {{sortMenuTextTransform}}" data-rel="menu-option" data-sort-field="changedOnUTC" data-sort-direction="desc"><span class="text">{{recentPosts}}</span></button>
+        <button class="submit" style="text-transform: {{sortMenuTextTransform}}" data-sort-field="changedOnUTC" data-sort-direction="asc"><span class="text">{{olderPosts}}</span></button>
+        <button class="submit" style="text-transform: {{sortMenuTextTransform}}" data-sort-field="jobName" data-sort-direction="asc"><span class="text">{{atoz}}</span></button>
+        <button class="submit" style="text-transform: {{sortMenuTextTransform}}" data-sort-field="jobName" data-sort-direction="desc"><span class="text">{{ztoa}}</span></button>
+        <button class="submit" style="text-transform: {{sortMenuTextTransform}}" data-sort-field="salaryFrom" data-sort-direction="desc"><span class="text">{{salaryHTL}}</span></button>
+        <button class="submit" style="text-transform: {{sortMenuTextTransform}}" data-sort-field="salaryFrom" data-sort-direction="asc"><span class="text">{{salaryLTH}}</span></button>
+
+        <button class="cancel" data-rel="action-close"><span class="text">{{closeButton}}</span></button>
+    </div>
+
+    <div class="shade"></div>
+</div>
+
+
