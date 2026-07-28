@@ -58,19 +58,19 @@ function optionsHtml(nodes: readonly FacetNode[], placeholder: string): string {
 // before we call loadJobs. If our controller runs first, an early site() call
 // fires with no dudaSiteID and the SDK's site() hangs — the dropdowns then never
 // populate. Seed readiness from the Duda-provided data.
-async function ensureSdkReady(shazamme: ShazammeClient, data: DudaData): Promise<void> {
+function ensureSdkReady(shazamme: ShazammeClient, data: DudaData): void {
   const s = shazamme as unknown as {
     _sid?: string;
     ready?: (sid: string, page?: unknown) => unknown;
   };
   const d = data as { siteId?: string; siteID?: string; page?: unknown };
   const sid = s._sid || d.siteId || d.siteID;
-  if (!sid || typeof s.ready !== 'function') return;
-  try {
-    const p = s.ready(sid, d.page);
-    if (p && typeof (p as Promise<unknown>).then === 'function') await (p as Promise<unknown>);
-  } catch {
-    /* the bootstrap catch handles a failed load */
+  if (!sid) return;
+  // Seed the dudaSiteID and kick the SDK's bootstrap once without blocking on it;
+  // loadJobs awaits site() itself, so we never wait on ready()'s slower work.
+  s._sid = s._sid || sid;
+  if (typeof s.ready === 'function') {
+    try { s.ready(s._sid, d.page); } catch { /* ignore */ }
   }
 }
 
@@ -253,7 +253,7 @@ export default function jobSearch(ctx: WidgetContext): void {
   }
 
   (async (): Promise<void> => {
-    await ensureSdkReady(shazamme, data);
+    ensureSdkReady(shazamme, data);
     try {
       const model = data.inEditor
         ? buildModel(FAKE_JOBS, cfg, { levels: SEARCH_LEVELS })

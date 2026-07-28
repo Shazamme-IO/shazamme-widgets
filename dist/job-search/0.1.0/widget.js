@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-07-28T23:18:00.148Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-07-28T23:25:50.017Z. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var module = module || {};
@@ -557,15 +557,17 @@ module.exports = (() => {
     const opts = nodes.slice().sort((a, b) => a.value.toLowerCase() < b.value.toLowerCase() ? -1 : 1).map((n) => `<option value="${n.id}">${n.value}</option>`).join("");
     return `<option value="">${placeholder}</option>${opts}`;
   }
-  async function ensureSdkReady(shazamme, data) {
+  function ensureSdkReady(shazamme, data) {
     const s = shazamme;
     const d = data;
     const sid = s._sid || d.siteId || d.siteID;
-    if (!sid || typeof s.ready !== "function") return;
-    try {
-      const p = s.ready(sid, d.page);
-      if (p && typeof p.then === "function") await p;
-    } catch (e) {
+    if (!sid) return;
+    s._sid = s._sid || sid;
+    if (typeof s.ready === "function") {
+      try {
+        s.ready(s._sid, d.page);
+      } catch (e) {
+      }
     }
   }
   function jobSearch(ctx) {
@@ -720,7 +722,7 @@ module.exports = (() => {
       });
     }
     (async () => {
-      await ensureSdkReady(shazamme, data);
+      ensureSdkReady(shazamme, data);
       try {
         const model = data.inEditor ? buildModel(FAKE_JOBS, cfg, { levels: SEARCH_LEVELS }) : await loadJobs(sdk, cfg, { levels: SEARCH_LEVELS });
         tree = buildHierarchy(
