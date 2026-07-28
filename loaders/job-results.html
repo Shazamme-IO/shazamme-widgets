@@ -1,0 +1,26 @@
+<!-- Shazamme job-results widget — paste into the Duda widget's JavaScript tab.
+     Pinned to release v0.1.0. To roll forward/back, change VER to another tag. -->
+<script>
+(function () {
+  var NAME = "job-results";
+  var VER  = "0.1.0";
+  var SRC  = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@v" +
+             VER + "/dist/" + NAME + "/" + VER + "/widget.min.js";
+
+  function run() {
+    var controller = window.ShazammeWidget && window.ShazammeWidget[NAME];
+    if (typeof controller === "function") {
+      controller({ element: element, data: data, $: $, shazamme: shazamme });
+    }
+  }
+
+  if (window.ShazammeWidget && window.ShazammeWidget[NAME]) {
+    run();
+  } else {
+    var s = document.createElement("script");
+    s.src = SRC;
+    s.onload = run;
+    document.head.appendChild(s);
+  }
+})();
+</script>
