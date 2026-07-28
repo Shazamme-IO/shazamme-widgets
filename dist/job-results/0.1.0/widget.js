@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-07-28T08:05:49.322Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-07-28T23:12:57.082Z. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var module = module || {};
@@ -996,6 +996,17 @@ module.exports = (() => {
     const payload = JSON.stringify({ facets: state.facets, keyword: state.keyword });
     window.history.replaceState(null, "", `#${encodeURIComponent(payload)}`);
   }
+  async function ensureSdkReady(shazamme, data) {
+    const s = shazamme;
+    const d = data;
+    const sid = s._sid || d.siteId || d.siteID;
+    if (!sid || typeof s.ready !== "function") return;
+    try {
+      const p = s.ready(sid, d.page);
+      if (p && typeof p.then === "function") await p;
+    } catch (e) {
+    }
+  }
   function jobResults(ctx) {
     const { element, data, shazamme } = ctx;
     const cfg = readConfig(data);
@@ -1169,6 +1180,7 @@ module.exports = (() => {
       });
     }
     (async () => {
+      await ensureSdkReady(shazamme, data);
       try {
         model = await loadJobs(sdk, cfg, { levels: MASTER_LEVELS });
       } catch (e) {

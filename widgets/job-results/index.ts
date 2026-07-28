@@ -66,6 +66,28 @@ function writeHash(state: QueryState): void {
   window.history.replaceState(null, '', `#${encodeURIComponent(payload)}`);
 }
 
+// Duda widgets initialise the injected SDK with shazamme.ready(dudaSiteID, page),
+// which sets its internal _sid. If our controller runs BEFORE that — a race on
+// pages where another widget bootstraps the SDK, or the norm on a page that has
+// only this widget — an early site() call fires with no dudaSiteID and the SDK's
+// site() hangs (it has no error path), so the widget never renders. Ensure the
+// SDK is ready first, seeding the dudaSiteID from the Duda-provided data.
+async function ensureSdkReady(shazamme: ShazammeClient, data: DudaData): Promise<void> {
+  const s = shazamme as unknown as {
+    _sid?: string;
+    ready?: (sid: string, page?: unknown) => unknown;
+  };
+  const d = data as { siteId?: string; siteID?: string; page?: unknown };
+  const sid = s._sid || d.siteId || d.siteID;
+  if (!sid || typeof s.ready !== 'function') return;
+  try {
+    const p = s.ready(sid, d.page);
+    if (p && typeof (p as Promise<unknown>).then === 'function') await (p as Promise<unknown>);
+  } catch {
+    /* loadJobs has its own fallback */
+  }
+}
+
 export default function jobResults(ctx: WidgetContext): void {
   const { element, data, shazamme } = ctx;
   const cfg: WidgetConfig = readConfig(data);
@@ -271,6 +293,7 @@ export default function jobResults(ctx: WidgetContext): void {
   }
 
   (async (): Promise<void> => {
+    await ensureSdkReady(shazamme, data);
     try {
       model = await loadJobs(sdk, cfg, { levels: MASTER_LEVELS });
     } catch {
