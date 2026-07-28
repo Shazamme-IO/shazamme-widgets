@@ -85,6 +85,12 @@ export default function jobSearch(ctx: WidgetContext): void {
   const button = $one(element, '[data-rel="search-button"]');
   if (!form || !button) return;
 
+  // Hide until populated so the raw search bar doesn't flash at full size before
+  // config visibility + dropdown options are applied (FOUC).
+  const root = $one<HTMLElement>(element, '.job-search-root') ?? (element as HTMLElement);
+  root.style.visibility = 'hidden';
+  const reveal = (): void => { root.style.visibility = ''; };
+
   let tree: FacetTree | null = null;
   let state: FormState = { ...emptyForm(), ...readHash() };
 
@@ -263,12 +269,14 @@ export default function jobSearch(ctx: WidgetContext): void {
         { levels: SEARCH_LEVELS },
       );
     } catch {
+      reveal();
       return;
     }
     applyVisibility();
     populateAll();
     applyStateToForm();
     wireEvents();
+    reveal();
     if (!data.inEditor) {
       subscribeCounter();
       // Pre-fill came from the hash — publish once so results filter immediately.

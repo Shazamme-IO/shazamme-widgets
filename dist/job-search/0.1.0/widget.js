@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-07-28T23:25:50.017Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-07-28T23:45:28.192Z. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var module = module || {};
@@ -571,6 +571,7 @@ module.exports = (() => {
     }
   }
   function jobSearch(ctx) {
+    var _a;
     const { element, data, shazamme } = ctx;
     const cfg = readConfig(data);
     const search = readSearchConfig(data);
@@ -579,6 +580,11 @@ module.exports = (() => {
     const form = $one(element, '[data-rel="search-form"]');
     const button = $one(element, '[data-rel="search-button"]');
     if (!form || !button) return;
+    const root = (_a = $one(element, ".job-search-root")) != null ? _a : element;
+    root.style.visibility = "hidden";
+    const reveal = () => {
+      root.style.visibility = "";
+    };
     let tree = null;
     let state = { ...emptyForm(), ...readHash() };
     function selectEl(field) {
@@ -592,16 +598,16 @@ module.exports = (() => {
       sel.value = keep;
     }
     function refreshRoles() {
-      var _a, _b;
+      var _a2, _b;
       if (!tree) return;
-      const prof = ((_a = state.facets.professionID) != null ? _a : [])[0];
+      const prof = ((_a2 = state.facets.professionID) != null ? _a2 : [])[0];
       const nodes = prof ? tree.children("roleID", prof) : (_b = tree.index.roleID) != null ? _b : [];
       populateSelect("roleID", "All Sub Classifications", nodes);
     }
     function populateAll() {
-      var _a, _b, _c, _d, _e;
+      var _a2, _b, _c, _d, _e;
       if (!tree) return;
-      populateSelect("jobTypeID", "All Job Types", (_a = tree.index.jobTypeID) != null ? _a : []);
+      populateSelect("jobTypeID", "All Job Types", (_a2 = tree.index.jobTypeID) != null ? _a2 : []);
       populateSelect("professionID", "All Classifications", (_b = tree.index.professionID) != null ? _b : []);
       populateSelect("workTypeID", "All Work Types", (_c = tree.index.workTypeID) != null ? _c : []);
       populateSelect("workModelID", "All Work Models", (_d = tree.index.workModelID) != null ? _d : []);
@@ -609,10 +615,10 @@ module.exports = (() => {
       refreshRoles();
     }
     function applyStateToForm() {
-      var _a;
+      var _a2;
       for (const [field, ids] of Object.entries(state.facets)) {
         const sel = selectEl(field);
-        if (sel) sel.value = (_a = ids[0]) != null ? _a : "";
+        if (sel) sel.value = (_a2 = ids[0]) != null ? _a2 : "";
       }
       const keyword = $one(form, '[data-rel="search-keyword"]');
       if (keyword) keyword.value = state.keyword;
@@ -687,9 +693,9 @@ module.exports = (() => {
         else hidePredictions();
       });
       delegate(element, "click", '[data-rel="geo-prediction"] .result-text', (ev, matched) => {
-        var _a, _b;
+        var _a2, _b;
         ev.preventDefault();
-        const raw = (_a = matched.getAttribute("data-value")) != null ? _a : "";
+        const raw = (_a2 = matched.getAttribute("data-value")) != null ? _a2 : "";
         const label = (_b = matched.getAttribute("data-label")) != null ? _b : "";
         hidePredictions();
         const geoInput = $one(form, '[data-rel="geo-input"]');
@@ -730,12 +736,14 @@ module.exports = (() => {
           { levels: SEARCH_LEVELS }
         );
       } catch (e) {
+        reveal();
         return;
       }
       applyVisibility();
       populateAll();
       applyStateToForm();
       wireEvents();
+      reveal();
       if (!data.inEditor) {
         subscribeCounter();
         if (!isEmpty(state)) publishFilterChange(sdk, toPayload(state));

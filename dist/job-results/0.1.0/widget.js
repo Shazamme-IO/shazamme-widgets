@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-07-28T23:25:50.017Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-07-28T23:45:28.192Z. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var module = module || {};
@@ -1010,6 +1010,7 @@ module.exports = (() => {
     }
   }
   function jobResults(ctx) {
+    var _a;
     const { element, data, shazamme } = ctx;
     const cfg = readConfig(data);
     const sdk = wrapSdk(shazamme);
@@ -1030,6 +1031,9 @@ module.exports = (() => {
     let lastPage = [];
     let currentUser = null;
     const mapView = mapContainer ? new MapView(mapContainer) : null;
+    const mainContainer = (_a = $one(element, "[data-shm-main]")) != null ? _a : element;
+    mainContainer.style.visibility = "hidden";
+    let revealed = false;
     function render() {
       const input = toFilterInput(state);
       const result = model.query(input, state.sort, state.page, cfg.pageSize);
@@ -1041,6 +1045,10 @@ module.exports = (() => {
       if (mapView == null ? void 0 : mapView.isReady) mapView.setJobs(result.page);
       writeHash(state);
       resultsReadyChannel.publish(sdk, { total: result.total });
+      if (!revealed) {
+        revealed = true;
+        mainContainer.style.visibility = "";
+      }
     }
     function applyConfigVisibility() {
       const locationBlock = $one(element, '[data-rel="filter-location-block"]');
@@ -1096,8 +1104,8 @@ module.exports = (() => {
         render();
       });
       delegate(sidebar, "input", '[data-rel="job-result-filter-keyword"]', (_ev, matched) => {
-        var _a;
-        const field = (_a = matched.getAttribute("data-keyword-field")) != null ? _a : "";
+        var _a2;
+        const field = (_a2 = matched.getAttribute("data-keyword-field")) != null ? _a2 : "";
         applyKeyword(field, matched.value);
       });
       delegate(sidebar, "click", '[data-rel="job-result-filter-keyword-clear"]', (_ev, matched) => {
@@ -1109,9 +1117,9 @@ module.exports = (() => {
         render();
       });
       delegate(sidebar, "click", '[data-rel="geo-prediction"] .result-text', (ev, matched) => {
-        var _a, _b;
+        var _a2, _b;
         ev.preventDefault();
-        const value = (_a = matched.getAttribute("data-value")) != null ? _a : "";
+        const value = (_a2 = matched.getAttribute("data-value")) != null ? _a2 : "";
         const label = (_b = matched.getAttribute("data-label")) != null ? _b : "";
         const host = $one(element, '[data-rel="geo-prediction"]');
         if (host) host.style.display = "none";
@@ -1146,17 +1154,17 @@ module.exports = (() => {
         });
       }
       delegate(details, "click", '[data-rel="paging-select"]', (ev, matched) => {
-        var _a;
+        var _a2;
         ev.preventDefault();
-        const p = parseInt((_a = matched.getAttribute("data-page-number")) != null ? _a : "0", 10);
+        const p = parseInt((_a2 = matched.getAttribute("data-page-number")) != null ? _a2 : "0", 10);
         state = patch(state, { page: Number.isNaN(p) ? 0 : p });
         render();
       });
       delegate(details, "click", '[data-rel="action-save-job"], [data-rel="action-unsave-job"]', (ev, matched) => {
-        var _a;
+        var _a2;
         ev.preventDefault();
         const card = matched.closest('[data-rel="article-job-result"]');
-        const jobID = (_a = card == null ? void 0 : card.getAttribute("data-id")) != null ? _a : "";
+        const jobID = (_a2 = card == null ? void 0 : card.getAttribute("data-id")) != null ? _a2 : "";
         if (jobID === "") return;
         const saving = matched.getAttribute("data-rel") === "action-save-job";
         matched.classList.toggle("active", saving);
@@ -1167,9 +1175,9 @@ module.exports = (() => {
     }
     function subscribe() {
       onFilterChange(sdk, (payload) => {
-        var _a, _b, _c, _d;
+        var _a2, _b, _c, _d;
         state = patch(state, {
-          facets: (_a = payload.state) != null ? _a : {},
+          facets: (_a2 = payload.state) != null ? _a2 : {},
           keyword: (_b = payload.keyword) != null ? _b : "",
           geo: (_c = payload.geo) != null ? _c : null,
           geoRange: (_d = payload.geoRange) != null ? _d : state.geoRange,

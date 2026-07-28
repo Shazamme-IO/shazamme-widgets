@@ -114,6 +114,12 @@ export default function jobResults(ctx: WidgetContext): void {
   let currentUser: LoginPayload | null = null;
   const mapView = mapContainer ? new MapView(mapContainer) : null;
 
+  // Hide the widget until the first render so the raw template (search bar, filter
+  // panels) never flashes before config visibility + cards are applied (FOUC).
+  const mainContainer = $one<HTMLElement>(element, '[data-shm-main]') ?? (element as HTMLElement);
+  mainContainer.style.visibility = 'hidden';
+  let revealed = false;
+
   function render(): void {
     const input = toFilterInput(state) as unknown as FilterState;
     const result = model.query(input, state.sort, state.page, cfg.pageSize);
@@ -125,6 +131,10 @@ export default function jobResults(ctx: WidgetContext): void {
     if (mapView?.isReady) mapView.setJobs(result.page);
     writeHash(state);
     resultsReadyChannel.publish(sdk, { total: result.total });
+    if (!revealed) {
+      revealed = true;
+      mainContainer.style.visibility = '';
+    }
   }
 
   function applyConfigVisibility(): void {
