@@ -89,7 +89,7 @@ export default function jobSearch(ctx: WidgetContext): void {
   // config visibility + dropdown options are applied (FOUC).
   const root = $one<HTMLElement>(element, '.job-search-root') ?? (element as HTMLElement);
   root.style.visibility = 'hidden';
-  const reveal = (): void => { root.style.visibility = ''; };
+  const reveal = (): void => { root.classList.add('shm-ready'); root.style.visibility = ''; };
 
   let tree: FacetTree | null = null;
   let state: FormState = { ...emptyForm(), ...readHash() };

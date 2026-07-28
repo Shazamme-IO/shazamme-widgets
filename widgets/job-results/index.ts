@@ -133,6 +133,9 @@ export default function jobResults(ctx: WidgetContext): void {
     resultsReadyChannel.publish(sdk, { total: result.total });
     if (!revealed) {
       revealed = true;
+      // Adds the class the CSS keys off (`:not(.shm-ready){visibility:hidden}`)
+      // so there's zero flash at first paint; also clears the JS-only fallback.
+      mainContainer.classList.add('shm-ready');
       mainContainer.style.visibility = '';
     }
   }
