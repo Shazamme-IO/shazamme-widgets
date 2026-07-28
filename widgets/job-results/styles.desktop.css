@@ -1,0 +1,27 @@
+/*
+ * job-results — desktop-only overrides (applied above the Duda mobile breakpoint).
+ * Mirrors the reference `.desktop` visibility split.
+ */
+
+.mobile {
+  display: none !important;
+}
+
+.section-tool-bar {
+  display: flex;
+  justify-content: right;
+  padding: 20px 0 10px;
+}
+
+.toolbar-main.mobile {
+  display: none !important;
+}
+
+/* Two-up card grid on wide viewports when grid view is active. */
+.shmSearchResults.shmResultView.grid {
+  grid-template-columns: 1fr;
+}
+
+.shmResultCountContainer.desktop {
+  display: flex;
+}

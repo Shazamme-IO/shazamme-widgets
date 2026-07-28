@@ -1,0 +1,92 @@
+<!--
+  job-results widget template — paste into the Duda widget HTML tab.
+  Cleaned + merged from job-results-2026 (hierarchy) and job-results-proxiomity
+  (map/geo). No Google nodes: the map container (#shmMap) is mounted by MapLibre
+  GL, loaded lazily by the controller only when the Map view is engaged.
+  The controller (index.ts) queries the data-rel / data-* hooks below and shows
+  or hides sections based on the widget config — the markup is intentionally
+  static so it renders identically inside and outside the Duda editor.
+-->
+<link rel="preconnect" href="https://sdk.shazamme.io" crossorigin>
+
+<div class="shmMainContainer" data-shm-main>
+  <!-- ===================== FILTER SIDEBAR ===================== -->
+  <div class="section-job-result-filter" data-rel="filter-sidebar">
+    <div class="shade mobile"></div>
+
+    <div class="shmFiltersContainer">
+      <!-- keyword -->
+      <div data-rel="filter-keyword-block">
+        <p class="filter-title">Keyword</p>
+        <div class="section-keyword-search">
+          <input class="filter-field" data-rel="job-result-filter-keyword" data-keyword-field="keyword" autocomplete="off" placeholder="Search jobs" />
+          <button class="filter-keyword-clear" data-rel="job-result-filter-keyword-clear" data-keyword-field="keyword" aria-label="Clear">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- location + proximity (shown when showLocationFilter) -->
+      <div data-rel="filter-location-block" hidden>
+        <p class="filter-title">Location</p>
+        <div class="section-keyword-search">
+          <input class="filter-field" data-rel="job-result-filter-keyword" data-keyword-field="location" data-geo-input autocomplete="off" placeholder="City, state or postcode" />
+          <div class="prediction-result" data-rel="geo-prediction"></div>
+          <button class="filter-keyword-clear" data-rel="job-result-filter-keyword-clear" data-keyword-field="location" aria-label="Clear">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+        <div data-rel="filter-proximity-block" hidden>
+          <label class="filter-label">Radius</label>
+          <div class="stack geo-range">
+            <input type="range" class="field" value="50" min="5" max="200" data-filter="geoRange" />
+            <label class="text" data-rel="geo-range-display">50 mi</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- classification + attribute facets rendered here by the controller -->
+      <div data-rel="filter-attribute"></div>
+    </div>
+
+    <div class="toolbar mobile">
+      <button class="submit full" data-rel="button-toggle-filter"><span class="text">Show results</span></button>
+    </div>
+  </div>
+
+  <!-- ===================== RESULTS ===================== -->
+  <div class="section-details">
+    <div class="shmResultCountContainer" style="justify-content: left">
+      <div class="shmResultStaticText">
+        <span class="shmResultCount" data-rel="label-results-count">0</span>
+        <span data-rel="label-results-message"> jobs found</span>
+      </div>
+    </div>
+
+    <div class="action-bar" data-rel="action-bar">
+      <div class="action-item">
+        <button data-rel="action-menu" data-menu="sort">Sort by</button>
+        <div data-rel="menu" data-menu="sort" class="menu menu-sort">
+          <a href="javascript:void(0);" class="menu-option active" data-rel="menu-option" data-sort-field="changedOnUTC" data-sort-direction="desc">Most recent</a>
+          <a href="javascript:void(0);" class="menu-option" data-rel="menu-option" data-sort-field="changedOnUTC" data-sort-direction="asc">Oldest</a>
+          <a href="javascript:void(0);" class="menu-option" data-rel="menu-option" data-sort-field="jobName" data-sort-direction="asc">A to Z</a>
+          <a href="javascript:void(0);" class="menu-option" data-rel="menu-option" data-sort-field="jobName" data-sort-direction="desc">Z to A</a>
+        </div>
+      </div>
+
+      <div class="action-item solid" data-rel="view-toggle">
+        <button class="toggle results active" data-rel="button-toggle" data-toggle="results-view" data-view="List">List</button>
+        <button class="toggle results" data-rel="button-toggle" data-toggle="results-view" data-view="Map">Map</button>
+      </div>
+    </div>
+
+    <div class="shmResultViewPagination">
+      <div class="shmSearchResults shmResultView grid" data-rel="job-results-list" data-view="list"></div>
+      <div class="section-job-results-paging" data-rel="job-results-paging"></div>
+    </div>
+
+    <div class="shmResultView shmSearchMapResults" data-rel="job-results-map" data-view="Map" hidden>
+      <div class="map" id="shmMap"></div>
+    </div>
+  </div>
+</div>

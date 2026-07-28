@@ -1,0 +1,87 @@
+{
+  "_comment": "Our own self-documenting settings manifest (NOT a Duda-imposed format). Each entry describes one config field that core/config readConfig() consumes off data.config.*. Types: string | boolean | number | select. Duda serialises every value as a string; readConfig coerces. Keep keys in sync with core/config WidgetConfig.",
+  "widget": "job-results",
+  "fields": [
+    {
+      "key": "jobCollection",
+      "label": "Job collection",
+      "type": "string",
+      "default": "",
+      "help": "Name/id of the Duda job collection to read from."
+    },
+    {
+      "key": "applicationPage",
+      "label": "Application page",
+      "type": "string",
+      "default": "",
+      "help": "Page slug the Apply Now button links to (?jobID=… is appended)."
+    },
+    {
+      "key": "detailsPage",
+      "label": "Job details page",
+      "type": "string",
+      "default": "",
+      "help": "Page slug for the job title / Read More links (/{detailsPage}/{slug})."
+    },
+    {
+      "key": "showJobTypeFilter",
+      "label": "Show Job Type filter",
+      "type": "boolean",
+      "default": false,
+      "help": "Top level of the classification tree (jobType)."
+    },
+    {
+      "key": "showClassificationFilter",
+      "label": "Show Classification filter",
+      "type": "boolean",
+      "default": false,
+      "help": "Middle level of the classification tree (profession / category)."
+    },
+    {
+      "key": "showSubClassificationFilter",
+      "label": "Show Sub-Classification filter",
+      "type": "boolean",
+      "default": false,
+      "help": "Leaf level of the classification tree (role / sub-category)."
+    },
+    {
+      "key": "useSubFilters",
+      "label": "Nest sub-filters",
+      "type": "boolean",
+      "default": false,
+      "help": "When on, render role under profession and city under state as nested children; when off, each is a separate flat group."
+    },
+    {
+      "key": "showLocationFilter",
+      "label": "Show Location filter",
+      "type": "boolean",
+      "default": false,
+      "help": "Location facets (state → city) plus the location keyword / proximity input."
+    },
+    {
+      "key": "proximityDiameter",
+      "label": "Radius unit",
+      "type": "select",
+      "default": "6371",
+      "options": [
+        { "value": "6371", "label": "Miles" },
+        { "value": "12756", "label": "Kilometres" }
+      ],
+      "help": "Radius slider unit for proximity search."
+    },
+    {
+      "key": "geocodeApiKey",
+      "label": "geocode.maps.co API key",
+      "type": "string",
+      "default": "",
+      "help": "Enables address geocoding + proximity/radius search. Empty = location filter degrades to a plain keyword match."
+    },
+    {
+      "key": "pageSize",
+      "label": "Results per page",
+      "type": "number",
+      "default": 20,
+      "help": "Number of job cards shown per page."
+    }
+  ]
+}

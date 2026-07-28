@@ -1,0 +1,423 @@
+/*
+ * job-results — base / shared styles. Ported and cleaned from the 2026 +
+ * proximity reference CSS. Google-map rules removed; the map container is styled
+ * for a MapLibre GL canvas. Desktop-only and mobile-only rules live in
+ * styles.desktop.css and styles.mobile.css.
+ */
+
+.shmMainContainer {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  color: #333;
+  padding-top: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 840px;
+}
+
+.shmMainContainer .stack {
+  display: flex;
+  white-space: nowrap;
+  align-items: center;
+}
+
+.hide,
+[hidden] {
+  display: none !important;
+}
+
+/* ===================== FILTER SIDEBAR ===================== */
+
+.section-job-result-filter {
+  flex-shrink: 0;
+  width: var(--shaz-filter-pct, 22%);
+  min-width: var(--shaz-filter-pct, 22%);
+  max-width: var(--shaz-filter-pct, 22%);
+  min-height: 840px;
+  box-sizing: border-box;
+}
+
+.shmFiltersContainer {
+  background: none;
+  padding: 10px;
+}
+
+.section-job-result-filter .filter-title {
+  font-size: 22px;
+  font-weight: bold;
+  text-align: left;
+  border-bottom: 1px solid #a6a6a6;
+  padding: 8px 5px;
+  margin: 0 3px 10px;
+}
+
+.section-job-result-filter .filter-label {
+  display: block;
+  padding: 0 10px;
+  text-align: left;
+}
+
+.section-job-result-filter .section-keyword-search {
+  position: relative;
+  margin-bottom: 10px;
+}
+
+.section-job-result-filter .filter-field {
+  padding: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.section-job-result-filter .filter-keyword-clear {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 8px;
+  margin: auto 0;
+  cursor: pointer;
+  z-index: 2;
+  display: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  color: #888;
+}
+
+.section-job-result-filter .filter-field:not(:placeholder-shown) + .filter-keyword-clear {
+  display: flex;
+}
+
+.section-job-result-filter .filter-toggle {
+  display: block;
+  font-size: 16px;
+  border-bottom: 1px solid #a6a6a6;
+  padding: 5px;
+  margin: 0 5px;
+  text-align: left;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.section-job-result-filter .filter-toggle.active {
+  font-weight: 500;
+  color: blue;
+}
+
+.section-job-result-filter .filter-toggle.filter-nested {
+  margin-left: 20px;
+  font-size: 0.95em;
+  border-bottom: 0;
+}
+
+.section-job-result-filter .filter-toggle input {
+  margin-right: 6px;
+}
+
+/* Radius slider */
+.section-job-result-filter .geo-range .field {
+  box-sizing: border-box;
+  appearance: none;
+  width: 100%;
+  height: 10px;
+  background-color: #b2b2b2;
+  border-radius: 50px;
+  margin: 10px 0;
+  border: 0;
+  outline: none;
+}
+
+.section-job-result-filter .geo-range .text {
+  margin-left: 10px;
+}
+
+/* Geo prediction dropdown */
+.prediction-result {
+  position: absolute;
+  width: 100%;
+  border: 1px solid #ccc;
+  display: none;
+  flex-direction: column;
+  overflow-y: auto;
+  box-shadow: rgba(0, 0, 0, 0.15) 0 2px 8px 0;
+  height: auto;
+  z-index: 99;
+  background: #fff;
+  padding: 10px 20px 20px;
+  text-align: left;
+  top: 100%;
+}
+
+.prediction-result .result-text {
+  display: block;
+  color: #000;
+  text-decoration: none;
+  padding: 4px 0;
+}
+
+.prediction-result .result-text.close {
+  text-align: right;
+  font-size: 0.7em;
+}
+
+/* ===================== RESULTS ===================== */
+
+.section-details {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: calc(100% - var(--shaz-filter-pct, 22%));
+  box-sizing: border-box;
+  min-height: 840px;
+}
+
+.shmResultCountContainer {
+  display: flex;
+  margin: 10px 0;
+}
+
+.shmResultCount {
+  font-weight: bold;
+  color: #333;
+}
+
+.action-bar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.action-bar .action-item {
+  display: inline-block;
+  position: relative;
+  margin: 5px;
+}
+
+.action-bar .action-item button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  min-width: 60px;
+  height: 40px;
+  padding: 5px 12px;
+  font-family: inherit;
+  background: #333;
+  color: white;
+  border: 0;
+}
+
+.action-bar .action-item.solid .toggle.active {
+  background: #000;
+}
+
+.menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  border: 1px solid #a6a6a6;
+  padding: 5px;
+  z-index: 3;
+  background: white;
+}
+
+.action-item:hover .menu {
+  display: block;
+}
+
+.menu-option {
+  display: block;
+  text-transform: uppercase;
+  text-align: left;
+  text-decoration: none;
+  color: #333;
+  margin: 5px 0;
+  white-space: nowrap;
+}
+
+.menu-option.active {
+  font-weight: 500;
+  color: blue;
+}
+
+.shmSearchResults.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0 15px;
+}
+
+/* ===================== JOB CARD (standard) ===================== */
+
+.shmJobResultStd {
+  position: relative;
+  padding: 20px;
+  margin: 10px 0;
+  min-height: 100px;
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #ececec;
+  transition: background 0.25s;
+}
+
+.shmJobResultStd .shmJobItemUpper {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.shmJobResultStd .shmJobtitle {
+  font-size: 25px;
+  color: #333;
+  text-align: left;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.shmJobResultStd .shmTimePostedText {
+  text-align: left;
+  font-size: 14px;
+  color: #666;
+}
+
+.shmJobResultStd .shmTag.job-new {
+  display: inline-block;
+  padding: 4px;
+  background-color: #00ffff;
+  font-size: 10px;
+  margin-bottom: 5px;
+}
+
+.shmJobResultStd .shmCTA {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.shmJobResultStd .shmSaveJob,
+.shmJobResultStd .shmSendEmail {
+  cursor: pointer;
+  text-decoration: none;
+  color: #333;
+  white-space: nowrap;
+}
+
+.shmJobResultStd .shmSaveJob:not(.active) .active {
+  display: none;
+}
+
+.shmJobResultStd .shmSaveJob.active .inactive {
+  display: none;
+}
+
+.shmJobResultStd .shmJobDetails {
+  display: block;
+  margin: 10px 0;
+}
+
+.shmJobResultStd .shmJobDetailsLeft {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  text-align: left;
+}
+
+.shmJobResultStd .shmDetailsDivider {
+  margin: 5px 10px;
+  color: inherit;
+}
+
+.shmJobResultStd .shmButtonLinks {
+  display: flex;
+  flex-wrap: nowrap;
+}
+
+.shmJobResultStd .shmButtonLinks a {
+  margin-right: 20px;
+  padding: 5px 15px;
+  border: 1px solid #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.shmJobResultStd .shmButtonLinks .shmGoReadMore {
+  background: #fff;
+  color: #000;
+}
+
+.shmJobResultStd .shmButtonLinks .shmGoApply {
+  background: #000;
+  color: #fff;
+  border: 0;
+}
+
+.shmNoResults {
+  padding: 40px 20px;
+  text-align: center;
+  color: #666;
+}
+
+/* ===================== PAGINATION ===================== */
+
+.section-job-results-paging {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin: 20px 0;
+}
+
+.section-job-results-paging .button-paging {
+  display: inline-block;
+  padding: 3px 8px;
+  margin: 0 5px;
+  border: 0;
+  text-decoration: none;
+  color: #666;
+  cursor: pointer;
+  background: none;
+}
+
+.section-job-results-paging .button-paging.active {
+  font-weight: 500;
+  background: #ececec;
+}
+
+.section-job-results-paging .button-paging.disabled {
+  color: #000;
+  cursor: default;
+}
+
+/* ===================== MAP (MapLibre GL) ===================== */
+
+.shmSearchMapResults {
+  width: 100%;
+  height: 700px;
+  min-height: 500px;
+  max-height: 80vh;
+  box-sizing: border-box;
+  margin-top: 20px;
+}
+
+.shmMainContainer #shmMap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
+}
+
+.gmapInfoContainer {
+  min-width: 200px;
+}
+
+.gmapTitle {
+  font-size: 18px;
+  font-weight: bold;
+}
