@@ -42,10 +42,13 @@ sets `window.ShazammeWidget["<name>"] = <controller>`. So once the script loads,
 `window.ShazammeWidget[NAME]` is the controller function the loader calls with
 `{ element, data, $, shazamme }`.
 
-## CDN URL is prospective
+## Live URLs (v0.1.0)
 
-The repo is **not yet pushed to GitHub**, so the jsDelivr URL
-(`cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@v<VER>/…`) will only resolve
-after the repo is public and a `v<VER>` tag is pushed. Phase 6 serves via
-jsDelivr@tag (zero infra); Phase 7 promotes to CloudFront under
-`js/widget/<name>/<VER>/` and flips `SRC` accordingly.
+The repo is public and `v0.1.0` is tagged, so these resolve now:
+
+- job-results: `https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@v0.1.0/dist/job-results/0.1.0/widget.min.js`
+- job-search: `https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@v0.1.0/dist/job-search/0.1.0/widget.min.js`
+
+Paste-ready loaders are in [`job-results.html`](./job-results.html) and
+[`job-search.html`](./job-search.html). Phase 7 promotes the same bundle to
+CloudFront under `js/widget/<name>/<VER>/` and flips `SRC` accordingly.
