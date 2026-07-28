@@ -71,14 +71,27 @@ describe('jobResults controller', () => {
     expect(element.querySelector('[data-rel="label-results-count"]')?.textContent).toBe('1');
   });
 
-  it('short-circuits network in editor mode', async () => {
+  it('loads real jobs in editor mode (no short-circuit)', async () => {
     let fetched = false;
     const client = stubClient(makeJobs());
-    const spied: ShazammeClient = { ...client, fetch: () => { fetched = true; return Promise.resolve(makeJobs()); } };
+    const spied: ShazammeClient = { ...client, fetch: (d) => { fetched = true; return client.fetch(d); } };
     jobResults({ element, data: { config: {}, inEditor: true }, $: {}, shazamme: spied });
     await flush();
+    await flush();
 
-    expect(fetched).toBe(false);
-    expect(element.querySelector('[data-rel="job-results-list"]')?.querySelectorAll('.shmJobResultStd').length).toBe(2);
+    expect(fetched).toBe(true);
+    expect(element.querySelector('[data-rel="job-results-list"]')?.querySelectorAll('.shmJobResultStd').length)
+      .toBe(makeJobs().values.length);
+  });
+
+  it('falls back to sample cards when the live fetch fails', async () => {
+    const client = stubClient(makeJobs());
+    const spied: ShazammeClient = { ...client, fetch: () => Promise.reject(new Error('no sdk')) };
+    jobResults({ element, data: { config: {}, inEditor: true }, $: {}, shazamme: spied });
+    await flush();
+    await flush();
+
+    expect(element.querySelector('[data-rel="job-results-list"]')?.querySelectorAll('.shmJobResultStd').length)
+      .toBe(2);
   });
 });

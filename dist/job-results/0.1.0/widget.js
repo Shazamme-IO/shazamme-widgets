@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-07-28T07:03:23.530Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-07-28T08:05:49.322Z. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var module = module || {};
@@ -1170,15 +1170,14 @@ module.exports = (() => {
     }
     (async () => {
       try {
-        model = data.inEditor ? buildModel(FAKE_JOBS, cfg, { levels: MASTER_LEVELS }) : await loadJobs(sdk, cfg, { levels: MASTER_LEVELS });
+        model = await loadJobs(sdk, cfg, { levels: MASTER_LEVELS });
       } catch (e) {
-        setHtml(listEl, '<div class="shmNoResults">Unable to load jobs right now.</div>');
-        return;
+        model = buildModel(FAKE_JOBS, cfg, { levels: MASTER_LEVELS });
       }
       tree = buildFacetTree(model.all());
       applyConfigVisibility();
       wireEvents();
-      if (!data.inEditor) subscribe();
+      subscribe();
       render();
     })();
   }

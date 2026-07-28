@@ -272,17 +272,16 @@ export default function jobResults(ctx: WidgetContext): void {
 
   (async (): Promise<void> => {
     try {
-      model = data.inEditor
-        ? buildModel(FAKE_JOBS, cfg, { levels: MASTER_LEVELS })
-        : await loadJobs(sdk, cfg, { levels: MASTER_LEVELS });
+      model = await loadJobs(sdk, cfg, { levels: MASTER_LEVELS });
     } catch {
-      setHtml(listEl, '<div class="shmNoResults">Unable to load jobs right now.</div>');
-      return;
+      // Fall back to sample cards only if the live fetch fails (e.g. no SDK in
+      // a bare editor context) — real jobs are always attempted first.
+      model = buildModel(FAKE_JOBS, cfg, { levels: MASTER_LEVELS });
     }
     tree = buildFacetTree(model.all());
     applyConfigVisibility();
     wireEvents();
-    if (!data.inEditor) subscribe();
+    subscribe();
     render();
   })();
 }
