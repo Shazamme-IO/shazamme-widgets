@@ -1,0 +1,199 @@
+/*
+ * job-search widget styles — ported from jobsearch2026prox-css, cleaned:
+ * dropped the multi-select chip UI, Google .gapi-map, and active-filters bar
+ * (not rebuilt). Class/hook names track template.html (which the controller
+ * owns). Fields are a wrapping flex row that stacks on narrow viewports.
+ */
+
+.job-search-root {
+  width: 100%;
+  overflow: visible;
+}
+
+.mainSearchContainer {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  box-sizing: border-box;
+  padding: 8px 4px;
+  width: 100%;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  min-height: 62px;
+}
+
+/* Each field column. */
+.flex-items-js {
+  flex: 1;
+  min-width: 140px;
+  margin: 4px 5px;
+  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
+  font-family: inherit;
+}
+
+.flex-items-js[hidden] {
+  display: none;
+}
+
+/* All native inputs + selects share one base style. */
+.flex-items-js input,
+.flex-items-js select {
+  width: 100%;
+  height: 46px;
+  box-sizing: border-box;
+  padding: 0 14px;
+  background: #fff;
+  border: 1.5px solid #d1d1d1;
+  font-family: inherit;
+  font-size: 14px;
+  color: #222;
+  outline: none;
+  margin-top: 0;
+  vertical-align: middle;
+}
+
+/* Native select — replace the browser arrow with a matching triangle. */
+.flex-items-js select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpolygon points='0,0 10,0 5,7' fill='%23666666'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 13px center;
+  background-size: 10px 7px;
+}
+
+.flex-items-js input:focus,
+.flex-items-js select:focus {
+  border-color: #666;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.06);
+}
+
+.flex-items-js input::placeholder {
+  color: #aaa;
+}
+
+/* Search button. */
+.flex-items-js .searchBtn {
+  width: 100%;
+  height: 46px;
+  box-sizing: border-box;
+  padding: 0 20px;
+  background: #000;
+  color: #fff;
+  border: 1.5px solid #000;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 0;
+  transition: opacity 0.15s ease;
+  letter-spacing: 0.01em;
+}
+
+.flex-items-js .searchBtn:hover {
+  opacity: 0.82;
+}
+
+.searchBtn .count:empty {
+  display: none;
+}
+
+/* Geo proximity: text input over a radius slider. */
+.flex-items-js .split {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  position: relative;
+}
+
+.flex-items-js .split input {
+  flex: 1;
+  margin: 0;
+}
+
+.geo-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.geo-range input[type="range"] {
+  flex: 1;
+  height: auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.geo-range .text {
+  font-size: 13px;
+  color: #444;
+  white-space: nowrap;
+}
+
+/* Typeahead prediction panel (geocode suggestions). */
+.prediction-result {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background: #fff;
+  border: 1.5px solid #d1d1d1;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  display: none;
+  flex-direction: column;
+  overflow-y: auto;
+  max-height: 220px;
+  z-index: 99;
+  padding: 6px 0;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.prediction-result .result-text {
+  display: block;
+  color: #222;
+  text-decoration: none;
+  padding: 9px 16px;
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.prediction-result .result-text:hover {
+  background: #f5f5f5;
+}
+
+.prediction-result .result-text.close {
+  text-align: right;
+  font-size: 0.72em;
+  padding: 4px 10px;
+  color: #888;
+}
+
+/* Stack fields on narrow viewports. */
+@media (max-width: 640px) {
+  .mainSearchContainer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .flex-items-js {
+    width: 100%;
+    flex: none;
+  }
+}

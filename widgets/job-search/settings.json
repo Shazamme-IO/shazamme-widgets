@@ -1,0 +1,94 @@
+{
+  "_comment": "Self-documenting settings manifest (NOT a Duda-imposed format). Each entry is one config field read off data.config.* — the search-specific toggles via form-state readSearchConfig(), the shared geo/collection fields via core/config readConfig(). Duda serialises every value as a string; the readers coerce. Legacy config keys are preserved so existing sites keep working.",
+  "widget": "job-search",
+  "fields": [
+    {
+      "key": "showSearchKeyword",
+      "label": "Show Keyword search",
+      "type": "boolean",
+      "default": true,
+      "help": "Free-text keyword input. Publishes as `keyword` in the filter payload."
+    },
+    {
+      "key": "showJobType",
+      "label": "Show Job Type dropdown",
+      "type": "boolean",
+      "default": false,
+      "help": "Top level of the classification tree (jobTypeID)."
+    },
+    {
+      "key": "showJobCategories",
+      "label": "Show Classification dropdown",
+      "type": "boolean",
+      "default": false,
+      "help": "Middle level (professionID / category)."
+    },
+    {
+      "key": "ShowSubCalssifications",
+      "label": "Show Sub-Classification dropdown",
+      "type": "boolean",
+      "default": false,
+      "help": "Leaf level (roleID). Options depend on the selected classification."
+    },
+    {
+      "key": "showWorkType",
+      "label": "Show Work Type dropdown",
+      "type": "boolean",
+      "default": false,
+      "help": "Flat attribute facet (workTypeID)."
+    },
+    {
+      "key": "showWorkModel",
+      "label": "Show Work Model dropdown",
+      "type": "boolean",
+      "default": false,
+      "help": "Flat attribute facet (workModelID)."
+    },
+    {
+      "key": "showLocationSearch",
+      "label": "Show Location dropdown",
+      "type": "boolean",
+      "default": false,
+      "help": "State/region facet (state)."
+    },
+    {
+      "key": "showGeoSearch",
+      "label": "Show proximity search",
+      "type": "boolean",
+      "default": false,
+      "help": "Location text input with geocode.maps.co suggestions + a radius slider. Requires geocodeApiKey; publishes `geo` + `geoRange`."
+    },
+    {
+      "key": "buttonText",
+      "label": "Search button text",
+      "type": "string",
+      "default": "Search",
+      "help": "Label on the submit button."
+    },
+    {
+      "key": "geocodeApiKey",
+      "label": "geocode.maps.co API key",
+      "type": "string",
+      "default": "",
+      "help": "Enables the proximity location suggestions + radius search. Empty = proximity field stays hidden."
+    },
+    {
+      "key": "proximityDiameter",
+      "label": "Radius unit",
+      "type": "select",
+      "default": "6371",
+      "options": [
+        { "value": "6371", "label": "Miles" },
+        { "value": "12756", "label": "Kilometres" }
+      ],
+      "help": "Radius slider unit for proximity search (shared with the results widget)."
+    },
+    {
+      "key": "jobCollection",
+      "label": "Job collection",
+      "type": "string",
+      "default": "",
+      "help": "Name/id of the Duda job collection the dropdowns are populated from."
+    }
+  ]
+}
