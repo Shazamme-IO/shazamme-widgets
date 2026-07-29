@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-07-29T09:01:05.919Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-07-29T09:10:12.884Z. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var module = module || {};
@@ -1042,12 +1042,17 @@ module.exports = (() => {
     let revealed = false;
     let hideNav = false;
     const GRID_COLUMNS = "repeat(auto-fill, minmax(max(190px, calc((100% - 60px) / 4)), 1fr))";
+    const fillRow = (el2) => {
+      if (!el2) return;
+      el2.style.setProperty("flex", "1 1 100%", "important");
+      el2.style.setProperty("max-width", "100%", "important");
+      el2.style.setProperty("width", "100%", "important");
+    };
     function applyGridLayout() {
       if (!hideNav) return;
-      const d = details;
-      d.style.setProperty("flex", "1 1 100%", "important");
-      d.style.setProperty("max-width", "100%", "important");
-      d.style.setProperty("width", "100%", "important");
+      fillRow(element);
+      fillRow(element.parentElement);
+      fillRow(details);
       const list = listEl;
       list.style.setProperty("display", "grid", "important");
       list.style.setProperty("grid-template-columns", GRID_COLUMNS, "important");

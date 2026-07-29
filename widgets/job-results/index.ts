@@ -148,12 +148,21 @@ export default function jobResults(ctx: WidgetContext): void {
   // (the reconcile drops inline style); inline `!important` beats the site's
   // `.grid { grid-template-columns: 1fr !important }`.
   const GRID_COLUMNS = 'repeat(auto-fill, minmax(max(190px, calc((100% - 60px) / 4)), 1fr))';
+  const fillRow = (el: HTMLElement | null | undefined): void => {
+    if (!el) return;
+    el.style.setProperty('flex', '1 1 100%', 'important');
+    el.style.setProperty('max-width', '100%', 'important');
+    el.style.setProperty('width', '100%', 'important');
+  };
   function applyGridLayout(): void {
     if (!hideNav) return;
-    const d = details as HTMLElement;
-    d.style.setProperty('flex', '1 1 100%', 'important');
-    d.style.setProperty('max-width', '100%', 'important');
-    d.style.setProperty('width', '100%', 'important');
+    // Claim the full row even when the widget was dropped into a narrow Duda column
+    // (e.g. sharing a flex row with another element), so the full-width grid isn't
+    // squeezed to 2 columns. Verified live: a 560px half-row widget expands to the
+    // full ~1350px → 4 columns. We only do this in the no-left-nav layout.
+    fillRow(element as HTMLElement);
+    fillRow((element as HTMLElement).parentElement);
+    fillRow(details as HTMLElement);
     const list = listEl as HTMLElement;
     list.style.setProperty('display', 'grid', 'important');
     list.style.setProperty('grid-template-columns', GRID_COLUMNS, 'important');
