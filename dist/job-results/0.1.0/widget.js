@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-07-29T09:10:12.884Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-07-29T11:55:15.726Z. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var module = module || {};
@@ -1057,6 +1057,11 @@ module.exports = (() => {
       list.style.setProperty("display", "grid", "important");
       list.style.setProperty("grid-template-columns", GRID_COLUMNS, "important");
       list.style.setProperty("gap", "20px", "important");
+      list.querySelectorAll(".shmJobResultStd").forEach((card) => {
+        card.style.setProperty("grid-column", "auto", "important");
+        card.style.setProperty("width", "auto", "important");
+        card.style.setProperty("margin", "0", "important");
+      });
     }
     function render() {
       const input = toFilterInput(state);

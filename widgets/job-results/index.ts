@@ -167,6 +167,16 @@ export default function jobResults(ctx: WidgetContext): void {
     list.style.setProperty('display', 'grid', 'important');
     list.style.setProperty('grid-template-columns', GRID_COLUMNS, 'important');
     list.style.setProperty('gap', '20px', 'important');
+    // Duda's flex runtime stamps `grid-column: 1 / 4` on our cards, making each
+    // one span 3 tracks and fill the whole row (the widget looked single-column
+    // even though the grid had 4 tracks). Force every card back into a single
+    // cell; inline `!important` beats Duda's stylesheet rule. Re-run on every
+    // render() so re-inserted cards get reset too.
+    list.querySelectorAll<HTMLElement>('.shmJobResultStd').forEach((card) => {
+      card.style.setProperty('grid-column', 'auto', 'important');
+      card.style.setProperty('width', 'auto', 'important');
+      card.style.setProperty('margin', '0', 'important');
+    });
   }
 
   function render(): void {

@@ -127,5 +127,14 @@ describe('jobResults controller', () => {
     expect(list?.querySelectorAll('.shmJobResultStd').length).toBe(2);
     expect(list?.style.display).toBe('grid');
     expect(list?.style.getPropertyValue('grid-template-columns')).toContain('repeat(');
+
+    // Duda's flex runtime stamps `grid-column: 1 / 4` on cards, collapsing the
+    // grid to one card per row. Every card must be reset to a single cell so the
+    // 4-across layout actually renders. Regression guard.
+    const cards = list!.querySelectorAll<HTMLElement>('.shmJobResultStd');
+    expect(cards.length).toBeGreaterThan(0);
+    cards.forEach((card) => {
+      expect(card.style.getPropertyValue('grid-column')).toBe('auto');
+    });
   });
 });
