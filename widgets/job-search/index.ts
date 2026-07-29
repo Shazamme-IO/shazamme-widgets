@@ -90,7 +90,14 @@ export default function jobSearch(ctx: WidgetContext): void {
   // config visibility + dropdown options are applied (FOUC).
   const root = $one<HTMLElement>(element, '.job-search-root') ?? (element as HTMLElement);
   root.style.visibility = 'hidden';
-  const reveal = (): void => { root.classList.add('shm-ready'); root.style.visibility = ''; };
+  // Reveal must survive Duda re-asserting the widget root's class attribute
+  // (which strips our runtime-added `shm-ready`). Inline `visibility:visible
+  // !important` wins over the CSS `:not(.shm-ready){visibility:hidden!important}`
+  // hide regardless of the class; the class add covers non-Duda contexts.
+  const reveal = (): void => {
+    root.classList.add('shm-ready');
+    root.style.setProperty('visibility', 'visible', 'important');
+  };
 
   let tree: FacetTree | null = null;
   let state: FormState = { ...emptyForm(), ...readHash() };

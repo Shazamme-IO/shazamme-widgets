@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-07-29T00:08:12.718Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-07-29T00:17:17.921Z. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var module = module || {};
@@ -1048,7 +1048,7 @@ module.exports = (() => {
       if (!revealed) {
         revealed = true;
         mainContainer.classList.add("shm-ready");
-        mainContainer.style.visibility = "";
+        mainContainer.style.setProperty("visibility", "visible", "important");
       }
     }
     function applyConfigVisibility() {

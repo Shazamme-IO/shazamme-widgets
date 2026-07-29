@@ -133,10 +133,12 @@ export default function jobResults(ctx: WidgetContext): void {
     resultsReadyChannel.publish(sdk, { total: result.total });
     if (!revealed) {
       revealed = true;
-      // Adds the class the CSS keys off (`:not(.shm-ready){visibility:hidden}`)
-      // so there's zero flash at first paint; also clears the JS-only fallback.
+      // Reveal must survive Duda re-asserting the widget root's class attribute
+      // (which strips the runtime-added `shm-ready`). Inline `visibility:visible
+      // !important` wins over the CSS `:not(.shm-ready){visibility:hidden!important}`
+      // hide regardless of the class; the class add covers non-Duda contexts.
       mainContainer.classList.add('shm-ready');
-      mainContainer.style.visibility = '';
+      mainContainer.style.setProperty('visibility', 'visible', 'important');
     }
   }
 
