@@ -171,6 +171,12 @@ export default function jobResults(ctx: WidgetContext): void {
       d.style.flex = '1 1 100%';
       d.style.maxWidth = '100%';
       d.style.width = '100%';
+      // Full-width → lay cards out in a responsive multi-column grid (≈4 across on
+      // desktop, collapsing on smaller screens) — the talent/paxus reference look.
+      const list = listEl as HTMLElement;
+      list.style.display = 'grid';
+      list.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
+      list.style.gap = '20px';
     }
   }
 

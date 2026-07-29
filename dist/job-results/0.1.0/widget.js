@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-07-29T05:23:23.957Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-07-29T05:27:22.563Z. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var module = module || {};
@@ -1070,6 +1070,10 @@ module.exports = (() => {
         d.style.flex = "1 1 100%";
         d.style.maxWidth = "100%";
         d.style.width = "100%";
+        const list = listEl;
+        list.style.display = "grid";
+        list.style.gridTemplateColumns = "repeat(auto-fill, minmax(300px, 1fr))";
+        list.style.gap = "20px";
       }
     }
     function setView(view) {
