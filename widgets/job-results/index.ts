@@ -161,6 +161,17 @@ export default function jobResults(ctx: WidgetContext): void {
     if (proximityBlock) proximityBlock.hidden = !proximityEnabled;
     const display = $one(element, '[data-rel="geo-range-display"]');
     if (display) display.textContent = `${state.geoRange} ${cfg.proximityDiameter === '6371' ? 'mi' : 'km'}`;
+
+    // Drop the left-nav sidebar and let results fill the row (reference layout).
+    // Inline styles keep it self-contained regardless of the site's flex/grid CSS;
+    // filtering still comes from the job-search bar over the pub/sub bus.
+    if (cfg.hideLeftNav) {
+      (sidebar as HTMLElement).style.display = 'none';
+      const d = details as HTMLElement;
+      d.style.flex = '1 1 100%';
+      d.style.maxWidth = '100%';
+      d.style.width = '100%';
+    }
   }
 
   function setView(view: string | null): void {

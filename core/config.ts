@@ -24,6 +24,9 @@ export interface WidgetConfig {
   proximityDiameter: ProximityDiameter;
   geocodeApiKey: string;
   pageSize: number;
+  /** Drop the left-nav filter sidebar and render results full-width (filters then
+   *  live on the job-search bar — the paxus/talent reference layout). */
+  hideLeftNav: boolean;
 }
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -76,5 +79,6 @@ export function readConfig(data: DudaData | undefined): WidgetConfig {
     proximityDiameter: coerceProximity(c.proximityDiameter),
     geocodeApiKey: coerceStr(c.geocodeApiKey),
     pageSize: coerceInt(c.pageSize, DEFAULT_PAGE_SIZE),
+    hideLeftNav: coerceBool(c.hideLeftNav),
   };
 }

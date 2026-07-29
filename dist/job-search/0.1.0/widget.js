@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-07-29T01:36:11.063Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-07-29T05:23:23.957Z. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var module = module || {};
@@ -70,7 +70,8 @@ module.exports = (() => {
       showLocationFilter: coerceBool(c.showLocationFilter),
       proximityDiameter: coerceProximity(c.proximityDiameter),
       geocodeApiKey: coerceStr(c.geocodeApiKey),
-      pageSize: coerceInt(c.pageSize, DEFAULT_PAGE_SIZE)
+      pageSize: coerceInt(c.pageSize, DEFAULT_PAGE_SIZE),
+      hideLeftNav: coerceBool(c.hideLeftNav)
     };
   }
 

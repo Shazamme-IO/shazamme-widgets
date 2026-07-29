@@ -94,4 +94,24 @@ describe('jobResults controller', () => {
     expect(element.querySelector('[data-rel="job-results-list"]')?.querySelectorAll('.shmJobResultStd').length)
       .toBe(2);
   });
+
+  it('keeps the left-nav sidebar by default', async () => {
+    jobResults({ element, data: { config: {} }, $: {}, shazamme: stubClient(makeJobs()) });
+    await flush();
+    await flush();
+
+    const sidebar = element.querySelector<HTMLElement>('[data-rel="filter-sidebar"]');
+    expect(sidebar?.style.display).not.toBe('none');
+  });
+
+  it('drops the left-nav sidebar when hideLeftNav is set', async () => {
+    jobResults({ element, data: { config: { hideLeftNav: 'true' } }, $: {}, shazamme: stubClient(makeJobs()) });
+    await flush();
+    await flush();
+
+    const sidebar = element.querySelector<HTMLElement>('[data-rel="filter-sidebar"]');
+    expect(sidebar?.style.display).toBe('none');
+    // results still render full-width
+    expect(element.querySelector('[data-rel="job-results-list"]')?.querySelectorAll('.shmJobResultStd').length).toBe(2);
+  });
 });
