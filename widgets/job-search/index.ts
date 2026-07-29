@@ -4,6 +4,12 @@
 // submits (fix #10: set state, then a single publish — never a per-change
 // fan-out), and the separate results widget applies it over the pub/sub bus.
 //
+// Classification, sub-classification and location are custom MULTI-SELECT
+// checkbox dropdowns (ported from the jobsearch2026 reference): each holds an
+// array of ids in state.facets[field]; picking a classification resets the
+// sub-classification and re-derives its options. Job type / work type / work
+// model stay single native <select>s.
+//
 // Registered by the build as window.ShazammeWidget["job-search"]; Duda calls the
 // default export with { element, data, $, shazamme }.
 
@@ -35,6 +41,16 @@ interface WidgetContext {
   $: unknown;
   shazamme: ShazammeClient;
 }
+
+// The three multi-select fields and the classification→sub-classification link.
+const MS_FIELDS = [
+  { field: 'professionID', rel: 'field-classification' },
+  { field: 'roleID', rel: 'field-subClassification' },
+  { field: 'state', rel: 'field-location' },
+] as const;
+const MS_CLASS = 'professionID';
+const MS_SUBCLASS = 'roleID';
+const MS_FIELD_SET = new Set<string>(MS_FIELDS.map((m) => m.field));
 
 const FAKE_JOBS: Job[] = [
   { jobID: '1', jobName: 'Senior Nurse', category: 'Healthcare', professionID: 'health', jobType: 'Permanent', jobTypeID: 'perm', roleID: 'nurse', subCategory: 'Nurse', workType: 'Full Time', workTypeID: 'ft', state: 'England', changedOnUTC: new Date().toISOString() },
@@ -127,28 +143,158 @@ export default function jobSearch(ctx: WidgetContext): void {
     sel.value = keep;
   }
 
-  function refreshRoles(): void {
-    if (!tree) return;
-    const prof = (state.facets.professionID ?? [])[0];
-    const nodes = prof ? tree.children('roleID', prof) : tree.index.roleID ?? [];
-    populateSelect('roleID', 'All Sub Classifications', nodes);
+  function dropKey(facets: Record<string, string[]>, key: string): Record<string, string[]> {
+    const next = { ...facets };
+    delete next[key];
+    return next;
+  }
+
+  function escapeHtml(s: string): string {
+    return s.replace(/[&<>"']/g, (c) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string),
+    );
+  }
+
+  // --- Multi-select (classification / sub-classification / location) -------
+  function msWrapper(field: string): HTMLElement | null {
+    return $one<HTMLElement>(form!, `[data-ms-field="${field}"]`);
+  }
+
+  /** Role options depend on the selected classifications (union of children). */
+  function roleNodes(): readonly FacetNode[] {
+    if (!tree) return [];
+    const profs = state.facets.professionID ?? [];
+    if (!profs.length) return tree.index.roleID ?? [];
+    const seen = new Map<string, FacetNode>();
+    for (const p of profs) for (const n of tree.children('roleID', p)) seen.set(n.id, n);
+    return [...seen.values()];
+  }
+
+  function nodesForField(field: string): readonly FacetNode[] {
+    if (!tree) return [];
+    if (field === MS_SUBCLASS) return roleNodes();
+    return tree.index[field] ?? [];
+  }
+
+  function labelFor(field: string, id: string): string {
+    return nodesForField(field).find((n) => n.id === id)?.value ?? id;
+  }
+
+  function renderMsDropdown(field: string): void {
+    const wrap = msWrapper(field);
+    const dd = wrap ? $one<HTMLElement>(wrap, '[data-rel="ms-dropdown"]') : null;
+    if (!dd) return;
+    const selected = new Set(state.facets[field] ?? []);
+    const nodes = nodesForField(field)
+      .slice()
+      .sort((a, b) => (a.value.toLowerCase() < b.value.toLowerCase() ? -1 : 1));
+    if (!nodes.length) {
+      dd.innerHTML = '<div class="ms-empty">No options available</div>';
+      return;
+    }
+    dd.innerHTML = nodes
+      .map(
+        (n) =>
+          `<label class="ms-option"><input type="checkbox" value="${escapeHtml(n.id)}"` +
+          `${selected.has(n.id) ? ' checked' : ''} />` +
+          `<span class="ms-option-label">${escapeHtml(n.value)}</span></label>`,
+      )
+      .join('');
+  }
+
+  function renderMsBox(field: string): void {
+    const wrap = msWrapper(field);
+    const box = wrap ? $one<HTMLElement>(wrap, '[data-rel="ms-box"]') : null;
+    if (!box) return;
+    const placeholder = $one<HTMLElement>(box, '.multi-select-placeholder');
+    const count = (state.facets[field] ?? []).length;
+    box.querySelector('.ms-count')?.remove();
+    if (count === 0) {
+      if (placeholder) placeholder.style.display = '';
+    } else {
+      if (placeholder) placeholder.style.display = 'none';
+      const span = document.createElement('span');
+      span.className = 'ms-count';
+      span.textContent = count === 1 ? '1 selected' : `${count} selected`;
+      box.insertBefore(span, box.querySelector('.multi-select-arrow'));
+    }
+  }
+
+  function updateSubLock(): void {
+    const wrap = msWrapper(MS_SUBCLASS);
+    const box = wrap ? $one<HTMLElement>(wrap, '[data-rel="ms-box"]') : null;
+    if (!box) return;
+    const hasClass = (state.facets[MS_CLASS] ?? []).length > 0;
+    box.classList.toggle('subcategory-disabled', !hasClass);
+    if (!hasClass) box.classList.remove('open');
+  }
+
+  function renderMsField(field: string): void {
+    renderMsDropdown(field);
+    renderMsBox(field);
+  }
+
+  function renderAllMs(): void {
+    for (const { field } of MS_FIELDS) renderMsField(field);
+    updateSubLock();
+  }
+
+  function toggleMsSelection(field: string, id: string, checked: boolean): void {
+    const current = state.facets[field] ?? [];
+    const next = checked
+      ? [...new Set([...current, id])]
+      : current.filter((x) => x !== id);
+    state = patchForm(state, {
+      facets: next.length ? { ...state.facets, [field]: next } : dropKey(state.facets, field),
+    });
+    // Changing the classification set resets the sub-classification + its options.
+    if (field === MS_CLASS) {
+      state = patchForm(state, { facets: dropKey(state.facets, MS_SUBCLASS) });
+      renderMsField(MS_SUBCLASS);
+    }
+    updateSubLock();
+    renderMsBox(field);
+    renderChips();
+  }
+
+  function closeAllMs(): void {
+    form!
+      .querySelectorAll('.multi-select-dropdown.open, .multi-select-box.open')
+      .forEach((el) => el.classList.remove('open'));
+  }
+
+  function toggleMsDropdown(box: HTMLElement): void {
+    const wrap = box.closest('.multi-select-wrapper');
+    const dd = wrap ? wrap.querySelector('.multi-select-dropdown') : null;
+    const isOpen = !!dd && dd.classList.contains('open');
+    closeAllMs();
+    if (!isOpen && dd) {
+      dd.classList.add('open');
+      box.classList.add('open');
+    }
   }
 
   function populateAll(): void {
     if (!tree) return;
     populateSelect('jobTypeID', 'All Job Types', tree.index.jobTypeID ?? []);
-    populateSelect('professionID', 'All Classifications', tree.index.professionID ?? []);
     populateSelect('workTypeID', 'All Work Types', tree.index.workTypeID ?? []);
     populateSelect('workModelID', 'All Work Models', tree.index.workModelID ?? []);
+    // Backward-compat: if a site still runs the pre-multi-select template, these
+    // fields are native <select>s — populate them. populateSelect no-ops when the
+    // field is multi-select markup (no <select>), and renderAllMs no-ops when the
+    // multi-select wrappers are absent, so both templates work off one bundle.
+    populateSelect('professionID', 'All Classifications', tree.index.professionID ?? []);
+    populateSelect('roleID', 'All Sub Classifications', tree.index.roleID ?? []);
     populateSelect('state', 'All Locations', tree.index.state ?? []);
-    refreshRoles();
+    renderAllMs();
   }
 
   function applyStateToForm(): void {
-    for (const [field, ids] of Object.entries(state.facets)) {
-      const sel = selectEl(field);
-      if (sel) sel.value = ids[0] ?? '';
-    }
+    form!.querySelectorAll<HTMLSelectElement>('select[data-filter]').forEach((sel) => {
+      const field = sel.getAttribute('data-filter');
+      if (field) sel.value = (state.facets[field] ?? [])[0] ?? '';
+    });
+    renderAllMs();
     const keyword = $one<HTMLInputElement>(form!, '[data-rel="search-keyword"]');
     if (keyword) keyword.value = state.keyword;
     const geoInput = $one<HTMLInputElement>(form!, '[data-rel="geo-input"]');
@@ -181,10 +327,16 @@ export default function jobSearch(ctx: WidgetContext): void {
   /** Read the live form controls into a fresh FormState (geo carried from state). */
   function readForm(): FormState {
     const facets: Record<string, string[]> = {};
+    // Single native selects.
     form!.querySelectorAll<HTMLSelectElement>('select[data-filter]').forEach((sel) => {
       const field = sel.getAttribute('data-filter');
       if (field && sel.value) facets[field] = [sel.value];
     });
+    // Multi-select fields have no <select> — carry their arrays from state.
+    for (const { field } of MS_FIELDS) {
+      const ids = state.facets[field] ?? [];
+      if (ids.length) facets[field] = ids;
+    }
     const keywordEl = $one<HTMLInputElement>(form!, '[data-rel="search-keyword"]');
     const keyword = keywordEl ? keywordEl.value.trim() : '';
     return patchForm(state, { facets, keyword });
@@ -204,12 +356,19 @@ export default function jobSearch(ctx: WidgetContext): void {
   }
 
   // --- Active-filter chips ------------------------------------------------
-  // Show each selected dropdown as a removable pill under the search bar
-  // (reference: aequor). Chips reflect the LIVE selects so they appear as soon
-  // as a value is picked; the ✕ clears that filter and re-applies immediately.
-  function escapeHtml(s: string): string {
-    return s.replace(/[&<>"']/g, (c) =>
-      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string),
+  // Show each selection as a removable pill under the search bar. Multi-select
+  // fields contribute one chip per selected id (so each can be removed
+  // individually); single selects contribute one chip. The ✕ clears that
+  // selection and re-applies immediately.
+  function chipHtml(field: string, id: string, label: string): string {
+    return (
+      `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;` +
+      `background:#eef1f5;border-radius:16px;font-size:13px;line-height:1.4;color:#333;">` +
+      `${escapeHtml(label)}` +
+      `<button type="button" data-chip-remove="${escapeHtml(field)}" data-chip-id="${escapeHtml(id)}" ` +
+      `aria-label="Remove ${escapeHtml(label)}" ` +
+      `style="border:0;background:transparent;cursor:pointer;font-size:15px;` +
+      `line-height:1;color:#666;padding:0;">&times;</button></span>`
     );
   }
 
@@ -227,33 +386,39 @@ export default function jobSearch(ctx: WidgetContext): void {
   function renderChips(): void {
     const host = chipContainer();
     const chips: string[] = [];
+    // Multi-select: one chip per selected id.
+    for (const { field } of MS_FIELDS) {
+      for (const id of state.facets[field] ?? []) {
+        chips.push(chipHtml(field, id, labelFor(field, id)));
+      }
+    }
+    // Single native selects.
     form!.querySelectorAll<HTMLSelectElement>('select[data-filter]').forEach((sel) => {
       const field = sel.getAttribute('data-filter');
       if (!field || !sel.value) return;
       const label = sel.selectedOptions[0]?.text ?? sel.value;
-      chips.push(
-        `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;` +
-          `background:#eef1f5;border-radius:16px;font-size:13px;line-height:1.4;color:#333;">` +
-          `${escapeHtml(label)}` +
-          `<button type="button" data-chip-remove="${escapeHtml(field)}" ` +
-          `aria-label="Remove ${escapeHtml(label)}" ` +
-          `style="border:0;background:transparent;cursor:pointer;font-size:15px;` +
-          `line-height:1;color:#666;padding:0;">&times;</button></span>`,
-      );
+      chips.push(chipHtml(field, '', label));
     });
     host.innerHTML = chips.join('');
     host.style.display = chips.length ? 'flex' : 'none';
   }
 
-  function removeChip(field: string): void {
-    const sel = selectEl(field);
-    if (sel) sel.value = '';
-    state = patchForm(state, { facets: dropKey(state.facets, field) });
-    if (field === 'professionID') {
-      const role = selectEl('roleID');
-      if (role) role.value = '';
-      state = patchForm(state, { facets: dropKey(state.facets, 'roleID') });
-      refreshRoles();
+  function removeChip(field: string, id: string): void {
+    if (MS_FIELD_SET.has(field) && id) {
+      const next = (state.facets[field] ?? []).filter((x) => x !== id);
+      state = patchForm(state, {
+        facets: next.length ? { ...state.facets, [field]: next } : dropKey(state.facets, field),
+      });
+      if (field === MS_CLASS) {
+        state = patchForm(state, { facets: dropKey(state.facets, MS_SUBCLASS) });
+        renderMsField(MS_SUBCLASS);
+      }
+      renderMsField(field);
+      updateSubLock();
+    } else {
+      const sel = selectEl(field);
+      if (sel) sel.value = '';
+      state = patchForm(state, { facets: dropKey(state.facets, field) });
     }
     submit(); // reads the form back into state, publishes, and re-renders chips
   }
@@ -278,28 +443,37 @@ export default function jobSearch(ctx: WidgetContext): void {
       }
     });
 
-    // Any dropdown change re-renders the active-filter chips (live reflection).
+    // Single-select change re-renders the active-filter chips (live reflection).
     delegate(form!, 'change', 'select[data-filter]', () => renderChips());
 
-    // Chip ✕ clears that filter and re-applies immediately.
+    // Chip ✕ clears that selection and re-applies immediately.
     delegate(chipContainer(), 'click', '[data-chip-remove]', (ev, matched) => {
       ev.preventDefault();
       const field = matched.getAttribute('data-chip-remove');
-      if (field) removeChip(field);
+      const id = matched.getAttribute('data-chip-id') ?? '';
+      if (field) removeChip(field, id);
     });
 
-    // Dependent dropdown: profession drives role options. No publish.
-    delegate(form!, 'change', 'select[data-filter="professionID"]', (_ev, matched) => {
-      const val = (matched as HTMLSelectElement).value;
-      state = patchForm(state, {
-        facets: val ? { ...state.facets, professionID: [val] } : dropKey(state.facets, 'professionID'),
-      });
-      // Selecting a new classification resets the sub-classification.
-      state = patchForm(state, { facets: dropKey(state.facets, 'roleID') });
-      const roleSel = selectEl('roleID');
-      if (roleSel) roleSel.value = '';
-      refreshRoles();
+    // Multi-select: open/close the dropdown on box click.
+    delegate(form!, 'click', '[data-rel="ms-box"]', (ev, matched) => {
+      ev.stopPropagation();
+      if (matched.classList.contains('subcategory-disabled')) return;
+      toggleMsDropdown(matched as HTMLElement);
     });
+
+    // Multi-select: toggle a selection on checkbox change (live, no publish).
+    delegate(form!, 'change', '.multi-select-dropdown input[type="checkbox"]', (_ev, matched) => {
+      const input = matched as HTMLInputElement;
+      const wrap = input.closest('[data-ms-field]');
+      const field = wrap?.getAttribute('data-ms-field');
+      if (field) toggleMsSelection(field, input.value, input.checked);
+    });
+
+    // Clicking inside a dropdown must not bubble to the box (would re-toggle).
+    delegate(form!, 'click', '.multi-select-dropdown', (ev) => ev.stopPropagation());
+
+    // Clicking anywhere else closes any open dropdown.
+    document.addEventListener('click', closeAllMs);
 
     if (!proximityEnabled) return;
 
@@ -336,12 +510,6 @@ export default function jobSearch(ctx: WidgetContext): void {
   function hidePredictions(): void {
     const host = $one<HTMLElement>(element, '[data-rel="geo-prediction"]');
     if (host) host.style.display = 'none';
-  }
-
-  function dropKey(facets: Record<string, string[]>, key: string): Record<string, string[]> {
-    const next = { ...facets };
-    delete next[key];
-    return next;
   }
 
   function subscribeCounter(): void {

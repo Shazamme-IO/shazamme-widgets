@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-07-29T11:55:15.726Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-07-29T13:04:07.022Z. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var module = module || {};
@@ -547,6 +547,14 @@ module.exports = (() => {
   }
 
   // widgets/job-search/index.ts
+  var MS_FIELDS = [
+    { field: "professionID", rel: "field-classification" },
+    { field: "roleID", rel: "field-subClassification" },
+    { field: "state", rel: "field-location" }
+  ];
+  var MS_CLASS = "professionID";
+  var MS_SUBCLASS = "roleID";
+  var MS_FIELD_SET = new Set(MS_FIELDS.map((m) => m.field));
   var FAKE_JOBS = [
     { jobID: "1", jobName: "Senior Nurse", category: "Healthcare", professionID: "health", jobType: "Permanent", jobTypeID: "perm", roleID: "nurse", subCategory: "Nurse", workType: "Full Time", workTypeID: "ft", state: "England", changedOnUTC: (/* @__PURE__ */ new Date()).toISOString() },
     { jobID: "2", jobName: "Site Engineer", category: "Construction", professionID: "build", jobType: "Contract", jobTypeID: "contract", roleID: "eng", subCategory: "Engineer", workType: "Contract", workTypeID: "ct", state: "Scotland", changedOnUTC: (/* @__PURE__ */ new Date()).toISOString() }
@@ -604,29 +612,135 @@ module.exports = (() => {
       sel.innerHTML = optionsHtml(nodes, placeholder);
       sel.value = keep;
     }
-    function refreshRoles() {
+    function dropKey(facets, key) {
+      const next = { ...facets };
+      delete next[key];
+      return next;
+    }
+    function escapeHtml2(s) {
+      return s.replace(
+        /[&<>"']/g,
+        (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
+      );
+    }
+    function msWrapper(field) {
+      return $one(form, `[data-ms-field="${field}"]`);
+    }
+    function roleNodes() {
       var _a2, _b;
-      if (!tree) return;
-      const prof = ((_a2 = state.facets.professionID) != null ? _a2 : [])[0];
-      const nodes = prof ? tree.children("roleID", prof) : (_b = tree.index.roleID) != null ? _b : [];
-      populateSelect("roleID", "All Sub Classifications", nodes);
+      if (!tree) return [];
+      const profs = (_a2 = state.facets.professionID) != null ? _a2 : [];
+      if (!profs.length) return (_b = tree.index.roleID) != null ? _b : [];
+      const seen = /* @__PURE__ */ new Map();
+      for (const p of profs) for (const n of tree.children("roleID", p)) seen.set(n.id, n);
+      return [...seen.values()];
+    }
+    function nodesForField(field) {
+      var _a2;
+      if (!tree) return [];
+      if (field === MS_SUBCLASS) return roleNodes();
+      return (_a2 = tree.index[field]) != null ? _a2 : [];
+    }
+    function labelFor(field, id) {
+      var _a2, _b;
+      return (_b = (_a2 = nodesForField(field).find((n) => n.id === id)) == null ? void 0 : _a2.value) != null ? _b : id;
+    }
+    function renderMsDropdown(field) {
+      var _a2;
+      const wrap = msWrapper(field);
+      const dd = wrap ? $one(wrap, '[data-rel="ms-dropdown"]') : null;
+      if (!dd) return;
+      const selected = new Set((_a2 = state.facets[field]) != null ? _a2 : []);
+      const nodes = nodesForField(field).slice().sort((a, b) => a.value.toLowerCase() < b.value.toLowerCase() ? -1 : 1);
+      if (!nodes.length) {
+        dd.innerHTML = '<div class="ms-empty">No options available</div>';
+        return;
+      }
+      dd.innerHTML = nodes.map(
+        (n) => `<label class="ms-option"><input type="checkbox" value="${escapeHtml2(n.id)}"${selected.has(n.id) ? " checked" : ""} /><span class="ms-option-label">${escapeHtml2(n.value)}</span></label>`
+      ).join("");
+    }
+    function renderMsBox(field) {
+      var _a2, _b;
+      const wrap = msWrapper(field);
+      const box = wrap ? $one(wrap, '[data-rel="ms-box"]') : null;
+      if (!box) return;
+      const placeholder = $one(box, ".multi-select-placeholder");
+      const count = ((_a2 = state.facets[field]) != null ? _a2 : []).length;
+      (_b = box.querySelector(".ms-count")) == null ? void 0 : _b.remove();
+      if (count === 0) {
+        if (placeholder) placeholder.style.display = "";
+      } else {
+        if (placeholder) placeholder.style.display = "none";
+        const span = document.createElement("span");
+        span.className = "ms-count";
+        span.textContent = count === 1 ? "1 selected" : `${count} selected`;
+        box.insertBefore(span, box.querySelector(".multi-select-arrow"));
+      }
+    }
+    function updateSubLock() {
+      var _a2;
+      const wrap = msWrapper(MS_SUBCLASS);
+      const box = wrap ? $one(wrap, '[data-rel="ms-box"]') : null;
+      if (!box) return;
+      const hasClass = ((_a2 = state.facets[MS_CLASS]) != null ? _a2 : []).length > 0;
+      box.classList.toggle("subcategory-disabled", !hasClass);
+      if (!hasClass) box.classList.remove("open");
+    }
+    function renderMsField(field) {
+      renderMsDropdown(field);
+      renderMsBox(field);
+    }
+    function renderAllMs() {
+      for (const { field } of MS_FIELDS) renderMsField(field);
+      updateSubLock();
+    }
+    function toggleMsSelection(field, id, checked) {
+      var _a2;
+      const current = (_a2 = state.facets[field]) != null ? _a2 : [];
+      const next = checked ? [.../* @__PURE__ */ new Set([...current, id])] : current.filter((x) => x !== id);
+      state = patchForm(state, {
+        facets: next.length ? { ...state.facets, [field]: next } : dropKey(state.facets, field)
+      });
+      if (field === MS_CLASS) {
+        state = patchForm(state, { facets: dropKey(state.facets, MS_SUBCLASS) });
+        renderMsField(MS_SUBCLASS);
+      }
+      updateSubLock();
+      renderMsBox(field);
+      renderChips();
+    }
+    function closeAllMs() {
+      form.querySelectorAll(".multi-select-dropdown.open, .multi-select-box.open").forEach((el) => el.classList.remove("open"));
+    }
+    function toggleMsDropdown(box) {
+      const wrap = box.closest(".multi-select-wrapper");
+      const dd = wrap ? wrap.querySelector(".multi-select-dropdown") : null;
+      const isOpen = !!dd && dd.classList.contains("open");
+      closeAllMs();
+      if (!isOpen && dd) {
+        dd.classList.add("open");
+        box.classList.add("open");
+      }
     }
     function populateAll() {
-      var _a2, _b, _c, _d, _e;
+      var _a2, _b, _c, _d, _e, _f;
       if (!tree) return;
       populateSelect("jobTypeID", "All Job Types", (_a2 = tree.index.jobTypeID) != null ? _a2 : []);
-      populateSelect("professionID", "All Classifications", (_b = tree.index.professionID) != null ? _b : []);
-      populateSelect("workTypeID", "All Work Types", (_c = tree.index.workTypeID) != null ? _c : []);
-      populateSelect("workModelID", "All Work Models", (_d = tree.index.workModelID) != null ? _d : []);
-      populateSelect("state", "All Locations", (_e = tree.index.state) != null ? _e : []);
-      refreshRoles();
+      populateSelect("workTypeID", "All Work Types", (_b = tree.index.workTypeID) != null ? _b : []);
+      populateSelect("workModelID", "All Work Models", (_c = tree.index.workModelID) != null ? _c : []);
+      populateSelect("professionID", "All Classifications", (_d = tree.index.professionID) != null ? _d : []);
+      populateSelect("roleID", "All Sub Classifications", (_e = tree.index.roleID) != null ? _e : []);
+      populateSelect("state", "All Locations", (_f = tree.index.state) != null ? _f : []);
+      renderAllMs();
     }
     function applyStateToForm() {
-      var _a2;
-      for (const [field, ids] of Object.entries(state.facets)) {
-        const sel = selectEl(field);
-        if (sel) sel.value = (_a2 = ids[0]) != null ? _a2 : "";
-      }
+      form.querySelectorAll("select[data-filter]").forEach((sel) => {
+        var _a2, _b;
+        const field = sel.getAttribute("data-filter");
+        if (field) sel.value = (_b = ((_a2 = state.facets[field]) != null ? _a2 : [])[0]) != null ? _b : "";
+      });
+      renderAllMs();
       const keyword = $one(form, '[data-rel="search-keyword"]');
       if (keyword) keyword.value = state.keyword;
       const geoInput = $one(form, '[data-rel="geo-input"]');
@@ -654,11 +768,16 @@ module.exports = (() => {
       if (label) label.textContent = search.buttonText;
     }
     function readForm() {
+      var _a2;
       const facets = {};
       form.querySelectorAll("select[data-filter]").forEach((sel) => {
         const field = sel.getAttribute("data-filter");
         if (field && sel.value) facets[field] = [sel.value];
       });
+      for (const { field } of MS_FIELDS) {
+        const ids = (_a2 = state.facets[field]) != null ? _a2 : [];
+        if (ids.length) facets[field] = ids;
+      }
       const keywordEl = $one(form, '[data-rel="search-keyword"]');
       const keyword = keywordEl ? keywordEl.value.trim() : "";
       return patchForm(state, { facets, keyword });
@@ -672,11 +791,8 @@ module.exports = (() => {
       }
       renderChips();
     }
-    function escapeHtml2(s) {
-      return s.replace(
-        /[&<>"']/g,
-        (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
-      );
+    function chipHtml(field, id, label) {
+      return `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:#eef1f5;border-radius:16px;font-size:13px;line-height:1.4;color:#333;">${escapeHtml2(label)}<button type="button" data-chip-remove="${escapeHtml2(field)}" data-chip-id="${escapeHtml2(id)}" aria-label="Remove ${escapeHtml2(label)}" style="border:0;background:transparent;cursor:pointer;font-size:15px;line-height:1;color:#666;padding:0;">&times;</button></span>`;
     }
     function chipContainer() {
       let host = $one(element, '[data-rel="active-chips"]');
@@ -689,29 +805,41 @@ module.exports = (() => {
       return host;
     }
     function renderChips() {
+      var _a2;
       const host = chipContainer();
       const chips = [];
+      for (const { field } of MS_FIELDS) {
+        for (const id of (_a2 = state.facets[field]) != null ? _a2 : []) {
+          chips.push(chipHtml(field, id, labelFor(field, id)));
+        }
+      }
       form.querySelectorAll("select[data-filter]").forEach((sel) => {
-        var _a2, _b;
+        var _a3, _b;
         const field = sel.getAttribute("data-filter");
         if (!field || !sel.value) return;
-        const label = (_b = (_a2 = sel.selectedOptions[0]) == null ? void 0 : _a2.text) != null ? _b : sel.value;
-        chips.push(
-          `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:#eef1f5;border-radius:16px;font-size:13px;line-height:1.4;color:#333;">${escapeHtml2(label)}<button type="button" data-chip-remove="${escapeHtml2(field)}" aria-label="Remove ${escapeHtml2(label)}" style="border:0;background:transparent;cursor:pointer;font-size:15px;line-height:1;color:#666;padding:0;">&times;</button></span>`
-        );
+        const label = (_b = (_a3 = sel.selectedOptions[0]) == null ? void 0 : _a3.text) != null ? _b : sel.value;
+        chips.push(chipHtml(field, "", label));
       });
       host.innerHTML = chips.join("");
       host.style.display = chips.length ? "flex" : "none";
     }
-    function removeChip(field) {
-      const sel = selectEl(field);
-      if (sel) sel.value = "";
-      state = patchForm(state, { facets: dropKey(state.facets, field) });
-      if (field === "professionID") {
-        const role = selectEl("roleID");
-        if (role) role.value = "";
-        state = patchForm(state, { facets: dropKey(state.facets, "roleID") });
-        refreshRoles();
+    function removeChip(field, id) {
+      var _a2;
+      if (MS_FIELD_SET.has(field) && id) {
+        const next = ((_a2 = state.facets[field]) != null ? _a2 : []).filter((x) => x !== id);
+        state = patchForm(state, {
+          facets: next.length ? { ...state.facets, [field]: next } : dropKey(state.facets, field)
+        });
+        if (field === MS_CLASS) {
+          state = patchForm(state, { facets: dropKey(state.facets, MS_SUBCLASS) });
+          renderMsField(MS_SUBCLASS);
+        }
+        renderMsField(field);
+        updateSubLock();
+      } else {
+        const sel = selectEl(field);
+        if (sel) sel.value = "";
+        state = patchForm(state, { facets: dropKey(state.facets, field) });
       }
       submit();
     }
@@ -732,20 +860,25 @@ module.exports = (() => {
       });
       delegate(form, "change", "select[data-filter]", () => renderChips());
       delegate(chipContainer(), "click", "[data-chip-remove]", (ev, matched) => {
+        var _a2;
         ev.preventDefault();
         const field = matched.getAttribute("data-chip-remove");
-        if (field) removeChip(field);
+        const id = (_a2 = matched.getAttribute("data-chip-id")) != null ? _a2 : "";
+        if (field) removeChip(field, id);
       });
-      delegate(form, "change", 'select[data-filter="professionID"]', (_ev, matched) => {
-        const val = matched.value;
-        state = patchForm(state, {
-          facets: val ? { ...state.facets, professionID: [val] } : dropKey(state.facets, "professionID")
-        });
-        state = patchForm(state, { facets: dropKey(state.facets, "roleID") });
-        const roleSel = selectEl("roleID");
-        if (roleSel) roleSel.value = "";
-        refreshRoles();
+      delegate(form, "click", '[data-rel="ms-box"]', (ev, matched) => {
+        ev.stopPropagation();
+        if (matched.classList.contains("subcategory-disabled")) return;
+        toggleMsDropdown(matched);
       });
+      delegate(form, "change", '.multi-select-dropdown input[type="checkbox"]', (_ev, matched) => {
+        const input = matched;
+        const wrap = input.closest("[data-ms-field]");
+        const field = wrap == null ? void 0 : wrap.getAttribute("data-ms-field");
+        if (field) toggleMsSelection(field, input.value, input.checked);
+      });
+      delegate(form, "click", ".multi-select-dropdown", (ev) => ev.stopPropagation());
+      document.addEventListener("click", closeAllMs);
       if (!proximityEnabled) return;
       delegate(form, "input", '[data-rel="geo-input"]', (_ev, matched) => {
         const value = matched.value;
@@ -775,11 +908,6 @@ module.exports = (() => {
     function hidePredictions() {
       const host = $one(element, '[data-rel="geo-prediction"]');
       if (host) host.style.display = "none";
-    }
-    function dropKey(facets, key) {
-      const next = { ...facets };
-      delete next[key];
-      return next;
     }
     function subscribeCounter() {
       const counter = $one(element, '[data-rel="results-count"]');

@@ -21,14 +21,24 @@
       <select data-filter="jobTypeID"><option value="">All Job Types</option></select>
     </div>
 
-    <!-- classification / profession -->
-    <div class="flex-items-js" data-rel="field-classification" hidden>
-      <select data-filter="professionID"><option value="">All Classifications</option></select>
+    <!-- classification / profession (multi-select) -->
+    <div class="flex-items-js multi-select-wrapper" data-rel="field-classification" data-ms-field="professionID" hidden>
+      <div class="multi-select-box" data-rel="ms-box">
+        <span class="multi-select-placeholder">All Classifications</span>
+        <span class="multi-select-arrow">&#9660;</span>
+      </div>
+      <div class="multi-select-tags" data-rel="ms-tags"></div>
+      <div class="multi-select-dropdown" data-rel="ms-dropdown"></div>
     </div>
 
-    <!-- sub-classification / role (depends on classification) -->
-    <div class="flex-items-js" data-rel="field-subClassification" hidden>
-      <select data-filter="roleID"><option value="">All Sub Classifications</option></select>
+    <!-- sub-classification / role (multi-select, depends on classification) -->
+    <div class="flex-items-js multi-select-wrapper" data-rel="field-subClassification" data-ms-field="roleID" hidden>
+      <div class="multi-select-box" data-rel="ms-box">
+        <span class="multi-select-placeholder">All Sub Classifications</span>
+        <span class="multi-select-arrow">&#9660;</span>
+      </div>
+      <div class="multi-select-tags" data-rel="ms-tags"></div>
+      <div class="multi-select-dropdown" data-rel="ms-dropdown"></div>
     </div>
 
     <!-- work type -->
@@ -41,9 +51,14 @@
       <select data-filter="workModelID"><option value="">All Work Models</option></select>
     </div>
 
-    <!-- location / state -->
-    <div class="flex-items-js" data-rel="field-location" hidden>
-      <select data-filter="state"><option value="">All Locations</option></select>
+    <!-- location / state (multi-select) -->
+    <div class="flex-items-js multi-select-wrapper" data-rel="field-location" data-ms-field="state" hidden>
+      <div class="multi-select-box" data-rel="ms-box">
+        <span class="multi-select-placeholder">All Locations</span>
+        <span class="multi-select-arrow">&#9660;</span>
+      </div>
+      <div class="multi-select-tags" data-rel="ms-tags"></div>
+      <div class="multi-select-dropdown" data-rel="ms-dropdown"></div>
     </div>
 
     <!-- proximity / geocode (shown when showGeoSearch + geocodeApiKey) -->

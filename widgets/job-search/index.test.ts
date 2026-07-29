@@ -147,4 +147,73 @@ describe('jobSearch controller', () => {
     expect(jobType.value).toBe('');
     expect(host!.querySelectorAll('[data-chip-remove]').length).toBe(0);
   });
+
+  it('multi-selects classifications — count, one chip each, array in payload', async () => {
+    const published: Published[] = [];
+    jobSearch({
+      element,
+      data: { config: { showJobCategories: 'true' } },
+      $: {},
+      shazamme: stubClient(makeJobs(), published),
+    });
+    await flush();
+    await flush();
+
+    const wrap = element.querySelector<HTMLElement>('[data-ms-field="professionID"]')!;
+    expect(wrap).not.toBeNull();
+    const boxes = wrap.querySelectorAll<HTMLInputElement>('.multi-select-dropdown input[type="checkbox"]');
+    expect(boxes.length).toBe(2); // Healthcare, Construction
+
+    // Check both classifications.
+    for (const cb of Array.from(boxes)) {
+      cb.checked = true;
+      cb.dispatchEvent(new window.Event('change', { bubbles: true }));
+    }
+
+    // Box shows a "2 selected" count, and there is one removable chip per pick.
+    expect(wrap.querySelector('.ms-count')?.textContent).toBe('2 selected');
+    const host = element.querySelector<HTMLElement>('[data-rel="active-chips"]')!;
+    expect(host.querySelectorAll('[data-chip-remove="professionID"]').length).toBe(2);
+
+    // Submit publishes professionID as a multi-value array.
+    element
+      .querySelector('[data-rel="search-button"]')!
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    const last = published[published.length - 1];
+    expect(last.msg).toBe(MESSAGES.FILTER_CHANGE);
+    expect((last.payload as { state: Record<string, string[]> }).state.professionID.length).toBe(2);
+  });
+
+  it('locks sub-classification until a classification is chosen, and resets it on change', async () => {
+    jobSearch({
+      element,
+      data: { config: { showJobCategories: 'true', ShowSubCalssifications: 'true' } },
+      $: {},
+      shazamme: stubClient(makeJobs(), []),
+    });
+    await flush();
+    await flush();
+
+    const subBox = element.querySelector<HTMLElement>('[data-ms-field="roleID"] [data-rel="ms-box"]')!;
+    expect(subBox.classList.contains('subcategory-disabled')).toBe(true);
+
+    // Choosing a classification unlocks the sub-classification.
+    const classCb = element.querySelector<HTMLInputElement>('[data-ms-field="professionID"] input[type="checkbox"]')!;
+    classCb.checked = true;
+    classCb.dispatchEvent(new window.Event('change', { bubbles: true }));
+    expect(subBox.classList.contains('subcategory-disabled')).toBe(false);
+
+    // Pick a sub-classification.
+    const subCb = element.querySelector<HTMLInputElement>('[data-ms-field="roleID"] input[type="checkbox"]')!;
+    expect(subCb).not.toBeNull();
+    subCb.checked = true;
+    subCb.dispatchEvent(new window.Event('change', { bubbles: true }));
+    expect(element.querySelector('[data-ms-field="roleID"] .ms-count')?.textContent).toBe('1 selected');
+
+    // Clearing the classification resets the sub-classification and re-locks it.
+    classCb.checked = false;
+    classCb.dispatchEvent(new window.Event('change', { bubbles: true }));
+    expect(element.querySelector('[data-ms-field="roleID"] .ms-count')).toBeNull();
+    expect(subBox.classList.contains('subcategory-disabled')).toBe(true);
+  });
 });
