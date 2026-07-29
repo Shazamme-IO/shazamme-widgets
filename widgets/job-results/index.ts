@@ -117,7 +117,11 @@ export default function jobResults(ctx: WidgetContext): void {
   const mapWrap = $one<HTMLElement>(element, '[data-rel="job-results-map"]');
   const mapContainer = $one<HTMLElement>(element, '#shmMap');
   const listWrap = $one<HTMLElement>(element, '.shmResultViewPagination');
-  if (!details || !listEl || !pagingEl || !facetHost || !sidebar) return;
+  // Only the results list + its container are truly required. The sidebar (and its
+  // facet host / paging) are OPTIONAL: the reference "no left nav" layout removes
+  // the sidebar entirely, and the widget must still render + go 4-across there
+  // rather than bail and fall back to the raw 1-column template.
+  if (!details || !listEl) return;
 
   let model: JobsModel;
   let tree: FacetTree;
@@ -173,8 +177,8 @@ export default function jobResults(ctx: WidgetContext): void {
     renderCards(listEl!, result, cfg);
     applyGridLayout();
     renderCount(element, result.total);
-    renderPaging(pagingEl!, result.total, cfg.pageSize, state.page);
-    renderFacets(facetHost!, tree, cfg, state.facets);
+    if (pagingEl) renderPaging(pagingEl, result.total, cfg.pageSize, state.page);
+    if (facetHost) renderFacets(facetHost, tree, cfg, state.facets);
     if (mapView?.isReady) mapView.setJobs(result.page);
     writeHash(state);
     resultsReadyChannel.publish(sdk, { total: result.total });
@@ -202,10 +206,12 @@ export default function jobResults(ctx: WidgetContext): void {
     // means (e.g. hidden in the Duda editor) — so it "just works" either way.
     // Inline styles keep it self-contained regardless of the site's flex/grid CSS;
     // filtering still comes from the job-search bar over the pub/sub bus.
+    // No sidebar in the DOM at all == the no-left-nav layout, so treat it the same
+    // as an explicitly hidden one.
     const navAlreadyHidden = !!sidebar && getComputedStyle(sidebar as Element).display === 'none';
-    if (cfg.hideLeftNav || navAlreadyHidden) {
+    if (cfg.hideLeftNav || navAlreadyHidden || !sidebar) {
       hideNav = true;
-      (sidebar as HTMLElement).style.setProperty('display', 'none', 'important');
+      if (sidebar) (sidebar as HTMLElement).style.setProperty('display', 'none', 'important');
       if (!resizeBound) {
         resizeBound = true;
         let raf = 0;
@@ -267,8 +273,10 @@ export default function jobResults(ctx: WidgetContext): void {
   }, INPUT_DEBOUNCE_MS);
 
   function wireEvents(): void {
+    // Sidebar-scoped controls only exist when the left nav is present.
+    if (sidebar) {
     // Facet checkbox toggle — parent auto-select + child cascade via core.
-    delegate(sidebar!, 'click', '[data-rel="filter-toggle"]', (ev, matched) => {
+    delegate(sidebar, 'click', '[data-rel="filter-toggle"]', (ev, matched) => {
       ev.preventDefault();
       const field = matched.getAttribute('data-filter-type');
       const id = matched.getAttribute('data-filter-value');
@@ -316,6 +324,7 @@ export default function jobResults(ctx: WidgetContext): void {
       state = patch(state, { geoRange: val, page: 0 });
       if (state.geo) render();
     });
+    } // end if (sidebar)
 
     // Sort selection.
     if (actionBar) {

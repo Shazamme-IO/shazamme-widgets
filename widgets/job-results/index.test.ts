@@ -114,4 +114,18 @@ describe('jobResults controller', () => {
     // results still render full-width
     expect(element.querySelector('[data-rel="job-results-list"]')?.querySelectorAll('.shmJobResultStd').length).toBe(2);
   });
+
+  it('still renders + goes full-width grid when the template has NO sidebar', async () => {
+    // Reference "no left nav" layout removes the sidebar element entirely. The
+    // controller must NOT bail — it must render cards and apply the grid.
+    element.querySelector('[data-rel="filter-sidebar"]')?.remove();
+    jobResults({ element, data: { config: {} }, $: {}, shazamme: stubClient(makeJobs()) });
+    await flush();
+    await flush();
+
+    const list = element.querySelector<HTMLElement>('[data-rel="job-results-list"]');
+    expect(list?.querySelectorAll('.shmJobResultStd').length).toBe(2);
+    expect(list?.style.display).toBe('grid');
+    expect(list?.style.getPropertyValue('grid-template-columns')).toContain('repeat(');
+  });
 });

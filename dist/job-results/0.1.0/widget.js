@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-07-29T08:30:53.056Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-07-29T08:45:31.948Z. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var module = module || {};
@@ -1030,7 +1030,7 @@ module.exports = (() => {
     const mapWrap = $one(element, '[data-rel="job-results-map"]');
     const mapContainer = $one(element, "#shmMap");
     const listWrap = $one(element, ".shmResultViewPagination");
-    if (!details || !listEl || !pagingEl || !facetHost || !sidebar) return;
+    if (!details || !listEl) return;
     let model;
     let tree;
     let state = { ...initialState(), ...readHash() };
@@ -1070,8 +1070,8 @@ module.exports = (() => {
       renderCards(listEl, result, cfg);
       applyGridLayout();
       renderCount(element, result.total);
-      renderPaging(pagingEl, result.total, cfg.pageSize, state.page);
-      renderFacets(facetHost, tree, cfg, state.facets);
+      if (pagingEl) renderPaging(pagingEl, result.total, cfg.pageSize, state.page);
+      if (facetHost) renderFacets(facetHost, tree, cfg, state.facets);
       if (mapView == null ? void 0 : mapView.isReady) mapView.setJobs(result.page);
       writeHash(state);
       resultsReadyChannel.publish(sdk, { total: result.total });
@@ -1089,9 +1089,9 @@ module.exports = (() => {
       const display = $one(element, '[data-rel="geo-range-display"]');
       if (display) display.textContent = `${state.geoRange} ${cfg.proximityDiameter === "6371" ? "mi" : "km"}`;
       const navAlreadyHidden = !!sidebar && getComputedStyle(sidebar).display === "none";
-      if (cfg.hideLeftNav || navAlreadyHidden) {
+      if (cfg.hideLeftNav || navAlreadyHidden || !sidebar) {
         hideNav = true;
-        sidebar.style.setProperty("display", "none", "important");
+        if (sidebar) sidebar.style.setProperty("display", "none", "important");
         if (!resizeBound) {
           resizeBound = true;
           let raf = 0;
@@ -1140,48 +1140,50 @@ module.exports = (() => {
       render();
     }, INPUT_DEBOUNCE_MS);
     function wireEvents() {
-      delegate(sidebar, "click", '[data-rel="filter-toggle"]', (ev, matched) => {
-        ev.preventDefault();
-        const field = matched.getAttribute("data-filter-type");
-        const id = matched.getAttribute("data-filter-value");
-        if (!field || !id) return;
-        state = patch(state, { facets: toggleFacet(state.facets, tree, field, id), page: 0 });
-        render();
-      });
-      delegate(sidebar, "input", '[data-rel="job-result-filter-keyword"]', (_ev, matched) => {
-        var _a2;
-        const field = (_a2 = matched.getAttribute("data-keyword-field")) != null ? _a2 : "";
-        applyKeyword(field, matched.value);
-      });
-      delegate(sidebar, "click", '[data-rel="job-result-filter-keyword-clear"]', (_ev, matched) => {
-        const field = matched.getAttribute("data-keyword-field");
-        if (field === "keyword") state = patch(state, { keyword: "", page: 0 });
-        else if (field === "location") state = patch(state, { location: "", geo: null, geoAddress: "", page: 0 });
-        const input = sidebar.querySelector(`[data-keyword-field="${field}"]`);
-        if (input) input.value = "";
-        render();
-      });
-      delegate(sidebar, "click", '[data-rel="geo-prediction"] .result-text', (ev, matched) => {
-        var _a2, _b;
-        ev.preventDefault();
-        const value = (_a2 = matched.getAttribute("data-value")) != null ? _a2 : "";
-        const label = (_b = matched.getAttribute("data-label")) != null ? _b : "";
-        const host = $one(element, '[data-rel="geo-prediction"]');
-        if (host) host.style.display = "none";
-        if (value === "") return;
-        const [lat, lon] = value.split(",").map((n) => parseFloat(n));
-        const input = sidebar.querySelector('[data-keyword-field="location"]');
-        if (input) input.value = label;
-        state = patch(state, { geo: { lat, lon }, geoAddress: label, location: "", page: 0 });
-        render();
-      });
-      delegate(sidebar, "input", '[data-filter="geoRange"]', (_ev, matched) => {
-        const val = parseInt(matched.value, 10) || DEFAULT_GEO_RANGE;
-        const display = $one(element, '[data-rel="geo-range-display"]');
-        if (display) display.textContent = `${val} ${cfg.proximityDiameter === "6371" ? "mi" : "km"}`;
-        state = patch(state, { geoRange: val, page: 0 });
-        if (state.geo) render();
-      });
+      if (sidebar) {
+        delegate(sidebar, "click", '[data-rel="filter-toggle"]', (ev, matched) => {
+          ev.preventDefault();
+          const field = matched.getAttribute("data-filter-type");
+          const id = matched.getAttribute("data-filter-value");
+          if (!field || !id) return;
+          state = patch(state, { facets: toggleFacet(state.facets, tree, field, id), page: 0 });
+          render();
+        });
+        delegate(sidebar, "input", '[data-rel="job-result-filter-keyword"]', (_ev, matched) => {
+          var _a2;
+          const field = (_a2 = matched.getAttribute("data-keyword-field")) != null ? _a2 : "";
+          applyKeyword(field, matched.value);
+        });
+        delegate(sidebar, "click", '[data-rel="job-result-filter-keyword-clear"]', (_ev, matched) => {
+          const field = matched.getAttribute("data-keyword-field");
+          if (field === "keyword") state = patch(state, { keyword: "", page: 0 });
+          else if (field === "location") state = patch(state, { location: "", geo: null, geoAddress: "", page: 0 });
+          const input = sidebar.querySelector(`[data-keyword-field="${field}"]`);
+          if (input) input.value = "";
+          render();
+        });
+        delegate(sidebar, "click", '[data-rel="geo-prediction"] .result-text', (ev, matched) => {
+          var _a2, _b;
+          ev.preventDefault();
+          const value = (_a2 = matched.getAttribute("data-value")) != null ? _a2 : "";
+          const label = (_b = matched.getAttribute("data-label")) != null ? _b : "";
+          const host = $one(element, '[data-rel="geo-prediction"]');
+          if (host) host.style.display = "none";
+          if (value === "") return;
+          const [lat, lon] = value.split(",").map((n) => parseFloat(n));
+          const input = sidebar.querySelector('[data-keyword-field="location"]');
+          if (input) input.value = label;
+          state = patch(state, { geo: { lat, lon }, geoAddress: label, location: "", page: 0 });
+          render();
+        });
+        delegate(sidebar, "input", '[data-filter="geoRange"]', (_ev, matched) => {
+          const val = parseInt(matched.value, 10) || DEFAULT_GEO_RANGE;
+          const display = $one(element, '[data-rel="geo-range-display"]');
+          if (display) display.textContent = `${val} ${cfg.proximityDiameter === "6371" ? "mi" : "km"}`;
+          state = patch(state, { geoRange: val, page: 0 });
+          if (state.geo) render();
+        });
+      }
       if (actionBar) {
         delegate(actionBar, "click", "[data-sort-field]", (ev, matched) => {
           ev.preventDefault();
