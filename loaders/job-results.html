@@ -3,14 +3,12 @@
      the Duda widget's JavaScript tab. Do NOT paste the <script>/</script> lines —
      Duda wraps the tab in function(element,data,api){...}; a literal <script> is a
      syntax error that kills the whole widget.
-     Pinned to release TAG v0.1.2 (immutable — jsDelivr resolves tags instantly). -->
+     Loads from the stable CloudFront URL — future widget updates ship as an S3
+     upload + CF invalidation, so this loader NEVER needs re-pasting again. -->
 <script>
 (function () {
   var NAME = "job-results";
-  var TAG  = "v0.1.7";
-  var VER  = "0.1.0";
-  var SRC  = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" +
-             TAG + "/dist/" + NAME + "/" + VER + "/widget.min.js";
+  var SRC  = "https://sdk.shazamme.io/js/widget/" + NAME + "/widget.min.js";
   var tries = 0;
 
   function run() {
