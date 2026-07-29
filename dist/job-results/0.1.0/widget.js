@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-07-29T05:39:16.341Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-07-29T05:48:06.777Z. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var module = module || {};
@@ -1064,12 +1064,13 @@ module.exports = (() => {
       if (proximityBlock) proximityBlock.hidden = !proximityEnabled;
       const display = $one(element, '[data-rel="geo-range-display"]');
       if (display) display.textContent = `${state.geoRange} ${cfg.proximityDiameter === "6371" ? "mi" : "km"}`;
-      if (cfg.hideLeftNav) {
-        sidebar.style.display = "none";
+      const navAlreadyHidden = !!sidebar && getComputedStyle(sidebar).display === "none";
+      if (cfg.hideLeftNav || navAlreadyHidden) {
+        sidebar.style.setProperty("display", "none", "important");
         const d = details;
-        d.style.flex = "1 1 100%";
-        d.style.maxWidth = "100%";
-        d.style.width = "100%";
+        d.style.setProperty("flex", "1 1 100%", "important");
+        d.style.setProperty("max-width", "100%", "important");
+        d.style.setProperty("width", "100%", "important");
         const list = listEl;
         list.style.setProperty("display", "grid", "important");
         list.style.setProperty("grid-template-columns", "repeat(auto-fill, minmax(300px, 1fr))", "important");

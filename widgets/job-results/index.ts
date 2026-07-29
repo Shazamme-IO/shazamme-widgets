@@ -163,14 +163,17 @@ export default function jobResults(ctx: WidgetContext): void {
     if (display) display.textContent = `${state.geoRange} ${cfg.proximityDiameter === '6371' ? 'mi' : 'km'}`;
 
     // Drop the left-nav sidebar and let results fill the row (reference layout).
+    // Trigger on the config flag OR when the sidebar is already hidden by any
+    // means (e.g. hidden in the Duda editor) — so it "just works" either way.
     // Inline styles keep it self-contained regardless of the site's flex/grid CSS;
     // filtering still comes from the job-search bar over the pub/sub bus.
-    if (cfg.hideLeftNav) {
-      (sidebar as HTMLElement).style.display = 'none';
+    const navAlreadyHidden = !!sidebar && getComputedStyle(sidebar as Element).display === 'none';
+    if (cfg.hideLeftNav || navAlreadyHidden) {
+      (sidebar as HTMLElement).style.setProperty('display', 'none', 'important');
       const d = details as HTMLElement;
-      d.style.flex = '1 1 100%';
-      d.style.maxWidth = '100%';
-      d.style.width = '100%';
+      d.style.setProperty('flex', '1 1 100%', 'important');
+      d.style.setProperty('max-width', '100%', 'important');
+      d.style.setProperty('width', '100%', 'important');
       // Full-width → lay cards out in a responsive multi-column grid (≈4 across on
       // desktop, collapsing on smaller screens) — the talent/paxus reference look.
       // Use !important: the site's Duda `.grid` CSS forces a single column with its
