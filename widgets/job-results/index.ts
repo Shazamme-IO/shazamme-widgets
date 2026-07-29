@@ -142,8 +142,16 @@ export default function jobResults(ctx: WidgetContext): void {
   // the container's inline style; inline !important is the only thing that beats the
   // site's `.grid` CSS.
   const GRID_GAP = 20;
-  const MIN_CARD = 260;
   const MAX_COLS = 4;
+  // Column count by available width. Fixed breakpoints — reliably 4-across on any
+  // desktop container (>=820px), stepping down for tablet/mobile. A card-min divisor
+  // was too fragile: ~900-940px containers silently fell to 3.
+  function colsForWidth(w: number): number {
+    if (w >= 820) return MAX_COLS;
+    if (w >= 600) return 3;
+    if (w >= 400) return 2;
+    return 1;
+  }
   function applyGridLayout(): void {
     if (!hideNav) return;
     const d = details as HTMLElement;
@@ -152,8 +160,7 @@ export default function jobResults(ctx: WidgetContext): void {
     d.style.setProperty('width', '100%', 'important');
     const list = listEl as HTMLElement;
     const width = list.clientWidth || d.clientWidth || 0;
-    const fit = Math.floor((width + GRID_GAP) / (MIN_CARD + GRID_GAP));
-    const cols = Math.max(1, Math.min(MAX_COLS, fit || MAX_COLS));
+    const cols = width ? colsForWidth(width) : MAX_COLS;
     list.style.setProperty('display', 'grid', 'important');
     list.style.setProperty('grid-template-columns', `repeat(${cols}, 1fr)`, 'important');
     list.style.setProperty('gap', `${GRID_GAP}px`, 'important');

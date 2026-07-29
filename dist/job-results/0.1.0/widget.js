@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-07-29T08:16:03.860Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-07-29T08:30:53.056Z. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var module = module || {};
@@ -1043,8 +1043,13 @@ module.exports = (() => {
     let hideNav = false;
     let resizeBound = false;
     const GRID_GAP = 20;
-    const MIN_CARD = 260;
     const MAX_COLS = 4;
+    function colsForWidth(w) {
+      if (w >= 820) return MAX_COLS;
+      if (w >= 600) return 3;
+      if (w >= 400) return 2;
+      return 1;
+    }
     function applyGridLayout() {
       if (!hideNav) return;
       const d = details;
@@ -1053,8 +1058,7 @@ module.exports = (() => {
       d.style.setProperty("width", "100%", "important");
       const list = listEl;
       const width = list.clientWidth || d.clientWidth || 0;
-      const fit = Math.floor((width + GRID_GAP) / (MIN_CARD + GRID_GAP));
-      const cols = Math.max(1, Math.min(MAX_COLS, fit || MAX_COLS));
+      const cols = width ? colsForWidth(width) : MAX_COLS;
       list.style.setProperty("display", "grid", "important");
       list.style.setProperty("grid-template-columns", `repeat(${cols}, 1fr)`, "important");
       list.style.setProperty("gap", `${GRID_GAP}px`, "important");
