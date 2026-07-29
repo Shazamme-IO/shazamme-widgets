@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-07-29T05:54:41.452Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-07-29T08:16:03.860Z. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var module = module || {};
@@ -1041,6 +1041,10 @@ module.exports = (() => {
     mainContainer.style.visibility = "hidden";
     let revealed = false;
     let hideNav = false;
+    let resizeBound = false;
+    const GRID_GAP = 20;
+    const MIN_CARD = 260;
+    const MAX_COLS = 4;
     function applyGridLayout() {
       if (!hideNav) return;
       const d = details;
@@ -1048,9 +1052,12 @@ module.exports = (() => {
       d.style.setProperty("max-width", "100%", "important");
       d.style.setProperty("width", "100%", "important");
       const list = listEl;
+      const width = list.clientWidth || d.clientWidth || 0;
+      const fit = Math.floor((width + GRID_GAP) / (MIN_CARD + GRID_GAP));
+      const cols = Math.max(1, Math.min(MAX_COLS, fit || MAX_COLS));
       list.style.setProperty("display", "grid", "important");
-      list.style.setProperty("grid-template-columns", "repeat(auto-fill, minmax(300px, 1fr))", "important");
-      list.style.setProperty("gap", "20px", "important");
+      list.style.setProperty("grid-template-columns", `repeat(${cols}, 1fr)`, "important");
+      list.style.setProperty("gap", `${GRID_GAP}px`, "important");
     }
     function render() {
       const input = toFilterInput(state);
@@ -1081,6 +1088,14 @@ module.exports = (() => {
       if (cfg.hideLeftNav || navAlreadyHidden) {
         hideNav = true;
         sidebar.style.setProperty("display", "none", "important");
+        if (!resizeBound) {
+          resizeBound = true;
+          let raf = 0;
+          window.addEventListener("resize", () => {
+            if (raf) cancelAnimationFrame(raf);
+            raf = requestAnimationFrame(applyGridLayout);
+          });
+        }
         applyGridLayout();
       }
     }

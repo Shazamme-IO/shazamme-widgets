@@ -192,7 +192,70 @@ export default function jobSearch(ctx: WidgetContext): void {
 
   function submit(): void {
     state = readForm();
-    publishFilterChange(sdk, toPayload(state));
+    // A foreign/legacy subscriber sharing the SDK bus can throw on our payload
+    // shape (the SDK's pub loop has no per-subscriber isolation); that must not
+    // break the search bar's own flow or leave the chips out of sync.
+    try {
+      publishFilterChange(sdk, toPayload(state));
+    } catch (err) {
+      console.warn('[job-search] filter subscriber threw', err);
+    }
+    renderChips();
+  }
+
+  // --- Active-filter chips ------------------------------------------------
+  // Show each selected dropdown as a removable pill under the search bar
+  // (reference: aequor). Chips reflect the LIVE selects so they appear as soon
+  // as a value is picked; the ✕ clears that filter and re-applies immediately.
+  function escapeHtml(s: string): string {
+    return s.replace(/[&<>"']/g, (c) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string),
+    );
+  }
+
+  function chipContainer(): HTMLElement {
+    let host = $one<HTMLElement>(element, '[data-rel="active-chips"]');
+    if (!host) {
+      host = document.createElement('div');
+      host.setAttribute('data-rel', 'active-chips');
+      host.style.cssText = 'display:none;flex-wrap:wrap;gap:8px;margin-top:10px;';
+      form!.after(host);
+    }
+    return host;
+  }
+
+  function renderChips(): void {
+    const host = chipContainer();
+    const chips: string[] = [];
+    form!.querySelectorAll<HTMLSelectElement>('select[data-filter]').forEach((sel) => {
+      const field = sel.getAttribute('data-filter');
+      if (!field || !sel.value) return;
+      const label = sel.selectedOptions[0]?.text ?? sel.value;
+      chips.push(
+        `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;` +
+          `background:#eef1f5;border-radius:16px;font-size:13px;line-height:1.4;color:#333;">` +
+          `${escapeHtml(label)}` +
+          `<button type="button" data-chip-remove="${escapeHtml(field)}" ` +
+          `aria-label="Remove ${escapeHtml(label)}" ` +
+          `style="border:0;background:transparent;cursor:pointer;font-size:15px;` +
+          `line-height:1;color:#666;padding:0;">&times;</button></span>`,
+      );
+    });
+    host.innerHTML = chips.join('');
+    host.style.display = chips.length ? 'flex' : 'none';
+  }
+
+  function removeChip(field: string): void {
+    const sel = selectEl(field);
+    if (sel) sel.value = '';
+    state = patchForm(state, { facets: dropKey(state.facets, field) });
+    if (field === 'professionID') {
+      const role = selectEl('roleID');
+      if (role) role.value = '';
+      state = patchForm(state, { facets: dropKey(state.facets, 'roleID') });
+      refreshRoles();
+    }
+    submit(); // reads the form back into state, publishes, and re-renders chips
   }
 
   const runGeocode = makeGeocodeRunner(cfg.geocodeApiKey, (results) => {
@@ -213,6 +276,16 @@ export default function jobSearch(ctx: WidgetContext): void {
         ev.preventDefault();
         submit();
       }
+    });
+
+    // Any dropdown change re-renders the active-filter chips (live reflection).
+    delegate(form!, 'change', 'select[data-filter]', () => renderChips());
+
+    // Chip ✕ clears that filter and re-applies immediately.
+    delegate(chipContainer(), 'click', '[data-chip-remove]', (ev, matched) => {
+      ev.preventDefault();
+      const field = matched.getAttribute('data-chip-remove');
+      if (field) removeChip(field);
     });
 
     // Dependent dropdown: profession drives role options. No publish.
@@ -297,6 +370,7 @@ export default function jobSearch(ctx: WidgetContext): void {
     populateAll();
     applyStateToForm();
     wireEvents();
+    renderChips(); // reflect any hash-prefilled selections
     reveal();
     if (!data.inEditor) {
       subscribeCounter();

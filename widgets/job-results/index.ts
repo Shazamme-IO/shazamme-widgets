@@ -133,10 +133,17 @@ export default function jobResults(ctx: WidgetContext): void {
   let revealed = false;
   // Whether we're in the no-left-nav full-width layout (set by applyConfigVisibility).
   let hideNav = false;
+  let resizeBound = false;
 
-  // Re-assert the full-width + responsive grid on the list. Must run AFTER every
-  // renderCards() because the card reconcile can drop the container's inline style;
-  // inline !important is the only thing that beats the site's `.grid` CSS.
+  // Full-width layout: up to 4 cards across on desktop (reference site), dropping to
+  // 3/2/1 as the container narrows. We compute the count from the list width and cap
+  // it at 4 rather than using `auto-fill`, so wide/unconstrained containers don't spill
+  // to 5+ columns. Must run AFTER every renderCards() because the card reconcile drops
+  // the container's inline style; inline !important is the only thing that beats the
+  // site's `.grid` CSS.
+  const GRID_GAP = 20;
+  const MIN_CARD = 260;
+  const MAX_COLS = 4;
   function applyGridLayout(): void {
     if (!hideNav) return;
     const d = details as HTMLElement;
@@ -144,9 +151,12 @@ export default function jobResults(ctx: WidgetContext): void {
     d.style.setProperty('max-width', '100%', 'important');
     d.style.setProperty('width', '100%', 'important');
     const list = listEl as HTMLElement;
+    const width = list.clientWidth || d.clientWidth || 0;
+    const fit = Math.floor((width + GRID_GAP) / (MIN_CARD + GRID_GAP));
+    const cols = Math.max(1, Math.min(MAX_COLS, fit || MAX_COLS));
     list.style.setProperty('display', 'grid', 'important');
-    list.style.setProperty('grid-template-columns', 'repeat(auto-fill, minmax(300px, 1fr))', 'important');
-    list.style.setProperty('gap', '20px', 'important');
+    list.style.setProperty('grid-template-columns', `repeat(${cols}, 1fr)`, 'important');
+    list.style.setProperty('gap', `${GRID_GAP}px`, 'important');
   }
 
   function render(): void {
@@ -189,6 +199,14 @@ export default function jobResults(ctx: WidgetContext): void {
     if (cfg.hideLeftNav || navAlreadyHidden) {
       hideNav = true;
       (sidebar as HTMLElement).style.setProperty('display', 'none', 'important');
+      if (!resizeBound) {
+        resizeBound = true;
+        let raf = 0;
+        window.addEventListener('resize', () => {
+          if (raf) cancelAnimationFrame(raf);
+          raf = requestAnimationFrame(applyGridLayout);
+        });
+      }
       applyGridLayout(); // re-asserted after every render() too (see applyGridLayout)
     }
   }

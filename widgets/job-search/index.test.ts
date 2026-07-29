@@ -116,4 +116,35 @@ describe('jobSearch controller', () => {
     expect(published).toHaveLength(0);
     expect(element.querySelectorAll('select[data-filter="jobTypeID"] option').length).toBe(3);
   });
+
+  it('renders a removable chip for a selected filter and clears it on the ✕', async () => {
+    const published: Published[] = [];
+    jobSearch({
+      element,
+      data: { config: { showJobType: 'true' } },
+      $: {},
+      shazamme: stubClient(makeJobs(), published),
+    });
+    await flush();
+    await flush();
+
+    // Arrange: select a job type.
+    const jobType = element.querySelector<HTMLSelectElement>('select[data-filter="jobTypeID"]')!;
+    jobType.value = 'perm';
+    jobType.dispatchEvent(new window.Event('change', { bubbles: true }));
+
+    // Assert: a chip appears with the option's label + a remove button.
+    const host = element.querySelector<HTMLElement>('[data-rel="active-chips"]');
+    expect(host).not.toBeNull();
+    expect(host!.textContent).toContain('Permanent');
+    const remove = host!.querySelector<HTMLButtonElement>('[data-chip-remove="jobTypeID"]');
+    expect(remove).not.toBeNull();
+
+    // Act: click the ✕.
+    remove!.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    // Assert: filter cleared and the chip removed.
+    expect(jobType.value).toBe('');
+    expect(host!.querySelectorAll('[data-chip-remove]').length).toBe(0);
+  });
 });

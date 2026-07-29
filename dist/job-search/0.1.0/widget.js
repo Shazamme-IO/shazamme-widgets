@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-07-29T05:54:41.452Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-07-29T08:16:03.860Z. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var module = module || {};
@@ -665,7 +665,55 @@ module.exports = (() => {
     }
     function submit() {
       state = readForm();
-      publishFilterChange(sdk, toPayload(state));
+      try {
+        publishFilterChange(sdk, toPayload(state));
+      } catch (err) {
+        console.warn("[job-search] filter subscriber threw", err);
+      }
+      renderChips();
+    }
+    function escapeHtml2(s) {
+      return s.replace(
+        /[&<>"']/g,
+        (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
+      );
+    }
+    function chipContainer() {
+      let host = $one(element, '[data-rel="active-chips"]');
+      if (!host) {
+        host = document.createElement("div");
+        host.setAttribute("data-rel", "active-chips");
+        host.style.cssText = "display:none;flex-wrap:wrap;gap:8px;margin-top:10px;";
+        form.after(host);
+      }
+      return host;
+    }
+    function renderChips() {
+      const host = chipContainer();
+      const chips = [];
+      form.querySelectorAll("select[data-filter]").forEach((sel) => {
+        var _a2, _b;
+        const field = sel.getAttribute("data-filter");
+        if (!field || !sel.value) return;
+        const label = (_b = (_a2 = sel.selectedOptions[0]) == null ? void 0 : _a2.text) != null ? _b : sel.value;
+        chips.push(
+          `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:#eef1f5;border-radius:16px;font-size:13px;line-height:1.4;color:#333;">${escapeHtml2(label)}<button type="button" data-chip-remove="${escapeHtml2(field)}" aria-label="Remove ${escapeHtml2(label)}" style="border:0;background:transparent;cursor:pointer;font-size:15px;line-height:1;color:#666;padding:0;">&times;</button></span>`
+        );
+      });
+      host.innerHTML = chips.join("");
+      host.style.display = chips.length ? "flex" : "none";
+    }
+    function removeChip(field) {
+      const sel = selectEl(field);
+      if (sel) sel.value = "";
+      state = patchForm(state, { facets: dropKey(state.facets, field) });
+      if (field === "professionID") {
+        const role = selectEl("roleID");
+        if (role) role.value = "";
+        state = patchForm(state, { facets: dropKey(state.facets, "roleID") });
+        refreshRoles();
+      }
+      submit();
     }
     const runGeocode = makeGeocodeRunner(cfg.geocodeApiKey, (results) => {
       const host = $one(element, '[data-rel="geo-prediction"]');
@@ -681,6 +729,12 @@ module.exports = (() => {
           ev.preventDefault();
           submit();
         }
+      });
+      delegate(form, "change", "select[data-filter]", () => renderChips());
+      delegate(chipContainer(), "click", "[data-chip-remove]", (ev, matched) => {
+        ev.preventDefault();
+        const field = matched.getAttribute("data-chip-remove");
+        if (field) removeChip(field);
       });
       delegate(form, "change", 'select[data-filter="professionID"]', (_ev, matched) => {
         const val = matched.value;
@@ -750,6 +804,7 @@ module.exports = (() => {
       populateAll();
       applyStateToForm();
       wireEvents();
+      renderChips();
       reveal();
       if (!data.inEditor) {
         subscribeCounter();
