@@ -131,12 +131,30 @@ export default function jobResults(ctx: WidgetContext): void {
   const mainContainer = $one<HTMLElement>(element, '[data-shm-main]') ?? (element as HTMLElement);
   mainContainer.style.visibility = 'hidden';
   let revealed = false;
+  // Whether we're in the no-left-nav full-width layout (set by applyConfigVisibility).
+  let hideNav = false;
+
+  // Re-assert the full-width + responsive grid on the list. Must run AFTER every
+  // renderCards() because the card reconcile can drop the container's inline style;
+  // inline !important is the only thing that beats the site's `.grid` CSS.
+  function applyGridLayout(): void {
+    if (!hideNav) return;
+    const d = details as HTMLElement;
+    d.style.setProperty('flex', '1 1 100%', 'important');
+    d.style.setProperty('max-width', '100%', 'important');
+    d.style.setProperty('width', '100%', 'important');
+    const list = listEl as HTMLElement;
+    list.style.setProperty('display', 'grid', 'important');
+    list.style.setProperty('grid-template-columns', 'repeat(auto-fill, minmax(300px, 1fr))', 'important');
+    list.style.setProperty('gap', '20px', 'important');
+  }
 
   function render(): void {
     const input = toFilterInput(state) as unknown as FilterState;
     const result = model.query(input, state.sort, state.page, cfg.pageSize);
     lastPage = result.page;
     renderCards(listEl!, result, cfg);
+    applyGridLayout();
     renderCount(element, result.total);
     renderPaging(pagingEl!, result.total, cfg.pageSize, state.page);
     renderFacets(facetHost!, tree, cfg, state.facets);
@@ -169,19 +187,9 @@ export default function jobResults(ctx: WidgetContext): void {
     // filtering still comes from the job-search bar over the pub/sub bus.
     const navAlreadyHidden = !!sidebar && getComputedStyle(sidebar as Element).display === 'none';
     if (cfg.hideLeftNav || navAlreadyHidden) {
+      hideNav = true;
       (sidebar as HTMLElement).style.setProperty('display', 'none', 'important');
-      const d = details as HTMLElement;
-      d.style.setProperty('flex', '1 1 100%', 'important');
-      d.style.setProperty('max-width', '100%', 'important');
-      d.style.setProperty('width', '100%', 'important');
-      // Full-width → lay cards out in a responsive multi-column grid (≈4 across on
-      // desktop, collapsing on smaller screens) — the talent/paxus reference look.
-      // Use !important: the site's Duda `.grid` CSS forces a single column with its
-      // own !important rule, which would otherwise beat plain inline styles.
-      const list = listEl as HTMLElement;
-      list.style.setProperty('display', 'grid', 'important');
-      list.style.setProperty('grid-template-columns', 'repeat(auto-fill, minmax(300px, 1fr))', 'important');
-      list.style.setProperty('gap', '20px', 'important');
+      applyGridLayout(); // re-asserted after every render() too (see applyGridLayout)
     }
   }
 

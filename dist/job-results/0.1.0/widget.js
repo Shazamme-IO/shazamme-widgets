@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-07-29T05:48:06.777Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-07-29T05:54:41.452Z. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var module = module || {};
@@ -1040,11 +1040,24 @@ module.exports = (() => {
     const mainContainer = (_a = $one(element, "[data-shm-main]")) != null ? _a : element;
     mainContainer.style.visibility = "hidden";
     let revealed = false;
+    let hideNav = false;
+    function applyGridLayout() {
+      if (!hideNav) return;
+      const d = details;
+      d.style.setProperty("flex", "1 1 100%", "important");
+      d.style.setProperty("max-width", "100%", "important");
+      d.style.setProperty("width", "100%", "important");
+      const list = listEl;
+      list.style.setProperty("display", "grid", "important");
+      list.style.setProperty("grid-template-columns", "repeat(auto-fill, minmax(300px, 1fr))", "important");
+      list.style.setProperty("gap", "20px", "important");
+    }
     function render() {
       const input = toFilterInput(state);
       const result = model.query(input, state.sort, state.page, cfg.pageSize);
       lastPage = result.page;
       renderCards(listEl, result, cfg);
+      applyGridLayout();
       renderCount(element, result.total);
       renderPaging(pagingEl, result.total, cfg.pageSize, state.page);
       renderFacets(facetHost, tree, cfg, state.facets);
@@ -1066,15 +1079,9 @@ module.exports = (() => {
       if (display) display.textContent = `${state.geoRange} ${cfg.proximityDiameter === "6371" ? "mi" : "km"}`;
       const navAlreadyHidden = !!sidebar && getComputedStyle(sidebar).display === "none";
       if (cfg.hideLeftNav || navAlreadyHidden) {
+        hideNav = true;
         sidebar.style.setProperty("display", "none", "important");
-        const d = details;
-        d.style.setProperty("flex", "1 1 100%", "important");
-        d.style.setProperty("max-width", "100%", "important");
-        d.style.setProperty("width", "100%", "important");
-        const list = listEl;
-        list.style.setProperty("display", "grid", "important");
-        list.style.setProperty("grid-template-columns", "repeat(auto-fill, minmax(300px, 1fr))", "important");
-        list.style.setProperty("gap", "20px", "important");
+        applyGridLayout();
       }
     }
     function setView(view) {
