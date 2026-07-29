@@ -137,25 +137,17 @@ export default function jobResults(ctx: WidgetContext): void {
   let revealed = false;
   // Whether we're in the no-left-nav full-width layout (set by applyConfigVisibility).
   let hideNav = false;
-  let resizeBound = false;
 
-  // Full-width layout: up to 4 cards across on desktop (reference site), dropping to
-  // 3/2/1 as the container narrows. We compute the count from the list width and cap
-  // it at 4 rather than using `auto-fill`, so wide/unconstrained containers don't spill
-  // to 5+ columns. Must run AFTER every renderCards() because the card reconcile drops
-  // the container's inline style; inline !important is the only thing that beats the
-  // site's `.grid` CSS.
-  const GRID_GAP = 20;
-  const MAX_COLS = 4;
-  // Column count by available width. Fixed breakpoints — reliably 4-across on any
-  // desktop container (>=820px), stepping down for tablet/mobile. A card-min divisor
-  // was too fragile: ~900-940px containers silently fell to 3.
-  function colsForWidth(w: number): number {
-    if (w >= 820) return MAX_COLS;
-    if (w >= 600) return 3;
-    if (w >= 400) return 2;
-    return 1;
-  }
+  // Full-width layout: up to 4 cards across, reflowing against the REAL container
+  // width via pure CSS. We deliberately do NOT measure list.clientWidth in JS — that
+  // was read once at an uncertain point during load and locked in the wrong count
+  // (1–2 columns on a container that was briefly narrow). `auto-fill` + `minmax`
+  // recomputes continuously as the layout settles and on resize, with no JS at all.
+  // Each column is at least a quarter-row on desktop, with a 190px floor so the grid
+  // steps down to 3/2/1 as the container narrows. Must run AFTER every renderCards()
+  // (the reconcile drops inline style); inline `!important` beats the site's
+  // `.grid { grid-template-columns: 1fr !important }`.
+  const GRID_COLUMNS = 'repeat(auto-fill, minmax(max(190px, calc((100% - 60px) / 4)), 1fr))';
   function applyGridLayout(): void {
     if (!hideNav) return;
     const d = details as HTMLElement;
@@ -163,11 +155,9 @@ export default function jobResults(ctx: WidgetContext): void {
     d.style.setProperty('max-width', '100%', 'important');
     d.style.setProperty('width', '100%', 'important');
     const list = listEl as HTMLElement;
-    const width = list.clientWidth || d.clientWidth || 0;
-    const cols = width ? colsForWidth(width) : MAX_COLS;
     list.style.setProperty('display', 'grid', 'important');
-    list.style.setProperty('grid-template-columns', `repeat(${cols}, 1fr)`, 'important');
-    list.style.setProperty('gap', `${GRID_GAP}px`, 'important');
+    list.style.setProperty('grid-template-columns', GRID_COLUMNS, 'important');
+    list.style.setProperty('gap', '20px', 'important');
   }
 
   function render(): void {
@@ -212,14 +202,6 @@ export default function jobResults(ctx: WidgetContext): void {
     if (cfg.hideLeftNav || navAlreadyHidden || !sidebar) {
       hideNav = true;
       if (sidebar) (sidebar as HTMLElement).style.setProperty('display', 'none', 'important');
-      if (!resizeBound) {
-        resizeBound = true;
-        let raf = 0;
-        window.addEventListener('resize', () => {
-          if (raf) cancelAnimationFrame(raf);
-          raf = requestAnimationFrame(applyGridLayout);
-        });
-      }
       applyGridLayout(); // re-asserted after every render() too (see applyGridLayout)
     }
   }

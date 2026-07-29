@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-07-29T08:45:31.948Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-07-29T09:01:05.919Z. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var module = module || {};
@@ -1041,15 +1041,7 @@ module.exports = (() => {
     mainContainer.style.visibility = "hidden";
     let revealed = false;
     let hideNav = false;
-    let resizeBound = false;
-    const GRID_GAP = 20;
-    const MAX_COLS = 4;
-    function colsForWidth(w) {
-      if (w >= 820) return MAX_COLS;
-      if (w >= 600) return 3;
-      if (w >= 400) return 2;
-      return 1;
-    }
+    const GRID_COLUMNS = "repeat(auto-fill, minmax(max(190px, calc((100% - 60px) / 4)), 1fr))";
     function applyGridLayout() {
       if (!hideNav) return;
       const d = details;
@@ -1057,11 +1049,9 @@ module.exports = (() => {
       d.style.setProperty("max-width", "100%", "important");
       d.style.setProperty("width", "100%", "important");
       const list = listEl;
-      const width = list.clientWidth || d.clientWidth || 0;
-      const cols = width ? colsForWidth(width) : MAX_COLS;
       list.style.setProperty("display", "grid", "important");
-      list.style.setProperty("grid-template-columns", `repeat(${cols}, 1fr)`, "important");
-      list.style.setProperty("gap", `${GRID_GAP}px`, "important");
+      list.style.setProperty("grid-template-columns", GRID_COLUMNS, "important");
+      list.style.setProperty("gap", "20px", "important");
     }
     function render() {
       const input = toFilterInput(state);
@@ -1092,14 +1082,6 @@ module.exports = (() => {
       if (cfg.hideLeftNav || navAlreadyHidden || !sidebar) {
         hideNav = true;
         if (sidebar) sidebar.style.setProperty("display", "none", "important");
-        if (!resizeBound) {
-          resizeBound = true;
-          let raf = 0;
-          window.addEventListener("resize", () => {
-            if (raf) cancelAnimationFrame(raf);
-            raf = requestAnimationFrame(applyGridLayout);
-          });
-        }
         applyGridLayout();
       }
     }
