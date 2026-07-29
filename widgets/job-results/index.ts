@@ -72,7 +72,7 @@ function writeHash(state: QueryState): void {
 // only this widget — an early site() call fires with no dudaSiteID and the SDK's
 // site() hangs (it has no error path), so the widget never renders. Ensure the
 // SDK is ready first, seeding the dudaSiteID from the Duda-provided data.
-function ensureSdkReady(shazamme: ShazammeClient, data: DudaData): void {
+async function ensureSdkReady(shazamme: ShazammeClient, data: DudaData): Promise<void> {
   const s = shazamme as unknown as {
     _sid?: string;
     ready?: (sid: string, page?: unknown) => unknown;
@@ -80,12 +80,12 @@ function ensureSdkReady(shazamme: ShazammeClient, data: DudaData): void {
   const d = data as { siteId?: string; siteID?: string; page?: unknown };
   const sid = s._sid || d.siteId || d.siteID;
   if (!sid) return;
-  // Seed the dudaSiteID so the subsequent site() call can resolve, and kick the
-  // SDK's own bootstrap once WITHOUT blocking on it. loadJobs awaits site() by
-  // itself, so we never wait on the slower page-config 404s / OAuth in ready().
+  // Seed the dudaSiteID, then AWAIT ready() so the SDK resolves + caches site()
+  // before loadJobs calls it. Fire-and-forget here races the bootstrap and the
+  // SDK's site() (no error path) hangs when it loses, so render() never runs.
   s._sid = s._sid || sid;
   if (typeof s.ready === 'function') {
-    try { s.ready(s._sid, d.page); } catch { /* ignore */ }
+    try { await s.ready(s._sid, d.page); } catch { /* ignore */ }
   }
 }
 
@@ -307,7 +307,7 @@ export default function jobResults(ctx: WidgetContext): void {
   }
 
   (async (): Promise<void> => {
-    ensureSdkReady(shazamme, data);
+    await ensureSdkReady(shazamme, data);
     try {
       model = await loadJobs(sdk, cfg, { levels: MASTER_LEVELS });
     } catch {
