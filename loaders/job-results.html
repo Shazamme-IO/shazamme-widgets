@@ -1,19 +1,28 @@
-<!-- Shazamme job-results widget — paste into the Duda widget's JavaScript tab.
-     Pinned to release TAG v0.1.1 (immutable — jsDelivr resolves tags instantly,
-     unlike @main which caches its branch->commit resolution for up to 12h).
-     To roll forward/back, bump TAG to another release. VER = dist folder version. -->
+<!-- Shazamme job-results widget loader.
+     PASTE ONLY THE INNER JAVASCRIPT (everything between the <script> tags) into
+     the Duda widget's JavaScript tab. Do NOT paste the <script>/</script> lines —
+     Duda wraps the tab in function(element,data,api){...}; a literal <script> is a
+     syntax error that kills the whole widget.
+     Pinned to release TAG v0.1.2 (immutable — jsDelivr resolves tags instantly). -->
 <script>
 (function () {
   var NAME = "job-results";
-  var TAG  = "v0.1.1";
+  var TAG  = "v0.1.2";
   var VER  = "0.1.0";
   var SRC  = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" +
              TAG + "/dist/" + NAME + "/" + VER + "/widget.min.js";
+  var tries = 0;
 
   function run() {
     var controller = window.ShazammeWidget && window.ShazammeWidget[NAME];
-    if (typeof controller === "function") {
-      controller({ element: element, data: data, $: $, shazamme: shazamme });
+    var sdk = window.shazamme; // read via window: the bare global throws on a fast
+                               // cached load before the SDK script has executed.
+    if (typeof controller === "function" && sdk) {
+      controller({ element: element, data: data, $: window.jQuery || window.$, shazamme: sdk });
+    } else if (tries++ < 100) {
+      // Bundle or SDK not ready yet (order varies between first and cached loads);
+      // retry for ~5s so the widget renders regardless of script load order.
+      setTimeout(run, 50);
     }
   }
 
