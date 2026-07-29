@@ -58,20 +58,33 @@ function optionsHtml(nodes: readonly FacetNode[], placeholder: string): string {
 // before we call loadJobs. If our controller runs first, an early site() call
 // fires with no dudaSiteID and the SDK's site() hangs — the dropdowns then never
 // populate. Seed readiness from the Duda-provided data.
+// Cap how long we wait on the SDK's ready() so a never-resolving second ready()
+// call (fast cached/2nd load) can't hang the widget forever.
+const SDK_READY_TIMEOUT_MS = 1200;
+
 async function ensureSdkReady(shazamme: ShazammeClient, data: DudaData): Promise<void> {
   const s = shazamme as unknown as {
     _sid?: string;
+    _site?: unknown;
     ready?: (sid: string, page?: unknown) => unknown;
   };
   const d = data as { siteId?: string; siteID?: string; page?: unknown };
   const sid = s._sid || d.siteId || d.siteID;
   if (!sid) return;
-  // Seed the dudaSiteID, then AWAIT ready() so the SDK resolves + caches site()
-  // before loadJobs calls it. Fire-and-forget races the bootstrap and the SDK's
-  // site() (no error path) hangs when it loses, so the dropdowns never populate.
   s._sid = s._sid || sid;
+  // If the SDK already resolved its site, it's ready — do NOT await ready() again.
+  // On a fast cached/2nd load the page has already called ready(); a second call
+  // can hand back a promise that never resolves, hanging the widget so the
+  // dropdowns never populate ("1st load ok, 2nd not"). Otherwise await ready()
+  // but cap it with a timeout so we can never hang on it.
+  if (s._site) return;
   if (typeof s.ready === 'function') {
-    try { await s.ready(s._sid, d.page); } catch { /* ignore */ }
+    try {
+      await Promise.race([
+        Promise.resolve(s.ready(s._sid, d.page)),
+        new Promise<void>((resolve) => setTimeout(resolve, SDK_READY_TIMEOUT_MS)),
+      ]);
+    } catch { /* ignore */ }
   }
 }
 

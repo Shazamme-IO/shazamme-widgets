@@ -40,6 +40,9 @@ interface WidgetContext {
 
 const GEOCODE_DEBOUNCE_MS = 500;
 const INPUT_DEBOUNCE_MS = 400;
+// Cap how long we wait on the SDK's ready() so a never-resolving second ready()
+// call (fast cached/2nd load) can't hang the widget forever.
+const SDK_READY_TIMEOUT_MS = 1200;
 
 const FAKE_JOBS: Job[] = [
   { jobID: '1', jobName: 'Senior Nurse', category: 'Healthcare', jobType: 'Permanent', jobTypeID: 'perm', professionID: 'health', city: 'London', state: 'England', workType: 'Full Time', changedOnUTC: new Date().toISOString() },
@@ -75,17 +78,26 @@ function writeHash(state: QueryState): void {
 async function ensureSdkReady(shazamme: ShazammeClient, data: DudaData): Promise<void> {
   const s = shazamme as unknown as {
     _sid?: string;
+    _site?: unknown;
     ready?: (sid: string, page?: unknown) => unknown;
   };
   const d = data as { siteId?: string; siteID?: string; page?: unknown };
   const sid = s._sid || d.siteId || d.siteID;
   if (!sid) return;
-  // Seed the dudaSiteID, then AWAIT ready() so the SDK resolves + caches site()
-  // before loadJobs calls it. Fire-and-forget here races the bootstrap and the
-  // SDK's site() (no error path) hangs when it loses, so render() never runs.
   s._sid = s._sid || sid;
+  // If the SDK already resolved its site, it's ready — do NOT await ready() again.
+  // On a fast cached/2nd load the page has already called ready(); a second call
+  // can hand back a promise that never resolves, hanging the widget so it never
+  // renders/reveals (looks like "1st load ok, 2nd not"). Otherwise await ready()
+  // but cap it with a timeout so we can never hang on it.
+  if (s._site) return;
   if (typeof s.ready === 'function') {
-    try { await s.ready(s._sid, d.page); } catch { /* ignore */ }
+    try {
+      await Promise.race([
+        Promise.resolve(s.ready(s._sid, d.page)),
+        new Promise<void>((resolve) => setTimeout(resolve, SDK_READY_TIMEOUT_MS)),
+      ]);
+    } catch { /* ignore */ }
   }
 }
 

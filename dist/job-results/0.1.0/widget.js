@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-07-29T00:17:17.921Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-07-29T01:36:11.063Z. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var module = module || {};
@@ -974,6 +974,7 @@ module.exports = (() => {
   // widgets/job-results/index.ts
   var GEOCODE_DEBOUNCE_MS = 500;
   var INPUT_DEBOUNCE_MS = 400;
+  var SDK_READY_TIMEOUT_MS = 1200;
   var FAKE_JOBS = [
     { jobID: "1", jobName: "Senior Nurse", category: "Healthcare", jobType: "Permanent", jobTypeID: "perm", professionID: "health", city: "London", state: "England", workType: "Full Time", changedOnUTC: (/* @__PURE__ */ new Date()).toISOString() },
     { jobID: "2", jobName: "Site Engineer", category: "Construction", jobType: "Contract", jobTypeID: "contract", professionID: "build", city: "Manchester", state: "England", workType: "Contract", changedOnUTC: (/* @__PURE__ */ new Date()).toISOString() }
@@ -1002,9 +1003,13 @@ module.exports = (() => {
     const sid = s._sid || d.siteId || d.siteID;
     if (!sid) return;
     s._sid = s._sid || sid;
+    if (s._site) return;
     if (typeof s.ready === "function") {
       try {
-        await s.ready(s._sid, d.page);
+        await Promise.race([
+          Promise.resolve(s.ready(s._sid, d.page)),
+          new Promise((resolve) => setTimeout(resolve, SDK_READY_TIMEOUT_MS))
+        ]);
       } catch (e) {
       }
     }

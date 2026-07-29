@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-07-29T00:17:17.921Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-07-29T01:36:11.063Z. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var module = module || {};
@@ -557,15 +557,20 @@ module.exports = (() => {
     const opts = nodes.slice().sort((a, b) => a.value.toLowerCase() < b.value.toLowerCase() ? -1 : 1).map((n) => `<option value="${n.id}">${n.value}</option>`).join("");
     return `<option value="">${placeholder}</option>${opts}`;
   }
+  var SDK_READY_TIMEOUT_MS = 1200;
   async function ensureSdkReady(shazamme, data) {
     const s = shazamme;
     const d = data;
     const sid = s._sid || d.siteId || d.siteID;
     if (!sid) return;
     s._sid = s._sid || sid;
+    if (s._site) return;
     if (typeof s.ready === "function") {
       try {
-        await s.ready(s._sid, d.page);
+        await Promise.race([
+          Promise.resolve(s.ready(s._sid, d.page)),
+          new Promise((resolve) => setTimeout(resolve, SDK_READY_TIMEOUT_MS))
+        ]);
       } catch (e) {
       }
     }
