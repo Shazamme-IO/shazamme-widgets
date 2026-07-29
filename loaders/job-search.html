@@ -1,11 +1,14 @@
 <!-- Shazamme job-search widget — paste into the Duda widget's JavaScript tab.
-     Pinned to release v0.1.0. To roll forward/back, change VER to another tag. -->
+     Pinned to release TAG v0.1.1 (immutable — jsDelivr resolves tags instantly,
+     unlike @main which caches its branch->commit resolution for up to 12h).
+     To roll forward/back, bump TAG to another release. VER = dist folder version. -->
 <script>
 (function () {
   var NAME = "job-search";
+  var TAG  = "v0.1.1";
   var VER  = "0.1.0";
-  var SRC  = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@v" +
-             VER + "/dist/" + NAME + "/" + VER + "/widget.min.js";
+  var SRC  = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" +
+             TAG + "/dist/" + NAME + "/" + VER + "/widget.min.js";
 
   function run() {
     var controller = window.ShazammeWidget && window.ShazammeWidget[NAME];
