@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-07-29T05:27:22.563Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-07-29T05:39:16.341Z. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var module = module || {};
@@ -1071,9 +1071,9 @@ module.exports = (() => {
         d.style.maxWidth = "100%";
         d.style.width = "100%";
         const list = listEl;
-        list.style.display = "grid";
-        list.style.gridTemplateColumns = "repeat(auto-fill, minmax(300px, 1fr))";
-        list.style.gap = "20px";
+        list.style.setProperty("display", "grid", "important");
+        list.style.setProperty("grid-template-columns", "repeat(auto-fill, minmax(300px, 1fr))", "important");
+        list.style.setProperty("gap", "20px", "important");
       }
     }
     function setView(view) {

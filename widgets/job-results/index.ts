@@ -173,10 +173,12 @@ export default function jobResults(ctx: WidgetContext): void {
       d.style.width = '100%';
       // Full-width → lay cards out in a responsive multi-column grid (≈4 across on
       // desktop, collapsing on smaller screens) — the talent/paxus reference look.
+      // Use !important: the site's Duda `.grid` CSS forces a single column with its
+      // own !important rule, which would otherwise beat plain inline styles.
       const list = listEl as HTMLElement;
-      list.style.display = 'grid';
-      list.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
-      list.style.gap = '20px';
+      list.style.setProperty('display', 'grid', 'important');
+      list.style.setProperty('grid-template-columns', 'repeat(auto-fill, minmax(300px, 1fr))', 'important');
+      list.style.setProperty('gap', '20px', 'important');
     }
   }
 
