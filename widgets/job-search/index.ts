@@ -141,6 +141,11 @@ export default function jobSearch(ctx: WidgetContext): void {
       el.style.setProperty('border', '1.5px solid #d1d1d1', 'important');
       el.style.setProperty('box-sizing', 'border-box', 'important');
       el.style.setProperty('color', '#222', 'important');
+      // Duda themes input/select with a margin-bottom (3px), which makes the
+      // native columns taller than the multi-select boxes and, since the bar is
+      // bottom-aligned, drops the multi-selects 3px lower. Zero it so every field
+      // lines up. (Column spacing lives on .flex-items-js, not the field.)
+      el.style.setProperty('margin', '0', 'important');
     });
   }
 

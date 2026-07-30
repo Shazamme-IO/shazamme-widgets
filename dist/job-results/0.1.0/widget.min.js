@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-07-30T02:05:07.504Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-07-30T03:18:30.834Z. Registers window.ShazammeWidget["<name>"].
  */
 (function(){
   if (typeof document === 'undefined') return;

@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-07-30T02:05:07.504Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-07-30T03:18:30.834Z. Registers window.ShazammeWidget["<name>"].
  */
 (function(){
   if (typeof document === 'undefined') return;
@@ -616,6 +616,7 @@ module.exports = (() => {
         el.style.setProperty("border", "1.5px solid #d1d1d1", "important");
         el.style.setProperty("box-sizing", "border-box", "important");
         el.style.setProperty("color", "#222", "important");
+        el.style.setProperty("margin", "0", "important");
       });
     }
     function guardFields() {
