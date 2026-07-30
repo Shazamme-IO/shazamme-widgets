@@ -100,6 +100,7 @@ export function buildModel(
       const end = pageSize > 0 ? start + pageSize : undefined;
       return {
         page: c.sorted.slice(start, end),
+        matching: c.sorted,
         total: c.total,
         facets: c.facets,
       };

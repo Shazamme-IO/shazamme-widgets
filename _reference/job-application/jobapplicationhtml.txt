@@ -1,0 +1,597 @@
+
+    <script
+      src="https://kit.fontawesome.com/6aeaeb21af.js"
+      crossorigin="anonymous"
+    ></script>
+
+{{#equals applicationLayout "fullForm"}}
+    <div class="shmApplicationMainContainer">
+        
+        {{#if shmLoginContainer}}
+        <div class="shmLoginContainer">
+            <div class="social-login-container" style="--shazamme-justify-content: {{SocialButtonAlignment}}">
+                
+                {{#if showFacebook}}
+                     <div class="container-item" data-provider="facebook">
+                         <div class="fb-container socialLoginBtn">
+                            <img class="loginIcons" src="https://irt-cdn.multiscreensite.com/47a48e4b62c549f1aed5fcb941430b93/dms3rep/multi/facebook-logo.webp" >
+                            <p>Sign in with Facebook</p>
+                         </div>
+                     </div>
+                  {{/if}}
+                  
+                {{#if showLinkedInProvider}}
+                    <div class="container-item" data-provider="linkedin">
+                        <div class="linkedin-container socialLoginBtn">
+                            <img class="loginIcons" src="https://irt-cdn.multiscreensite.com/47a48e4b62c549f1aed5fcb941430b93/dms3rep/multi/linkedin-Logo.webp" >
+                             <p>Sign in with LinkedIn</p>
+                         </div>
+                    </div>
+                {{/if}}
+                
+                {{#if showGoogle}}
+                    <div class="container-item" data-provider="google">
+                         <div class="google-container socialLoginBtn">
+                            <img class="loginIcons" src="https://irt-cdn.multiscreensite.com/47a48e4b62c549f1aed5fcb941430b93/dms3rep/multi/google-logo.webp" >
+                             <p>Sign in with Google</p>
+                         </div>
+                    </div>
+                {{/if}}
+            </div>
+            
+                <div class="login-form-container" id="shzmLoginForm">
+                {{#if showLoginTitle}}
+                    <h3>{{loginTitleText}}</h3>
+                {{/if}}
+                <div class="input-field-container">
+                    {{#if showLoginInputLabel}}
+                        <label for="emailLogin">{{emailInputLabel}}</label>
+                    {{/if}}
+                        <input type="text" id="emailLogin" placeholder="{{emailInputPlaceholder}}">
+                </div>
+                
+                <div class="smart-login-login">
+                    <div class="input-field-container">
+                        {{#if showLoginInputLabel}}
+                            <label for="passwordLogin">{{passwordInputLabel}}</label>
+                        {{/if}}
+                        <div class="password">
+                            <input type="password" id="passwordLogin" placeholder="{{passwordInputPlaceholder}}">
+                             <i class="fas fa-eye-slash eye"></i>
+                        </div>
+                            
+                            
+                    </div>
+                    <div class="input-field-container">
+                    <div class="forgotPwMainContainer">
+                        <div class="forgotPwTextContainer">
+                            <a class="forgotPasswordText" href="/forgot-password">{{forgotPasswordLabel}}</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+                <div class="input-field-container smart-login-login">
+                    <div class="loginBtn" id="loginBtn" onclick="var e=this;setTimeout(function(){e.disabled=true;},0);return true;" ><span class="text">{{loginBtnText}}</span></div>
+                </div>
+            </div>
+        </div>   
+        {{/if}}
+        
+        <div class="spaceBetweenForms"></div>
+        
+        {{#if shmLoginApply}}
+
+        <div class="smart-login-register">
+            <div class="applyMainSocial" style="--shazamme-justify-content: {{SocialButtonAlignment}}">
+                {{#if showIndeed}}
+                    <div class="application-item-container" >
+                        <span>Your Indeed profile will create a profile automatically</span> 
+                        <a class="ATSProvider" id="applyIndeedBtn" data-provider="indeed">Apply using indeed</a>
+                    </div>
+                {{/if}}
+                {{#if showLinkedIn}}
+                    <div class="application-item-container">
+                        <span>Your LinkedIn profile will create a profile automatically</span>
+                       <a class="ATSProvider" id="applyLinkedInBtn" data-provider="linkedin" >Apply using LinkedIn</a>
+                    </div>
+                {{/if}}
+                {{#if showSeek}}
+                    <div class="application-item-container">
+                        <span>Your Seek profile will create a profile automatically</span>
+                        <button class="ATSProvider seek-btn" id="applySeekBtn" data-provider="seek" >Apply with <img src="https://irp.cdn-website.com/f4acdc09/dms3rep/multi/seek-logo-blue.svg"></button>
+                    </div>
+                {{/if}}    
+            </div>
+            
+            <div class="shmregistrationContainer">
+                {{#if showRegisterTitle}}
+                    <h1 class="greeting-message"></h1>
+                    <h3 class="shmRegistrationTitle">{{registerTitle}}</h3>
+                {{/if}}
+                
+                <div class="register-form-container">
+                    
+                    <div class="registerFormCol1">
+                         <div class="message-Seek hide">Please wait while we fetch your resume and information...</div>
+
+                        <div class="input-field-container">
+                            {{# if showRegisterInputLabel}}
+                            <label for="firstName">{{registerFirstNameLabel}}</label>
+                            {{/if}}
+                            <input type="text" id="firstName" placeholder="{{registerFirstNamePlaceholder}}" autocomplete="nope" tabindex="1"/>
+                        </div>
+                        
+                        <div class="input-field-container input-field-spacer">
+                            {{# if showRegisterInputLabel}}
+                            <label for="emailAddress">{{registerEmailLabel}}</label>
+                            {{/if}}
+                            <input type="text" id="emailAddress" placeholder="{{registerEmailPlaceholder}}" autocomplete="nope" tabindex="3" />
+                        </div>
+                        
+                         {{#if showPhoneNumber}}
+                        <div class="input-field-container input-field-spacer">
+                            {{# if showRegisterInputLabel}}
+                            <label for="phoneNumber">{{registerPhoneLabel}}</label>
+                            {{/if}}
+                            <input type="telephone" id="phoneNumber" data-name="{{registerPhoneLabel}}" placeholder="{{registerPhoneNumberPlaceholder}}" autocomplete="nope" tabindex="4" />
+                        </div>
+                        {{/if}}
+                        
+                        {{# if showSalutation}} 
+                            <div class="input-field-container">
+                            {{# if showRegisterInputLabel}}
+                                <label for="salutation">{{salutationText}}</label>
+                            {{/if}}
+                                <select id="salutation" tabindex="1">
+                                    {{#each salutationList}}
+                                    <option>{{title}}</option>
+                                    {{/each}}
+                                </select>
+                            </div>
+                        {{/if}}
+                        
+                        {{#if showPassword}}
+                        <div class="input-field-container input-field-spacer">
+                            {{# if showRegisterInputLabel}}
+                            <label for="passwordInput">{{registerPasswordLabel}}</label>
+                            {{/if}}
+
+                            <input type="password" id="passwordInput" placeholder="{{registerPasswordPlaceholder}}" autocomplete="nope" tabindex="4" />
+                          
+                            <div class="passwordValidationContainer" id="passwordMessage">
+                                <span class="passwordErrorTitle" >Password must contain the following:</span>
+                                <span id="capital" class="invalid passwordNote">A <b>capital (uppercase)</b> letter</span>
+                                <span id="number" class="invalid passwordNote">A <b>number</b></span>
+                                <span id="length" class="invalid passwordNote">Minimum <b>8 characters</b></span>
+                                <span id="specialChar" class="invalid passwordNote">Password must contain <b>special chars ex: !@#$%^&*?</b></span>
+                            </div>
+                            <div class="arrow-bottom"></div>
+                        </div>
+                        {{/if}}
+
+                        {{#if showAboriginal}}
+                        <div class="input-field-container input-field-spacer">
+                            {{# if showRegisterInputLabel}}
+                            <div class="aboriginalContainer">            
+                            <label for="aboriginal">Aboriginal or Torres Strait Islander?</label>
+                            {{/if}}
+                            <input type="checkbox" id="aboriginal" />
+                            </div>
+                        </div>
+                        {{/if}}
+          
+    
+                    </div>
+                   
+                    <div class="registerFormCol2">
+                        
+                         <div class="input-field-container">
+                            {{# if showRegisterInputLabel}}
+                            <label for="lastName">{{registerLastNameLabel}}</label>
+                            {{/if}}
+                            <input type="text" id="lastName" placeholder="{{registerLastNamePlaceholder}}" autocomplete="nope" tabindex="2" />
+                        </div>
+                        
+                        <div class="input-field-container input-field-spacer">
+                            <label style="visibility: hidden;">*</label>
+                            <input style="visibility: hidden;" />
+                        </div>
+
+                         {{#if showMobileNumber}}
+                        <div class="input-field-container input-field-spacer">
+                            {{# if showRegisterInputLabel}}
+                            <label for="mobileNumber">{{registerMobileLabel}}</label>
+                            {{/if}}
+                            <input type="telephone" id="mobileNumber" data-name="{{registerMobileLabel}}" placeholder="{{registerMobileNumberPlaceholder}}" autocomplete="nope" tabindex="4" />
+                        </div>
+                        {{/if}}
+                        
+                         {{#if showGender}}
+                        <div class="input-field-container input-field-spacer">
+                            {{# if showRegisterInputLabel}}
+                            <label for="gender">{{genderLabelText}}</label>
+                            {{/if}}
+                            <select id="gender">
+                                <option>Not Specified</option>
+                                <option>Male</option>
+                                <option>Female</option>
+                                <option>Non-binary</option>
+                            </select>
+                        </div>
+                        {{/if}}
+    
+                    </div>
+                
+                </div>
+                
+            </div>
+            
+            <div class="nativeApplyNowContainer">
+                {{#if showResume}}
+                <div class="itemApplyContainer">
+                    <div class="radioBtnContainer">
+                        {{#if showApplyRadio}}
+                        <div class="shmApplyRadio">
+                            <input type="radio" id="noUpload" name="uploadTypeResume" value="noUploadResume">
+                            <label for="noUpload">{{noUploadLabelText}}</label>
+                        </div>
+                        {{/if}}
+                    </div>
+                    <div class="radioBtnContainer uploadExisting">
+                        <div class="shmApplyRadio">
+                            <input type="radio" id="uploadExisting" name="uploadTypeResume" value="uploadExisting">
+                            <label for="uploadExisting">{{upLoadExistingLabelText}}</label>
+                        </div>
+                    </div>
+                    <div class="radioBtnContainer">
+                        <div class="shmApplyRadio">
+                            <input type="radio" id="radioResume" name="uploadTypeResume" value="uploadResume" checked >
+                            <label for="radioResume">{{upLoadResumeLabelText}}</label>
+                        </div>
+                        <div class="fileUploadContainer">
+                            <input required type="file" data-tobeUploaded="true" id="resume" name="resume" accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf">
+                        </div>
+                        {{#if showResumeHint}}
+                            <div class="label-hint resume">{{resumeHint}}</div>
+                        {{/if}}
+                        
+                    </div>
+                </div>
+                {{/if}}
+                
+                {{#if showCoverLetter}}
+                <div class="itemApplyContainer">
+                    <div class="radioBtnContainer">
+                        {{#if showApplyRadioNoCover}}
+                        <div class="shmApplyRadio">
+                            <input type="radio" id="noCoverLetter" name="uploadTypeCover" value="noCoverLetter">
+                            <label for="noCoverLetter">{{noCoverLetterLabelText}}</label>
+                        </div>
+                        {{/if}}
+                    </div>
+                    <div class="radioBtnContainer">
+                        <div class="shmApplyRadio">
+                            <input type="radio" id="radioCover" name="uploadTypeCover" value="uploadCover" checked>
+                            <label for="radioCover">{{upLoadCoverLetterLabelText}}</label>
+                            {{#if showSeek}}
+                                <div class="candidateCVFileContainer">
+
+                                </div>
+                                <input type="hidden" id="seekBinaryFile">
+                            {{/if}}
+                        </div>
+                        <div class="coverUploadContainer">
+                            <input required type="file" id="cover" name="cover" accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf">
+                        </div>
+                        
+                        {{#if showCoverLetterHint}}
+                            <div class="label-hint cover-letter">{{coverLetterHint}}</div>
+                        {{/if}}
+                       
+                    </div>
+                </div>
+                {{/if}}
+            </div>
+            
+            {{#if showScreeningQuestions}}
+                <div data-rel="screening-fields"></div>
+            {{/if}}
+                
+            <div class="privacyPolicyContainer">
+                <div class="privacyPolicy">
+                    <div class="privacy-item-container">
+                        <a class="privacyLinkText" href="{{privacyPolicyLink}}" target="_blank">{{privacyPolicyText}}</a>
+                    </div>
+                 
+                </div>
+            </div>
+            {{#equals showSubscription "true"}}
+            <div class="subscriptionContainer">
+                <input class="checkSubscribed" type="checkbox" data-rel="checkbox-subscribe" />
+                <span>&nbsp;{{subscriptionText}}</span>
+            </div>
+            {{/equals}}
+            
+            {{#if requireApproval}}
+              <div class="privacy-item-container  ">
+             <input type="checkbox" data-rel="field-approve" />
+            <label class="requiresApproval">{{agreeText}}</label>
+             <a class="privacyStatement" href="{{privacyPolicyLink}}" target="_blank">{{privacyStatement}}</a>
+        </div>
+           
+            {{/if}}
+            
+            <div class="submitApplicationBtnContainer">
+                <div class="submitApplicationBtn">
+                    <div class="applyText"><span class="text">{{applyTextBtn}}</span></div>
+                    <span class="loaderSpinner"><i class="fa fa-circle-o-notch fa-spin"></i>Submiting application...</span>
+                </div>
+            </div>
+        </div>
+        </div>
+      {{/if}}
+{{/equals}}
+
+
+
+{{#equals applicationLayout "simpleForm"}}
+
+    <div class="shmApplicationMainContainer simpleForm">
+        
+        <div class="errorDiv"><p>This email is already in use, please login </p></div>
+
+                 <div class="social-login-container" style="--shazamme-justify-content: {{SocialButtonAlignment}}">
+                 {{#if showFacebookApply}}
+                     <div class="container-item" data-provider="facebook">
+                         <div class="fb-container socialLoginBtn">
+                            <img class="loginIcons" src="https://irt-cdn.multiscreensite.com/47a48e4b62c549f1aed5fcb941430b93/dms3rep/multi/facebook-logo.webp" >
+                            <p>Sign in with Facebook</p>
+                         </div>
+                     </div>
+                  {{/if}}
+                  
+                {{#if showLinkedInProviderApply}}
+                    <div class="container-item" data-provider="linkedin">
+                        <div class="linkedin-container socialLoginBtn">
+                            <img class="loginIcons" src="https://irt-cdn.multiscreensite.com/47a48e4b62c549f1aed5fcb941430b93/dms3rep/multi/linkedin-Logo.webp" >
+                             <p>Sign in with LinkedIn</p>
+                         </div>
+                    </div>
+                {{/if}}
+                
+                {{#if showGoogleApply}}
+                    <div class="container-item" data-provider="google">
+                         <div class="google-container socialLoginBtn">
+                            <img class="loginIcons" src="https://irt-cdn.multiscreensite.com/47a48e4b62c549f1aed5fcb941430b93/dms3rep/multi/google-logo.webp" >
+                             <p>Sign in with Google</p>
+                         </div>
+                    </div>
+                {{/if}}
+            </div>
+            
+         
+        <div class="shmregistrationContainer simpleForm">
+           
+            <div class="register-form-container">
+                <div class="applyMainSocial" style="--shazamme-justify-content: {{SocialButtonAlignment}}">
+                    {{#if showIndeed}}
+                        <div class="application-item-container" >
+                            <span>Your Indeed profile will create a profile automatically</span>
+                            <a class="ATSProvider applyIndeed" id="applyIndeedBtn"  data-provider="indeed" >Apply using indeed</a>
+                        </div>
+                    {{/if}}
+                    {{#if showLinkedIn}}
+                        <div class="application-item-container">
+                            <span>Your LinkedIn profile will create a profile automatically</span>
+                           <a class="ATSProvider applyLinkedIn"  id="applyLinkedInBtn"  data-provider="linkedin" >Apply using LinkedIn</a>
+                        </div>
+                    {{/if}}
+                    {{#if showSeek}}
+                        <div class="application-item-container ">
+                            <span>Your Seek profile will create a profile automatically</span>
+                            <button class="ATSProvider seek-btn" id="applySeekBtn"  data-provider="seek" >Apply with <img src="https://irp.cdn-website.com/f4acdc09/dms3rep/multi/seek-logo-blue.svg"></button>
+                        </div>
+                    {{/if}}    
+                </div>
+                <div class="shmregistrationContainer simpleForm">
+                     {{#if showRegisterTitle}}
+                     <h3 class="shmRegistrationTitle">{{registerTitle}}</h3>
+                    {{/if}}
+                    <div class="register-form-container">
+                        <div class="registerFormCol1">
+                            <div class="message-Seek hide">Please wait while we fetch your resume and information...</div>
+                            <div class="input-field-container">
+                          {{#if showRegisterInputLabel}}
+                            <label for="firstName">{{registerFirstNameLabel}}</label>
+                          {{/if}}
+                                <input type="text" id="firstName"  placeholder="{{registerFirstNamePlaceholder}}" autocomplete="nope" tabindex="1"/>
+                            </div>
+
+                            <div class="input-field-container">
+                            {{#if showRegisterInputLabel}}
+                                <label for="lastName">{{registerLastNameLabel}}</label>
+                            {{/if}}
+                                <input type="text" id="lastName" placeholder="{{registerLastNamePlaceholder}}" autocomplete="nope" tabindex="2" />
+                            </div>
+
+                            {{#if showGender}}
+                            <div class="input-field-container input-field-spacer">
+                                {{# if showRegisterInputLabel}}
+                                <label for="gender">{{genderLabelText}}</label>
+                                {{/if}}
+                                <select id="gender" placeholder="{{registerGenderPlaceholder}}">
+                                    <option>Not Specified</option>
+                                    <option>Male</option>
+                                    <option>Female</option>
+                                    <option>Non-binary</option>
+                                </select>
+                            </div>
+                            {{/if}}
+
+                        </div>
+
+                        <div class="registerFormCol2">
+
+                            <div class="input-field-container input-field-spacer">
+                               {{# if showRegisterInputLabel}}
+                                <label for="emailAddress">{{registerEmailLabel}}</label>
+                               {{/if}}
+                                <input type="text" id="emailAddress" placeholder="{{registerEmailPlaceholder}}" autocomplete="nope" tabindex="3" />
+                            </div>
+
+                            {{#if showPhoneNumber}}
+                            <div class="input-field-container input-field-spacer">
+                               {{# if showRegisterInputLabel}}
+                                <label for="phoneNumber">{{registerPhoneLabel}}</label>
+                                {{/if}}
+                                <input type="telephone" id="phoneNumber" data-name="{{registerPhoneLabel}}" placeholder="{{registerPhoneNumberPlaceholder}}" autocomplete="nope" tabindex="4" />
+                            </div>
+                            {{/if}}
+
+                            {{#if showMobileNumber}}
+                            <div class="input-field-container input-field-spacer">
+                               {{# if showRegisterInputLabel}}
+                                <label for="mobileNumber">{{registerMobileLabel}}</label>
+                                {{/if}}
+                                <input type="telephone" id="mobileNumber" data-name="{{registerMobileLabel}}" placeholder="{{registerMobileNumberPlaceholder}}" autocomplete="nope" tabindex="4" />
+                            </div>
+                            {{/if}}
+
+                            {{#if showPassword}}
+                            <div class="input-field-container input-field-spacer">
+                               {{#if showRegisterInputLabel}}
+                                <label for="passwordInput">{{registerPasswordLabel}}</label>
+                               {{/if}}
+                                <input type="password" id="passwordInput" placeholder="" autocomplete="nope" tabindex="4" />
+
+                                <div class="passwordValidationContainer" id="passwordMessage">
+                                    <span class="passwordErrorTitle" >Password must contain the following:</span>
+                                    <span id="capital" class="invalid passwordNote">A <b>capital (uppercase)</b> letter</span>
+                                    <span id="number" class="invalid passwordNote">A <b>number</b></span>
+                                    <span id="length" class="invalid passwordNote">Minimum <b>8 characters</b></span>
+                                    <span id="specialChar" class="invalid passwordNote">Password must contain <b>special chars ex: !@#$%^&*?</b></span>
+                                </div>
+                                <div class="arrow-bottom"></div>
+                            </div>
+                            {{/if}}
+                            
+                            {{#if showAboriginal}}
+                            <div class="input-field-container input-field-spacer">
+                                {{# if showRegisterInputLabel}}
+                                <label for="aboriginal">Aboriginal or Torres Strait Islander?</label>
+                                {{/if}}
+                                <input type="checkbox" id="aboriginal" />
+                            </div>
+                            {{/if}}
+                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        
+            <div class="nativeApplyNowContainer">
+                {{#if showResume}}
+                <div class="itemApplyContainer">
+                    <div class="radioBtnContainer">
+                        {{#if showApplyRadio}}
+                        <div class="shmApplyRadio">
+                            <input type="radio" id="noUpload" name="uploadTypeResume" value="noUploadResume">
+                            <label for="noUpload">{{noUploadLabelText}}</label>
+                        </div>
+                        {{/if}}
+                    </div>
+                    <div class="radioBtnContainer uploadExisting">
+                        <div class="shmApplyRadio">
+                            <input type="radio" id="uploadExisting" name="uploadTypeResume" value="uploadExisting">
+                            <label for="uploadExisting">{{upLoadExistingLabelText}}</label>
+                        </div>
+                    </div>
+                    <div class="radioBtnContainer">
+                        <div class="shmApplyRadio">
+                            <input type="radio" id="radioResume" name="uploadTypeResume" value="uploadResume" checked >
+                            <label for="radioResume">{{upLoadResumeLabelText}}</label>
+                        </div>
+                        <div class="fileUploadContainer">
+                            <input required type="file" data-tobeUploaded="true" id="resume" name="resume" accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf">
+                        </div>
+                    </div>
+                </div>
+                {{/if}}
+                
+                {{#if showCoverLetter}}
+                <div class="itemApplyContainer">
+                    <div class="radioBtnContainer">
+                        {{#if showApplyRadioNoCover}}
+                        <div class="shmApplyRadio">
+                            <input type="radio" id="noCoverLetter" name="uploadTypeCover" value="noCoverLetter" checked >
+                            <label for="noCoverLetter">{{noCoverLetterLabelText}}</label>
+                        </div>
+                        {{/if}}
+                    </div>
+                        
+                    <div class="radioBtnContainer">
+                        <div class="shmApplyRadio">
+                            <input type="radio" id="radioCover" name="uploadTypeCover" value="uploadCover" >
+                            <label for="radioCover">{{upLoadCoverLetterLabelText}}</label>
+                            {{#if showSeek}}
+                                <div class="candidateCVFileContainer">
+
+                                </div>
+                                <input type="hidden" id="seekBinaryFile">
+                            {{/if}}
+                        </div>
+                        <div class="coverUploadContainer">
+                            <input required type="file" id="cover" name="cover" accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf">
+                        </div>
+                       
+                    </div>
+                </div>
+                {{/if}}
+            </div>
+                
+            <!--need to append seek binary file here-->
+            {{#if showSeek}}
+                <input type="hidden" id="seekBinaryFile">
+            {{/if}}
+
+        <div class="privacyPolicyContainer simpleForm">
+            <div class="privacyPolicy">
+                <div class="privacy-item-container">
+                    <a class="privacyLinkText" href="{{privacyPolicyLink}}" target="_blank">{{privacyPolicyText}}</a>
+                </div>
+            </div>
+        </div>
+        {{#equals showSubscription "true"}}
+            <div class="subscriptionContainer">
+                <input class="checkSubscribed" type="checkbox" data-rel="checkbox-subscribe" />
+                <span>&nbsp;{{subscriptionText}}</span>
+            </div>
+        {{/equals}}
+
+        {{#if requireApproval}}
+        <div class="privacy-item-container  ">
+             <input type="checkbox" data-rel="field-approve" />
+            <label class="requiresApproval">{{agreeText}} &nbsp;</label>
+            <a class="privacyStatement" href="{{privacyPolicyLink}}" target="_blank">{{privacyStatement}}</a>
+        </div>
+        {{/if}}
+        
+        <div class="submitApplicationBtnContainer simpleForm">
+            <div class="submitApplicationBtn">
+                <div class="applyText"><span class="text">{{applyTextBtn}}</span></div>
+            </div>
+        </div>
+        
+    </div>
+{{/equals}}
+
+<div class="section-no-job-message">{{{WarningJobUnavailable}}}</div>
+
+<div class="fcLoader">
+    <div class="fcLoadingSeek">
+        <img src="https://irp.cdn-website.com/af796061/dms3rep/multi/Animation+-+1731553137869.gif" alt="">
+    </div>
+</div>
+

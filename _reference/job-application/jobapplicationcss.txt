@@ -1,0 +1,808 @@
+.errorDiv {
+    border: 1px solid #f56363;
+    padding: 10px;
+    color: #c71313;
+    background: #ffcaca;
+    display:none;
+}
+
+/*SEEK Message */
+.message-Seek.hide{
+    font-family:inherit;
+    font-size:18px;
+    text-align:left !important;
+    display:none !important;
+}
+.message-Seek{
+    font-family:inherit;
+    font-size:18px;
+    text-align:left !important;
+    display:block !important;
+}
+
+/*Simple form style*/
+.shmApplicationMainContainer.simpleForm{
+    padding:1rem 1rem !important;
+    /*padding:3rem 5rem !important; */
+    background:#fff;
+    border:0px solid #e1e1e1;
+}
+.shmregistrationContainer.simpleForm .register-form-container{
+    flex-direction:column !important;
+}
+.shmregistrationContainer.simpleForm .register-form-container .registerFormCol2{
+    padding-left:0;
+}
+.shmregistrationContainer.simpleForm .register-form-container > .registerFormCol1, .shmregistrationContainer.simpleForm .register-form-container > .registerFormCol2{
+    width:100% !important;
+    margin:0 !important;
+    padding:0;
+}
+
+.shmApplicationMainContainer.simpleForm .submitApplicationBtn, .submitApplicationBtnContainer.simpleForm .submitApplicationBtn{
+    width:100%;
+    font-family:inherit;
+}
+.shmApplicationMainContainer.simpleForm .nativeApplyNowContainer .itemApplyContainer .radioBtnContainer .shmApplyRadio #radioCover{
+    /* display:none !important; */
+}
+
+
+
+.shmApplicationMainContainer.simpleForm .nativeApplyNowContainer {
+    padding:10px !important;
+}
+
+/*End simpleform style*/
+
+.shmApplicationMainContainer {
+    padding:1rem 1rem !important;
+    background:#fff;
+    border:0px solid #e1e1e1;
+}
+
+.arrow-bottom {
+    display:none;
+    width: 0;
+    height:0;
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-top: 15px solid #fca4a4;
+    position: absolute;
+    right: 165px;
+    top: 25px;
+}
+.passwordNote{
+    font-size:12px !important;
+}
+.passwordNote b{
+    font-weight:normal !important;
+}
+.passwordErrorTitle{
+    color: red;
+}
+#passwordMessage{
+    display:none;
+    flex-direction:column;
+    background: #ffa1a1;
+    color: red;
+    position: relative;
+    padding: 20px;
+    margin-top: 10px;
+    width:360px;
+    position:absolute;
+    padding: 20px !important;
+    z-index: 9;
+    font-size: 12px !important;
+    top: -125px;
+    right: 0;
+    opacity:0.9;
+    text-align:left !important;
+    line-height:normal;
+}
+
+.passwordValidationContainer{
+    display:flex;
+    flex-direction:column;
+    text-align:left !important;
+    padding:20px;
+    box-sizing:border-box;
+    
+}
+.passwordMessage span {
+  padding: 10px 35px;
+  font-size: 18px;
+}
+
+.valid {
+  color: green !important;
+}
+.valid:before {
+    position: relative;
+    left: -5px;
+    content: "✔";
+}
+.invalid {
+  color: red;
+}
+.invalid:before {
+  position: relative;
+  left: -5px;
+  content: "✖";
+}
+
+.hideForNow{
+    display:none;
+}
+/*Social logins*/
+
+.socialLoginBtn p {
+    margin-top: 0;
+    margin-bottom: 0 !important;
+}
+    
+.social-login-container{
+    display: flex;
+    width: 100%;
+    position: relative;
+    box-sizing: border-box;
+    padding: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    padding-left: 0;
+    justify-content: var(--shazamme-justify-content);
+}
+
+.container-item{
+    flex: 1 0 auto;
+    padding: 5px;
+    cursor: pointer;
+    min-width: 300px;
+    max-width: 300px;
+}
+
+.socialLoginBtn{
+    display: flex;
+    width: 100%;
+    height: 45px;
+    min-width: 200px;
+    position: relative;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0px;
+    box-shadow: 0px 1px 3px 0px #cbcbcb;
+    box-sizing: border-box;
+    font-size: inherit;
+    font-family: inherit;
+}
+.loginIcons{
+    position: relative;
+    box-sizing: border-box;
+    width: 25px;
+    height: 25px;
+    margin-right: 10px;
+    object-fit: contain;
+}
+.fb-container{
+    background:#1877F2;
+    color:#fff;
+}
+.linkedin-container{
+    background:#0076B4;
+    color:#fff;
+}
+.google-container{
+    background:#fff;
+    color:#000;
+}
+
+/*Login button */
+.shmLoginContainer{
+    margin-top:15px;
+}
+.shmRegistrationTitle{
+    margin:5px;
+    text-align:left;
+    margin-left:0;
+}
+
+#shzmLoginForm h3{
+    text-align:left !important;
+    margin:5px;
+    margin-left:0;
+    font-family:inherit;
+}
+
+.register-form-container,.login-form-container {
+    display: flex;
+    position: relative;
+    box-sizing: border-box;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    flex-direction: column;
+    font-family:inherit;
+}
+
+.input-field-container {
+    display: flex;
+    position: relative;
+    flex: 1;
+    width: 100%;
+    flex-direction: column;
+    font-family: inherit;
+    line-height: normal;
+}
+
+.input-field-container label {
+    text-align: left;
+    font-weight: 500;
+    font-size: 16px;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.input-field-container>input, .input-field-container>select, .input-field-container .password input
+{
+    text-align: left;
+    font-weight: 500;
+    font-size: 16px;
+    cursor: pointer;
+    font-family: inherit;
+    color: #333;
+    height: 46px;
+    background: #fff !important;
+    border-radius: 0px;
+    border: 1px solid #333 !important;
+    font-family: inherit;
+    width: 100%;
+    padding: 10px !important;
+}
+
+/*.input-field-container>input, .input-field-container>select {*/
+/*    padding: 0px !important;*/
+/*}*/
+
+.input-field-container>input::placeholder,
+div.input-field-container input::placeholder
+
+{
+    text-align: inherit;
+    font-weight: inherit;
+    font-size: inherit;
+    font-family: inherit;
+    color: inherit;
+    opacity: 1;
+}
+
+.input-field-container .password {
+    display: block;
+    position: relative;
+    width: 480px;
+}
+
+.input-field-container .password input {
+    height: 46px;
+    background: #fff !important;
+    border-radius: 0px;
+    font-family: inherit;
+    border: 1px solid #333 !important;
+    width: 100%;
+    font-weight: normal;
+    box-sizing: border-box;
+    padding: 10px;
+}
+
+.input-field-container #aboriginal {
+    height: auto;
+    width: auto;
+    margin: 5px 5px 5px 5px;
+}
+
+.input-field-container  label > input[type=date] {
+    height: 46px;
+    background: #fff !important;
+    border-radius: 0px;
+    font-family: inherit;
+    border: 1px solid #333 !important;
+    width: 200px;
+    padding: 20px !important;
+}
+
+.input-field-container> label > input[type=text] {
+    height: 46px;
+    background: #fff !important;
+    border-radius: 0px;
+    font-family: inherit;
+    border: 1px solid #333 !important;
+    width: 100%;
+    padding: 20px !important;
+}
+
+.input-field-container> label > input[type=number]   {
+    height: 46px;
+    background: #fff !important;
+    border-radius: 0px;
+    font-family: inherit;
+    border: 1px solid #333 !important;
+    width: 200px;
+    padding: 20px !important;
+}
+
+.input-field-container> label > input[type=radio] {
+    height: auto;
+    width: auto;
+    margin: 5px 5px 5px 5px;
+    
+}
+
+.aboriginalContainer {            
+    display: flex;            
+    flex-direction: row;            
+    justify-content: flex-start;            
+    align-items: center;            
+}
+
+.input-field-container input:-ms-input-placeholder
+ { /* Edge */
+    font-weight: 200; 
+    color: #8e8e8e;
+}
+
+.input-field-container>* {
+    margin-top: 10px !important;
+    font-size: 18px;
+    font-weight: 600;
+    text-align: left !important;
+}
+
+.input-field-container > label >input[type=checkbox], .input-field-container #aboriginal {
+    height: auto;
+    width: auto;
+    margin: 5px 5px 5px 5px;
+
+}
+
+div.input-field-container input#emailLogin,
+div.input-field-container input#passwordLogin,
+div.input-field-container input#firstName,
+div.input-field-container input#lastName,
+div.input-field-container input#emailAddress,
+select#salutation,
+select#gender,
+input#passwordInput
+{
+    border: 2px solid #333;
+    border-radius: 0px;
+    width: 100%;
+    height: 46px;
+    font-family: inherit;
+    background: #fff !important;
+    padding: 10px !important;
+}
+
+
+.login-form-container .input-field-container .eye {
+    position: absolute;
+    height: 16px;
+    width: 16px;
+    top: 0px;
+    bottom: 0px;
+    right: 10px;
+    margin: auto 0px;
+}
+
+#shzmLoginForm .input-field-container>input{
+    /*width:760px !important;*/
+    height: 46px !important;
+    width: 480px !important;
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+#emailLogin, #passwordLogin {
+    width: 100% !important;
+    height: 46px !important;
+}
+
+div#loginBtn {
+   /*display: flex;*/
+   /* align-items: center;*/
+   /* justify-content: center;*/
+   /* padding: 10px;*/
+   /* border:1px solid #e1e1e1;*/
+    margin-top: 20px !important;
+   /* border-radius: 0px;*/
+   /* cursor: pointer;*/
+   /* transition: background ease-in 500ms;*/
+   /* width: 160px;*/
+   /* font-family:inherit;*/
+    display: flex;
+    position: relative;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    width: 175px;
+    height: 45px;
+    border: 0px solid #333;
+    border-radius: 0px;
+    padding: 10px 15px;
+    background-color: #333;
+    font-family: inherit;
+    color:  #fff;
+    font-size: 16px;
+    font-weight: normal;
+}
+
+.requiresApproval {
+    margin-left: 5px;    
+}
+
+div#loginBtn:hover{
+    background-color: #333;
+    font-family: inherit;
+    color:  #fff;
+   
+}
+.privacy-agree{
+    display:flex;
+}
+/*End login button*/
+/*Regoster stu;e*/
+
+
+
+
+
+.shmregistrationContainer > .register-form-container, .shmregistrationContainer > .login-form-container {
+    display: flex;
+    position: relative;
+    box-sizing: border-box;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    flex-direction: row !important;
+    font-family: inherit;
+}
+.registerFormCol1,.registerFormCol2{
+    width:50% !important;
+    box-sizing:border-box;
+    padding:15px;
+    font-family:inherit;
+}
+.registerFormCol1{
+    padding-left:0;
+}
+
+#dm .shmregistrationContainer .greeting-message {
+    display: block;
+    margin: 40px 0px;
+    font-size: 2em;
+    font-weight: 700;
+    text-align: left;
+    color: #333;
+}
+
+
+#personTitle {
+    height: 50px;
+    padding: 5px;
+    background: #fff;
+    border: 1px solid #e1e1e1;
+    box-shadow:1px 1px 3px 0px #eaeaea;
+    font-family:inherit;
+}
+
+
+
+
+
+
+
+
+
+
+
+div#registerBtn {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 20px;
+    border:1px solid #e1e1e1;
+    font-family:inherit;
+    margin: unset;
+    margin-top: 15px;
+    border-radius: 5px;
+    cursor:pointer !important;
+}
+
+/*End register style*/
+
+.applyMainSocial{
+    display:flex;
+    flex-direction: row;
+    justify-content:flex-start;
+    flex-wrap: wrap;
+    position:relative;
+    box-sizing: border-box;
+    padding:20px;
+    width:100%;
+    /*margin-top: 40px;*/
+    /*border-top: 1px solid #e1e1e1;*/
+    /*padding-top: 40px;*/
+    padding-left:0;
+    font-family:inherit;
+    justify-content:var(--shazamme-justify-content);
+}
+
+#applySeekBtn,#applyIndeedBtn,#applyLinkedInBtn {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    height: 50px;
+    line-height: 38px;
+    color: #fff;
+    border-radius: 0;
+    font-size: 16px;
+    text-align: center;
+    text-decoration: none;
+    font-family: Helvetica, Arial;
+    cursor: pointer;
+    margin-top: 5px;
+    min-height: 40px;
+    max-height: 60px;
+    border-radius: 3px;
+    font-family: inherit;
+    box-shadow: 0px 1px 3px 0px #cbcbcb;
+
+}
+#applyIndeedBtn{
+    background-color: #FB5B00 !important;
+}
+#applySeekBtn{
+    background: #e60278;
+    font-weight: bold;
+}
+#applyLinkedInBtn{
+    background: #0077B5;
+}
+
+.fileUploadContainer > label ,.coverUploadContainer > label{
+    display: inline-block;
+    position: relative;
+    box-sizing: border-box;
+    text-align: left !important;
+    margin-bottom: 10px;
+}
+.application-item-container{
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    position: relative;
+    box-sizing: border-box;
+    flex-direction: column;
+    /* border: 1px solid #000; */
+    padding: 5px;
+    min-width: 300px;
+    max-width: 300px;
+}
+.application-item-container > span {
+    max-width: 300px;
+    text-align: left !important;
+    font-size: 11px;
+    font-weight: 200 !important;
+    font-family: inherit;
+}
+
+
+.fileUploadContainer{
+    display: flex;
+    position: relative;
+    flex-direction: column;
+    font-family: inherit;
+}
+
+div.submitApplicationBtn {
+    /*display: block;*/
+    /*position: relative;*/
+    /*padding: 10px;*/
+    margin-top: 20px;
+    /*border:1px solid #e1e1e1;*/
+    /*text-align: center;*/
+    /*width: 250px;*/
+    /*border-radius: 3px;*/
+    /*transition:background ease-in 500ms;*/
+    /*font-family:inherit;*/
+    display: flex;
+    position: relative;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    width: 175px;
+    height: 45px;
+    border: 0px solid #333;
+    border-radius: 0px;
+    padding: 10px 15px;
+    background-color: #333;
+    font-family: inherit;
+    color:  #fff;
+    font-size: 16px;
+    font-weight: normal;
+}
+
+div.submitApplicationBtn:hover{
+    background-color: #333;
+    font-family: inherit;
+    color:  #fff;
+}
+
+.itemApplyContainer {
+    display: flex;
+    flex-direction: column;
+}
+.coverUploadContainer {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.loaderSpinner{
+    display:none;
+}
+.applyText{
+    display: inline-block;
+}
+
+.nativeApplyNowContainer{
+    display: flex;
+    position: relative;
+    box-sizing: border-box;
+    /*flex-direction: column;*/
+    padding: 20px;
+    padding-left: 0;
+    justify-content: space-between;
+    font-family: inherit;
+}
+
+.itemApplyContainer {
+    display: flex;
+    flex-direction: column;
+    width: 50%;
+}
+.radioBtnContainer {
+    width: 100%;
+}
+.shmApplyRadio {
+    margin-bottom: 10px;
+}
+.shmApplyRadio {
+    display: flex;
+    align-items: center;
+}
+.shmApplyRadio input[type=radio] {
+    height: auto;
+    width: auto;
+    margin: 5px;
+}
+.shmApplyRadio label{
+    cursor: pointer;
+    font-family: inherit;
+}
+p.forgotPasswordText {
+    font-size: 15px;
+    text-decoration: underline;
+    font-style: italic;
+    font-weight: normal;
+    text-align: left !important;
+}
+
+a.forgotPasswordText {
+    text-align: left !important;
+    display: flex;
+    font-size: 15px;
+    font-weight: normal;
+    
+}
+span.passwordNote {
+    text-align: left;
+    color: #ff2020;
+    font-size: 18px;
+}
+input#resume,input#cover{
+    margin-top: 10px;
+}
+
+.privacy-item-container,
+.privacy-item-container a {
+    /*display:block;*/
+    text-align: left;
+    font-family: inherit;
+}
+.privacyLinkText{
+    display: block;
+    width: 100%;
+    text-align: left !important;
+}
+
+.privacyPolicyContainer {
+    display: block;
+    text-align: left;
+}
+
+/* Loading Seek */
+/*.loading-seek-profile, .loading-seek-profile input,.loading-seek-profile div{*/
+/*    pointer-events:none!important;*/
+/*    user-select:none!important;*/
+/*    cursor: not-allowed!important;*/
+/*}*/
+/*.loading-seek-profile input{*/
+/*    color: rgb(255, 255, 255)!important;*/
+/*    background-color: rgb(220, 220, 220) !important;*/
+/*}*/
+
+button#applySeekBtn img {
+    display: block;
+    width: 75px;
+    height: auto;
+    margin-left: 5px;
+}
+
+
+/*standard loader*/
+.fcLoader {
+  display: none;
+  /*align-items: center;*/
+  /*justify-content: center;*/
+  /*width: 100%;*/
+  /*height: 100%;*/
+  /*top: 45%;*/
+  /*left: 45%;*/
+  /*background-color: rgba(255, 255, 255, 0.1);*/
+  /*z-index: 99999999999999999999999999;*/
+}
+
+.fcLoader img {
+  max-width: 200px;
+}
+
+.fcLoadingSeek {
+    position: fixed;
+    background: #00000080;
+    width: 100%;
+    height: 100%;
+    top: 0px;
+    left: 0px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+}
+/*standard loader*/
+
+
+div.spaceBetweenForms {
+    height: 50px;
+}
+
+/*Input Field outlines*/
+
+
+.subscriptionContainer {
+    display: block;
+    text-align: left;
+    font-family: inherit;
+    margin-top: 10px;
+}
+
+.subscriptionContainer span {
+    line-height: 1.5;
+}
+
+.label-hint {
+    margin: 10px 0px;
+    text-align: left;
+}
+
+
+.section-no-job-message {
+    display: none;
+}

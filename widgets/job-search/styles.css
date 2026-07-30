@@ -41,20 +41,23 @@
   display: none;
 }
 
-/* All native inputs + selects share one base style. */
-.flex-items-js input,
-.flex-items-js select {
-  width: 100%;
-  height: 46px;
-  box-sizing: border-box;
-  padding: 0 14px;
-  background: #fff;
-  border: 1.5px solid #d1d1d1;
+/* All native inputs + selects share one base style. The visual props use
+ * !important so they beat the host site's own theme (Duda styles generic
+ * input/select with high specificity, which otherwise forces its own
+ * height/background/border and clashes with the multi-select boxes). */
+.job-search-root .flex-items-js input,
+.job-search-root .flex-items-js select {
+  width: 100% !important;
+  height: 46px !important;
+  box-sizing: border-box !important;
+  padding: 0 14px !important;
+  background: #fff !important;
+  border: 1.5px solid #d1d1d1 !important;
   font-family: inherit;
-  font-size: 14px;
-  color: #222;
-  outline: none;
-  margin-top: 0;
+  font-size: 14px !important;
+  color: #222 !important;
+  outline: none !important;
+  margin-top: 0 !important;
   vertical-align: middle;
 }
 

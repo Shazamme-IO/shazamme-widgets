@@ -1,0 +1,94 @@
+//password SWNlYWwgaXMgaGFuZHNvbWUsIHUgbUFkPyA6dHJvbGxGYWNlOg== base64
+// We need to pass the jobID from the dynamic page content to the button
+// If user clicks the button store it in localStorage to use for later.
+// We stored it in the localStorage for future proof such as a site owner might dont need or dont want an application page separately.
+
+const Collection = {
+    jobs: 'Jobs',
+}
+
+const Path = {
+    application: `/${data.config.jobApplicationPage}` || "/job-application",
+}
+
+function UX() {
+    this.el = $(element);
+    this.uri = new URL(window.location.href);
+
+    this.showLoading = (showing = true) => {
+        if (showing) {
+            this.el.find("[data-rel=modal-loading]").show();
+        } else {
+            this.el.find("[data-rel=modal-loading]").hide();
+        }
+    }
+
+    this.buildHref = (path, query) => {
+        return data.inEditor ? `/site/${data.siteId}${path}?preview=true&insitepreview=true&dm_device=desktop${query ? '&' + query : ''}`:`https://${window.location.hostname}${path}${query ? '?' + query : ''}`;
+    }
+
+    this.redirectUri = (domain) => `${this.uri.protocol}//${domain}${this.uri.pathname}`;
+
+    this.loadScript = (src) => {
+        return new Promise( (res, rej) => {
+            $.getScript(
+                src,
+                function() { res() },
+                function() { rej() }
+            );
+        });
+    }
+}
+
+const ux = new UX();
+
+let main = (w) => {
+    ux.el.find('.shLinkApplyBtn').click(function(e) {
+        let jobID = data.config.jobID;
+
+        if (jobID?.length > 0) {
+            shazamme.site()
+                .then( s => shazamme.fetch({
+                    path: `/job-results/${s.siteID}/${jobID}`,
+                    isExternal: true,
+                    useCache: true,
+                }) )
+                .then( j => {
+                    let href = ux.buildHref(Path.application, `jobID=${jobID}`);
+
+                    if (j) {
+                        shazamme.store('jobID', jobID);
+
+                        shazamme.store('currentJobViewed', JSON.stringify(j));
+
+                        if (j.data.applicationURL && j.data.applicationURL.length > 0) {
+                            href = j.data.applicationURL;
+
+                            if (data.config.useDialog) {
+                                let dialog = ux.el.find('[data-rel=modal-apply]');
+
+                                dialog.find('iframe').attr('src', j.data.applicationURL);
+                                dialog.find('[data-rel=button-close]').click(function () {
+                                    dialog.hide();
+                                });
+
+                                dialog.show();
+                                return;
+                            }
+                        }
+                    }
+
+                    window.location = href;
+                });
+
+            return false;
+        }
+    });
+}
+
+ux.loadScript('https://sdk.shazamme.io/js/shazamme-1.0.3.min.js')
+    .then( () => shazamme.ready(data.siteId, data.page) )
+    .then( () => {
+        main(shazamme.register('application-button', data));
+    });
+

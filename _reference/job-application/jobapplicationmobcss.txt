@@ -1,0 +1,57 @@
+.social-login-container,.nativeApplyNowContainer{
+    flex-direction: column;
+}
+.container-item{
+    width: 100%;
+}
+
+#shzmLoginForm .input-field-container>input{
+    width: 100% !important;
+}
+
+#shzmLoginForm .input-field-container #passwordL>input {            
+    width: 100% !important;            
+}
+                    
+.registerFormCol1, .registerFormCol2,.itemApplyContainer{
+    width: 100% !important;
+    padding:0;
+}
+.shmregistrationContainer > .register-form-container, .shmregistrationContainer > .login-form-container{
+    flex-direction:column !important;
+    
+}
+.registerFormCol1 .input-field-container>input, .registerFormCol2 .input-field-container>input{
+    width: 100% !important;
+}
+.nativeApplyNowContainer{
+    padding: 15px;
+}
+#passwordMessage{
+    position: relative !important;
+    box-sizing: border-box;
+    width: 100%;
+    top: unset;
+}
+.itemApplyContainer:nth-child(2) {
+    margin-top: 30px;
+}
+
+.shmApplicationMainContainer.simpleForm{
+    padding: 3rem 20px!important;
+}
+
+#emailLogin, #passwordLogin, input#passwordInput, .input-field-container .password
+ {
+    width: 100%;
+    height: 46px;
+}
+
+.loginIcons {
+    width: 30px;
+    height: 30px;
+}
+
+.socialLoginBtn {
+    width: 99%
+}

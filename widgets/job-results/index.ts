@@ -127,6 +127,9 @@ export default function jobResults(ctx: WidgetContext): void {
   let tree: FacetTree;
   let state: QueryState = { ...initialState(), ...readHash() };
   let lastPage: readonly Job[] = [];
+  // Every matching job (not just the current page) so the map plots the whole
+  // result set, not the ~16 visible cards.
+  let lastMatching: readonly Job[] = [];
   let currentUser: LoginPayload | null = null;
   const mapView = mapContainer ? new MapView(mapContainer) : null;
 
@@ -183,12 +186,13 @@ export default function jobResults(ctx: WidgetContext): void {
     const input = toFilterInput(state) as unknown as FilterState;
     const result = model.query(input, state.sort, state.page, cfg.pageSize);
     lastPage = result.page;
+    lastMatching = result.matching;
     renderCards(listEl!, result, cfg);
     applyGridLayout();
     renderCount(element, result.total);
     if (pagingEl) renderPaging(pagingEl, result.total, cfg.pageSize, state.page);
     if (facetHost) renderFacets(facetHost, tree, cfg, state.facets);
-    if (mapView?.isReady) mapView.setJobs(result.page);
+    if (mapView?.isReady) mapView.setJobs(result.matching);
     writeHash(state);
     resultsReadyChannel.publish(sdk, { total: result.total });
     if (!revealed) {
@@ -233,7 +237,7 @@ export default function jobResults(ctx: WidgetContext): void {
       ?.querySelectorAll('[data-toggle="results-view"]')
       .forEach((b) => b.classList.toggle('active', b.getAttribute('data-view') === view));
     if (isMap && mapView) {
-      mapView.setJobs(lastPage);
+      mapView.setJobs(lastMatching);
       mapView.ensure().catch(() => undefined);
     }
   }

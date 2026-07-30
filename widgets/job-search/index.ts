@@ -128,6 +128,38 @@ export default function jobSearch(ctx: WidgetContext): void {
     root.style.setProperty('visibility', 'visible', 'important');
   };
 
+  // Force the native fields' look inline so no host theme can override it. Duda
+  // themes generic input/select (e.g. an ID-scoped `!important` grey background
+  // on text inputs) at a specificity even a scoped injected stylesheet can't
+  // beat — but an inline style is top of the cascade. Keeps every field matched
+  // to the multi-select boxes (46px, white, 1.5px border). `background-color`
+  // (not `background`) preserves the select's custom arrow image.
+  function normalizeFields(): void {
+    root.querySelectorAll<HTMLElement>('.flex-items-js input, .flex-items-js select').forEach((el) => {
+      el.style.setProperty('height', '46px', 'important');
+      el.style.setProperty('background-color', '#fff', 'important');
+      el.style.setProperty('border', '1.5px solid #d1d1d1', 'important');
+      el.style.setProperty('box-sizing', 'border-box', 'important');
+      el.style.setProperty('color', '#222', 'important');
+    });
+  }
+
+  // Duda re-asserts the widget's HTML shortly after we mount (same behaviour the
+  // reveal() comment describes), REPLACING the field elements with fresh ones
+  // that lack our inline styles — so a one-time normalizeFields() gets thrown
+  // away. Re-apply whenever the form's descendants change. Observe childList
+  // only (element add/remove), never attributes, so our own inline style writes
+  // don't re-trigger the observer.
+  function guardFields(): void {
+    normalizeFields();
+    try {
+      new MutationObserver(() => normalizeFields()).observe(form!, {
+        childList: true,
+        subtree: true,
+      });
+    } catch { /* ignore */ }
+  }
+
   let tree: FacetTree | null = null;
   let state: FormState = { ...emptyForm(), ...readHash() };
 
@@ -537,6 +569,7 @@ export default function jobSearch(ctx: WidgetContext): void {
     applyVisibility();
     populateAll();
     applyStateToForm();
+    guardFields(); // force field look inline (survives Duda re-asserting the HTML)
     wireEvents();
     renderChips(); // reflect any hash-prefilled selections
     reveal();

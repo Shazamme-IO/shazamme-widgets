@@ -186,9 +186,13 @@
   color: #333;
 }
 
+/* !important throughout so the host theme (Duda) can't override the toolbar
+ * layout — it was forcing .action-item to `block`, which stacked the List/Map
+ * toggle buttons vertically and misaligned the bar. */
 .action-bar {
-  display: flex;
-  justify-content: flex-end;
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center;
   gap: 5px;
 }
 
@@ -196,6 +200,13 @@
   display: inline-block;
   position: relative;
   margin: 5px;
+}
+
+/* The List/Map toggle holds two buttons — keep them side by side (Duda's
+ * generic .action-item = block otherwise stacks them). */
+.action-bar .action-item.solid {
+  display: flex !important;
+  flex-direction: row !important;
 }
 
 .action-bar .action-item button {

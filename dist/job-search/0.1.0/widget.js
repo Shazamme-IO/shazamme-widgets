@@ -1,6 +1,14 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-07-29T13:04:07.022Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-07-30T02:05:07.504Z. Registers window.ShazammeWidget["<name>"].
  */
+(function(){
+  if (typeof document === 'undefined') return;
+  if (document.getElementById("shm-css-job-search")) return;
+  var s = document.createElement('style');
+  s.id = "shm-css-job-search";
+  s.textContent = "/*\n * job-search widget styles — ported from jobsearch2026prox-css, cleaned:\n * dropped the multi-select chip UI, Google .gapi-map, and active-filters bar\n * (not rebuilt). Class/hook names track template.html (which the controller\n * owns). Fields are a wrapping flex row that stacks on narrow viewports.\n */\n\n.job-search-root {\n  width: 100%;\n  overflow: visible;\n}\n\n.mainSearchContainer {\n  position: relative;\n  display: flex;\n  flex-direction: row;\n  box-sizing: border-box;\n  padding: 8px 4px;\n  width: 100%;\n  justify-content: space-between;\n  align-items: flex-end;\n  flex-wrap: wrap;\n  min-height: 62px;\n}\n\n/* Each field column. */\n.flex-items-js {\n  flex: 1;\n  min-width: 140px;\n  margin: 4px 5px;\n  box-sizing: border-box;\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  justify-content: flex-end;\n  align-items: stretch;\n  font-family: inherit;\n}\n\n.flex-items-js[hidden] {\n  display: none;\n}\n\n/* All native inputs + selects share one base style. The visual props use\n * !important so they beat the host site's own theme (Duda styles generic\n * input/select with high specificity, which otherwise forces its own\n * height/background/border and clashes with the multi-select boxes). */\n.job-search-root .flex-items-js input,\n.job-search-root .flex-items-js select {\n  width: 100% !important;\n  height: 46px !important;\n  box-sizing: border-box !important;\n  padding: 0 14px !important;\n  background: #fff !important;\n  border: 1.5px solid #d1d1d1 !important;\n  font-family: inherit;\n  font-size: 14px !important;\n  color: #222 !important;\n  outline: none !important;\n  margin-top: 0 !important;\n  vertical-align: middle;\n}\n\n/* Native select — replace the browser arrow with a matching triangle. */\n.flex-items-js select {\n  appearance: none;\n  -webkit-appearance: none;\n  -moz-appearance: none;\n  padding-right: 36px;\n  background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpolygon points='0,0 10,0 5,7' fill='%23666666'/%3E%3C/svg%3E\");\n  background-repeat: no-repeat;\n  background-position: right 13px center;\n  background-size: 10px 7px;\n}\n\n.flex-items-js input:focus,\n.flex-items-js select:focus {\n  border-color: #666;\n  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.06);\n}\n\n.flex-items-js input::placeholder {\n  color: #aaa;\n}\n\n/* Search button. */\n.flex-items-js .searchBtn {\n  width: 100%;\n  height: 46px;\n  box-sizing: border-box;\n  padding: 0 20px;\n  background: #000;\n  color: #fff;\n  border: 1.5px solid #000;\n  font-family: inherit;\n  font-size: 14px;\n  font-weight: 600;\n  cursor: pointer;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 6px;\n  margin-top: 0;\n  transition: opacity 0.15s ease;\n  letter-spacing: 0.01em;\n}\n\n.flex-items-js .searchBtn:hover {\n  opacity: 0.82;\n}\n\n.searchBtn .count:empty {\n  display: none;\n}\n\n/* Geo proximity: text input over a radius slider. */\n.flex-items-js .split {\n  display: flex;\n  flex-direction: row;\n  gap: 6px;\n  position: relative;\n}\n\n.flex-items-js .split input {\n  flex: 1;\n  margin: 0;\n}\n\n.geo-range {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-top: 6px;\n}\n\n.geo-range input[type=\"range\"] {\n  flex: 1;\n  height: auto;\n  padding: 0;\n  border: none;\n  background: transparent;\n}\n\n.geo-range .text {\n  font-size: 13px;\n  color: #444;\n  white-space: nowrap;\n}\n\n/* Typeahead prediction panel (geocode suggestions). */\n.prediction-result {\n  position: absolute;\n  top: 100%;\n  left: 0;\n  width: 100%;\n  background: #fff;\n  border: 1.5px solid #d1d1d1;\n  border-top: none;\n  border-radius: 0 0 6px 6px;\n  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);\n  display: none;\n  flex-direction: column;\n  overflow-y: auto;\n  max-height: 220px;\n  z-index: 99;\n  padding: 6px 0;\n  font-family: inherit;\n  box-sizing: border-box;\n}\n\n.prediction-result .result-text {\n  display: block;\n  color: #222;\n  text-decoration: none;\n  padding: 9px 16px;\n  font-family: inherit;\n  font-size: 14px;\n  cursor: pointer;\n}\n\n.prediction-result .result-text:hover {\n  background: #f5f5f5;\n}\n\n.prediction-result .result-text.close {\n  text-align: right;\n  font-size: 0.72em;\n  padding: 4px 10px;\n  color: #888;\n}\n\n/* Stack fields on narrow viewports. */\n@media (max-width: 640px) {\n  .mainSearchContainer {\n    flex-direction: column;\n    align-items: stretch;\n  }\n  .flex-items-js {\n    width: 100%;\n    flex: none;\n  }\n}\n\n/* ===================== MULTI-SELECT (classification / sub-classification /\n * location) — custom checkbox dropdown, ported from the jobsearch2026 reference.\n * The wrapper is a .flex-items-js field column; the box matches the 46px height\n * of the native inputs so the row stays aligned. ===================== */\n.multi-select-wrapper {\n  position: relative;\n}\n\n.multi-select-box {\n  width: 100%;\n  height: 46px;\n  box-sizing: border-box;\n  padding: 0 14px;\n  background: #fff;\n  border: 1.5px solid #d1d1d1;\n  font-family: inherit;\n  font-size: 14px;\n  color: #222;\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  cursor: pointer;\n  user-select: none;\n  transition: border-color 0.15s ease, box-shadow 0.15s ease;\n}\n\n.multi-select-box:hover,\n.multi-select-box.open {\n  border-color: #666;\n  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.06);\n}\n\n.multi-select-box .multi-select-placeholder {\n  color: #888;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  flex: 1;\n}\n\n/* When items are selected, a count label replaces the placeholder. */\n.multi-select-box .ms-count {\n  color: #222;\n  white-space: nowrap;\n  flex: 1;\n}\n\n.multi-select-box .multi-select-arrow {\n  font-size: 10px;\n  color: #666;\n  margin-left: 10px;\n  flex-shrink: 0;\n  transition: transform 0.18s ease;\n  line-height: 1;\n}\n\n.multi-select-box.open .multi-select-arrow {\n  transform: rotate(180deg);\n}\n\n/* Count is shown inline in the box; the tags row is unused. */\n.multi-select-tags {\n  display: none;\n}\n\n/* Disabled sub-classification (no classification chosen yet). */\n.multi-select-box.subcategory-disabled {\n  opacity: 0.45;\n  cursor: not-allowed;\n  pointer-events: none;\n}\n\n.multi-select-dropdown {\n  display: none;\n  position: absolute;\n  top: calc(100% + 3px);\n  left: 0;\n  width: 100%;\n  min-width: 220px;\n  background: #fff;\n  border: 1.5px solid #d1d1d1;\n  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.11);\n  z-index: 9999;\n  max-height: 300px;\n  overflow-y: auto;\n  box-sizing: border-box;\n  padding: 6px 0;\n}\n\n.multi-select-dropdown.open {\n  display: block;\n}\n\n.multi-select-dropdown::-webkit-scrollbar {\n  width: 5px;\n  background: #f9f9f9;\n}\n\n.multi-select-dropdown::-webkit-scrollbar-thumb {\n  background: #ddd;\n  border-radius: 4px;\n}\n\n.ms-option {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  gap: 8px;\n  padding: 6px 14px;\n  cursor: pointer;\n  font-size: 13px;\n  color: #222;\n  box-sizing: border-box;\n  line-height: 1.3;\n  transition: background 0.1s ease;\n  white-space: nowrap;\n}\n\n.ms-option:hover {\n  background: #f5f5f5;\n}\n\n.ms-option input[type=\"checkbox\"] {\n  appearance: none;\n  -webkit-appearance: none;\n  width: 13px;\n  height: 13px;\n  min-width: 13px;\n  min-height: 13px;\n  flex-shrink: 0;\n  margin: 0 8px 0 0;\n  padding: 0;\n  cursor: pointer;\n  border: 1.5px solid #bbb;\n  border-radius: 3px;\n  background: #fff;\n  position: relative;\n  transition: background 0.12s ease, border-color 0.12s ease;\n  box-sizing: border-box;\n}\n\n.ms-option input[type=\"checkbox\"]:checked {\n  background: #1d4a45;\n  border-color: #1d4a45;\n}\n\n.ms-option input[type=\"checkbox\"]:checked::after {\n  content: '';\n  position: absolute;\n  left: 3px;\n  top: 0;\n  width: 4px;\n  height: 7px;\n  border: 1.5px solid #fff;\n  border-top: none;\n  border-left: none;\n  transform: rotate(45deg);\n  display: block;\n}\n\n.ms-option-label {\n  flex: 1;\n  line-height: 1.3;\n  color: #222;\n  font-size: 13px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n\n.ms-empty {\n  padding: 14px 18px;\n  color: #999;\n  font-style: italic;\n  font-size: 0.9em;\n}\n";
+  (document.head || document.documentElement).appendChild(s);
+})();
 "use strict";
 var module = module || {};
 module.exports = (() => {
@@ -374,6 +382,7 @@ module.exports = (() => {
         const end = pageSize > 0 ? start + pageSize : void 0;
         return {
           page: c.sorted.slice(start, end),
+          matching: c.sorted,
           total: c.total,
           facets: c.facets
         };
@@ -600,6 +609,25 @@ module.exports = (() => {
       root.classList.add("shm-ready");
       root.style.setProperty("visibility", "visible", "important");
     };
+    function normalizeFields() {
+      root.querySelectorAll(".flex-items-js input, .flex-items-js select").forEach((el) => {
+        el.style.setProperty("height", "46px", "important");
+        el.style.setProperty("background-color", "#fff", "important");
+        el.style.setProperty("border", "1.5px solid #d1d1d1", "important");
+        el.style.setProperty("box-sizing", "border-box", "important");
+        el.style.setProperty("color", "#222", "important");
+      });
+    }
+    function guardFields() {
+      normalizeFields();
+      try {
+        new MutationObserver(() => normalizeFields()).observe(form, {
+          childList: true,
+          subtree: true
+        });
+      } catch (e) {
+      }
+    }
     let tree = null;
     let state = { ...emptyForm(), ...readHash() };
     function selectEl(field) {
@@ -931,6 +959,7 @@ module.exports = (() => {
       applyVisibility();
       populateAll();
       applyStateToForm();
+      guardFields();
       wireEvents();
       renderChips();
       reveal();

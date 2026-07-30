@@ -1,0 +1,1903 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2870
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 const Path = \{\
+    home: data.config.LinkHome?.href || '/',\
+    deletedCandidate: data.config.LinkDeleted?.href || '/deleted-candidate',\
+    jobAlerts: data.config.LinkAlert?.href || '/job-alerts',\
+    login: data.config.LinkLogin?.href || '/login',\
+    searchResults: data.config.LinkJobResults?.href || '/job-results',\
+    jobDetails: data.config.LinkJobDetails?.href || '/job-details',\
+    screeningAnswers: data.config.LinkAnswers?.href || '/screening-answers',\
+    editApplication: data.config.LinkJobApplicaiton?.href || '/job-application',\
+\};\
+\
+const Collection = \{\
+    jobs: \{\
+        name: data.config.jobCollection || 'Jobs',\
+        action: 'Get Jobs',\
+        useCache: true,\
+        debug: data.inEditor && data.config.debugMode,\
+        endpoint: data.config.debugJobCollection,\
+    \},\
+\
+    questions: \{\
+        name: data.config.questionCollection || 'Screening Questions',\
+        action: 'Get Screening Questions',\
+        useCache: true,\
+        debug: data.inEditor && data.config.debugMode,\
+        endpoint: data.config.debugQuestionCollection,\
+    \},\
+\}\
+\
+const Subscribe = \{\
+    loginCancel  : 'login-dialog-cancel',\
+    loginConfirm : 'login-dialog-confirm',\
+    loginReady   : 'login-dialog-ready',\
+    siteReady    : 'site-config-ready',\
+    uploadReady  : 'upload-dialog-ready',\
+\}\
+\
+const Message = \{\
+    loginShow    : 'login-dialog-show',\
+\}\
+\
+const maxUploadSize = (parseInt(data.config.maxUploadSize) || 10) * 1024 * 1024;\
+\
+function ShApi() \{\
+    this.getSiteID = () => \{\
+        if (data.inEditor && data.config.debugSiteID) \{\
+            return Promise.resolve(data.config.debugSiteID);\
+        \}\
+\
+        return shazamme.site().then( s => Promise.resolve(s.siteID) );\
+    \}\
+\
+    this.jobs = (ids) =>\
+        shazamme.site().then( s =>\
+            shazamme.fetch(\{\
+                path: `/job-results/$\{s.siteID\}`,\
+                isExternal: true,\
+            \}).then( c => Promise.resolve(c.filter( i => ids.indexOf(i.data.jobID) >= 0 )) )\
+        );\
+\
+    this.savedJobs = (candidateId) =>\
+        shazamme.submit(\{\
+            "action":"Get Saved Jobs",\
+            "candidateID": candidateId\
+        \}, false);\
+\
+    this.jobApplications = (candidateId) =>\
+        this.getSiteID().then( sid => shazamme.submit(\{\
+            "action":"Get Job Applications",\
+            "candidateID": candidateId,\
+            "siteID": sid,\
+        \}));\
+\
+    this.jobAlerts = (candidateId) =>\
+        this.getSiteID().then( sid => shazamme.submit(\{\
+            "action": "Get Job Alerts",\
+            "candidateID": candidateId,\
+            "siteID": sid,\
+        \}));\
+\
+   this.deleteSavedJob = (id) =>\
+        this.getSiteID().then( sid => shazamme.submit(\{\
+            "action":"Delete Saved Job",\
+            "candidateSavedJobID": id,\
+            "siteID": sid,\
+        \}, false));\
+\
+   this.deleteJobAlert = (id) =>\
+       this.getSiteID().then( sid => shazamme.submit(\{\
+            "action":"Delete Job Alert",\
+            "candidateSearchID": id,\
+            "siteID": sid,\
+       \}));\
+\
+    this.updateAlert = (alert) =>\
+        shazamme.submit(\{\
+            "action": "Edit Job Alerts",\
+            ...alert,\
+        \});\
+\
+    this.screeningTemplate = (screeningTemplateID) => \{\
+        if (screeningTemplateID?.length > 0) \{\
+            return shazamme.fetch(Collection.questions).then( q =>\
+                Promise.resolve(q.filter( i => i.data.screeningTemplateID === screeningTemplateID ))\
+            );\
+        \}\
+\
+        return Promise.resolve([]);\
+\
+    \}\
+\
+    this.getScreeningAnswers = (jobApplicationID) =>\
+        this.getSiteID().then( sid => shazamme.submit(\{\
+            action: "Get Screening Answers",\
+            jobApplicationID: jobApplicationID,\
+            siteID: sid,\
+        \}));\
+\
+    this.requestExport = (c, answers) => \{\
+        return new Promise( (resolve, reject) => \{\
+            shazamme.submit(\{\
+                action: "Export Screening Answers",\
+                templateID: data.config.exportTemplateID,\
+                responses: answers,\
+                ...c,\
+            \}).then( res => \{\
+                if (res.status && res.response.document && res.response.document.id) \{\
+                    let documentID = res.response.document.id;\
+                    let tries = 0;\
+\
+                    let fetch = setInterval( () =>\
+                        shazamme.submit(\{\
+                            action: "Get Screening Answers Export",\
+                            documentID: documentID,\
+                        \}).then( res => \{\
+                            if (res.status && res.response.document && res.response.document.status === 'success') \{\
+                                clearInterval(fetch);\
+                                resolve(res.response.document.download_url);\
+                            \} else if (!res.status) \{\
+                                clearInterval(fetch);\
+                                reject(res);\
+                            \} else if (tries > 5) \{\
+                                clearInterval(fetch);\
+                                resolve();\
+                            \} else \{\
+                                tries++;\
+                            \}\
+                        \})\
+                    , 3000);\
+                \} else \{\
+                    reject(res);\
+                \}\
+            \});\
+        \});\
+    \}\
+\
+    this.getCandidateFiles = (candidateId) =>\
+        this.getSiteID().then( sid =>\
+            shazamme.submit(\{\
+                "action": "Get Candidate Files",\
+                "candidateID": candidateId,\
+                "siteID": sid,\
+            \})\
+        );\
+\
+    this.getCandidateFileTypes = () =>\
+        this.getSiteID().then( sid =>\
+            shazamme.submit(\{\
+                "action": "Get Candidate File Types",\
+                "siteID": sid,\
+                "language": data.locale,\
+            \})\
+        );\
+\
+    this.addCandidateFile = (candidateId, name, content, type) =>\
+        shazamme.submit(\{\
+            "action": "Add Candidate File",\
+            "candidateID": candidateId,\
+            "siteID": sid,\
+            "candidateFileName": name,\
+            "candidateFileContent": content,\
+            "siteCandidateFileTypeID": type,\
+        \});\
+\
+   this.deleteCandidateFile = (id) =>\
+       this.getSiteID().then( sid => shazamme.submit(\{\
+            "action":"Delete Candidate File",\
+            "candidateFileID": id,\
+            "siteID": sid,\
+       \}));\
+\}\
+\
+function UX() \{\
+    this.el = $(element);\
+    this.uri = new URL(window.location.href);\
+\
+    this.dateFormat = Intl.DateTimeFormat(navigator.language, \{ day: "numeric", month: "numeric", year: "numeric" \});\
+\
+    this.buildHref = (path, query) => \{\
+        return data.inEditor ? `/site/$\{data.siteId\}$\{path\}?preview=true&insitepreview=true&dm_device=desktop$\{query ? '&' + query : ''\}`:`https://$\{window.location.hostname\}$\{path\}$\{query ? '?' + query : ''\}`;\
+    \}\
+\
+    this.savedJobEl = (save, j, a) => \{\
+        if (j?.data?.jobURL) \{\
+            let uri = new URL(j.data.jobURL);\
+            let path = uri.pathname.split('/').pop();\
+\
+            j.data.regionPath = this.buildHref(`$\{Path.jobDetails\}/$\{path\}`);\
+        \}\
+\
+        return `\
+            <article class="entry-saved-job" data-rel="item-saved-job" data-id="$\{save.candidateSavedJobID\}">\
+                <a class="title" href="$\{j?.data?.regionPath\}" target="$\{data.config.newTab ? "_blank" : "_self"\}">$\{j?.data?.jobName\}</a>\
+\
+                <div class="section-icons">\
+                    <a href="$\{j && j?.data?.regionPath\}" target="$\{data.config.newTab ? "_blank" : "_self"\}" class="button-view"><i class="far fa-eye"></i></a>\
+                    <i class="icon-status far $\{(a && data.config.AppliedIcon) || (j && data.config.JobOpenIcon) || data.config.JobClosedIcon\}"></i>\
+                    <i class="button-delete far fa-trash-alt" data-rel="button-delete"></i>\
+                </div>\
+            </article>\
+        `;\
+    \}\
+\
+    this.applicationEl = (app, j) => \{\
+        if (j && j.data.jobURL) \{\
+            let uri = new URL(j.data.jobURL);\
+            let path = uri.pathname.split('/').pop();\
+\
+            j.data.regionPath = this.buildHref(`$\{Path.jobDetails\}/$\{path\}`);\
+        \}\
+\
+        return `\
+            <article class="entry-application" data-rel="item-application" data-id="$\{app.jobApplicationID\}" data-job-id="$\{app.jobID\}">\
+                <a class="title" href="$\{j && j?.data?.regionPath\}" target="$\{data.config.newTab ? "_blank" : "_self"\}" name="$\{j?.data?.jobName\}">$\{j?.data?.jobName\}</a>\
+                <div class="date">$\{this.dateFormat.format(new Date(app.appliedOn))\}</div>\
+\
+                <div class="section-icons">\
+                    $\{data.config.enableApplicationEdit && `<a href="javascript: void(0);" class="button-edit far fa-edit" data-rel="button-edit" title="$\{data.config.EditApplication || 'Edit'\}"></a>` || ''\}\
+                    <i class="icon-status far $\{(j && data.config.JobOpenIcon) || data.config.JobClosedIcon\}"></i>\
+                    $\{data.config.enableApplicationExport && `<a href="javascript: void(0);" class="button-export fas fa-file-download" data-rel="button-export" title="$\{data.config.ExportApplication || 'Export'\}"></a>` || ''\}\
+                </div>\
+            </article>\
+        `;\
+    \}\
+\
+    this.alertEl = a => \{\
+        let m = JSON.parse(a.meta || '\{\}');\
+        let query = [];\
+\
+        let push = (f, v) => \{\
+            (a[f] || v) && query.push(`$\{f\}=$\{encodeURI((a[f] || v))\}`);\
+        \}\
+\
+        push('professionID');\
+        push('keyword');\
+        push('location', a.address || m.address);\
+        push('roleID');\
+        push('salaryFrom');\
+        push('salaryTo');\
+        push('workTypeID');\
+        push('city', a.city || m.city);\
+        push('state');\
+        push('postalCode');\
+        push('radius');\
+        push('radiusIn');\
+\
+        if (a.latitude || a.longitude) \{\
+            let pos = [];\
+\
+            a.latitude && pos.push(a.latitude);\
+            a.longitude && pos.push(a.longitude);\
+\
+            push('geo', pos.join(','));\
+            push('geoRange', a.radius);\
+            push('geoAddress', a.address);\
+            push('geoIn', a.radiusIn);\
+        \}\
+\
+        return `\
+        <article class="entry-job-alert" data-rel="item-job-alert" data-id="$\{a.candidateSearchID\}">\
+            <a class="title" href="$\{this.buildHref(Path.searchResults, query.join('&'))\}" name="$\{a.searchName\}">$\{a.searchName\}</a>\
+            <div class="date">$\{this.dateFormat.format(new Date(a.changedOn))\}</div>\
+\
+            <div class="section-icons">\
+                <i class="far fa-edit" data-rel="button-edit"></i>\
+                <i class="far $\{a.isNeedAlert ? "fa-check-square" : ''\} data-rel="button-edit"></i>\
+                <i class="far fa-trash-alt" data-rel="button-delete"></i>\
+            </div>\
+        </article>\
+        `;\
+    \}\
+\
+    this.candidateFileTypeEl = (t) => \{\
+        return `\
+            <button\
+                class="button-navigation $\{t.isActive && 'active' || ''\} $\{t.disabled && 'disabled' || ''\}"\
+                data-rel="navigation-section"\
+                data-navigation="$\{t.candidateFileTypeID || t.siteCandidateFileTypeID\}"\
+                $\{t.isResume ? 'data-file-type-option-resume=1': ''\}\
+                $\{t.isCover ? 'data-file-type-option-cover=1': ''\}>\
+                <span class="text">$\{t.candidateFileType\}</span>\
+                $\{data.inEditor && '<a href="javascript: void(0);" class="editor-only edit" title="Edit" data-rel="action-menu" data-menu="file-navigation"><i class="fas fa-chevron-square-down"></i></a>' || ''\}\
+            </button>\
+        `;\
+    \}\
+\
+    this.candidateFileSectionEl = (t) => \{\
+        return `\
+            <div\
+                class="section-display"\
+                data-rel="sub-section"\
+                data-navigation="$\{t.candidateFileTypeID || t.siteCandidateFileTypeID\}">\
+\
+                <h2 class="section-heading">$\{t.candidateFileType\}</h2>\
+\
+                <div\
+                    class="grid\
+                    grid-standard"\
+                    data-rel="collection-file"\
+                    data-collection-file="$\{t.candidateFileTypeID || t.siteCandidateFileTypeID\}"\
+                    $\{t.isResume ? 'data-file-type-option-resume="1"': ''\}\
+                    $\{t.isCover ? 'data-file-type-option-cover="1"': ''\}>\
+                </div>\
+\
+                <div class="message empty hidden" data-rel="message-empty">$\{data.config.EmptyFile || 'No files available'\}</div>\
+\
+                $\{ t.siteCandidateFileTypeID &&\
+                `\
+                <button\
+                    class="button-standard button-add button-file"\
+                    data-rel="button-file"\
+                    data-file="$\{t.siteCandidateFileTypeID\}"\
+                    $\{t.isResume ? 'data-file-type-option-resume="1"': ''\}\
+                    $\{t.isCover ? 'data-file-type-option-cover="1"': ''\}>\
+                    <span class="text">$\{data.config.uploadTitle || 'Upload'\}</span>\
+                </button>\
+                `\
+                || ''\
+            \}\
+            </div>\
+        `;\
+    \}\
+\
+    this.candidateFileEl = (f, enableDelete = true) => \{\
+        return `\
+            <div class="grid-entry entry-candidate-file" data-rel="item-candidate-file" data-id="$\{f.candidateFileID\}">\
+                <a href="$\{f.fileUri\}" target="_blank" download="$\{f.candidateFileName\}" class="link-title column-left">$\{f.candidateFileName\}</a>\
+                <span class="text-type column">$\{f.type || ''\}</span>\
+                <div class="section-actions column-right">\
+                $\{\
+                    enableDelete\
+                    && `<i class="button-delete far fa-trash-alt" data-rel="button-delete"></i>`\
+                    || ''\
+                \}\
+                </div>\
+            </div>\
+        `;\
+    \}\
+\
+    this.enablePasswordValidation = (on = true) => \{\
+        let sender = this;\
+\
+        if (!on) \{\
+            this.el.find('#newPass').off();\
+            return;\
+        \}\
+\
+        this.el.find('#newPass')\
+            .on('focus', function()\{\
+                $('#passwordMessage,.arrow-bottom').css("display","flex");\
+            \})\
+            .on('blur', function()\{\
+                if ($(this).is(':not([invalid])')) \{\
+                    $('#passwordMessage, .arrow-bottom').css("display","none");\
+                \}\
+            \})\
+            .on('keyup', function() \{\
+                if (sender.passwordKeyupTimeout) \{\
+                    clearTimeout(sender.passwordKeyupTimeout);\
+                \}\
+\
+                sender.passwordKeyupTimeout = setTimeout( () => \{\
+                    let errorCount = 0;\
+                    let val = $(this).val();\
+\
+                    let passwordInput = sender.el.find('#newPass');\
+                    let capital = sender.el.find("#capital");\
+                    let number = sender.el.find("#number");\
+                    let length = sender.el.find("#length");\
+                    let specialChar = sender.el.find("#specialChar");\
+\
+                    if (!(val.length < 8)) \{\
+                        length\
+                            .removeClass("invalid")\
+                            .addClass("valid");\
+                    \}else\{\
+                        length\
+                            .removeClass("valid")\
+                            .addClass("invalid");\
+                        errorCount++;\
+                    \}\
+\
+                    //Uppercase\
+                    if(val.search(/(?=.*[A-Z])/) != -1)\{\
+                        capital\
+                            .removeClass("invalid")\
+                            .addClass("valid");\
+                        status = true;\
+                    \}else\{\
+                        capital\
+                            .removeClass("valid")\
+                            .addClass("invalid");\
+                        errorCount++;\
+                    \}\
+\
+                    //Number\
+                    if (val.search(/\\d/) != -1) \{\
+                        number\
+                            .removeClass("invalid")\
+                            .addClass("valid");\
+                    \} else \{\
+                        number\
+                            .removeClass("valid")\
+                            .addClass("invalid");\
+                        errorCount++;\
+                    \}\
+\
+                    //special chars\
+                    if (val.search(/(?=.*[!@#$%^&*])/) != -1) \{\
+                        specialChar\
+                            .removeClass("invalid")\
+                            .addClass("valid");\
+                    \}else\{\
+                        specialChar\
+                            .removeClass("valid")\
+                            .addClass("invalid");\
+                        errorCount++;\
+                    \}\
+\
+                    if (errorCount === 0) \{\
+                        sender.el.find('.passwordErrorTitle').text("Your password is acceptable!");\
+                        sender.el.find('#passwordMessage').css("background-color","#59db5d");\
+                        sender.el.find('.valid,.passwordErrorTitle').css("color","#fff");\
+                        sender.el.find('.arrow-bottom').css(\{\
+                            "border-top":"15px solid #59db5d"\
+                        \});\
+\
+                        $(this).removeAttr('invalid');\
+                    \}else\{\
+                        sender.el.find('.passwordErrorTitle').text("Password must contain the following");\
+                        sender.el.find('#passwordMessage').css('background-color',"#ffa1a1");\
+                        sender.el.find('#passwordMessage,.passwordErrorTitle, .invalid').css("color","red");\
+                        sender.el.find('.arrow-bottom').css(\{\
+                            "border-top":"15px solid #ffa1a1"\
+                        \});\
+\
+                        $(this).attr('invalid', '');\
+                    \}\
+                \}, 350);\
+            \})\
+\
+    \}\
+\
+    this.enableGApi = (key) =>\
+        ((key && shazamme.gapi(key).maps(['places'])) || Promise.resolve())\
+            .then( l => \{\
+                if (l?.length > 0) \{\
+                    this.el.find('[data-autocomplete=address]').each( (_, f) => \{\
+                        const g = new google.maps.places.Autocomplete(f, \{\
+                            fields: ["address_components", "geometry"],\
+                            types: ["address"],\
+                        \});\
+                        const section = $(f).parents('[data-rel=sub-section]');\
+\
+                        f.onkeypress = (k) => \{\
+                            switch (k?.keyCode || k?.charCode || 0) \{\
+                                case 13: k.preventDefault(); break;\
+                            \}\
+                        \}\
+\
+                        g.addListener('place_changed', () => \{\
+                            const place = g.getPlace();\
+                            let address1 = "";\
+                            let postcode = "";\
+\
+                            // Get each component of the address from the place details,\
+                            // and then fill-in the corresponding field on the form.\
+                            // place.address_components are google.maps.GeocoderAddressComponent objects\
+                            // which are documented at http://goo.gle/3l5i5Mr\
+                            place.address_components.forEach( component => \{\
+                                // @ts-ignore remove once typings fixed\
+                                switch (component.types[0]) \{\
+                                  case "street_number" : address1 = `$\{component.long_name\} $\{address1\}`; break;\
+                                  case "route" : address1 += component.short_name; break;\
+                                  case "postal_code" : postcode = `$\{component.long_name\}$\{postcode\}`; break;\
+                                  case "postal_code_suffix" : postcode = `$\{postcode\}-$\{component.long_name\}`; break;\
+                                  case "locality" : section.find('[data-autocomplete-address=city]').val(component.long_name); break;\
+                                  case "administrative_area_level_1" : section.find('[data-autocomplete-address=state]').val(component.short_name); break;\
+                                  case "country" : section.find('[data-autocomplete-address=country]').val(component.long_name).attr('data-value', component.short_name); break;\
+                                \}\
+                            \});\
+\
+                            $(f)\
+                                .val(address1)\
+                                .focus();\
+\
+                            section.find('[data-autocomplete-address=postal]').val(postcode);\
+                        \});\
+                    \});\
+                \}\
+\
+                return Promise.resolve();\
+            \});\
+\
+    this.showCountryDropdown = (c) => \{\
+        if (c.length > 0) \{\
+            const js = 'https://shazamme.io/resource/country-select/js/countrySelect.min.js';\
+            const css = 'https://shazamme.io/resource/country-select/css/countrySelect.min.css';\
+\
+            return Promise.all([\
+                shazamme.script(js),\
+\
+                shazamme.style(css),\
+\
+                shazamme.geoLocate()\
+                    .then( p => shazamme.geoCode(\
+                            site?.configuration?.gApiMapsKey,\
+                            p?.coords?.latitude,\
+                            p?.coords?.longitude,\
+                    )),\
+            ]).then( p => \{\
+                c.each( (_, i) => \{\
+                    let el = $(i);\
+\
+                    if (el.length > 0) \{\
+                        const ob = new IntersectionObserver( () => \{\
+                            if (el.is(':visible')) \{\
+                                let preferred = [ 'au', 'us' ];\
+\
+                                if (data.config.preferredCountry?.length > 0) \{\
+                                    preferred = data.config.preferredCountry.map( x => x.countryCode.trim().toLowerCase() );\
+                                \}\
+\
+                                let v = el.val().trim();\
+\
+                                if (v.length > 0) \{\
+                                    el\
+                                        .attr('data-value', v)\
+                                        .val('');\
+                                \}\
+\
+                                el\
+                                    .countrySelect(\{\
+                                        responsiveDropdown: true,\
+                                        preferredCountries: preferred,\
+                                    \})\
+                                    .on('change', function() \{\
+                                        let f = $(this);\
+                                        let v = f.countrySelect('getSelectedCountryData');\
+\
+                                        f\
+                                            .val(v.name)\
+                                            .attr('data-value', v.iso2);\
+\
+                                        return true;\
+                                    \})\
+                                    .attr('data-country-select', '');\
+\
+                                el.countrySelect('selectCountry', el.attr('data-value') || p?.at(2)?.country || preferred[0]);\
+\
+                                ob.disconnect();\
+                            \}\
+                        \}, \{ root: document.documentElement \});\
+\
+                        ob.observe(i);\
+                    \}\
+                \});\
+            \});\
+        \}\
+\
+        return Promise.resolve();\
+    \}\
+\
+    this.activateTab = (tab) => \{\
+        this.el.find('[data-rel=dashboard-tab]').hide();\
+        this.el.find(`[data-rel=dashboard-tab data-tab=$\{tab\}]`).show();\
+    \}\
+\
+    this.loadScript = (src) => \{\
+        return new Promise( (res, rej) => \{\
+            $.getScript(\
+                src,\
+                function() \{ res() \},\
+                function() \{ rej() \}\
+            );\
+        \});\
+    \}\
+\
+    this.enablePasswordValidation();\
+\}\
+\
+const shApi = new ShApi();\
+const ux = new UX();\
+\
+let site = undefined;\
+\
+let exportAnswers = (answers) =>\
+    data.inEditor && Promise.resolve()\
+        || shazamme.user().then( u => \{\
+            if (u.candidate.customText13?.length > 0) \{\
+                answers.push(\{\
+                    sortOrder: 30,\
+                    question: 'Video Link',\
+                    answer: u.candidate.customText13,\
+                \});\
+\
+                answers = answers.sort( (x,y) => x.sortOrder > y.sortOrder ? 1 : x.sortOrder < y.sortOrder ? -1 : 0 );\
+            \}\
+\
+            return shApi.requestExport(u.candidate, answers).then( link => \{\
+                if (link && link.length > 0) \{\
+                    return Promise.resolve(link);\
+                \} else \{\
+                    return Promise.reject();\
+                \}\
+            \});\
+        \});\
+\
+\
+let answerValue = (question, answer) => \{\
+    let text = answer.answerText || answer.answerNum || answer.answerFileName;\
+\
+    if (text && (text.length > 0 || !isNaN(text))) \{\
+        return text;\
+    \}\
+\
+    if (answer.answerDate && answer.answerDate.length > 0) \{\
+        let date = new Date(answer.answerDate);\
+\
+        return date.toLocaleDateString();\
+    \}\
+\
+    if (answer.answerUUID && answer.answerUUID.length > 0) \{\
+        if (question) \{\
+            let o = question.options.find( x => x.screeningQuestionOptionsID === answer.answerUUID);\
+\
+            return (o && (o.option || o.label)) || answer.answerUUID;\
+        \}\
+\
+        return answer.answerUUID;\
+    \}\
+\
+    if (answer.answerBoolean) \{\
+        return 'Yes';\
+    \}\
+\
+    return '';\
+\}\
+\
+let enableExports = (jobApplicationID) => \{\
+    jobApplicationID.forEach( id => \{\
+        shApi.getScreeningAnswers(id).then ( answers => \{\
+            if (!answers.response.items || answers.response.items.length == 0) \{\
+                return;\
+            \}\
+\
+            let templateID = (answers.response.items.find( x => x.screeningTemplateID ) || \{\}).screeningTemplateID;\
+\
+            shApi.screeningTemplate(templateID)\
+            .then( questions => \{\
+                let items = answers.response.items.map( a => \{\
+                    let q = questions.find( x => x.data.screeningQuestionID === a.screeningQuestionID);\
+\
+                    return \{\
+                        sortOrder: (q && q.data.sortOrder) || 999,\
+                        question: q && q.data.question,\
+                        answer: q && answerValue(q.data, a),\
+                    \}\
+                \});\
+\
+                ux.el.find(`[data-rel=item-application][data-id=$\{id\}] [data-rel=button-export]`)\
+                    .css(\{\
+                        visibility: "visible",\
+                    \})\
+                    .click(function() \{\
+                        let button = $(this);\
+                        let exp = [];\
+\
+                        if (button.is('[ready]')) \{\
+                            return true;\
+                        \}\
+\
+                        button\
+                            .addClass('fa-spinner')\
+                            .addClass('wait');\
+\
+                        items.forEach( a => exp = exp.concat(answerWordBreak(a)) );\
+                        exportAnswers(exp)\
+                            .then( href => \{\
+                                button\
+                                    .removeClass('fa-spinner')\
+                                    .removeClass('wait');\
+\
+                                if (!href) return;\
+\
+                                button\
+                                    .attr('ready', '1')\
+                                    .attr('href', href)\
+                                    .attr('target', '_blank');\
+\
+                                    window.open(href, '_blank');\
+                            \}, () => \{\
+                                button\
+                                    .removeClass('fa-spinner')\
+                                    .removeClass('wait');\
+\
+                                alert("We are sorry. We ran into an issue exporting this document. Please try again.");\
+                            \})\
+                    \});\
+\
+                ux.el.find(`[data-rel=item-application][data-id=$\{id\}] [data-rel=button-edit]`)\
+                    .css(\{\
+                        visibility: "visible",\
+                    \})\
+                    .click(function() \{\
+                        let jobID = $(this)\
+                            .parents('[data-rel=item-application]')\
+                            .attr('data-job-id');\
+\
+                        window.open(ux.buildHref(Path.editApplication, `jobID=$\{jobID\}&jobApplicationID=$\{id\}`), '_blank');\
+                    \});\
+            \});\
+        \});\
+    \})\
+\}\
+\
+let answerWordBreak = (v, maxLength = 1500) => \{\
+    if (typeof(v.answer) !== 'string') \{\
+        return [v];\
+    \}\
+\
+    if (v.answer.length <= maxLength) \{\
+        return [v];\
+    \}\
+\
+    let question = v.question;\
+    let broken = [];\
+    let words = v.answer.match(/\\b(\\w+)\\b/g);\
+    let chunk = [];\
+    let read = 0;\
+\
+    while (true) \{\
+        let word = words.shift();\
+\
+        if (!word) \{\
+            break;\
+        \}\
+\
+        read += word.length;\
+\
+        if (read >= maxLength) \{\
+            broken.push(\{\
+                question: question,\
+                answer: chunk.join(' '),\
+                sortOrder: v.sortOrder,\
+                pageBreak: true,\
+            \});\
+\
+            chunk = [];\
+            read = word.length;\
+            question = v.question + ' (Cont)';\
+        \}\
+\
+        chunk.push(word);\
+    \}\
+\
+    broken.push(\{\
+        question: question,\
+        answer: chunk.join(' '),\
+        sortOrder: v.sortOrder,\
+        pageBreak: true,\
+    \});\
+\
+    return broken;\
+\}\
+\
+ux.el.find('[data-rel=navigation]').on('click', function() \{\
+    let button = $(this);\
+\
+    ux.el\
+        .find('[data-rel=navigation]')\
+        .removeClass('active');\
+\
+    button.addClass('active');\
+\
+    ux.el.find('[data-rel=section]').hide();\
+    ux.el.find(`[data-rel=section][data-navigation=$\{button.attr('data-navigation')\}]`)\
+        .show()\
+        .find('[data-rel=navigation-section]')\
+        .first()\
+        .click();\
+\
+    ux.el.find('[data-rel=menu]').hide();\
+\
+    if (data.device === 'mobile') \{\
+        window.location = `#$\{button.attr('data-navigation')\}`;\
+    \}\
+\});\
+\
+ux.el.find('[data-rel=navigation-section]').on('click', function() \{\
+    let button = $(this);\
+    let section = button.parents('section');\
+\
+    section\
+        .find('[data-rel=navigation-section]')\
+        .removeClass('active');\
+\
+    button.addClass('active');\
+\
+    section.find('[data-rel=sub-section]').hide();\
+    section.find(`[data-rel=sub-section][data-navigation=$\{button.attr('data-navigation')\}]`).show();\
+\
+    ux.el.find('[data-rel=menu]').hide();\
+\});\
+\
+if (!data.inEditor) \{\
+    ux.el\
+        .find('[data-rel=navigation]')\
+        .first()\
+        .trigger('click');\
+\} else \{\
+    ux.el\
+        .find('[data-rel=section]')\
+        .hide()\
+        .first()\
+        .show();\
+\}\
+\
+const showProfile = (u) => \{\
+    ux.el.find('[data-rel=profile]').each( (_, el) => \{\
+        let f = $(el);\
+        let v = u && u[f.attr('data-profile')] || '';\
+\
+        if (f.attr('type') === 'file') \{\
+            return;\
+        \}\
+\
+        if (f.is('[data-country-select]')) \{\
+            try \{\
+                f\
+                    .countrySelect('selectCountry', v)\
+                    .attr('data-value', v);\
+\
+                retun;\
+            \} catch \{\}\
+        \}\
+\
+        f\
+            .val(v)\
+            .text(v);\
+    \});\
+\
+    ux.el.find('[data-rel=profile][data-profile=avatar]')\
+        .attr('src', u?.photo?.length > 0 &&`data:image/jpeg;base64,$\{u.photo\}` || 'https://shazamme.io/Job-Listing/src/img/profile-placeholder.png?fit=1000%2C1000&ssl=1');\
+\}\
+\
+const updateProfile = (u, w) => \{\
+    let loading = site?.loadingDialog();\
+\
+    ux.el.append(loading);\
+\
+    const fVal = (f) => \{\
+        let v = f.attr('data-value');\
+\
+        if (v?.length > 0) \{\
+            return v;\
+        \}\
+\
+        return f.val();\
+    \}\
+\
+    ux.el.find('input[data-rel=profile], select[data-rel=profile]').each( (_, el) => \{\
+        let f = $(el);\
+\
+        if (f.attr('type') === 'file') \{\
+            return;\
+        \}\
+\
+        u[f.attr('data-profile')] = fVal(f);\
+    \});\
+\
+    shazamme.submit(\{\
+        action: 'Edit Candidate Info',\
+        ...u,\
+    \})\
+    .then( () => shazamme.user(true) )\
+    .then( u => \{\
+        showProfile(u?.candidate);\
+        loading?.remove();\
+        site?.toast(data.config.messageProfileSaved || 'Profile saved');\
+    \})\
+    .catch( () => \{\
+        loading?.remove();\
+    \});\
+\}\
+\
+const updateEmail = (candidate, w) => \{\
+    const f = ux.el.find('[data-rel=email][data-email=email]');\
+    let loading = site?.loadingDialog();\
+\
+    ux.el.append(loading);\
+\
+    let email = f.val()?.trim();\
+\
+    if (!(email?.length) > 0) \{\
+        let warning = data.config.warnEmailMissingMessage || 'Please provide a new email address';\
+\
+        site?.alertDialog(\{\
+            title: data.config.warnEmailTitle || 'Could Not Change Email',\
+            message: warning,\
+        \})?.appendTo(ux.el)\
+        || alert(warning);\
+\
+        loading?.remove();\
+        return;\
+    \}\
+\
+    let submit = (c) => shazamme.submit(\{\
+        action: 'Set User Email',\
+        clientUserID: c.id,\
+        candidateID: c.candidate.candidateID,\
+        email: email,\
+        siteID: c.siteID,\
+    \})\
+    .then( () => shazamme.auth(email, c.candidate.firebaseUserID) )\
+    .then( u => \{\
+        showProfile(u?.candidate);\
+        candidate.eMail = u.emal;\
+\
+        f.val('');\
+        loading?.remove();\
+\
+        site?.toast(data.config.messageEmailChange || 'Your email has been updated');\
+    \})\
+    .catch( () => \{\
+        loading?.remove();\
+    \});\
+\
+    shazamme.user().then( c => \{\
+        w.sub(Subscribe.loginConfirm, user => \{\
+            user.updateEmail(email)\
+                .then( () => \{\
+                    submit(c);\
+                \})\
+                .catch( ex => \{\
+                    f.blur();\
+                    loading?.remove();\
+\
+                    let warning = data.config.warnEmailMessage || 'We ran into a problem updating your email';\
+\
+                    switch (ex?.code) \{\
+                        case 'auth/email-already-in-use': warning = data.config.warnEmailUsed || 'This email address is already in use'; break;\
+                        case 'auth/invalid-email': warning = data.config.warnEmailInvalid || 'This is not a valid email address'; break;\
+                    \}\
+\
+                    site?.alertDialog(\{\
+                        title: data.config.warnEmailTitle || 'Could Not Change Email',\
+                        message: warning,\
+                    \})?.appendTo(ux.el)\
+                    || alert($('<div />').html(warning).text());\
+                \});\
+\
+            w.unsub(Subscribe.loginConfirm);\
+            w.unsub(Subscribe.loginCancel);\
+        \});\
+\
+        w.sub(Subscribe.loginCancel, () => \{\
+            u = \{...c.candidate\}\
+            showProfile(u);\
+\
+            f.val('');\
+            loading?.remove();\
+\
+            w.unsub(Subscribe.loginConfirm);\
+            w.unsub(Subscribe.loginCancel);\
+        \});\
+\
+        w.pub(Message.loginShow, \{ confirm: true, title: data.config.loginConfirm || 'Confirm Your Account', \});\
+    \});\
+\}\
+\
+const updatePassword = (u, w) => \{\
+    const f = ux.el.find('[data-rel=password][data-password=new]');\
+    let loading = site?.loadingDialog();\
+\
+    ux.el.append(loading);\
+\
+    let submit = () => shazamme.submit(\{\
+        action: 'Edit Candidate Info',\
+        ...u,\
+    \})\
+    .then( () => shazamme.user() )\
+    .then( u => \{\
+        showProfile(u?.candidate);\
+\
+        f.val('');\
+        loading?.remove();\
+\
+        site?.toast(data.config.messagePasswordChange || 'Your password has been updated');\
+    \})\
+    .catch( () => \{\
+        loading?.remove();\
+    \});\
+\
+    if (!/^(?=.*[A-Z])(?=.*[!@#$%^&?*])(?=.*[0-9])(?=.*[a-z]).\{8,\}$/.test(f.val())) \{\
+        const warning = data.config.warnPasswordMessage || `\
+            <p>Provide a password that matches the following:</p>\
+            <ul>\
+                <li no_space_b="true" no_space_e="true">At least eight characters long</li>\
+                <li no_space_b="true" no_space_e="true">Includes one or more uppercase characters</li>\
+                <li no_space_b="true" no_space_e="true">Includes one or more lowercase characters</li>\
+                <li no_space_b="true" no_space_e="true">Includes a number</li>\
+                <li no_space_b="true" no_space_e="true">Includes a special character (!@#$%^&amp;?*)</li>\
+            </ul>\
+        `;\
+\
+        f.blur();\
+        loading?.remove();\
+\
+        site?.alertDialog(\{\
+            title: data.config.warnPasswordTitle || 'Invalid Password',\
+            message: warning,\
+        \})?.appendTo(ux.el) || alert($('<div />').html(warning).text());\
+\
+        return;\
+    \}\
+\
+    u.password = f.val();\
+\
+    shazamme.user().then( c => \{\
+        w.sub(Subscribe.loginConfirm, user => \{\
+            user.updatePassword(u.password).then( () => \{\
+                submit();\
+            \});\
+\
+            w.unsub(Subscribe.loginConfirm);\
+            w.unsub(Subscribe.loginCancel);\
+        \});\
+\
+        w.sub(Subscribe.loginCancel, () => \{\
+            u = \{...c.candidate\}\
+            showProfile(u);\
+\
+            f.val('');\
+            loading?.remove();\
+\
+            w.unsub(Subscribe.loginConfirm);\
+            w.unsub(Subscribe.loginCancel);\
+        \});\
+\
+        w.pub(Message.loginShow, \{ confirm: true, title: data.config.loginConfirm || 'Confirm Your Account', \});\
+    \});\
+\}\
+\
+const deleteAccount = (u, w) => \{\
+    let loading = site?.loadingDialog();\
+\
+    ux.el.append(loading);\
+\
+    let submit = () => shazamme.site().then( s =>\
+        shazamme.submit(\{\
+            "action": "Delete Candidate",\
+            "siteID": s.siteID,\
+            "candidateID": u.candidateID,\
+            "uid": u.firebaseUserID,\
+        \})\
+    )\
+    .then( () => \{\
+        shazamme.endSession();\
+\
+        loading?.remove();\
+        site?.toast(data.config.messageDeleted || 'Your account has been deleted');\
+\
+        setTimeout( () => \{\
+            window.location = ux.buildHref(Path.home);\
+        \}, 2500);\
+    \})\
+    .catch( () => \{\
+        loading?.remove();\
+    \});\
+\
+    w.sub(Subscribe.loginConfirm, user => \{\
+        user.delete().then( () => \{\
+            submit();\
+        \});\
+\
+        w.unsub(Subscribe.loginConfirm);\
+        w.unsub(Subscribe.loginCancel);\
+    \});\
+\
+    w.sub(Subscribe.loginCancel, () => \{\
+        showProfile(u);\
+        loading?.remove();\
+\
+        w.unsub(Subscribe.loginConfirm);\
+        w.unsub(Subscribe.loginCancel);\
+    \});\
+\
+    w.pub(Message.loginShow, \{ confirm: true, title: data.config.loginConfirm || 'Confirm Your Account', \});\
+\}\
+\
+const showJobs = (cid) => \{\
+\
+    if (!cid) \{\
+        ux.el\
+            .find('[data-rel=collection-job]')\
+            .empty();\
+\
+        ux.el\
+            .find('[data-rel=collection-application]')\
+            .empty();\
+\
+        ux.el\
+            .find('[data-rel=collection-alert]')\
+            .empty();\
+\
+        return;\
+    \}\
+\
+    let savedJobs = shApi.savedJobs(cid);\
+    let jobApplications = shApi.jobApplications(cid);\
+    let jobAlerts = shApi.jobAlerts(cid);\
+\
+    savedJobs.then( saved =>\
+        jobApplications.then( apps =>\
+            jobAlerts.then( alerts => \{\
+\
+                shApi.jobs([\
+                    ...saved.response.items.map( i => i.jobID ),\
+                    ...apps.response.items.map( i => i.jobID ),\
+                ])\
+                .then( jobs => \{\
+                    let appList = apps.response.items.map( i => ux.applicationEl(i, jobs?.find( j => j.data.jobID === i.jobID )) );\
+                    let savedList = saved.response.items.map( i => ux.savedJobEl(i, jobs?.find( j => j.data.jobID === i.jobID ), apps.response.items.find( a => a.jobID === i.jobID )) );\
+\
+                    ux.el\
+                        .find('[data-rel=collection-job]')\
+                        .empty()\
+                        .append(savedList);\
+\
+                    ux.el\
+                        .find('[data-rel=collection-application]')\
+                        .empty()\
+                        .append(appList);\
+\
+                    ux.el\
+                        .find('[data-rel=item-saved-job]').on('click', '[data-rel=button-delete]', function() \{\
+                            let item = $(this).parents('[data-rel=item-saved-job]');\
+\
+                            shApi\
+                                .deleteSavedJob(item.attr('data-id'))\
+                                .then( r => \{\
+                                   if(r.status) \{\
+                                        item.remove();\
+                                    \}\
+                                \});\
+                        \});\
+\
+                    apps.response.items.forEach( a => \{\
+                        if (jobs?.find( j => j.data.jobID = a.jobID && j.data.screeningTemplateID && j.data.screeningTemplateID.length > 0 )) \{\
+                            ux.el.find(`[data-rel=item-application][data-id=$\{a.jobApplicationID\}] [data-rel=button-export], [data-rel=item-application][data-id=$\{a.jobApplicationID\}] [data-rel=button-edit]`)\
+                                .css(\{\
+                                    visibility: "visible",\
+                                \});\
+                        \}\
+                    \})\
+\
+                    enableExports(apps.response.items.map( i => i.jobApplicationID ));\
+\
+                    ux.el.find('[data-rel^=collection-]:is(:empty)').next('[data-rel=message-empty]').removeClass('hidden');\
+                \});\
+\
+                ux.el\
+                    .find('[data-rel=collection-alert]')\
+                    .empty()\
+                    .append(alerts.response.items.map( i => ux.alertEl(i) ));\
+\
+                ux.el\
+                    .find('[data-rel=item-job-alert]').on('click', '[data-rel=button-delete]', function() \{\
+                        let item = $(this).parents('[data-rel=item-job-alert]');\
+                        let alert = alerts.response.items.find( i => i.candidateSearchID = item.attr('data-id') );\
+\
+                        shApi\
+                            .deleteJobAlert(item.attr('data-id'))\
+                            .then( r => \{\
+                               if(r.status) \{\
+                                    item.remove();\
+                                    // if($(element).find(".accDashboard-savedJob").length == 0)\{\
+                                    //     $(element).find(".accDashboard-savedJobContainer").html(`$\{'<div class="accDashboard-savedJobName">No Saved Jobs Yet</div>'\}`);\
+                                    // \}\
+                                \}\
+                            \});\
+                    \});\
+\
+                ux.el\
+                    .find('[data-rel=item-job-alert]').on('click', '[data-rel=button-edit]', function() \{\
+                        let item = $(this).parents('[data-rel=item-job-alert]');\
+                        let alert = alerts.response.items.find( i => i.candidateSearchID == item.attr('data-id') );\
+\
+                        localStorage.createAlert = JSON.stringify(alert);\
+                        window.location = ux.buildHref(Path.jobAlerts);\
+                    \});\
+\
+                ux.el\
+                    .find('[data-rel=item-job-alert]').on('change', 'input[type=checkbox]', function() \{\
+                        let item = $(this).parents('[data-rel=item-job-alert]');\
+                        let alert = alerts.response.items.find( i => i.candidateSearchID = item.attr('data-id') );\
+\
+                        alert.isNeedAlert = $(this).is(':checked');\
+\
+                        shApi\
+                            .updateAlert(alert)\
+                            .then();\
+                    \});\
+            \})\
+        )\
+    );\
+\}\
+\
+const showFiles = (w, u) => \{\
+    const resumeFileType = shazamme.bag('upload-dialog')?.configuration?.resumeFileType;\
+    const coverLetterFileType = shazamme.bag('upload-dialog')?.configuration?.coverLetterFileType;\
+\
+    const deleteItem = () => \{\
+        let item = $(this).parents('[data-rel=item-candidate-file]');\
+        let id = item.attr('data-id');\
+        let collection = item.parents('[data-rel=collection-file]');\
+\
+        if (id === 'resume' || id === 'cover') \{\
+            return;\
+        \}\
+\
+        shApi\
+            .deleteCandidateFile(id)\
+            .then( r => \{\
+               if(r.status) \{\
+                    item.remove();\
+\
+                    if (collection.is(':empty')) \{\
+                        collection.next('[data-rel=message-empty]').removeClass('hidden');\
+                    \}\
+                \}\
+            \});\
+    \}\
+\
+    shApi.getCandidateFiles(u.candidateID).then( f => \{\
+        shApi.getCandidateFileTypes().then( t => \{\
+            w.config().then( c => \{\
+                const uploadFile = (f, cid) => \{\
+                    shazamme.site().then( s =>\
+                        shazamme.submit(\{\
+                            "action": "Add Candidate File",\
+                            "candidateID": cid,\
+                            "siteID": s.siteID,\
+                            "candidateFileName": f.name,\
+                            "candidateFileContent": f.content,\
+                            "siteCandidateFileTypeID": f.type,\
+                        \})\
+                    ).then( r => \{\
+                        let i = r?.response?.item;\
+\
+                        if (!i) \{\
+                            return;\
+                        \}\
+\
+                        shazamme.site().then( s => \{\
+                            ux.el\
+                                .find(`[data-rel=collection-file][data-collection-file=$\{f.type\}]`)\
+                                .append(ux.candidateFileEl(\{\
+                                    ...i,\
+                                    fileUri: `$\{s.documentUri\}/$\{i.siteCandidateFileTypeID\}/$\{i.candidateFileID\}`,\
+                                    type: fTypes.find( x => x.siteCandidateFileTypeID === i.siteCandidateFileTypeID )?.candidateFileType || '',\
+                                \}));\
+\
+                            ux.el\
+                                .find('[data-rel=item-candidate-file]')\
+                                .off('click')\
+                                .on('click', '[data-rel=button-delete]', function() \{\
+                                    let item = $(this).parents('[data-rel=item-candidate-file]');\
+                                    let id = item.attr('data-id');\
+                                    let collection = item.parents('[data-rel=collection-file]');\
+\
+                                    if (id === 'resume' || id === 'cover') \{\
+                                        return;\
+                                    \}\
+\
+                                    shApi\
+                                        .deleteCandidateFile(id)\
+                                        .then( r => \{\
+                                           if(r.status) \{\
+                                                item.remove();\
+\
+                                                if (collection.is(':empty')) \{\
+                                                    collection.next('[data-rel=message-empty]').removeClass('hidden');\
+                                                \}\
+                                            \}\
+                                        \});\
+                                \});\
+                        \});\
+\
+                        site?.toast(`$\{data.config.messageUploaded || 'File saved'\} ($\{f.name\})`);\
+                    \});\
+                \}\
+\
+                let fTypes = t.response.items.map( i => \{\
+                    let config = c?.fileType && (c?.fileType[i.candidateFileTypeID] || c?.fileType[i.siteCandidateFileTypeID]);\
+\
+                    return \{\
+                        ...i,\
+                        ...config,\
+                    \}\
+                \})\
+                .filter( i => data.inEditor || (!i.disabled && i.siteCandidateFileTypeID || f.response.items.find( d => d.data.candidateFileTypeID === i.candidateFileTypeID)) );\
+\
+                ux.el.find('[data-rel=collection-file-type]')\
+                    .empty()\
+                    .append(fTypes.map( i => ux.candidateFileTypeEl(i) ))\
+                    .find('[data-rel=navigation-section]:not(.disabled)').first().addClass('active');\
+\
+                ux.el.find('[data-rel=section][data-navigation=file] [data-rel=sub-section]').remove();\
+\
+                ux.el.find('[data-rel=section][data-navigation=file]')\
+                    .append(fTypes.map( i => ux.candidateFileSectionEl(i) ));\
+\
+                if (u.cVFileContent?.length > 0) \{\
+                    ux.el.find(`[data-rel=collection-file][data-collection-file=$\{resumeFileType\}]`)\
+                        .append(ux.candidateFileEl(\{\
+                            fileUri: `data:;base64,$\{u.cVFileContent\}`,\
+                            candidateFileID: 'resume',\
+                            candidateFileName: u.cVFileName,\
+                            type: fTypes.find( x => x.siteCandidateFileTypeID === resumeFileType )?.candidateFileType || '',\
+                        \}, false));\
+                \}\
+\
+                if (u.coverLetterContent?.length > 0) \{\
+                    ux.el.find(`[data-rel=collection-file][data-collection-file=$\{coverLetterFileType\}]`)\
+                        .append(ux.candidateFileEl(\{\
+                            fileUri: `data:;base64,$\{u.coverLetterContent\}`,\
+                            candidateFileID: 'cover',\
+                            candidateFileName: u.coverLetterFileName,\
+                            type: fTypes.find( x => x.siteCandidateFileTypeID === coverLetterFileType )?.candidateFileType || '',\
+                        \}, false));\
+                \}\
+\
+                shazamme.site().then( s => \{\
+                    f.response.items.forEach( i => \{\
+                        ux.el\
+                            .find(`[data-rel=collection-file][data-collection-file=$\{i.data.candidateFileTypeID\}]`)\
+                            .append(ux.candidateFileEl(\{\
+                                fileUri: `$\{s.documentUri\}/$\{i.data.candidateFileTypeID\}/$\{i.data.candidateFileID\}`,\
+                                type: fTypes.find( x => x.candidateFileTypeID === i.data.candidateFileTypeID )?.candidateFileType || '',\
+                                ...i.data,\
+                            \}));\
+\
+                        ux.el\
+                            .find(`[data-rel=collection-file][data-collection-file=$\{i.data.siteCandidateFileTypeID\}]`)\
+                            .append(ux.candidateFileEl(\{\
+                                fileUri: `$\{s.documentUri\}/$\{i.data.siteCandidateFileTypeID\}/$\{i.data.candidateFileID\}`,\
+                                type: fTypes.find( x => x.siteCandidateFileTypeID === i.data.siteCandidateFileTypeID )?.candidateFileType || '',\
+                                ...i.data,\
+                            \}));\
+                    \});\
+\
+                    ux.el.find('[data-navigation=file] [data-rel^=collection-]:not(:empty)').next('[data-rel=message-empty]').addClass('hidden');\
+                    ux.el.find('[data-navigation=file] [data-rel^=collection-]:is(:empty)').next('[data-rel=message-empty]').removeClass('hidden');\
+\
+                    ux.el\
+                        .find('[data-rel=item-candidate-file]').on('click', '[data-rel=button-delete]', function() \{\
+                            let item = $(this).parents('[data-rel=item-candidate-file]');\
+                            let id = item.attr('data-id');\
+                            let collection = item.parents('[data-rel=collection-file]');\
+\
+                            if (id === 'resume' || id === 'cover') \{\
+                                return;\
+                            \}\
+\
+                            shApi\
+                                .deleteCandidateFile(id)\
+                                .then( r => \{\
+                                   if(r.status) \{\
+                                        item.remove();\
+\
+                                        if (collection.is(':empty')) \{\
+                                            collection.next('[data-rel=message-empty]').removeClass('hidden');\
+                                        \}\
+                                    \}\
+                                \});\
+                        \});\
+                \});\
+\
+                ux.el.find('[data-rel=collection-file-type] [data-rel=navigation-section]').on('click', function() \{\
+                    let button = $(this);\
+                    let section = button.parents('section');\
+\
+                    section\
+                        .find('[data-rel=navigation-section]')\
+                        .removeClass('active');\
+\
+                    button.addClass('active');\
+\
+                    section.find('[data-rel=sub-section]').hide();\
+                    section.find(`[data-rel=sub-section][data-navigation=$\{button.attr('data-navigation')\}]`).show();\
+\
+                    ux.el.find('[data-rel=menu]').hide();\
+                \});\
+\
+                ux.el\
+                    .find('[data-rel=collection-file-type] [data-rel=navigation]')\
+                    .first()\
+                    .trigger('click');\
+\
+                ux.el.find('[data-rel=button-file]').on('click', function() \{\
+                    let button = $(this);\
+                    let dialog = shazamme.bag('upload-dialog');\
+\
+                    w.pub(dialog?.message?.uploadShow, \{\
+                        types: fTypes,\
+                        defaultType: button.attr('data-file'),\
+                    \});\
+\
+                    w.sub(dialog?.message?.uploadSubmit, upload => \{\
+                        w.unsub(dialog?.message?.uploadSubmit);\
+                        w.unsub(dialog?.message?.uploadCancel);\
+\
+                        let setResume = false;\
+                        let setCover = false;\
+\
+                        upload.forEach( f => \{\
+                            uploadFile(f, u.candidateID);\
+                        \});\
+\
+                        button.prev('[data-rel=message-empty]').addClass('hidden');\
+                    \});\
+\
+                    w.sub(dialog?.message?.uploadCancel, () => \{\
+                        w.unsub(dialog?.message?.uploadSubmit);\
+                        w.unsub(dialog?.message?.uploadCancel);\
+                    \});\
+                \});\
+            \});\
+        \});\
+    \});\
+\}\
+\
+const enableIconEditing = (w) => \{\
+    ux.el.find('[data-rel=action-set-icon]')\
+        .off('click')\
+        .on('click', function() \{\
+            let button = $(this).parents('button');\
+            let icon = button.find('i').get(0);\
+\
+            w.sub(site?.message?.iconChanged, i => \{\
+                w.config().then( c => \{\
+                    let icons = c?.navigationIcon || \{\};\
+\
+                    icons[button.attr('data-navigation')]\
+                        = icon.className\
+                        = `navigation-icon $\{i.set\} fa-$\{i.id\}`;\
+\
+                    w.config(\{\
+                        ...c,\
+                        navigationIcon: icons,\
+                    \}).then();\
+\
+                    w.unsub(site?.message?.iconChanged);\
+                    w.unsub(site?.message?.iconCancelled);\
+                \});\
+            \});\
+\
+            w.sub(site?.message?.iconCancelled, () => \{\
+                w.unsub(site?.message?.iconChanged);\
+                w.unsub(site?.message?.iconCancelled);\
+            \});\
+\
+            w.pub(site?.message?.iconPicker);\
+\
+            return false;\
+        \});\
+\}\
+\
+const enableFileOptions = (w) => \{\
+    shApi.getCandidateFileTypes().then( t => \{\
+        w.config().then( c => \{\
+            let fTypes = t.response.items.map( i => \{\
+                let config = c?.fileType && (c?.fileType[i.candidateFileTypeID] || c?.fileType[i.siteCandidateFileTypeID]);\
+\
+                return \{\
+                    ...i,\
+                    ...config,\
+                \}\
+            \});\
+\
+            ux.el.find('[data-rel=collection-file-type]')\
+                .empty()\
+                .append(fTypes.map( i => ux.candidateFileTypeEl(i) ))\
+                .find('[data-rel=navigation-section]:not(.disabled)').first().addClass('active');\
+\
+            ux.el.find('[data-rel=section][data-navigation=file] [data-rel=sub-section]').remove();\
+\
+            ux.el.find('[data-rel=section][data-navigation=file]')\
+                .append(fTypes.map( i => ux.candidateFileSectionEl(i) ));\
+\
+            ux.el.find('[data-rel=collection-file-type] [data-rel=navigation-section]').on('click', function() \{\
+                let button = $(this);\
+                let section = button.parents('section');\
+\
+                section\
+                    .find('[data-rel=navigation-section]')\
+                    .removeClass('active');\
+\
+                button.addClass('active');\
+\
+                section.find('[data-rel=sub-section]').hide();\
+                section.find(`[data-rel=sub-section][data-navigation=$\{button.attr('data-navigation')\}]`).show();\
+\
+                ux.el.find('[data-rel=menu]').hide();\
+            \});\
+\
+            ux.el.find('[data-rel=action-menu]')\
+                .off('click')\
+                .on('click', function() \{\
+                    let edit = $(this);\
+                    let button = edit.parents('button');\
+                    let menu = ux.el.find(`[data-rel=menu][data-menu=$\{edit.attr('data-menu')\}]`);\
+\
+                    menu.removeClass('hidden');\
+\
+                    menu.find('[data-rel=option-show]').get(0).checked = !button.is('.disabled');\
+                    menu.find('[data-rel=option-resume]').get(0).checked = button.is('[data-file-type-option-resume]');\
+                    menu.find('[data-rel=option-cover]').get(0).checked = button.is('[data-file-type-option-cover]');\
+\
+                    if (button.has(menu).length > 0) \{\
+                        menu.toggle();\
+                    \} else \{\
+                        button.append(menu);\
+                        menu.show();\
+                    \}\
+\
+                    return false;\
+                \});\
+\
+            ux.el.find('[data-rel=menu][data-menu=file-navigation] .menu-entry')\
+                .off('click')\
+                .on('click', function() \{\
+                    let opt = $(this).find('input');\
+                    let button = opt.parents('[data-rel=navigation-section]');\
+                    let menu = opt.parents('[data-rel=menu]');\
+\
+                    menu.hide();\
+\
+                    switch (opt.attr('data-rel')) \{\
+                        case 'option-show': \{\
+                            button.toggleClass('disabled');\
+                            break;\
+                        \}\
+\
+                        case 'option-resume':\
+                        case 'option-cover': \{\
+                            let a = `data-file-type-$\{opt.attr('data-rel')\}`;\
+\
+                            button.attr(a, function(_, v) \{\
+                                if (v) \{\
+                                    ux.el.find(`[data-rel=sub-section][data-navigation=$\{button.attr('data-navigation')\}] [data-rel=button-file]`).removeAttr(a);\
+\
+                                    return null;\
+                                \} else \{\
+                                    ux.el.find('[data-rel=navigation-section], [data-rel=sub-section] [data-rel=button-file]').removeAttr(a);\
+                                    ux.el.find(`[data-rel=sub-section][data-navigation=$\{button.attr('data-navigation')\}] [data-rel=button-file]`).attr(a, '1');\
+\
+                                    return 1;\
+                                \}\
+                            \});\
+\
+                            break;\
+                        \}\
+\
+                        default: break;\
+                    \}\
+\
+                    w.config().then( c => \{\
+                        let fileType = c?.fileType || \{\}\
+\
+                        fileType[button.attr('data-navigation')] = \{\
+                            disabled: button.is('.disabled'),\
+                            isResume: button.is('[data-file-type-option-resume]'),\
+                            isCover: button.is('[data-file-type-option-cover]'),\
+                        \}\
+\
+                        w.config(\{\
+                            ...c,\
+                            fileType,\
+                        \}).then();\
+                    \});\
+                \});\
+        \});\
+    \});\
+\}\
+\
+const showProfileQuestions = (w, u) => \{\
+    let el = ux.el.find('[data-rel=data-screening-questions]');\
+\
+    if (el.length > 0) \{\
+        let js = data.config.screeningVersion || 'https://sdk.shazamme.io/js/plugin/screening-question/1.0.0/plugin.min.js';\
+\
+        return shazamme.site()\
+            .then( s => s.candidateProfileDetailsSQTemplateID && shazamme.script(js).then( () => s ) || Promise.resolve() )\
+            .then(\
+                s => shazamme.plugin?.screeningQuestions && shazamme.plugin.screeningQuestions(w, \{\
+                    config: \{\
+                        ...data.config,\
+                        readMoreAlign: data.config.profileReadMoreAlign,\
+                        helpTextLines: data.config.profileHelpTextLines,\
+                        showMoreHelpText: data.config.profileShowMoreHelpText,\
+                        uploadButtonText: data.config.profileUploadButtonText,\
+                        nextPageButton: data.config.profileNextPageButton,\
+                        prevPageButton: data.config.profilePrevPageButton,\
+                        pagingButtonAlignment: data.config.profilePagingButtonAlignment,\
+                        showMoreShadowColor: data.config.profileShowMoreShadowColor,\
+                        warningScreeningQuestionsTitle: data.config.profileWarningScreeningQuestionsTitle,\
+                        warningScreeningQuestions: data.config.profileWarningScreeningQuestions,\
+                        showApply: true,\
+                        applyButton: data.config.profileApplyButton,\
+                    \},\
+                    collection: Collection,\
+                    editing: data.inEditor,\
+                    container: el,\
+                    tid: s.candidateProfileDetailsSQTemplateID,\
+                    cid: u?.candidate?.candidateID,\
+                \})\
+            )\
+            .then( sq => \{\
+                if (sq) \{\
+                    const submit = () => \{\
+                        if (!sq.validate()) \{\
+                            let warning = data.config.warningScreeningQuestions || 'Please answer all questions';\
+\
+                            site?.alertDialog(\{\
+                                title: data.config.warningScreeningQuestionTitle || 'Please Answer All Questions',\
+                                message: warning,\
+                            \})?.appendTo(ux.el) || alert(warning);\
+\
+                            return;\
+                        \}\
+\
+                        let loading = site?.loadingDialog();\
+\
+                        ux.el.append(loading);\
+\
+                        shazamme.site()\
+                            .then( s => shazamme.submit(\{\
+                                action: "Submit Screening Answers",\
+                                siteID: s.siteID,\
+                                answers: sq.answers(),\
+                            \}) )\
+                            .then( () => \{\
+                                showProfile(u?.candidate);\
+                                loading?.remove();\
+                                site?.toast(data.config.messageProfileSaved || 'Profile saved');\
+                            \})\
+                            .catch( () => \{\
+                                loading?.remove();\
+                            \});\
+                    \}\
+\
+                    sq.loadAnswers().then();\
+\
+                    ux.el.find('[data-rel=navigation][data-navigation=profile-question]').on('click', function() \{\
+                        sq.loadAnswers().then();\
+                    \});\
+\
+                    w.sub(sq.message.submit, () =>\{ submit(); \});\
+                \}\
+\
+                return Promise.resolve(sq !== undefined);\
+            \});\
+    \}\
+\
+    return Promise.resolve(false);\
+\}\
+\
+const main = (w) => \{\
+    let _r = false;\
+\
+    let ready = u => \{\
+        let candidate = u?.candidate;\
+\
+        w.unsub(Subscribe.loginCancel);\
+\
+        if (data.inEditor) \{\
+            enableFileOptions(w);\
+        \}\
+\
+        if (!candidate) \{\
+            if (!data.inEditor) \{\
+                w.sub(Subscribe.loginReady, () => \{\
+                    shazamme.pub(Message.loginShow);\
+                \});\
+\
+                if (shazamme.bag(Subscribe.loginReady)) \{\
+                    shazamme.pub(Message.loginShow);\
+                \}\
+\
+                w.sub(Subscribe.loginCancel, () =>  \{\
+                    window.location = ux.buildHref(Path.home);\
+                \});\
+\
+\
+                showProfile(null);\
+                showJobs(null);\
+            \}\
+\
+            _r = false;\
+\
+            return;\
+        \}\
+\
+        if (_r) return;\
+\
+        _r = true;\
+\
+        showProfile(candidate);\
+        showJobs(candidate.candidateID);\
+\
+        w.sub(Subscribe.uploadReady, () => \{\
+            showFiles(w, candidate);\
+        \})\
+\
+        if (data.config.ShowProfileQuestions) \{\
+            showProfileQuestions(w, u).then( ok => \{\
+                if (!ok) \{\
+                    ux.el.find('[data-navigation=profile-question]').hide();\
+                \}\
+            \});\
+        \}\
+\
+        let avatarRollOver = null;\
+        ux.el.find('.avatar')\
+            .off('mouseenter')\
+            .off('mouseleave')\
+            .on('mouseenter', function() \{\
+                if (avatarRollOver) \{\
+                    clearTimeout(avatarRollOver);\
+                \}\
+\
+                $(this).find('.roll-over').css(\{\
+                    opacity: 100,\
+                \}).fadeIn();\
+            \})\
+            .on('mouseleave', function() \{\
+                if (avatarRollOver) \{\
+                    clearTimeout(avatarRollOver);\
+                \}\
+\
+                avatarRollOver = setTimeout( () => $(this).find('.roll-over').fadeOut(), 500);\
+            \});\
+\
+        ux.el.find('[data-rel=action-remvove-photo]')\
+            .off('click')\
+            .on('click', function() \{\
+                if (confirm(data.config.messageDeletePhoto || 'Are you sure you would like to remove your photo?')) \{\
+                    if (!data.inEditor) \{\
+                        candidate.photo = null;\
+\
+                        updateProfile(candidate, w);\
+                    \}\
+                \}\
+            \});\
+\
+        if (!data.inEditor) \{\
+            ux.el.find('[data-rel=profile][data-profile=photo]')\
+                .off('change')\
+                .on('change', function() \{\
+                    let readFile = (file) => new Promise( resolve => \{\
+                        let reader = new FileReader();\
+\
+                        reader.addEventListener("load", function () \{\
+                            resolve(reader.result);\
+                        \}, false);\
+\
+                        if (file) \{\
+                            reader.readAsBinaryString(file);\
+                        \}\
+                    \});\
+\
+                    let field = $(this);\
+                    let file = field.get(0).files[0];\
+\
+                    file && readFile(file).then( b => \{\
+                        candidate.photo = btoa(b);\
+\
+                        updateProfile(candidate, w);\
+                    \});\
+                \});\
+\
+            ux.el.find('form')\
+                .off('submit')\
+                .on('submit', function() \{\
+                    let f = $(this);\
+\
+                    switch(f.attr('data-rel')) \{\
+                        case 'form-profile': updateProfile(candidate, w); break;\
+                        case 'form-password': updatePassword(candidate, w); break;\
+                        case 'form-email': updateEmail(candidate, w); break;\
+                        case 'form-delete': deleteAccount(candidate, w); break;\
+                    \}\
+\
+                    return false;\
+                \});\
+\
+            ux.el.find('[data-oauth]').each( (_, i) => \{\
+                let el = $(i);\
+\
+                if (u.isOAuth !== eval(el.attr('data-oauth'))) \{\
+                    el.hide();\
+                \}\
+            \});\
+        \}\
+\
+        ux.el\
+            .find('[data-rel=navigation]')\
+            .first()\
+            .trigger('click');\
+\
+    \}\
+\
+    site = shazamme.bag('site-config');\
+\
+    shazamme.user(true).then( u => \{\
+        ready(u || (data.inEditor && JSON.parse(data.config.debugSession || null)));\
+    \});\
+\
+    shazamme.sub(shazamme.message.auth, u => \{\
+        ready(u || (data.inEditor && JSON.parse(data.config.debugSession || null)));\
+    \});\
+\
+    w.config().then( c => \{\
+        let icons = c?.navigationIcon || \{\};\
+\
+        ux.el.find('[data-rel=navigation] i').each( (_, i) => \{\
+            i.className = icons[$(i).parents('button').attr('data-navigation')] || i.className;\
+        \});\
+    \});\
+\
+    w.sub(Subscribe.siteReady, () => \{\
+        site = shazamme.bag('site-config');\
+\
+        if (data.inEditor) \{\
+            ux.el.find('.editor-only').show();\
+            enableIconEditing(w);\
+        \}\
+\
+        Path.home              = site?.configuration?.pathHome              || Path.home;\
+        Path.deletedCandidate  = site?.configuration?.pathDeletedCandidate  || Path.deletedCandidate;\
+        Path.jobAlerts         = site?.configuration?.pathAlerts            || Path.jobAlerts;\
+        Path.login             = site?.configuration?.pathLogin             || Path.login;\
+        Path.searchResults     = site?.configuration?.pathJobResults        || Path.searchResults;\
+        Path.jobDetails        = site?.configuration?.pathJobDetails        || Path.jobDetails;\
+        Path.screeningAnswers  = site?.configuration?.pathScreeningAnswers  || Path.screeningAnswers;\
+        Path.editApplication   = site?.configuration?.pathJobApply          || Path.editApplication;\
+\
+        data.config.AutoCompleteCountry && ux.enableGApi(site?.configuration?.gApiPlacesKey).then();\
+        ux.showCountryDropdown(ux.el.find('[data-rel=profile][data-profile=country]:not([data-autocomplete-address])')).then();\
+    \});\
+\
+    if (data.inEditor) \{\
+        ux.el.find('.editor-only').show();\
+\
+        enableIconEditing(w);\
+    \} else \{\
+        ux.el.find('.editor-only').remove();\
+    \}\
+\
+    ux.el.find('.main-content').show();\
+    ux.el.find('[data-ral=loading]').remove();\
+\}\
+\
+ux.el\
+    .addClass('candidate-profile')\
+    .attr('style', 'height: auto !important');\
+\
+ux.loadScript('https://sdk.shazamme.io/js/shazamme-1.0.3.min.js')\
+    .then( () => shazamme.ready(data.siteId, data.page) )\
+    .then( () => \{\
+        main(shazamme.register('candidate-profile', data))\
+    \});\
+}

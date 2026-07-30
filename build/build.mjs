@@ -36,6 +36,41 @@ function discoverWidgets() {
     });
 }
 
+// Gather a widget's CSS and self-inject it from the bundle, so a site never has
+// to paste CSS into Duda (which broke half-styled on chandler: only the
+// multi-select block was pasted, so native fields fell back to Duda's theme).
+// styles.desktop.css / styles.mobile.css are wrapped in the Duda breakpoint media
+// queries (Duda scopes those per-device; we replicate that in one stylesheet).
+function gatherCss(widgetDir) {
+  const read = (f) => {
+    const p = join(widgetDir, f);
+    return existsSync(p) ? readFileSync(p, 'utf8') : '';
+  };
+  let css = read('styles.css');
+  const desktop = read('styles.desktop.css');
+  const mobile = read('styles.mobile.css');
+  if (desktop.trim()) css += `\n@media (min-width: 768px) {\n${desktop}\n}`;
+  if (mobile.trim()) css += `\n@media (max-width: 767px) {\n${mobile}\n}`;
+  return css;
+}
+
+// An IIFE prelude that injects the CSS once (id-deduped), before the controller
+// renders. Runs at bundle-eval time (script load), so styles are in place first.
+function cssPrelude(name, css) {
+  if (!css.trim()) return '';
+  const id = `shm-css-${name}`;
+  return [
+    `(function(){`,
+    `  if (typeof document === 'undefined') return;`,
+    `  if (document.getElementById(${JSON.stringify(id)})) return;`,
+    `  var s = document.createElement('style');`,
+    `  s.id = ${JSON.stringify(id)};`,
+    `  s.textContent = ${JSON.stringify(css)};`,
+    `  (document.head || document.documentElement).appendChild(s);`,
+    `})();`,
+  ].join('\n');
+}
+
 // Wrap the compiled module so its default export becomes the registered controller.
 function footer(name) {
   return [
@@ -55,13 +90,16 @@ async function bundleWidget(name) {
   const outDir = join(DIST_DIR, name, VERSION);
   mkdirSync(outDir, { recursive: true });
 
+  const css = gatherCss(join(WIDGETS_DIR, name));
+  const widgetBanner = [banner, cssPrelude(name, css)].filter(Boolean).join('\n');
+
   const common = {
     entryPoints: [entry],
     bundle: true,
     format: 'iife',
     globalName: 'module.exports',
     target: 'es2018',
-    banner: { js: banner },
+    banner: { js: widgetBanner },
     footer: { js: footer(name) },
     logLevel: 'info',
   };

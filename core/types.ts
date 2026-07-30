@@ -118,6 +118,8 @@ export interface FilterOptions {
 /** A page of query results plus totals and facet info. */
 export interface QueryResult {
   page: Job[];
+  /** The full filtered+sorted set (every match, not just the page) — used by the map. */
+  matching: Job[];
   total: number;
   facets: Hierarchy;
 }

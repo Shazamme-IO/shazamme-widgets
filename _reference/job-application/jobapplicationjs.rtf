@@ -1,0 +1,1229 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2870
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fnil\fcharset0 Menlo-Regular;}
+{\colortbl;\red255\green255\blue255;\red70\green137\blue204;\red23\green23\blue23;\red202\green202\blue202;
+\red212\green212\blue212;\red54\green192\blue160;\red79\green123\blue61;\red194\green126\blue101;\red167\green197\blue152;
+\red163\green79\blue131;}
+{\*\expandedcolortbl;;\cssrgb\c33725\c61176\c83922;\cssrgb\c11765\c11765\c11765;\cssrgb\c83137\c83137\c83137;
+\cssrgb\c86275\c86275\c86275;\cssrgb\c23922\c78824\c69020;\cssrgb\c37647\c54510\c30588;\cssrgb\c80784\c56863\c47059;\cssrgb\c70980\c80784\c65882;
+\cssrgb\c70588\c40000\c58431;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\deftab720
+\pard\pardeftab720\partightenfactor0
+
+\f0\fs28 \cf2 \cb3 \expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 let\cf4 \strokec4  action \cf5 \strokec5 =\cf4 \strokec4  \cf2 \strokec2 new\cf4 \strokec4  \cf6 \strokec6 Action\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf7 \cb3 \strokec7 //THIS WILL HOLD THE UPLOADED FILES\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 \strokec2 let\cf4 \strokec4  uploadedFiles \cf5 \strokec5 =\cf4 \strokec4  \cf5 \strokec5 \{\};\cf4 \cb1 \strokec4 \
+\
+\cf2 \cb3 \strokec2 let\cf4 \strokec4  isRequiredResume \cf5 \strokec5 =\cf4 \strokec4  \cf2 \strokec2 false\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cf2 \cb3 \strokec2 let\cf4 \strokec4  isRequiredCover \cf5 \strokec5 =\cf4 \strokec4  \cf2 \strokec2 false\cf5 \strokec5 ;\cf7 \strokec7 //true\cf4 \cb1 \strokec4 \
+\cf2 \cb3 \strokec2 let\cf4 \strokec4  dudaAlias \cf5 \strokec5 =\cf4 \strokec4  data\cf5 \strokec5 .\cf4 \strokec4 siteId\cf5 \strokec5 ;\cf7 \strokec7 //data.siteId;\cf4 \cb1 \strokec4 \
+\cf2 \cb3 \strokec2 let\cf4 \strokec4  importData \cf5 \strokec5 =\cf4 \strokec4  \cf5 \strokec5 \{\};\cf4 \cb1 \strokec4 \
+\cf2 \cb3 \strokec2 let\cf4 \strokec4  thankYouPage \cf5 \strokec5 =\cf4 \strokec4  \cf8 \strokec8 "thank-you"\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cf2 \cb3 \strokec2 let\cf4 \strokec4  dashboardPage \cf5 \strokec5 =\cf4 \strokec4  \cf8 \strokec8 "dashboard"\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cf2 \cb3 \strokec2 let\cf4 \strokec4  registerPage \cf5 \strokec5 =\cf4 \strokec4  \cf8 \strokec8 "register"\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cf2 \cb3 \strokec2 let\cf4 \strokec4  loginFrom\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cf2 \cb3 \strokec2 if\cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 toggleThankyouPage\cf5 \strokec5 )\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \cb3 \strokec5 \{\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3     thankYouPage\cf5 \strokec5 =\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 txt_Thankyoupageurl\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \cb3 \strokec5 \}\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf7 \cb3 \strokec7 //If the layout is the layout 2 we dont need the resume to be uploaded so we need to set it to false;\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 \strokec2 let\cf4 \strokec4  shouldUploadResume \cf5 \strokec5 =\cf4 \strokec4  data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 showResume \cf5 \strokec5 ===\cf4 \strokec4  \cf2 \strokec2 true\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cf2 \cb3 \strokec2 let\cf4 \strokec4  shouldUploadCover \cf5 \strokec5 =\cf4 \strokec4  data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 applicationLayout \cf5 \strokec5 !==\cf4 \strokec4  \cf8 \strokec8 "simpleForm"\cf4 \strokec4  \cf5 \strokec5 &&\cf4 \strokec4  data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 showCoverLetter\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cf2 \cb3 \strokec2 let\cf4 \strokec4  showSubscription \cf5 \strokec5 =\cf4 \strokec4  data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 showSubscription \cf5 \strokec5 ===\cf4 \strokec4  \cf8 \strokec8 'true'\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\
+\cf2 \cb3 \strokec2 const\cf4 \strokec4  uri \cf5 \strokec5 =\cf4 \strokec4  \cf2 \strokec2 new\cf4 \strokec4  \cf6 \strokec6 URL\cf5 \strokec5 (\cf4 \strokec4 window\cf5 \strokec5 .\cf4 \strokec4 location\cf5 \strokec5 .\cf4 \strokec4 href\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cf2 \cb3 \strokec2 let\cf4 \strokec4  isAcceptedPassword \cf5 \strokec5 =\cf4 \strokec4  \cf2 \strokec2 false\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cf2 \cb3 \strokec2 let\cf4 \strokec4  passwordInput \cf5 \strokec5 =\cf4 \strokec4  document\cf5 \strokec5 .\cf4 \strokec4 getElementById\cf5 \strokec5 (\cf8 \strokec8 'passwordInput'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cf2 \cb3 \strokec2 const\cf4 \strokec4  maxUploadSize \cf5 \strokec5 =\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 parseInt\cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 maxUploadSize\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 ||\cf4 \strokec4  \cf9 \strokec9 10\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 *\cf4 \strokec4  \cf9 \strokec9 1024\cf4 \strokec4  \cf5 \strokec5 *\cf4 \strokec4  \cf9 \strokec9 1024\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\
+\cf2 \cb3 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 showScreeningQuestions\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3     showScreeningQuestions\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \cb3 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf7 \cb3 \strokec7 // EVENTS\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3 $\cf5 \strokec5 (\cf8 \strokec8 '#passwordInput'\cf5 \strokec5 ).\cf4 \strokec4 focus\cf5 \strokec5 (\cf2 \strokec2 function\cf5 \strokec5 ()\{\cf4 \cb1 \strokec4 \
+\cb3     $\cf5 \strokec5 (\cf8 \strokec8 '#passwordMessage,.arrow-bottom'\cf5 \strokec5 ).\cf4 \strokec4 css\cf5 \strokec5 (\cf8 \strokec8 "display"\cf5 \strokec5 ,\cf8 \strokec8 "flex"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \cb3 \strokec5 \});\cf4 \cb1 \strokec4 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3 $\cf5 \strokec5 (\cf8 \strokec8 '#passwordInput'\cf5 \strokec5 ).\cf4 \strokec4 blur\cf5 \strokec5 (\cf2 \strokec2 function\cf5 \strokec5 ()\{\cf4 \cb1 \strokec4 \
+\cb3     \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 isAcceptedPassword\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3         $\cf5 \strokec5 (\cf8 \strokec8 '#passwordMessage, .arrow-bottom'\cf5 \strokec5 ).\cf4 \strokec4 css\cf5 \strokec5 (\cf8 \strokec8 "display"\cf5 \strokec5 ,\cf8 \strokec8 "none"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \cb3 \strokec5 \});\cf4 \cb1 \strokec4 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 useSmartLogin \cf5 \strokec5 &&\cf4 \strokec4  \cf5 \strokec5 !\cf4 \strokec4 hasLoggedInUser\cf5 \strokec5 ())\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3     \cf2 \strokec2 var\cf4 \strokec4  loginTimeout \cf5 \strokec5 =\cf4 \strokec4  \cf2 \strokec2 null\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\
+\cb3     $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 ".smart-login-login, .smart-login-register"\cf5 \strokec5 ).\cf4 \strokec4 hide\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\
+\cb3     $\cf5 \strokec5 (\cf8 \strokec8 "#emailLogin"\cf5 \strokec5 ).\cf4 \strokec4 keyup\cf5 \strokec5 (\cf2 \strokec2 function\cf5 \strokec5 ()\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3         \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 loginTimeout\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             clearTimeout\cf5 \strokec5 (\cf4 \strokec4 loginTimeout\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3         loginTimeout \cf5 \strokec5 =\cf4 \strokec4  setTimeout\cf5 \strokec5 (\cf4 \strokec4  \cf5 \strokec5 ()\cf4 \strokec4  \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             \cf2 \strokec2 let\cf4 \strokec4  id \cf5 \strokec5 =\cf4 \strokec4  $\cf5 \strokec5 (\cf2 \strokec2 this\cf5 \strokec5 ).\cf4 \strokec4 val\cf5 \strokec5 ().\cf4 \strokec4 trim\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\
+\cb3             \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 id\cf5 \strokec5 .\cf4 \strokec4 length \cf5 \strokec5 ===\cf4 \strokec4  \cf9 \strokec9 0\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                 $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 ".smart-login-login, .smart-login-register"\cf5 \strokec5 ).\cf4 \strokec4 hide\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\cb3                 \cf2 \strokec2 return\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3             firebase\cf5 \strokec5 .\cf4 \strokec4 auth\cf5 \strokec5 ().\cf4 \strokec4 fetchSignInMethodsForEmail\cf5 \strokec5 (\cf4 \strokec4 id\cf5 \strokec5 )\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 .\cf4 \strokec4 then\cf5 \strokec5 (\cf4 \strokec4  res \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                     $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 ".smart-login-login, .smart-login-register"\cf5 \strokec5 ).\cf4 \strokec4 hide\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\
+\cb3                     \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 res\cf5 \strokec5 .\cf4 \strokec4 length \cf5 \strokec5 >\cf4 \strokec4  \cf9 \strokec9 0\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                         $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 ".smart-login-login"\cf5 \strokec5 ).\cf4 \strokec4 show\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\cb3                     \cf5 \strokec5 \}\cf4 \strokec4  \cf2 \strokec2 else\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                         $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 ".smart-login-register"\cf5 \strokec5 ).\cf4 \strokec4 show\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\cb3                         $\cf5 \strokec5 (\cf8 \strokec8 "#emailAddress"\cf5 \strokec5 ).\cf4 \strokec4 val\cf5 \strokec5 (\cf4 \strokec4 id\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3                     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 \}).\cf2 \strokec2 catch\cf5 \strokec5 (\cf4 \strokec4  \cf5 \strokec5 ()\cf4 \strokec4  \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                     $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 ".smart-login-login"\cf5 \strokec5 ).\cf4 \strokec4 hide\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\cb3                     $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 ".smart-login-register"\cf5 \strokec5 ).\cf4 \strokec4 show\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\
+\cb3             loginTimeout \cf5 \strokec5 =\cf4 \strokec4  \cf2 \strokec2 null\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \},\cf4 \strokec4  \cf9 \strokec9 500\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \cb3 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 passwordInput\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3     \cf2 \strokec2 let\cf4 \strokec4  capitalChecker \cf5 \strokec5 =\cf4 \strokec4  document\cf5 \strokec5 .\cf4 \strokec4 getElementById\cf5 \strokec5 (\cf8 \strokec8 "capital"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3     \cf2 \strokec2 let\cf4 \strokec4  numberChecker \cf5 \strokec5 =\cf4 \strokec4  document\cf5 \strokec5 .\cf4 \strokec4 getElementById\cf5 \strokec5 (\cf8 \strokec8 "number"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3     \cf2 \strokec2 let\cf4 \strokec4  lenthChecker \cf5 \strokec5 =\cf4 \strokec4  document\cf5 \strokec5 .\cf4 \strokec4 getElementById\cf5 \strokec5 (\cf8 \strokec8 "length"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3     \cf2 \strokec2 let\cf4 \strokec4  specialCharChecker \cf5 \strokec5 =\cf4 \strokec4  document\cf5 \strokec5 .\cf4 \strokec4 getElementById\cf5 \strokec5 (\cf8 \strokec8 "specialChar"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3     passwordInput\cf5 \strokec5 .\cf4 \strokec4 onkeyup \cf5 \strokec5 =\cf4 \strokec4  \cf2 \strokec2 function\cf5 \strokec5 ()\{\cf4 \cb1 \strokec4 \
+\cb3         \cf2 \strokec2 let\cf4 \strokec4  statusCount \cf5 \strokec5 =\cf4 \strokec4  \cf9 \strokec9 0\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3         \cf7 \strokec7 //lowercase\cf4 \cb1 \strokec4 \
+\cb3         \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (!(\cf4 \strokec4 passwordInput\cf5 \strokec5 .\cf4 \strokec4 value\cf5 \strokec5 .\cf4 \strokec4 length \cf5 \strokec5 <\cf4 \strokec4  \cf9 \strokec9 8\cf5 \strokec5 ))\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             lenthChecker\cf5 \strokec5 .\cf4 \strokec4 classList\cf5 \strokec5 .\cf4 \strokec4 remove\cf5 \strokec5 (\cf8 \strokec8 "invalid"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             lenthChecker\cf5 \strokec5 .\cf4 \strokec4 classList\cf5 \strokec5 .\cf4 \strokec4 add\cf5 \strokec5 (\cf8 \strokec8 "valid"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             statusCount \cf5 \strokec5 +=\cf4 \strokec4  \cf9 \strokec9 1\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf2 \strokec2 else\cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             lenthChecker\cf5 \strokec5 .\cf4 \strokec4 classList\cf5 \strokec5 .\cf4 \strokec4 remove\cf5 \strokec5 (\cf8 \strokec8 "valid"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             lenthChecker\cf5 \strokec5 .\cf4 \strokec4 classList\cf5 \strokec5 .\cf4 \strokec4 add\cf5 \strokec5 (\cf8 \strokec8 "invalid"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             statusCount \cf5 \strokec5 -=\cf9 \strokec9 1\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf7 \strokec7 //Uppercase\cf4 \cb1 \strokec4 \
+\cb3         \cf2 \strokec2 if\cf5 \strokec5 (\cf4 \strokec4 passwordInput\cf5 \strokec5 .\cf4 \strokec4 value\cf5 \strokec5 .\cf4 \strokec4 search\cf5 \strokec5 (\cf10 \strokec10 /(?=.*[A-Z])/\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 !=\cf4 \strokec4  \cf5 \strokec5 -\cf9 \strokec9 1\cf5 \strokec5 )\{\cf4 \cb1 \strokec4 \
+\cb3             capitalChecker\cf5 \strokec5 .\cf4 \strokec4 classList\cf5 \strokec5 .\cf4 \strokec4 remove\cf5 \strokec5 (\cf8 \strokec8 "invalid"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             capitalChecker\cf5 \strokec5 .\cf4 \strokec4 classList\cf5 \strokec5 .\cf4 \strokec4 add\cf5 \strokec5 (\cf8 \strokec8 "valid"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             status \cf5 \strokec5 =\cf4 \strokec4  \cf2 \strokec2 true\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3             statusCount \cf5 \strokec5 +=\cf4 \strokec4  \cf9 \strokec9 1\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf2 \strokec2 else\cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             capitalChecker\cf5 \strokec5 .\cf4 \strokec4 classList\cf5 \strokec5 .\cf4 \strokec4 remove\cf5 \strokec5 (\cf8 \strokec8 "valid"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             capitalChecker\cf5 \strokec5 .\cf4 \strokec4 classList\cf5 \strokec5 .\cf4 \strokec4 add\cf5 \strokec5 (\cf8 \strokec8 "invalid"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             statusCount \cf5 \strokec5 -=\cf4 \strokec4  \cf9 \strokec9 1\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf7 \strokec7 //Number\cf4 \cb1 \strokec4 \
+\cb3         \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 passwordInput\cf5 \strokec5 .\cf4 \strokec4 value\cf5 \strokec5 .\cf4 \strokec4 search\cf5 \strokec5 (\cf10 \strokec10 /\\d/\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 !=\cf4 \strokec4  \cf5 \strokec5 -\cf9 \strokec9 1\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             numberChecker\cf5 \strokec5 .\cf4 \strokec4 classList\cf5 \strokec5 .\cf4 \strokec4 remove\cf5 \strokec5 (\cf8 \strokec8 "invalid"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             numberChecker\cf5 \strokec5 .\cf4 \strokec4 classList\cf5 \strokec5 .\cf4 \strokec4 add\cf5 \strokec5 (\cf8 \strokec8 "valid"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             statusCount \cf5 \strokec5 +=\cf4 \strokec4  \cf9 \strokec9 1\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf4 \strokec4  \cf2 \strokec2 else\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             numberChecker\cf5 \strokec5 .\cf4 \strokec4 classList\cf5 \strokec5 .\cf4 \strokec4 remove\cf5 \strokec5 (\cf8 \strokec8 "valid"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             numberChecker\cf5 \strokec5 .\cf4 \strokec4 classList\cf5 \strokec5 .\cf4 \strokec4 add\cf5 \strokec5 (\cf8 \strokec8 "invalid"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             statusCount \cf5 \strokec5 -=\cf4 \strokec4  \cf9 \strokec9 1\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf7 \strokec7 //special chars\cf4 \cb1 \strokec4 \
+\cb3         \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 passwordInput\cf5 \strokec5 .\cf4 \strokec4 value\cf5 \strokec5 .\cf4 \strokec4 search\cf5 \strokec5 (\cf10 \strokec10 /(?=.*[!@#$%^&*])/\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 !=\cf4 \strokec4  \cf5 \strokec5 -\cf9 \strokec9 1\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             specialCharChecker\cf5 \strokec5 .\cf4 \strokec4 classList\cf5 \strokec5 .\cf4 \strokec4 remove\cf5 \strokec5 (\cf8 \strokec8 "invalid"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             specialCharChecker\cf5 \strokec5 .\cf4 \strokec4 classList\cf5 \strokec5 .\cf4 \strokec4 add\cf5 \strokec5 (\cf8 \strokec8 "valid"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             statusCount \cf5 \strokec5 +=\cf4 \strokec4  \cf9 \strokec9 1\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf2 \strokec2 else\cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             specialCharChecker\cf5 \strokec5 .\cf4 \strokec4 classList\cf5 \strokec5 .\cf4 \strokec4 remove\cf5 \strokec5 (\cf8 \strokec8 "valid"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             specialCharChecker\cf5 \strokec5 .\cf4 \strokec4 classList\cf5 \strokec5 .\cf4 \strokec4 add\cf5 \strokec5 (\cf8 \strokec8 "invalid"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             statusCount \cf5 \strokec5 -=\cf4 \strokec4  \cf9 \strokec9 1\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cb3         \cf7 \strokec7 //if 4 checkers are acceptable\cf4 \cb1 \strokec4 \
+\cb3         \cf2 \strokec2 if\cf5 \strokec5 (\cf4 \strokec4 statusCount \cf5 \strokec5 ===\cf4 \strokec4  \cf9 \strokec9 4\cf5 \strokec5 )\{\cf4 \cb1 \strokec4 \
+\cb3             $\cf5 \strokec5 (\cf8 \strokec8 '.passwordErrorTitle'\cf5 \strokec5 ).\cf4 \strokec4 text\cf5 \strokec5 (\cf8 \strokec8 "Your password is acceptable!"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             $\cf5 \strokec5 (\cf8 \strokec8 '#passwordMessage'\cf5 \strokec5 ).\cf4 \strokec4 css\cf5 \strokec5 (\cf8 \strokec8 "background-color"\cf5 \strokec5 ,\cf8 \strokec8 "#59db5d"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             $\cf5 \strokec5 (\cf8 \strokec8 '.valid,.passwordErrorTitle'\cf5 \strokec5 ).\cf4 \strokec4 css\cf5 \strokec5 (\cf8 \strokec8 "color"\cf5 \strokec5 ,\cf8 \strokec8 "#fff"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             $\cf5 \strokec5 (\cf8 \strokec8 '.arrow-bottom'\cf5 \strokec5 ).\cf4 \strokec4 css\cf5 \strokec5 (\{\cf4 \cb1 \strokec4 \
+\cb3                 \cf8 \strokec8 "border-top"\cf5 \strokec5 :\cf8 \strokec8 "15px solid #59db5d"\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\cb3             isAcceptedPassword \cf5 \strokec5 =\cf4 \strokec4  \cf2 \strokec2 true\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3             \cf2 \strokec2 return\cf4 \strokec4  \cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf2 \strokec2 else\cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             $\cf5 \strokec5 (\cf8 \strokec8 '.passwordErrorTitle'\cf5 \strokec5 ).\cf4 \strokec4 text\cf5 \strokec5 (\cf8 \strokec8 "Password must contain the following"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             $\cf5 \strokec5 (\cf8 \strokec8 '#passwordMessage'\cf5 \strokec5 ).\cf4 \strokec4 css\cf5 \strokec5 (\cf8 \strokec8 'background-color'\cf5 \strokec5 ,\cf8 \strokec8 "#ffa1a1"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             $\cf5 \strokec5 (\cf8 \strokec8 '#passwordMessage,.passwordErrorTitle, .invalid'\cf5 \strokec5 ).\cf4 \strokec4 css\cf5 \strokec5 (\cf8 \strokec8 "color"\cf5 \strokec5 ,\cf8 \strokec8 "red"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             $\cf5 \strokec5 (\cf8 \strokec8 '.arrow-bottom'\cf5 \strokec5 ).\cf4 \strokec4 css\cf5 \strokec5 (\{\cf4 \cb1 \strokec4 \
+\cb3                 \cf8 \strokec8 "border-top"\cf5 \strokec5 :\cf8 \strokec8 "15px solid #ffa1a1"\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\cb3             isAcceptedPassword \cf5 \strokec5 =\cf4 \strokec4  \cf2 \strokec2 false\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3             \cf2 \strokec2 return\cf4 \strokec4  \cf2 \strokec2 false\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \cb3 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 \strokec2 function\cf4 \strokec4  convertBinaryString\cf5 \strokec5 (\cf4 \strokec4 fileUpload\cf5 \strokec5 ,\cf4 \strokec4 type\cf5 \strokec5 )\{\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3     \cf2 \strokec2 var\cf4 \strokec4  file \cf5 \strokec5 =\cf4 \strokec4  fileUpload\cf5 \strokec5 .\cf4 \strokec4 files\cf5 \strokec5 [\cf9 \strokec9 0\cf5 \strokec5 ];\cf4 \cb1 \strokec4 \
+\cb3     \cf2 \strokec2 let\cf4 \strokec4  fileName \cf5 \strokec5 =\cf4 \strokec4  file\cf5 \strokec5 .\cf4 \strokec4 name\cf5 \strokec5 .\cf4 \strokec4 replace\cf5 \strokec5 (\cf10 \strokec10 /[^a-z0-9-_.]/\cf2 \strokec2 gi\cf5 \strokec5 ,\cf4 \strokec4  \cf8 \strokec8 '-'\cf5 \strokec5 ).\cf4 \strokec4 replace\cf5 \strokec5 (\cf10 \strokec10 /-\{2,\}/\cf2 \strokec2 gi\cf5 \strokec5 ,\cf4 \strokec4  \cf8 \strokec8 '-'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3     \cf2 \strokec2 var\cf4 \strokec4  reader \cf5 \strokec5 =\cf4 \strokec4  \cf2 \strokec2 new\cf4 \strokec4  \cf6 \strokec6 FileReader\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\cb3     \cf2 \strokec2 let\cf4 \strokec4  fileType \cf5 \strokec5 =\cf4 \strokec4  type \cf5 \strokec5 ==\cf4 \strokec4  \cf8 \strokec8 "resume"\cf4 \strokec4  \cf5 \strokec5 ?\cf4 \strokec4  \cf8 \strokec8 "resumeFile"\cf5 \strokec5 :\cf8 \strokec8 "coverLetterFile"\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3     \cf2 \strokec2 let\cf4 \strokec4  name \cf5 \strokec5 =\cf4 \strokec4  type \cf5 \strokec5 ==\cf4 \strokec4  \cf8 \strokec8 "resume"\cf4 \strokec4  \cf5 \strokec5 ?\cf4 \strokec4  \cf8 \strokec8 "resumeName"\cf5 \strokec5 :\cf8 \strokec8 "coverLetterFileName"\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3     reader\cf5 \strokec5 .\cf4 \strokec4 addEventListener\cf5 \strokec5 (\cf8 \strokec8 "load"\cf5 \strokec5 ,\cf4 \strokec4  \cf2 \strokec2 function\cf4 \strokec4  \cf5 \strokec5 ()\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3         uploadedFiles\cf5 \strokec5 [\cf4 \strokec4 fileType\cf5 \strokec5 ]\cf4 \strokec4  \cf5 \strokec5 =\cf4 \strokec4  reader\cf5 \strokec5 .\cf4 \strokec4 result\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3         uploadedFiles\cf5 \strokec5 [\cf4 \strokec4 name\cf5 \strokec5 ]\cf4 \strokec4  \cf5 \strokec5 =\cf4 \strokec4  fileName\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \},\cf4 \strokec4  \cf2 \strokec2 false\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3     \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 file\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3         reader\cf5 \strokec5 .\cf4 \strokec4 readAsBinaryString\cf5 \strokec5 (\cf4 \strokec4 file\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \cb3 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3 $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 "input#resume"\cf5 \strokec5 ).\cf4 \strokec4 on\cf5 \strokec5 (\cf8 \strokec8 'change'\cf5 \strokec5 ,\cf4 \strokec4  \cf2 \strokec2 function\cf5 \strokec5 ()\{\cf4 \cb1 \strokec4 \
+\cb3     \cf2 \strokec2 let\cf4 \strokec4  file \cf5 \strokec5 =\cf4 \strokec4  \cf2 \strokec2 this\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3     \cf2 \strokec2 let\cf4 \strokec4  size \cf5 \strokec5 =\cf4 \strokec4  file\cf5 \strokec5 .\cf4 \strokec4 files\cf5 \strokec5 [\cf9 \strokec9 0\cf5 \strokec5 ]?.\cf4 \strokec4 size\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\
+\cb3     \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 size \cf5 \strokec5 >\cf4 \strokec4  maxUploadSize\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3         alert\cf5 \strokec5 (\cf4 \strokec4  data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 resumeSizeWarning \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 `Error! File too large, Should not exceed \cf5 \strokec5 $\{\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 maxUploadSize \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 ''\cf5 \strokec5 \}\cf8 \strokec8 mb`\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3         $\cf5 \strokec5 (\cf4 \strokec4 file\cf5 \strokec5 ).\cf4 \strokec4 val\cf5 \strokec5 (\cf8 \strokec8 ''\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 return\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3     \cf2 \strokec2 let\cf4 \strokec4  opt \cf5 \strokec5 =\cf4 \strokec4  $\cf5 \strokec5 (\cf8 \strokec8 'input[type=radio][name=uploadTypeResume][value=uploadResume]'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3     opt\cf5 \strokec5 .\cf2 \strokec2 get\cf5 \strokec5 (\cf9 \strokec9 0\cf5 \strokec5 ).\cf4 \strokec4 checked \cf5 \strokec5 =\cf4 \strokec4  \cf2 \strokec2 true\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3     opt\cf5 \strokec5 .\cf4 \strokec4 trigger\cf5 \strokec5 (\cf8 \strokec8 'change'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3     convertBinaryString\cf5 \strokec5 (\cf4 \strokec4 file\cf5 \strokec5 ,\cf8 \strokec8 "resume"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \cb3 \strokec5 \}).\cf4 \strokec4 each\cf5 \strokec5 (\cf2 \strokec2 function\cf5 \strokec5 ()\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3     \cf2 \strokec2 let\cf4 \strokec4  file \cf5 \strokec5 =\cf4 \strokec4  \cf2 \strokec2 this\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3     \cf2 \strokec2 let\cf4 \strokec4  size \cf5 \strokec5 =\cf4 \strokec4  file\cf5 \strokec5 .\cf4 \strokec4 files\cf5 \strokec5 [\cf9 \strokec9 0\cf5 \strokec5 ]?.\cf4 \strokec4 size\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\
+\cb3     \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 file\cf5 \strokec5 .\cf4 \strokec4 files\cf5 \strokec5 .\cf4 \strokec4 length \cf5 \strokec5 ==\cf4 \strokec4  \cf9 \strokec9 0\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3         \cf2 \strokec2 return\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3     \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 size \cf5 \strokec5 >\cf4 \strokec4  maxUploadSize\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3         alert\cf5 \strokec5 (\cf4 \strokec4  data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 resumeSizeWarning \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 `Error! File too large, Should not exceed \cf5 \strokec5 $\{\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 maxUploadSize \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 ''\cf5 \strokec5 \}\cf8 \strokec8 mb`\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3         $\cf5 \strokec5 (\cf4 \strokec4 file\cf5 \strokec5 ).\cf4 \strokec4 val\cf5 \strokec5 (\cf8 \strokec8 ''\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 return\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3     \cf2 \strokec2 let\cf4 \strokec4  opt \cf5 \strokec5 =\cf4 \strokec4  $\cf5 \strokec5 (\cf8 \strokec8 'input[type=radio][name=uploadTypeResume][value=uploadResume]'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3     opt\cf5 \strokec5 .\cf2 \strokec2 get\cf5 \strokec5 (\cf9 \strokec9 0\cf5 \strokec5 ).\cf4 \strokec4 checked \cf5 \strokec5 =\cf4 \strokec4  \cf2 \strokec2 true\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3     opt\cf5 \strokec5 .\cf4 \strokec4 trigger\cf5 \strokec5 (\cf8 \strokec8 'change'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3     convertBinaryString\cf5 \strokec5 (\cf4 \strokec4 file\cf5 \strokec5 ,\cf8 \strokec8 "resume"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \cb3 \strokec5 \});\cf4 \cb1 \strokec4 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3 $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 "input#cover"\cf5 \strokec5 ).\cf4 \strokec4 on\cf5 \strokec5 (\cf8 \strokec8 'change'\cf5 \strokec5 ,\cf4 \strokec4  \cf2 \strokec2 function\cf5 \strokec5 ()\{\cf4 \cb1 \strokec4 \
+\cb3     \cf2 \strokec2 let\cf4 \strokec4  file \cf5 \strokec5 =\cf4 \strokec4  \cf2 \strokec2 this\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3     \cf2 \strokec2 let\cf4 \strokec4  size \cf5 \strokec5 =\cf4 \strokec4  file\cf5 \strokec5 .\cf4 \strokec4 files\cf5 \strokec5 [\cf9 \strokec9 0\cf5 \strokec5 ]?.\cf4 \strokec4 size\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\
+\cb3     \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 size \cf5 \strokec5 >\cf4 \strokec4  maxUploadSize\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3         alert\cf5 \strokec5 (\cf4 \strokec4  data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 resumeSizeWarning \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 `Error! File too large, Should not exceed \cf5 \strokec5 $\{\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 maxUploadSize \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 ''\cf5 \strokec5 \}\cf8 \strokec8 mb`\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3         $\cf5 \strokec5 (\cf4 \strokec4 file\cf5 \strokec5 ).\cf4 \strokec4 val\cf5 \strokec5 (\cf8 \strokec8 ''\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 return\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3     \cf2 \strokec2 let\cf4 \strokec4  opt \cf5 \strokec5 =\cf4 \strokec4  $\cf5 \strokec5 (\cf8 \strokec8 'input[type=radio][name=uploadTypeCover][value=uploadCover]'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3     opt\cf5 \strokec5 .\cf2 \strokec2 get\cf5 \strokec5 (\cf9 \strokec9 0\cf5 \strokec5 ).\cf4 \strokec4 checked \cf5 \strokec5 =\cf4 \strokec4  \cf2 \strokec2 true\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3     opt\cf5 \strokec5 .\cf4 \strokec4 trigger\cf5 \strokec5 (\cf8 \strokec8 'change'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3     convertBinaryString\cf5 \strokec5 (\cf4 \strokec4 file\cf5 \strokec5 ,\cf8 \strokec8 "cover"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \cb3 \strokec5 \}).\cf4 \strokec4 each\cf5 \strokec5 (\cf2 \strokec2 function\cf5 \strokec5 ()\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3     \cf2 \strokec2 let\cf4 \strokec4  file \cf5 \strokec5 =\cf4 \strokec4  \cf2 \strokec2 this\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3     \cf2 \strokec2 let\cf4 \strokec4  size \cf5 \strokec5 =\cf4 \strokec4  file\cf5 \strokec5 .\cf4 \strokec4 files\cf5 \strokec5 [\cf9 \strokec9 0\cf5 \strokec5 ]?.\cf4 \strokec4 size\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\
+\cb3     \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 file\cf5 \strokec5 .\cf4 \strokec4 files\cf5 \strokec5 .\cf4 \strokec4 length \cf5 \strokec5 ==\cf4 \strokec4  \cf9 \strokec9 0\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3         \cf2 \strokec2 return\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3     \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 size \cf5 \strokec5 >\cf4 \strokec4  maxUploadSize\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3         alert\cf5 \strokec5 (\cf4 \strokec4  data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 resumeSizeWarning \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 `Error! File too large, Should not exceed \cf5 \strokec5 $\{\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 maxUploadSize \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 ''\cf5 \strokec5 \}\cf8 \strokec8 mb`\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3         $\cf5 \strokec5 (\cf4 \strokec4 file\cf5 \strokec5 ).\cf4 \strokec4 val\cf5 \strokec5 (\cf8 \strokec8 ''\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 return\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3     \cf2 \strokec2 let\cf4 \strokec4  opt \cf5 \strokec5 =\cf4 \strokec4  $\cf5 \strokec5 (\cf8 \strokec8 'input[type=radio][name=uploadTypeCover][value=uploadCover]'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3     opt\cf5 \strokec5 .\cf2 \strokec2 get\cf5 \strokec5 (\cf9 \strokec9 0\cf5 \strokec5 ).\cf4 \strokec4 checked \cf5 \strokec5 =\cf4 \strokec4  \cf2 \strokec2 true\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3     opt\cf5 \strokec5 .\cf4 \strokec4 trigger\cf5 \strokec5 (\cf8 \strokec8 'change'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3     convertBinaryString\cf5 \strokec5 (\cf4 \strokec4 file\cf5 \strokec5 ,\cf8 \strokec8 "cover"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \cb3 \strokec5 \});\cf4 \cb1 \strokec4 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3 $\cf5 \strokec5 (\cf8 \strokec8 'input[type=radio][name=uploadTypeResume]'\cf5 \strokec5 ).\cf4 \strokec4 change\cf5 \strokec5 (\cf2 \strokec2 function\cf5 \strokec5 ()\{\cf4 \cb1 \strokec4 \
+\cb3     \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf2 \strokec2 this\cf5 \strokec5 .\cf4 \strokec4 value \cf5 \strokec5 ==\cf4 \strokec4  \cf8 \strokec8 'uploadResume'\cf5 \strokec5 )\{\cf4 \cb1 \strokec4 \
+\cb3         \cf7 \strokec7 //show resume file uploader\cf4 \cb1 \strokec4 \
+\cb3         $\cf5 \strokec5 (\cf8 \strokec8 '.fileUploadContainer'\cf5 \strokec5 ).\cf4 \strokec4 css\cf5 \strokec5 (\cf8 \strokec8 'display'\cf5 \strokec5 ,\cf8 \strokec8 'flex'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3         shouldUploadResume \cf5 \strokec5 =\cf4 \strokec4  \cf2 \strokec2 true\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \}\cf2 \strokec2 else\cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3         $\cf5 \strokec5 (\cf8 \strokec8 '.fileUploadContainer'\cf5 \strokec5 ).\cf4 \strokec4 css\cf5 \strokec5 (\cf8 \strokec8 'display'\cf5 \strokec5 ,\cf8 \strokec8 'none'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3         shouldUploadResume \cf5 \strokec5 =\cf4 \strokec4  \cf2 \strokec2 false\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \cb3 \strokec5 \});\cf4 \cb1 \strokec4 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3 $\cf5 \strokec5 (\cf8 \strokec8 'input[type=radio][name=uploadTypeCover]'\cf5 \strokec5 ).\cf4 \strokec4 change\cf5 \strokec5 (\cf2 \strokec2 function\cf5 \strokec5 ()\{\cf4 \cb1 \strokec4 \
+\cb3     \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf2 \strokec2 this\cf5 \strokec5 .\cf4 \strokec4 value \cf5 \strokec5 ==\cf4 \strokec4  \cf8 \strokec8 'uploadCover'\cf5 \strokec5 )\{\cf4 \cb1 \strokec4 \
+\cb3         $\cf5 \strokec5 (\cf8 \strokec8 '.coverUploadContainer'\cf5 \strokec5 ).\cf4 \strokec4 css\cf5 \strokec5 (\cf8 \strokec8 'display'\cf5 \strokec5 ,\cf8 \strokec8 'flex'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3         shouldUploadCover \cf5 \strokec5 =\cf4 \strokec4  \cf2 \strokec2 true\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \}\cf2 \strokec2 else\cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3         $\cf5 \strokec5 (\cf8 \strokec8 '.coverUploadContainer'\cf5 \strokec5 ).\cf4 \strokec4 css\cf5 \strokec5 (\cf8 \strokec8 'display'\cf5 \strokec5 ,\cf8 \strokec8 'none'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3         shouldUploadCover \cf5 \strokec5 =\cf4 \strokec4  \cf2 \strokec2 false\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \cb3 \strokec5 \});\cf4 \cb1 \strokec4 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3 $\cf5 \strokec5 (\cf8 \strokec8 '#loginBtn'\cf5 \strokec5 ).\cf4 \strokec4 click\cf5 \strokec5 (\cf2 \strokec2 function\cf5 \strokec5 ()\{\cf4 \cb1 \strokec4 \
+\cb3     \cf2 \strokec2 let\cf4 \strokec4  email \cf5 \strokec5 =\cf4 \strokec4  $\cf5 \strokec5 (\cf8 \strokec8 '#emailLogin'\cf5 \strokec5 ).\cf4 \strokec4 val\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\cb3     \cf2 \strokec2 let\cf4 \strokec4  password \cf5 \strokec5 =\cf4 \strokec4  $\cf5 \strokec5 (\cf8 \strokec8 '#passwordLogin'\cf5 \strokec5 ).\cf4 \strokec4 val\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\cb3     loginFrom \cf5 \strokec5 =\cf4 \strokec4  \cf8 \strokec8 "loginForm"\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3     action\cf5 \strokec5 .\cf4 \strokec4 nativeLogin\cf5 \strokec5 (\cf4 \strokec4 email\cf5 \strokec5 ,\cf4 \strokec4 password\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \cb3 \strokec5 \});\cf4 \cb1 \strokec4 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3 $\cf5 \strokec5 (\cf8 \strokec8 '.container-item'\cf5 \strokec5 ).\cf4 \strokec4 click\cf5 \strokec5 (\cf2 \strokec2 function\cf5 \strokec5 ()\{\cf4 \cb1 \strokec4 \
+\cb3     $\cf5 \strokec5 (\cf8 \strokec8 '.registerTxt'\cf5 \strokec5 ).\cf4 \strokec4 hide\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\
+\cb3     \cf2 \strokec2 switch\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 $\cf5 \strokec5 (\cf2 \strokec2 this\cf5 \strokec5 ).\cf4 \strokec4 attr\cf5 \strokec5 (\cf8 \strokec8 'data-provider'\cf5 \strokec5 ))\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3         \cf2 \strokec2 case\cf4 \strokec4  \cf8 \strokec8 'facebook'\cf5 \strokec5 :\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             action\cf5 \strokec5 .\cf4 \strokec4 loginOrRegisterUsingProvider\cf5 \strokec5 (\cf4 \strokec4 facebookProvider\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             \cf2 \strokec2 break\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 case\cf4 \strokec4  \cf8 \strokec8 'google'\cf5 \strokec5 :\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             action\cf5 \strokec5 .\cf4 \strokec4 loginOrRegisterUsingProvider\cf5 \strokec5 (\cf4 \strokec4 googleProvider\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             \cf2 \strokec2 break\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 case\cf4 \strokec4  \cf8 \strokec8 'linkedin'\cf5 \strokec5 :\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             shazamme\cf5 \strokec5 .\cf4 \strokec4 oauth\cf5 \strokec5 (\cf8 \strokec8 'linkedinProvider'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             \cf2 \strokec2 break\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 case\cf4 \strokec4  \cf8 \strokec8 'seek'\cf5 \strokec5 :\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             shazamme\cf5 \strokec5 .\cf4 \strokec4 oauth\cf5 \strokec5 (\cf8 \strokec8 'seekProvider'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             \cf2 \strokec2 break\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \cb3 \strokec5 \});\cf4 \cb1 \strokec4 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf7 \cb3 \strokec7 // END EVENTS\cf4 \cb1 \strokec4 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 \strokec2 function\cf4 \strokec4  checkFileUploaded\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ,\cf4 \strokec4 shouldUpload\cf5 \strokec5 ,\cf4 \strokec4 file\cf5 \strokec5 )\{\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3     \cf7 \strokec7 //If the layout is the simple layout we dont need the resume file\cf4 \cb1 \strokec4 \
+\cb3     \cf2 \strokec2 if\cf5 \strokec5 (\cf4 \strokec4 shouldUpload\cf5 \strokec5 )\{\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 let\cf4 \strokec4  notif \cf5 \strokec5 =\cf4 \strokec4  file \cf5 \strokec5 ==\cf4 \strokec4  \cf8 \strokec8 "resume"\cf5 \strokec5 ?\cf4 \strokec4  data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 warningResume \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 'Please upload your resume'\cf4 \strokec4  \cf5 \strokec5 :\cf4 \strokec4  data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 warningCoverLetter \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 'Please upload your cover letter, or tick the "I don\\'t have cover letter"'\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3         \cf7 \strokec7 //GET THE FILE\cf4 \cb1 \strokec4 \
+\cb3         \cf2 \strokec2 let\cf4 \strokec4  fileToBeUploaded \cf5 \strokec5 =\cf4 \strokec4  element\cf5 \strokec5 .\cf4 \strokec4 files\cf5 \strokec5 [\cf9 \strokec9 0\cf5 \strokec5 ];\cf4 \cb1 \strokec4 \
+\cb3         \cf2 \strokec2 if\cf5 \strokec5 (\cf4 \strokec4 fileToBeUploaded \cf5 \strokec5 ==\cf4 \strokec4  \cf2 \strokec2 undefined\cf5 \strokec5 )\{\cf4 \cb1 \strokec4 \
+\cb3             buttonAction\cf5 \strokec5 (\cf8 \strokec8 "stop"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '.fcLoader'\cf5 \strokec5 ).\cf4 \strokec4 removeClass\cf5 \strokec5 (\cf8 \strokec8 'fcLoadingSeek'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             alert\cf5 \strokec5 (\cf4 \strokec4 notif\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             \cf2 \strokec2 throw\cf4 \strokec4  \cf2 \strokec2 new\cf4 \strokec4  \cf6 \strokec6 Error\cf5 \strokec5 (\cf4 \strokec4 notif\cf5 \strokec5 )\cf4 \cb1 \strokec4 \
+\cb3             \cf2 \strokec2 return\cf4 \strokec4  \cf2 \strokec2 null\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cb3         \cf7 \strokec7 //RETURN THE FILE WHICH IS UPLOADED\cf4 \cb1 \strokec4 \
+\cb3         \cf2 \strokec2 return\cf4 \strokec4  element\cf5 \strokec5 .\cf4 \strokec4 files\cf5 \strokec5 [\cf9 \strokec9 0\cf5 \strokec5 ];\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cb3     \cf2 \strokec2 return\cf4 \strokec4  \cf2 \strokec2 null\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \cb3 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 \strokec2 function\cf4 \strokec4  addUploadedToGlobal\cf5 \strokec5 (\cf4 \strokec4 file\cf5 \strokec5 ,\cf4 \strokec4 key\cf5 \strokec5 )\{\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3     \cf2 \strokec2 if\cf5 \strokec5 (!\cf4 \strokec4 file\cf5 \strokec5 )\cf4 \strokec4  \cf2 \strokec2 return\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3     \cf7 \strokec7 //GLOBAL var to be added EITHER RESUME || COVER LETTER;\cf4 \cb1 \strokec4 \
+\cb3     uploadedFiles\cf5 \strokec5 [\cf4 \strokec4 key\cf5 \strokec5 ]\cf4 \strokec4  \cf5 \strokec5 =\cf4 \strokec4  file\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \cb3 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\
+\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 \strokec2 function\cf4 \strokec4  \cf6 \strokec6 Action\cf5 \strokec5 ()\{\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3     \cf2 \strokec2 this\cf5 \strokec5 .\cf4 \strokec4 clearKeys \cf5 \strokec5 =\cf4 \strokec4  \cf5 \strokec5 ()=>\{\cf4 \cb1 \strokec4 \
+\cb3         \cf7 \strokec7 //We create an array so we can loop through each key and delete it in local Storage\cf4 \cb1 \strokec4 \
+\cb3         \cf2 \strokec2 let\cf4 \strokec4  keysToDelete \cf5 \strokec5 =\cf4 \strokec4  \cf5 \strokec5 [\cf4 \cb1 \strokec4 \
+\cb3             \cf8 \strokec8 "seekAuthorizationCode"\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3             \cf8 \strokec8 "authProvider"\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3             \cf8 \strokec8 "currentJobViewed"\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3             \cf8 \strokec8 "linkedIncode"\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3             \cf8 \strokec8 "jobID"\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 ];\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 for\cf5 \strokec5 (\cf2 \strokec2 const\cf4 \strokec4  key \cf2 \strokec2 of\cf4 \strokec4  keysToDelete\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             shazamme\cf5 \strokec5 .\cf4 \strokec4 store\cf5 \strokec5 (\cf4 \strokec4 key\cf5 \strokec5 ,\cf4 \strokec4  \cf2 \strokec2 null\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \};\cf4 \cb1 \strokec4 \
+\
+\cb3     \cf2 \strokec2 this\cf5 \strokec5 .\cf4 \strokec4 nativeLogin \cf5 \strokec5 =\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 uid\cf5 \strokec5 ,\cf4 \strokec4  secret\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3         shazamme\cf5 \strokec5 .\cf4 \strokec4 firebase\cf5 \strokec5 ().\cf4 \strokec4 auth\cf5 \strokec5 (\cf4 \strokec4 uid\cf5 \strokec5 ,\cf4 \strokec4  secret\cf5 \strokec5 ).\cf4 \strokec4 then\cf5 \strokec5 (\cf4 \strokec4  \cf5 \strokec5 ()\cf4 \strokec4  \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 inEditor\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                 \cf2 \strokec2 return\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3             \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 loginFrom \cf5 \strokec5 ==\cf4 \strokec4  \cf8 \strokec8 "loginForm"\cf5 \strokec5 )\{\cf4 \cb1 \strokec4 \
+\cb3                 window\cf5 \strokec5 .\cf4 \strokec4 location\cf5 \strokec5 .\cf4 \strokec4 reload\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\cb3                 \cf2 \strokec2 return\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3             \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 loginFrom \cf5 \strokec5 ==\cf4 \strokec4  \cf8 \strokec8 "registrationForm"\cf5 \strokec5 )\{\cf4 \cb1 \strokec4 \
+\cb3                 \cf2 \strokec2 let\cf4 \strokec4  link \cf5 \strokec5 =\cf4 \strokec4  window\cf5 \strokec5 .\cf4 \strokec4 location\cf5 \strokec5 .\cf4 \strokec4 href\cf5 \strokec5 .\cf4 \strokec4 includes\cf5 \strokec5 (\cf4 \strokec4 dudaAlias\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 ?\cf4 \strokec4  \cf8 \strokec8 `/site/\cf5 \strokec5 $\{\cf4 \strokec4 dudaAlias\cf5 \strokec5 \}\cf8 \strokec8 /\cf5 \strokec5 $\{\cf4 \strokec4 thankYouPage\cf5 \strokec5 \}\cf8 \strokec8 ?preview=true&insitepreview=true&dm_device=desktop`\cf5 \strokec5 :\cf8 \strokec8 `/\cf5 \strokec5 $\{\cf4 \strokec4 thankYouPage\cf5 \strokec5 \}\cf8 \strokec8 `\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3                 window\cf5 \strokec5 .\cf4 \strokec4 location\cf5 \strokec5 .\cf4 \strokec4 href \cf5 \strokec5 =\cf4 \strokec4  link\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3                 \cf2 \strokec2 return\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3             \cf2 \strokec2 let\cf4 \strokec4  previousApplicationPage \cf5 \strokec5 =\cf4 \strokec4  shazamme\cf5 \strokec5 .\cf4 \strokec4 store\cf5 \strokec5 (\cf8 \strokec8 'previousApplicationPage'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3             \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 previousApplicationPage\cf5 \strokec5 )\{\cf4 \cb1 \strokec4 \
+\cb3                window\cf5 \strokec5 .\cf4 \strokec4 location\cf5 \strokec5 .\cf4 \strokec4 href \cf5 \strokec5 =\cf4 \strokec4  previousApplicationPage\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3                \cf2 \strokec2 return\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3             window\cf5 \strokec5 .\cf4 \strokec4 location\cf5 \strokec5 .\cf4 \strokec4 href \cf5 \strokec5 =\cf4 \strokec4  window\cf5 \strokec5 .\cf4 \strokec4 location\cf5 \strokec5 .\cf4 \strokec4 href\cf5 \strokec5 .\cf4 \strokec4 includes\cf5 \strokec5 (\cf4 \strokec4 dudaAlias\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 ?\cf4 \strokec4  \cf8 \strokec8 `/site/\cf5 \strokec5 $\{\cf4 \strokec4 dudaAlias\cf5 \strokec5 \}\cf8 \strokec8 /\cf5 \strokec5 $\{\cf4 \strokec4 thankYouPage\cf5 \strokec5 \}\cf8 \strokec8 ?preview=true&insitepreview=true&dm_device=desktop`\cf5 \strokec5 :\cf8 \strokec8 `/\cf5 \strokec5 $\{\cf4 \strokec4 thankYouPage\cf5 \strokec5 \}\cf8 \strokec8 `\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}).\cf2 \strokec2 catch\cf5 \strokec5 (\cf4 \strokec4  error \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             alert\cf5 \strokec5 (\cf4 \strokec4 error\cf5 \strokec5 .\cf4 \strokec4 msg\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \};\cf4 \cb1 \strokec4 \
+\
+\cb3     \cf2 \strokec2 this\cf5 \strokec5 .\cf4 \strokec4 loginOrRegisterUsingProvider \cf5 \strokec5 =\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 p\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3         shazamme\cf5 \strokec5 .\cf4 \strokec4 firebase\cf5 \strokec5 ().\cf4 \strokec4 oauth\cf5 \strokec5 (\cf4 \strokec4 p\cf5 \strokec5 ).\cf4 \strokec4 then\cf5 \strokec5 (\cf4 \strokec4  u \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 u\cf5 \strokec5 .\cf4 \strokec4 isNew\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                 shazamme\cf5 \strokec5 .\cf4 \strokec4 submit\cf5 \strokec5 (\{\cf4 \cb1 \strokec4 \
+\cb3                     action\cf5 \strokec5 :\cf4 \strokec4  \cf8 \strokec8 'Register Candidate'\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                     salutation\cf5 \strokec5 :\cf4 \strokec4  \cf8 \strokec8 ' '\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                     firstName\cf5 \strokec5 :\cf4 \strokec4  u\cf5 \strokec5 .\cf4 \strokec4 firstName\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                     surname\cf5 \strokec5 :\cf4 \strokec4  u\cf5 \strokec5 .\cf4 \strokec4 lastName\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                     eMail\cf5 \strokec5 :\cf4 \strokec4  u\cf5 \strokec5 .\cf4 \strokec4 email\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                     password\cf5 \strokec5 :\cf4 \strokec4  shazamme\cf5 \strokec5 .\cf4 \strokec4 uuid\cf5 \strokec5 (),\cf4 \cb1 \strokec4 \
+\cb3                     candidateID\cf5 \strokec5 :\cf4 \strokec4   shazamme\cf5 \strokec5 .\cf4 \strokec4 uuid\cf5 \strokec5 (),\cf4 \cb1 \strokec4 \
+\cb3                     firebaseUserID\cf5 \strokec5 :\cf4 \strokec4   u\cf5 \strokec5 .\cf4 \strokec4 firebaseUserID\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                     isActive\cf5 \strokec5 :\cf4 \strokec4  \cf2 \strokec2 true\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                     isValidated\cf5 \strokec5 :\cf4 \strokec4  \cf2 \strokec2 true\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                     isSubscribed\cf5 \strokec5 :\cf4 \strokec4  showSubscription \cf5 \strokec5 &&\cf4 \strokec4  $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '[data-rel=checkbox-subscribe]:checked'\cf5 \strokec5 ).\cf4 \strokec4 length \cf5 \strokec5 >\cf4 \strokec4  \cf9 \strokec9 0\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                     dudaSiteID\cf5 \strokec5 :\cf4 \strokec4  data\cf5 \strokec5 .\cf4 \strokec4 siteId\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 \}).\cf4 \strokec4 then\cf5 \strokec5 (\cf4 \strokec4  r \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                     r\cf5 \strokec5 .\cf4 \strokec4 status \cf5 \strokec5 &&\cf4 \strokec4  \cf5 \strokec5 !\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 inEditor \cf5 \strokec5 &&\cf4 \strokec4  shazamme\cf5 \strokec5 .\cf4 \strokec4 auth\cf5 \strokec5 (\cf4 \strokec4 u\cf5 \strokec5 .\cf4 \strokec4 email\cf5 \strokec5 ,\cf4 \strokec4  u\cf5 \strokec5 .\cf4 \strokec4 firebaseUserID\cf5 \strokec5 ,\cf4 \strokec4  \cf2 \strokec2 true\cf5 \strokec5 ).\cf4 \strokec4 then\cf5 \strokec5 (\cf4 \strokec4  \cf5 \strokec5 ()\cf4 \strokec4  \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                         window\cf5 \strokec5 .\cf4 \strokec4 location\cf5 \strokec5 .\cf4 \strokec4 reload\cf5 \strokec5 ()\cf4 \strokec4  \cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3                     \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \}\cf4 \strokec4  \cf2 \strokec2 else\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                 window\cf5 \strokec5 .\cf4 \strokec4 location\cf5 \strokec5 .\cf4 \strokec4 reload\cf5 \strokec5 ()\cf4 \strokec4  \cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}).\cf2 \strokec2 catch\cf5 \strokec5 (\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 err\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             alert\cf5 \strokec5 (\cf4 \strokec4 err\cf5 \strokec5 .\cf4 \strokec4 msg\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \cb3 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 \strokec2 function\cf4 \strokec4  showOrHideForms\cf5 \strokec5 (\cf4 \strokec4 s\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3     \cf2 \strokec2 const\cf4 \strokec4  el \cf5 \strokec5 =\cf4 \strokec4  $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3     \cf2 \strokec2 if\cf5 \strokec5 (\cf4 \strokec4 s\cf5 \strokec5 )\{\cf4 \cb1 \strokec4 \
+\cb3         el\cf5 \strokec5 .\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '#salutation'\cf5 \strokec5 ).\cf4 \strokec4 val\cf5 \strokec5 (\cf4 \strokec4 s\cf5 \strokec5 .\cf4 \strokec4 salutation \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 ''\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3         el\cf5 \strokec5 .\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '#firstName'\cf5 \strokec5 ).\cf4 \strokec4 val\cf5 \strokec5 (\cf4 \strokec4 s\cf5 \strokec5 .\cf4 \strokec4 firstName \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 ''\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3         el\cf5 \strokec5 .\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '#lastName'\cf5 \strokec5 ).\cf4 \strokec4 val\cf5 \strokec5 (\cf4 \strokec4 s\cf5 \strokec5 .\cf4 \strokec4 surname \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 ''\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3         el\cf5 \strokec5 .\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '#emailAddress'\cf5 \strokec5 ).\cf4 \strokec4 val\cf5 \strokec5 (\cf4 \strokec4 s\cf5 \strokec5 .\cf4 \strokec4 eMail \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 ''\cf5 \strokec5 ).\cf4 \strokec4 attr\cf5 \strokec5 (\cf8 \strokec8 'readonly'\cf5 \strokec5 ,\cf4 \strokec4  \cf8 \strokec8 'readonly'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3         el\cf5 \strokec5 .\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '#phoneNumber'\cf5 \strokec5 ).\cf4 \strokec4 val\cf5 \strokec5 (\cf4 \strokec4 s\cf5 \strokec5 .\cf4 \strokec4 phone \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 ''\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3         el\cf5 \strokec5 .\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '#mobileNumber'\cf5 \strokec5 ).\cf4 \strokec4 val\cf5 \strokec5 (\cf4 \strokec4 s\cf5 \strokec5 .\cf4 \strokec4 mobile \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 ''\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 s\cf5 \strokec5 .\cf4 \strokec4 isNew\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             el\cf5 \strokec5 .\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '.shmLoginContainer,.applyMainSocial,.subscriptionContainer'\cf5 \strokec5 ).\cf4 \strokec4 show\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\cb3             el\cf5 \strokec5 .\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '.greeting-message'\cf5 \strokec5 ).\cf4 \strokec4 hide\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf4 \strokec4  \cf2 \strokec2 else\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             el\cf5 \strokec5 .\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '.shmLoginContainer,.applyMainSocial,.subscriptionContainer'\cf5 \strokec5 ).\cf4 \strokec4 hide\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\
+\cb3             el\cf5 \strokec5 .\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '.greeting-message'\cf5 \strokec5 )\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 .\cf4 \strokec4 show\cf5 \strokec5 ()\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 .\cf4 \strokec4 text\cf5 \strokec5 (\cf8 \strokec8 `\cf5 \strokec5 $\{\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 greeting \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 'Welcome back'\cf5 \strokec5 \}\cf8 \strokec8  \cf5 \strokec5 $\{\cf4 \strokec4 s\cf5 \strokec5 .\cf4 \strokec4 firstName \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 ''\cf5 \strokec5 \}\cf8 \strokec8  \cf5 \strokec5 $\{\cf4 \strokec4 s\cf5 \strokec5 .\cf4 \strokec4 surname \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 ''\cf5 \strokec5 \}\cf8 \strokec8 !`\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \}\cf4 \strokec4  \cf2 \strokec2 else\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3         el\cf5 \strokec5 .\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '.shmregistrationContainer,.shmLoginContainer,.applyMainSocial,.subscriptionContainer'\cf5 \strokec5 ).\cf4 \strokec4 show\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\cb3         el\cf5 \strokec5 .\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '.greeting-message'\cf5 \strokec5 )\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 .\cf4 \strokec4 hide\cf5 \strokec5 ()\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 .\cf4 \strokec4 text\cf5 \strokec5 (\cf8 \strokec8 ''\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3         el\cf5 \strokec5 .\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '#salutation'\cf5 \strokec5 ).\cf4 \strokec4 val\cf5 \strokec5 (\cf8 \strokec8 ''\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3         el\cf5 \strokec5 .\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '#firstName'\cf5 \strokec5 ).\cf4 \strokec4 val\cf5 \strokec5 (\cf8 \strokec8 ''\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3         el\cf5 \strokec5 .\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '#lastName'\cf5 \strokec5 ).\cf4 \strokec4 val\cf5 \strokec5 (\cf8 \strokec8 ''\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3         el\cf5 \strokec5 .\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '#emailAddress'\cf5 \strokec5 ).\cf4 \strokec4 val\cf5 \strokec5 (\cf8 \strokec8 ''\cf5 \strokec5 ).\cf4 \strokec4 removeAttr\cf5 \strokec5 (\cf8 \strokec8 'readonly'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3         el\cf5 \strokec5 .\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '#phoneNumber'\cf5 \strokec5 ).\cf4 \strokec4 val\cf5 \strokec5 (\cf8 \strokec8 ''\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3         el\cf5 \strokec5 .\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '#mobileNumber'\cf5 \strokec5 ).\cf4 \strokec4 val\cf5 \strokec5 (\cf8 \strokec8 ''\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3     \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 inEditor\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3         el\cf5 \strokec5 .\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '.greeting-message'\cf5 \strokec5 )\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 .\cf4 \strokec4 show\cf5 \strokec5 ()\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 .\cf4 \strokec4 text\cf5 \strokec5 (\cf8 \strokec8 `\cf5 \strokec5 $\{\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 greeting \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 'Welcome back'\cf5 \strokec5 \}\cf8 \strokec8 !`\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3     \cf2 \strokec2 if\cf5 \strokec5 (!\cf4 \strokec4 s\cf5 \strokec5 ?.\cf4 \strokec4 cVFileContent\cf5 \strokec5 )\{\cf4 \cb1 \strokec4 \
+\cb3         $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '.uploadExisting'\cf5 \strokec5 ).\cf4 \strokec4 css\cf5 \strokec5 (\cf8 \strokec8 'display'\cf5 \strokec5 ,\cf8 \strokec8 "none"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3     \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 showScreeningQuestions\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3         showScreeningQuestions\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \cb3 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 \strokec2 function\cf4 \strokec4  hasLoggedInUser\cf5 \strokec5 ()\{\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3     \cf2 \strokec2 return\cf4 \strokec4  window\cf5 \strokec5 .\cf4 \strokec4 localStorage\cf5 \strokec5 .\cf4 \strokec4 vinylResponse\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \cb3 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 \strokec2 function\cf4 \strokec4  getJobID\cf5 \strokec5 ()\{\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3     \cf2 \strokec2 let\cf4 \strokec4  getURL \cf5 \strokec5 =\cf4 \strokec4  \cf2 \strokec2 new\cf4 \strokec4  \cf6 \strokec6 URL\cf5 \strokec5 (\cf4 \strokec4 window\cf5 \strokec5 .\cf4 \strokec4 location\cf5 \strokec5 .\cf4 \strokec4 href\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3     \cf2 \strokec2 return\cf4 \strokec4  getURL\cf5 \strokec5 .\cf4 \strokec4 searchParams\cf5 \strokec5 .\cf2 \strokec2 get\cf5 \strokec5 (\cf8 \strokec8 "jobID"\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 ||\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 useSingleJob \cf5 \strokec5 &&\cf4 \strokec4  data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 jobID\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 ||\cf4 \strokec4  shazamme\cf5 \strokec5 .\cf4 \strokec4 store\cf5 \strokec5 (\cf8 \strokec8 'jobID'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \cb3 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 \strokec2 function\cf4 \strokec4  isObjectComplete\cf5 \strokec5 (\cf4 \strokec4 object\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3      \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf2 \strokec2 typeof\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 object\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 !==\cf4 \strokec4  \cf8 \strokec8 'object'\cf5 \strokec5 )\cf4 \strokec4  console\cf5 \strokec5 .\cf4 \strokec4 warn\cf5 \strokec5 (\cf8 \strokec8 'not object by objectChecker'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3      \cf2 \strokec2 for\cf4 \strokec4  \cf5 \strokec5 (\cf2 \strokec2 const\cf4 \strokec4  property \cf2 \strokec2 in\cf4 \strokec4  object\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3          \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 object\cf5 \strokec5 [\cf4 \strokec4 property\cf5 \strokec5 ]\cf4 \strokec4  \cf5 \strokec5 ===\cf4 \strokec4  \cf8 \strokec8 ''\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3              \cf2 \strokec2 return\cf4 \strokec4  \cf2 \strokec2 false\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3          \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cb3      \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cb3      \cf2 \strokec2 return\cf4 \strokec4  \cf2 \strokec2 true\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3  \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 \strokec2 function\cf4 \strokec4  buttonAction\cf5 \strokec5 (\cf4 \strokec4 action\cf5 \strokec5 )\{\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3     \cf2 \strokec2 if\cf5 \strokec5 (\cf4 \strokec4 action \cf5 \strokec5 ==\cf4 \strokec4  \cf8 \strokec8 "apply"\cf5 \strokec5 )\{\cf4 \cb1 \strokec4 \
+\cb3         $\cf5 \strokec5 (\cf8 \strokec8 '.submitApplicationBtn, .applyText'\cf5 \strokec5 ).\cf4 \strokec4 css\cf5 \strokec5 (\cf8 \strokec8 'pointer-events'\cf5 \strokec5 ,\cf8 \strokec8 "none"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3         \cf7 \strokec7 //$('.applyText').hide();\cf4 \cb1 \strokec4 \
+\cb3         \cf2 \strokec2 return\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cb3     $\cf5 \strokec5 (\cf8 \strokec8 '.submitApplicationBtn, .applyText'\cf5 \strokec5 ).\cf4 \strokec4 css\cf5 \strokec5 (\cf8 \strokec8 'pointer-events'\cf5 \strokec5 ,\cf8 \strokec8 "auto"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3     $\cf5 \strokec5 (\cf8 \strokec8 '.applyText'\cf5 \strokec5 ).\cf4 \strokec4 show\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \cb3 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 \strokec2 function\cf4 \strokec4  showScreeningQuestions\cf5 \strokec5 ()\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3         shazamme\cf5 \strokec5 .\cf4 \strokec4 site\cf5 \strokec5 ()\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 .\cf4 \strokec4 then\cf5 \strokec5 (\cf4 \strokec4  s \cf5 \strokec5 =>\cf4 \strokec4  shazamme\cf5 \strokec5 .\cf4 \strokec4 fetch\cf5 \strokec5 (\{\cf4 \cb1 \strokec4 \
+\cb3                 path\cf5 \strokec5 :\cf4 \strokec4  \cf8 \strokec8 `/job-results/\cf5 \strokec5 $\{\cf4 \strokec4 s\cf5 \strokec5 .\cf4 \strokec4 siteID\cf5 \strokec5 \}\cf8 \strokec8 /\cf5 \strokec5 $\{\cf4 \strokec4 getJobID\cf5 \strokec5 ()\}\cf8 \strokec8 `\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                 isExternal\cf5 \strokec5 :\cf4 \strokec4  \cf2 \strokec2 true\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                 useCache\cf5 \strokec5 :\cf4 \strokec4  \cf2 \strokec2 true\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \})\cf4 \strokec4  \cf5 \strokec5 )\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 .\cf4 \strokec4 then\cf5 \strokec5 (\cf4 \strokec4  j \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                 \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 j\cf5 \strokec5 ?.\cf4 \strokec4 data\cf5 \strokec5 ?.\cf4 \strokec4 screeningTemplateID\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                     shazamme\cf5 \strokec5 .\cf4 \strokec4 submit\cf5 \strokec5 (\{\cf4 \cb1 \strokec4 \
+\cb3                         action\cf5 \strokec5 :\cf4 \strokec4  \cf8 \strokec8 "Get Screening Questions"\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                         templateID\cf5 \strokec5 :\cf4 \strokec4  j\cf5 \strokec5 ?.\cf4 \strokec4 data\cf5 \strokec5 ?.\cf4 \strokec4 screeningTemplateID\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                     \cf5 \strokec5 \}).\cf4 \strokec4 then\cf5 \strokec5 (\cf4 \strokec4  res \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                         \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (!\cf4 \strokec4 res\cf5 \strokec5 .\cf4 \strokec4 status\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                             \cf2 \strokec2 return\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3                         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3                         \cf2 \strokec2 let\cf4 \strokec4  el \cf5 \strokec5 =\cf4 \strokec4  res\cf5 \strokec5 .\cf4 \strokec4 response\cf5 \strokec5 .\cf4 \strokec4 map\cf5 \strokec5 (\cf4 \strokec4  q \cf5 \strokec5 =>\cf4 \strokec4  questionElement\cf5 \strokec5 (\cf4 \strokec4 q\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3                         $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '[data-rel=screening-fields]'\cf5 \strokec5 )\cf4 \cb1 \strokec4 \
+\cb3                             \cf5 \strokec5 .\cf4 \strokec4 empty\cf5 \strokec5 ()\cf4 \cb1 \strokec4 \
+\cb3                             \cf5 \strokec5 .\cf4 \strokec4 append\cf5 \strokec5 (\cf4 \strokec4 el\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3                     \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \cb3 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 \strokec2 function\cf4 \strokec4  questionElement\cf5 \strokec5 (\cf4 \strokec4 q\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3     \cf2 \strokec2 switch\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 q\cf5 \strokec5 .\cf4 \strokec4 questionType\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3         \cf2 \strokec2 case\cf4 \strokec4  \cf8 \strokec8 'Text'\cf5 \strokec5 :\cf4 \cb1 \strokec4 \
+\cb3             \cf2 \strokec2 return\cf4 \strokec4  \cf8 \strokec8 `\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf8 \cb3 \strokec8                  <div class="input-field-container">\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8                     <label>\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8                         \cf5 \strokec5 $\{\cf4 \strokec4 q\cf5 \strokec5 .\cf4 \strokec4 question\cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8                         <input type="text" autocomplete="nope" data-qtype="text" data-qid="\cf5 \strokec5 $\{\cf4 \strokec4 q\cf5 \strokec5 .\cf4 \strokec4 screeningQuestionID\cf5 \strokec5 \}\cf8 \strokec8 " />\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8                     </label>\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8                 </div>\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8             `\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3         \cf2 \strokec2 case\cf4 \strokec4  \cf8 \strokec8 'Number'\cf5 \strokec5 :\cf4 \cb1 \strokec4 \
+\cb3             \cf2 \strokec2 return\cf4 \strokec4  \cf8 \strokec8 `\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf8 \cb3 \strokec8                  <div class="input-field-container">\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8                     <label>\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8                         \cf5 \strokec5 $\{\cf4 \strokec4 q\cf5 \strokec5 .\cf4 \strokec4 question\cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8                         <input type="number" autocomplete="nope" data-qtype="number" data-qid="\cf5 \strokec5 $\{\cf4 \strokec4 q\cf5 \strokec5 .\cf4 \strokec4 screeningQuestionID\cf5 \strokec5 \}\cf8 \strokec8 " />\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8                     </label>\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8                 </div>\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8             `\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3         \cf2 \strokec2 case\cf4 \strokec4  \cf8 \strokec8 'Date'\cf5 \strokec5 :\cf4 \cb1 \strokec4 \
+\cb3             \cf2 \strokec2 return\cf4 \strokec4  \cf8 \strokec8 `\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf8 \cb3 \strokec8                  <div class="input-field-container">\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8                     <label>\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8                         \cf5 \strokec5 $\{\cf4 \strokec4 q\cf5 \strokec5 .\cf4 \strokec4 question\cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8                         <input type="date" autocomplete="nope" data-qtype="date" data-qid="\cf5 \strokec5 $\{\cf4 \strokec4 q\cf5 \strokec5 .\cf4 \strokec4 screeningQuestionID\cf5 \strokec5 \}\cf8 \strokec8 " />\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8                     </label>\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8                 </div>\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8             `\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3         \cf2 \strokec2 case\cf4 \strokec4  \cf8 \strokec8 'Boolean'\cf5 \strokec5 :\cf4 \cb1 \strokec4 \
+\cb3             \cf2 \strokec2 return\cf4 \strokec4  \cf8 \strokec8 `\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf8 \cb3 \strokec8                  <div class="input-field-container">\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8                     <label>\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8                         \cf5 \strokec5 $\{\cf4 \strokec4 q\cf5 \strokec5 .\cf4 \strokec4 question\cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8                         <input type="checkbox" autocomplete="nope" data-qtype="bool" data-qid="\cf5 \strokec5 $\{\cf4 \strokec4 q\cf5 \strokec5 .\cf4 \strokec4 screeningQuestionID\cf5 \strokec5 \}\cf8 \strokec8 " data-qid="\cf5 \strokec5 $\{\cf4 \strokec4 q\cf5 \strokec5 .\cf4 \strokec4 screeningQuestionID\cf5 \strokec5 \}\cf8 \strokec8 " />\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8                     </label>\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8                 </div>\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8             `\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3         \cf2 \strokec2 case\cf4 \strokec4  \cf8 \strokec8 'List'\cf5 \strokec5 :\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             \cf2 \strokec2 let\cf4 \strokec4  opts \cf5 \strokec5 =\cf4 \strokec4  q\cf5 \strokec5 .\cf4 \strokec4 options\cf5 \strokec5 .\cf4 \strokec4 map\cf5 \strokec5 (\cf4 \strokec4  o \cf5 \strokec5 =>\cf4 \strokec4  \cf8 \strokec8 `<option value="\cf5 \strokec5 $\{\cf4 \strokec4 o\cf5 \strokec5 .\cf4 \strokec4 screeningQuestionOptionsID\cf5 \strokec5 \}\cf8 \strokec8 ">\cf5 \strokec5 $\{\cf4 \strokec4 o\cf5 \strokec5 .\cf4 \strokec4 option\cf5 \strokec5 \}\cf8 \strokec8 </option>`\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3             \cf2 \strokec2 return\cf4 \strokec4  \cf8 \strokec8 `\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf8 \cb3 \strokec8                  <div class="input-field-container">\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8                     <p>\cf5 \strokec5 $\{\cf4 \strokec4 q\cf5 \strokec5 .\cf4 \strokec4 question\cf5 \strokec5 \}\cf8 \strokec8 </p>\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8                     <select data-qtype="list" data-qid="\cf5 \strokec5 $\{\cf4 \strokec4 q\cf5 \strokec5 .\cf4 \strokec4 screeningQuestionID\cf5 \strokec5 \}\cf8 \strokec8 ">\cf5 \strokec5 $\{\cf4 \strokec4 opts\cf5 \strokec5 .\cf4 \strokec4 join\cf5 \strokec5 (\cf8 \strokec8 ''\cf5 \strokec5 )\}\cf8 \strokec8 </select>\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8                  </div>\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8             `\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 case\cf4 \strokec4  \cf8 \strokec8 'Radio'\cf5 \strokec5 :\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             \cf2 \strokec2 let\cf4 \strokec4  opts \cf5 \strokec5 =\cf4 \strokec4  q\cf5 \strokec5 .\cf4 \strokec4 options\cf5 \strokec5 .\cf4 \strokec4 map\cf5 \strokec5 (\cf4 \strokec4  o \cf5 \strokec5 =>\cf4 \strokec4  \cf8 \strokec8 `<label><input type="radio" data-qtype="radio" name="\cf5 \strokec5 $\{\cf4 \strokec4 q\cf5 \strokec5 .\cf4 \strokec4 screeningQuestionID\cf5 \strokec5 \}\cf8 \strokec8 " data-qid="\cf5 \strokec5 $\{\cf4 \strokec4 q\cf5 \strokec5 .\cf4 \strokec4 screeningQuestionID\cf5 \strokec5 \}\cf8 \strokec8 " value="\cf5 \strokec5 $\{\cf4 \strokec4 o\cf5 \strokec5 .\cf4 \strokec4 screeningQuestionOptionsID\cf5 \strokec5 \}\cf8 \strokec8 " />\cf5 \strokec5 $\{\cf4 \strokec4 o\cf5 \strokec5 .\cf4 \strokec4 option\cf5 \strokec5 \}\cf8 \strokec8 </label>`\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3             \cf2 \strokec2 return\cf4 \strokec4  \cf8 \strokec8 `\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf8 \cb3 \strokec8                  <div class="input-field-container">\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8                     <p> \cf5 \strokec5 $\{\cf4 \strokec4 q\cf5 \strokec5 .\cf4 \strokec4 question\cf5 \strokec5 \}\cf8 \strokec8 </p>\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8                     \cf5 \strokec5 $\{\cf4 \strokec4 opts\cf5 \strokec5 .\cf4 \strokec4 join\cf5 \strokec5 (\cf8 \strokec8 ''\cf5 \strokec5 )\}\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8                  </div>\cf4 \cb1 \strokec4 \
+\cf8 \cb3 \strokec8             `\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 default\cf5 \strokec5 :\cf4 \strokec4  \cf2 \strokec2 return\cf4 \strokec4  \cf8 \strokec8 ''\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\
+\cb3     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \cb3 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 \strokec2 function\cf4 \strokec4  validateScreeningQuestions\cf5 \strokec5 ()\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3     \cf2 \strokec2 let\cf4 \strokec4  isOk \cf5 \strokec5 =\cf4 \strokec4  \cf2 \strokec2 true\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\
+\cb3     $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '[data-rel=screening-fields] input, [data-rel=screening-fields] select'\cf5 \strokec5 ).\cf4 \strokec4 each\cf5 \strokec5 (\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 i\cf5 \strokec5 ,\cf4 \strokec4  el\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3         \cf2 \strokec2 let\cf4 \strokec4  field \cf5 \strokec5 =\cf4 \strokec4  $\cf5 \strokec5 (\cf4 \strokec4 el\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 switch\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 field\cf5 \strokec5 .\cf4 \strokec4 attr\cf5 \strokec5 (\cf8 \strokec8 'data-qtype'\cf5 \strokec5 ))\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             \cf2 \strokec2 case\cf4 \strokec4  \cf8 \strokec8 'text'\cf5 \strokec5 :\cf4 \cb1 \strokec4 \
+\cb3             \cf2 \strokec2 case\cf4 \strokec4  \cf8 \strokec8 'select'\cf5 \strokec5 :\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                 \cf2 \strokec2 let\cf4 \strokec4  val \cf5 \strokec5 =\cf4 \strokec4  field\cf5 \strokec5 .\cf4 \strokec4 val\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\
+\cb3                 isOk \cf5 \strokec5 =\cf4 \strokec4  isOk \cf5 \strokec5 &&\cf4 \strokec4  val \cf5 \strokec5 &&\cf4 \strokec4  val\cf5 \strokec5 .\cf4 \strokec4 trim\cf5 \strokec5 ().\cf4 \strokec4 length \cf5 \strokec5 >\cf4 \strokec4  \cf9 \strokec9 0\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3                 \cf2 \strokec2 break\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3             \cf2 \strokec2 case\cf4 \strokec4  \cf8 \strokec8 'number'\cf5 \strokec5 :\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                 isOK \cf5 \strokec5 =\cf4 \strokec4  isOk \cf5 \strokec5 &&\cf4 \strokec4  \cf5 \strokec5 !\cf4 \strokec4 isNaN\cf5 \strokec5 (\cf4 \strokec4 field\cf5 \strokec5 .\cf4 \strokec4 val\cf5 \strokec5 ());\cf4 \cb1 \strokec4 \
+\cb3                 \cf2 \strokec2 break\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3             \cf2 \strokec2 case\cf4 \strokec4  \cf8 \strokec8 'date'\cf5 \strokec5 :\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                 \cf2 \strokec2 let\cf4 \strokec4  val \cf5 \strokec5 =\cf4 \strokec4  \cf6 \strokec6 Date\cf5 \strokec5 .\cf4 \strokec4 parse\cf5 \strokec5 (\cf4 \strokec4 field\cf5 \strokec5 .\cf4 \strokec4 val\cf5 \strokec5 ());\cf4 \cb1 \strokec4 \
+\
+\cb3                 isOk \cf5 \strokec5 =\cf4 \strokec4  isOk \cf5 \strokec5 &&\cf4 \strokec4  \cf5 \strokec5 !\cf4 \strokec4 isNaN\cf5 \strokec5 (\cf4 \strokec4 val\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3                 \cf2 \strokec2 break\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\
+\cb3     \cf2 \strokec2 return\cf4 \strokec4  isOk\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \cb3 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 \strokec2 function\cf4 \strokec4  checkForDuplicate\cf5 \strokec5 (\cf4 \strokec4 candidateID\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3     \cf2 \strokec2 return\cf4 \strokec4  shazamme\cf5 \strokec5 .\cf4 \strokec4 site\cf5 \strokec5 ().\cf4 \strokec4 then\cf5 \strokec5 (\cf4 \strokec4  s \cf5 \strokec5 =>\cf4 \cb1 \strokec4 \
+\cb3         s\cf5 \strokec5 .\cf4 \strokec4 isLive\cb1 \
+\cb3             \cf5 \strokec5 &&\cf4 \strokec4  shazamme\cf5 \strokec5 .\cf4 \strokec4 submit\cf5 \strokec5 (\{\cf4 \cb1 \strokec4 \
+\cb3                 action\cf5 \strokec5 :\cf4 \strokec4  \cf8 \strokec8 "Get Job Applications"\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                 candidateID\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \}).\cf4 \strokec4 then\cf5 \strokec5 (\cf4 \strokec4  r \cf5 \strokec5 =>\cf4 \strokec4  r\cf5 \strokec5 ?.\cf4 \strokec4 status \cf5 \strokec5 &&\cf4 \strokec4  r\cf5 \strokec5 ?.\cf4 \strokec4 response\cf5 \strokec5 ?.\cf4 \strokec4 items\cf5 \strokec5 ?.\cf4 \strokec4 find\cf5 \strokec5 (\cf4 \strokec4  x \cf5 \strokec5 =>\cf4 \strokec4  x\cf5 \strokec5 .\cf4 \strokec4 jobID \cf5 \strokec5 ===\cf4 \strokec4  getJobID\cf5 \strokec5 ()\cf4 \strokec4  \cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 )\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 ||\cf4 \strokec4  \cf6 \strokec6 Promise\cf5 \strokec5 .\cf4 \strokec4 resolve\cf5 \strokec5 (\cf2 \strokec2 false\cf5 \strokec5 )\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf5 \cb3 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\
+\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 \strokec2 const\cf4 \strokec4  main \cf5 \strokec5 =\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 w\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3     \cf2 \strokec2 const\cf4 \strokec4  register \cf5 \strokec5 =\cf4 \strokec4  \cf5 \strokec5 ()\cf4 \strokec4  \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3         \cf7 \strokec7 //COLLECT INFO FROM FORM\cf4 \cb1 \strokec4 \
+\cb3         \cf2 \strokec2 let\cf4 \strokec4  candidateInfo \cf5 \strokec5 =\cf4 \strokec4  collectRegisterFormValues\cf5 \strokec5 ()\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf7 \strokec7 //CHECK IF ALL FIELDS HAS VALUE\cf4 \cb1 \strokec4 \
+\cb3         \cf2 \strokec2 let\cf4 \strokec4  isCompleteFields \cf5 \strokec5 =\cf4 \strokec4  isObjectComplete\cf5 \strokec5 (\cf4 \strokec4 candidateInfo\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3         \cf7 \strokec7 //IS PASSWORD 8\cf4 \cb1 \strokec4 \
+\cb3         \cf2 \strokec2 let\cf4 \strokec4  acceptablePassword \cf5 \strokec5 =\cf4 \strokec4  isAcceptedPassword\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 if\cf5 \strokec5 (!\cf4 \strokec4 isCompleteFields\cf5 \strokec5 )\{\cf4 \cb1 \strokec4 \
+\cb3             buttonAction\cf5 \strokec5 (\cf8 \strokec8 "hide"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             alert\cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 warningFields \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 'Please complete all required fields'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '.fcLoader'\cf5 \strokec5 ).\cf4 \strokec4 removeClass\cf5 \strokec5 (\cf8 \strokec8 'fcLoadingSeek'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3           \cf2 \strokec2 return\cf4 \strokec4  \cf6 \strokec6 Promise\cf5 \strokec5 .\cf4 \strokec4 reject\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 shouldUploadResume \cf5 \strokec5 &&\cf4 \strokec4  \cf5 \strokec5 !\cf4 \strokec4 candidateInfo\cf5 \strokec5 .\cf4 \strokec4 cVFileContent\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             alert\cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 warningResume \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 'Please upload your resume'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3             \cf2 \strokec2 return\cf4 \strokec4  \cf6 \strokec6 Promise\cf5 \strokec5 .\cf4 \strokec4 reject\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 if\cf5 \strokec5 (!\cf4 \strokec4 acceptablePassword\cf5 \strokec5 )\{\cf4 \cb1 \strokec4 \
+\cb3             \cf7 \strokec7 //TODO add alert and remove loading seek\cf4 \cb1 \strokec4 \
+\cb3             buttonAction\cf5 \strokec5 (\cf8 \strokec8 "hide"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '.fcLoader'\cf5 \strokec5 ).\cf4 \strokec4 removeClass\cf5 \strokec5 (\cf8 \strokec8 'fcLoadingSeek'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             alert\cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 warningPassword \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 'Please follow the password pattern!'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3             \cf2 \strokec2 return\cf4 \strokec4  \cf6 \strokec6 Promise\cf5 \strokec5 .\cf4 \strokec4 reject\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 return\cf4 \strokec4  shazamme\cb1 \
+\cb3             \cf5 \strokec5 .\cf4 \strokec4 firebase\cf5 \strokec5 ()\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 .\cf4 \strokec4 validateEmail\cf5 \strokec5 (\cf4 \strokec4 candidateInfo\cf5 \strokec5 .\cf4 \strokec4 eMail\cf5 \strokec5 )\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 .\cf4 \strokec4 then\cf5 \strokec5 (\cf4 \strokec4  \cf5 \strokec5 ()\cf4 \strokec4  \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                 \cf7 \strokec7 //If complete na yung details ng candidate add candidate ID\cf4 \cb1 \strokec4 \
+\cb3                 candidateInfo\cf5 \strokec5 .\cf4 \strokec4 candidateID \cf5 \strokec5 =\cf4 \strokec4  shazamme\cf5 \strokec5 .\cf4 \strokec4 uuid\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\
+\cb3                 \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 showPassword \cf5 \strokec5 ||\cf4 \strokec4  \cf5 \strokec5 !\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 useAnonymous\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                     \cf7 \strokec7 //REGISTER\cf4 \cb1 \strokec4 \
+\cb3                     \cf2 \strokec2 return\cf4 \strokec4  shazamme\cf5 \strokec5 .\cf4 \strokec4 firebase\cf5 \strokec5 ()\cf4 \cb1 \strokec4 \
+\cb3                         \cf5 \strokec5 .\cf4 \strokec4 create\cf5 \strokec5 (\cf4 \strokec4 candidateInfo\cf5 \strokec5 .\cf4 \strokec4 eMail\cf5 \strokec5 ,\cf4 \strokec4  candidateInfo\cf5 \strokec5 .\cf4 \strokec4 password\cf5 \strokec5 )\cf4 \cb1 \strokec4 \
+\cb3                         \cf5 \strokec5 .\cf4 \strokec4 then\cf5 \strokec5 (\cf4 \strokec4  u \cf5 \strokec5 =>\cf4 \strokec4  \cf6 \strokec6 Promise\cf5 \strokec5 .\cf4 \strokec4 resolve\cf5 \strokec5 (\{\cf4 \cb1 \strokec4 \
+\cb3                                 \cf5 \strokec5 ...\cf4 \strokec4 candidateInfo\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                                 firebaseUserID\cf5 \strokec5 :\cf4 \strokec4  u\cf5 \strokec5 .\cf4 \strokec4 uid\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                           \cf5 \strokec5 \}))\cf4 \cb1 \strokec4 \
+\cb3                         \cf5 \strokec5 .\cf2 \strokec2 catch\cf5 \strokec5 (\cf4 \strokec4  err \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                             buttonAction\cf5 \strokec5 (\cf8 \strokec8 "hide"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3                             $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '.fcLoader'\cf5 \strokec5 ).\cf4 \strokec4 removeClass\cf5 \strokec5 (\cf8 \strokec8 'fcLoadingSeek'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3                             \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 err\cf5 \strokec5 .\cf4 \strokec4 code \cf5 \strokec5 ===\cf4 \strokec4  \cf8 \strokec8 'auth/invalid-email'\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                                 alert\cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 warningEmail \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 "Please use a valid email address"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3                             \cf5 \strokec5 \}\cf4 \strokec4  \cf2 \strokec2 else\cf4 \strokec4  \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 err\cf5 \strokec5 .\cf4 \strokec4 code \cf5 \strokec5 ==\cf4 \strokec4  \cf8 \strokec8 "auth/email-already-in-use"\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                                 \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 showPassword\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                                     \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 window\cf5 \strokec5 .\cf4 \strokec4 confirm\cf5 \strokec5 (\cf8 \strokec8 'The email is already an existing account please login instead.'\cf5 \strokec5 ))\{\cf4 \cb1 \strokec4 \
+\cb3                                         window\cf5 \strokec5 .\cf4 \strokec4 scrollTo\cf5 \strokec5 (\{\cf4 \cb1 \strokec4 \
+\cb3                                             top\cf5 \strokec5 :\cf4 \strokec4  \cf9 \strokec9 0\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                                             behavior\cf5 \strokec5 :\cf4 \strokec4  \cf8 \strokec8 'smooth'\cf4 \cb1 \strokec4 \
+\cb3                                         \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\
+\cb3                                         $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 ".submitApplicationBtn"\cf5 \strokec5 ).\cf4 \strokec4 css\cf5 \strokec5 (\cf8 \strokec8 "pointer-events"\cf5 \strokec5 ,\cf8 \strokec8 "auto"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3                                         $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 ".applyText"\cf5 \strokec5 ).\cf4 \strokec4 show\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\cb3                                         $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '.fcLoader'\cf5 \strokec5 ).\cf4 \strokec4 removeClass\cf5 \strokec5 (\cf8 \strokec8 'fcLoadingSeek'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3                                     \cf5 \strokec5 \};\cf4 \cb1 \strokec4 \
+\cb3                                 \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cb3                             \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3                             \cf2 \strokec2 return\cf4 \strokec4  \cf6 \strokec6 Promise\cf5 \strokec5 .\cf4 \strokec4 reject\cf5 \strokec5 (\cf4 \strokec4 err\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3                         \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 \}\cf4 \strokec4  \cf2 \strokec2 else\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                     \cf7 \strokec7 //APPLY ANONYMOUSLY\cf4 \cb1 \strokec4 \
+\cb3                     \cf2 \strokec2 return\cf4 \strokec4  \cf6 \strokec6 Promise\cf5 \strokec5 .\cf4 \strokec4 resolve\cf5 \strokec5 (\{\cf4 \cb1 \strokec4 \
+\cb3                         \cf5 \strokec5 ...\cf4 \strokec4 candidateInfo\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                         isValidated\cf5 \strokec5 :\cf4 \strokec4  \cf2 \strokec2 false\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                     \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \})\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 .\cf2 \strokec2 catch\cf5 \strokec5 (\cf4 \strokec4  \cf5 \strokec5 ()\cf4 \strokec4  \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                 buttonAction\cf5 \strokec5 (\cf8 \strokec8 "hide"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3                 $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '.fcLoader'\cf5 \strokec5 ).\cf4 \strokec4 removeClass\cf5 \strokec5 (\cf8 \strokec8 'fcLoadingSeek'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3                 alert\cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 warningEmail \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 'Please supply a valid email.'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3                 \cf2 \strokec2 return\cf4 \strokec4  \cf6 \strokec6 Promise\cf5 \strokec5 .\cf4 \strokec4 reject\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\
+\cb3     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3     \cf2 \strokec2 const\cf4 \strokec4  collectRegisterFormValues \cf5 \strokec5 =\cf4 \strokec4  \cf5 \strokec5 ()\cf4 \strokec4  \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3         \cf2 \strokec2 let\cf4 \strokec4  password \cf5 \strokec5 =\cf4 \strokec4  $\cf5 \strokec5 (\cf8 \strokec8 '#passwordInput'\cf5 \strokec5 ).\cf4 \strokec4 val\cf5 \strokec5 ()\cf4 \strokec4  \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 ""\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 const\cf4 \strokec4  el \cf5 \strokec5 =\cf4 \strokec4  $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (!\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 showPassword\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             password \cf5 \strokec5 =\cf4 \strokec4  shazamme\cf5 \strokec5 .\cf4 \strokec4 uuid\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\cb3             isAcceptedPassword \cf5 \strokec5 =\cf4 \strokec4  \cf2 \strokec2 true\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 let\cf4 \strokec4  r \cf5 \strokec5 =\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             salutation\cf5 \strokec5 :\cf4 \strokec4  $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '#salutation'\cf5 \strokec5 ).\cf4 \strokec4 val\cf5 \strokec5 ()\cf4 \strokec4  \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 ' '\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3             firstName\cf5 \strokec5 :\cf4 \strokec4  el\cf5 \strokec5 .\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '#firstName'\cf5 \strokec5 ).\cf4 \strokec4 val\cf5 \strokec5 ()?.\cf4 \strokec4 trim\cf5 \strokec5 ()?.\cf4 \strokec4 replace\cf5 \strokec5 (\cf10 \strokec10 /["\'ab\'bb\'91\'92\'82\uc0\u8219 \'93\'94\'84\u8223 \'8b\'9b\u10075 \u10076 \u10077 \u10078 \u10094 \u10095 \u12317 \u12318 \u12319 \u65282 \u10079 \u10080 \u11842 \u55357 \u56950 \u55357 \u56951 \u55357 \u56952 \u65287 ]/\cf2 \strokec2 g\cf5 \strokec5 ,\cf4 \strokec4  \cf8 \strokec8 ''\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 ''\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3             surname\cf5 \strokec5 :\cf4 \strokec4  el\cf5 \strokec5 .\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '#lastName'\cf5 \strokec5 ).\cf4 \strokec4 val\cf5 \strokec5 ()?.\cf4 \strokec4 trim\cf5 \strokec5 ()?.\cf4 \strokec4 replace\cf5 \strokec5 (\cf10 \strokec10 /["\'ab\'bb\'91\'92\'82\uc0\u8219 \'93\'94\'84\u8223 \'8b\'9b\u10075 \u10076 \u10077 \u10078 \u10094 \u10095 \u12317 \u12318 \u12319 \u65282 \u10079 \u10080 \u11842 \u55357 \u56950 \u55357 \u56951 \u55357 \u56952 \u65287 ]/\cf2 \strokec2 g\cf5 \strokec5 ,\cf4 \strokec4  \cf8 \strokec8 ''\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 ''\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3             eMail\cf5 \strokec5 :\cf4 \strokec4  el\cf5 \strokec5 .\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '#emailAddress'\cf5 \strokec5 ).\cf4 \strokec4 val\cf5 \strokec5 ()?.\cf4 \strokec4 trim\cf5 \strokec5 ()\cf4 \strokec4  \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 ''\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3             phone\cf5 \strokec5 :\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 showPhoneNumber \cf5 \strokec5 &&\cf4 \strokec4  el\cf5 \strokec5 .\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '#phoneNumber'\cf5 \strokec5 ).\cf4 \strokec4 val\cf5 \strokec5 ()?.\cf4 \strokec4 trim\cf5 \strokec5 ())\cf4 \strokec4  \cf5 \strokec5 ||\cf4 \strokec4  \cf5 \strokec5 (!\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 requirePhone \cf5 \strokec5 ?\cf4 \strokec4  \cf2 \strokec2 undefined\cf4 \strokec4  \cf5 \strokec5 :\cf4 \strokec4  \cf8 \strokec8 ''\cf5 \strokec5 ),\cf4 \cb1 \strokec4 \
+\cb3             mobile\cf5 \strokec5 :\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 showMobileNumber \cf5 \strokec5 &&\cf4 \strokec4  el\cf5 \strokec5 .\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '#mobileNumber'\cf5 \strokec5 ).\cf4 \strokec4 val\cf5 \strokec5 ()?.\cf4 \strokec4 trim\cf5 \strokec5 ())\cf4 \strokec4  \cf5 \strokec5 ||\cf4 \strokec4  \cf5 \strokec5 (!\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 requireMobile \cf5 \strokec5 ?\cf4 \strokec4  \cf2 \strokec2 undefined\cf4 \strokec4  \cf5 \strokec5 :\cf4 \strokec4  \cf8 \strokec8 ''\cf5 \strokec5 ),\cf4 \cb1 \strokec4 \
+\cb3             password\cf5 \strokec5 :\cf4 \strokec4  password\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3             isActive\cf5 \strokec5 :\cf2 \strokec2 true\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3             isValidated\cf5 \strokec5 :\cf4 \strokec4  \cf2 \strokec2 true\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3             isSubscribed\cf5 \strokec5 :\cf4 \strokec4  showSubscription \cf5 \strokec5 &&\cf4 \strokec4  el\cf5 \strokec5 .\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '[data-rel=checkbox-subscribe]:checked'\cf5 \strokec5 ).\cf4 \strokec4 length \cf5 \strokec5 >\cf4 \strokec4  \cf9 \strokec9 0\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3             dudaSiteID\cf5 \strokec5 :\cf4 \strokec4  data\cf5 \strokec5 .\cf4 \strokec4 siteId\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3             cVFileContent\cf5 \strokec5 :\cf4 \strokec4  uploadedFiles\cf5 \strokec5 .\cf4 \strokec4 resumeFile \cf5 \strokec5 &&\cf4 \strokec4  btoa\cf5 \strokec5 (\cf4 \strokec4 uploadedFiles\cf5 \strokec5 .\cf4 \strokec4 resumeFile\cf5 \strokec5 ),\cf4 \cb1 \strokec4 \
+\cb3             cVFileName\cf5 \strokec5 :\cf4 \strokec4 uploadedFiles\cf5 \strokec5 .\cf4 \strokec4 resumeName\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 w \cf5 \strokec5 &&\cf4 \strokec4  data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 enableTracing \cf5 \strokec5 &&\cf4 \strokec4  \cf5 \strokec5 (!\cf4 \strokec4 uploadedFiles\cf5 \strokec5 .\cf4 \strokec4 resumeFile \cf5 \strokec5 ||\cf4 \strokec4  \cf5 \strokec5 !\cf4 \strokec4 uploadedFiles\cf5 \strokec5 .\cf4 \strokec4 coverLetterFile\cf5 \strokec5 ))\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             w\cf5 \strokec5 .\cf4 \strokec4 warn\cf5 \strokec5 (\cf8 \strokec8 'file(s) missing'\cf5 \strokec5 ,\cf4 \strokec4  r\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             w\cf5 \strokec5 .\cf4 \strokec4 warn\cf5 \strokec5 (\cf8 \strokec8 'file(s) missing (contains uploads)'\cf5 \strokec5 ,\cf4 \strokec4  uploadedFiles\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 validatePhoneNumber\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             r\cf5 \strokec5 .\cf4 \strokec4 defaultPhoneCountry \cf5 \strokec5 =\cf4 \strokec4  data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 defaultPhoneCountry \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 'AU'\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3             r\cf5 \strokec5 .\cf4 \strokec4 validatePhone \cf5 \strokec5 =\cf4 \strokec4  \cf2 \strokec2 true\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 return\cf4 \strokec4  r\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3     $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '.submitApplicationBtn'\cf5 \strokec5 ).\cf4 \strokec4 click\cf5 \strokec5 (\cf2 \strokec2 function\cf5 \strokec5 ()\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3         \cf2 \strokec2 if\cf5 \strokec5 (!\cf4 \strokec4 getJobID\cf5 \strokec5 ())\{\cf4 \cb1 \strokec4 \
+\cb3             alert\cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 warningNoJob \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 'No job selected!'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             \cf2 \strokec2 return\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf7 \strokec7 //EITHER OF THE TWO SHOULD BE UPLOADED IF NOT RETURN NULL SO WE CANT PUSH IT TO GLOBAL FILE OBJECT\cf4 \cb1 \strokec4 \
+\cb3         \cf2 \strokec2 let\cf4 \strokec4  hasResumeFileElement \cf5 \strokec5 =\cf4 \strokec4  document\cf5 \strokec5 .\cf4 \strokec4 querySelector\cf5 \strokec5 (\cf8 \strokec8 'input#resume[type=file]'\cf5 \strokec5 );\cf7 \strokec7 //123\cf4 \cb1 \strokec4 \
+\cb3         \cf2 \strokec2 let\cf4 \strokec4  hasCoverFileElement \cf5 \strokec5 =\cf4 \strokec4  document\cf5 \strokec5 .\cf4 \strokec4 querySelector\cf5 \strokec5 (\cf8 \strokec8 'input#cover[type=file]'\cf5 \strokec5 );\cf7 \strokec7 //123\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf7 \strokec7 //CHECK FIRST IF GLOBAL FILE HAS SOMETHING IN IT.\cf4 \cb1 \strokec4 \
+\cb3         \cf2 \strokec2 let\cf4 \strokec4  hasItemsTobeUploaded \cf5 \strokec5 =\cf4 \strokec4  shouldUploadResume\cb1 \
+\cb3             \cf5 \strokec5 ||\cf4 \strokec4  shouldUploadCover\cb1 \
+\cb3             \cf5 \strokec5 ||\cf4 \strokec4  \cf6 \strokec6 Object\cf5 \strokec5 .\cf4 \strokec4 keys\cf5 \strokec5 (\cf4 \strokec4 uploadedFiles\cf5 \strokec5 ).\cf4 \strokec4 length\cb1 \
+\cb3             \cf5 \strokec5 ||\cf4 \strokec4  $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '#uploadExisting'\cf5 \strokec5 ).\cf4 \strokec4 is\cf5 \strokec5 (\cf8 \strokec8 ':checked'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf7 \strokec7 //$(element).find(".shmApplicationMainContainer").addClass("loading-seek-profile");\cf4 \cb1 \strokec4 \
+\cb3         \cf7 \strokec7 //loading\cf4 \cb1 \strokec4 \
+\cb3         $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '.fcLoader'\cf5 \strokec5 ).\cf4 \strokec4 addClass\cf5 \strokec5 (\cf8 \strokec8 'fcLoadingSeek'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3         shazamme\cf5 \strokec5 .\cf4 \strokec4 store\cf5 \strokec5 (\cf8 \strokec8 'previousApplicationPage'\cf5 \strokec5 ,\cf4 \strokec4  \cf2 \strokec2 null\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 showScreeningQuestions \cf5 \strokec5 &&\cf4 \strokec4  \cf5 \strokec5 !\cf4 \strokec4 validateScreeningQuestions\cf5 \strokec5 ())\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             buttonAction\cf5 \strokec5 (\cf8 \strokec8 "hide"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             alert\cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 warningQuestions \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 'Please complete all of the screening questions'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '.fcLoader'\cf5 \strokec5 ).\cf4 \strokec4 removeClass\cf5 \strokec5 (\cf8 \strokec8 'fcLoadingSeek'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3             \cf2 \strokec2 return\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 requireApproval \cf5 \strokec5 ===\cf4 \strokec4  \cf2 \strokec2 true\cf4 \strokec4  \cf5 \strokec5 &&\cf4 \strokec4  \cf5 \strokec5 !\cf4 \strokec4 $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '[data-rel=field-approve]'\cf5 \strokec5 ).\cf4 \strokec4 is\cf5 \strokec5 (\cf8 \strokec8 ':checked'\cf5 \strokec5 ))\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             buttonAction\cf5 \strokec5 (\cf8 \strokec8 "hide"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             alert\cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 approvalWarning \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 'Please confirm approval of the terms'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '.fcLoader'\cf5 \strokec5 ).\cf4 \strokec4 removeClass\cf5 \strokec5 (\cf8 \strokec8 'fcLoadingSeek'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3             \cf2 \strokec2 return\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 const\cf4 \strokec4  invalidName \cf5 \strokec5 =\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 n\cf5 \strokec5 ,\cf4 \strokec4  p\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 p\cf5 \strokec5 ?.\cf4 \strokec4 length \cf5 \strokec5 >\cf4 \strokec4  \cf9 \strokec9 0\cf4 \strokec4  \cf5 \strokec5 &&\cf4 \strokec4  p\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 ||\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 n\cf5 \strokec5 ?.\cf4 \strokec4 length \cf5 \strokec5 >\cf4 \strokec4  \cf9 \strokec9 0\cf4 \strokec4  \cf5 \strokec5 &&\cf4 \strokec4  n\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 ''\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 let\cf4 \strokec4  invalid \cf5 \strokec5 =\cf4 \strokec4  $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 )\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 .\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 'input.invalid'\cf5 \strokec5 )\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 .\cf4 \strokec4 map\cf5 \strokec5 (\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 _\cf5 \strokec5 ,\cf4 \strokec4  e\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 =>\cf4 \strokec4  \cf8 \strokec8 `- \cf5 \strokec5 $\{\cf4 \strokec4 invalidName\cf5 \strokec5 (\cf4 \strokec4 $\cf5 \strokec5 (\cf4 \strokec4 e\cf5 \strokec5 ).\cf4 \strokec4 attr\cf5 \strokec5 (\cf8 \strokec8 'data-name'\cf5 \strokec5 ),\cf4 \strokec4  $\cf5 \strokec5 (\cf4 \strokec4 e\cf5 \strokec5 ).\cf4 \strokec4 attr\cf5 \strokec5 (\cf8 \strokec8 'placeholder'\cf5 \strokec5 ))\}\cf8 \strokec8 `\cf4 \strokec4  \cf5 \strokec5 )\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 .\cf4 \strokec4 toArray\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 invalid\cf5 \strokec5 .\cf4 \strokec4 length \cf5 \strokec5 >\cf4 \strokec4  \cf9 \strokec9 0\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             buttonAction\cf5 \strokec5 (\cf8 \strokec8 "hide"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             alert\cf5 \strokec5 (\cf8 \strokec8 `\cf5 \strokec5 $\{\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 warningValidation \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 'Please correct the following:'\cf5 \strokec5 \}\cf8 \strokec8 \\n\cf5 \strokec5 $\{\cf4 \strokec4 invalid\cf5 \strokec5 .\cf4 \strokec4 join\cf5 \strokec5 (\cf8 \strokec8 '\\n'\cf5 \strokec5 )\}\cf8 \strokec8 `\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '.fcLoader'\cf5 \strokec5 ).\cf4 \strokec4 removeClass\cf5 \strokec5 (\cf8 \strokec8 'fcLoadingSeek'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3             \cf2 \strokec2 return\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 let\cf4 \strokec4  updateCandidate \cf5 \strokec5 =\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 u\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             \cf2 \strokec2 let\cf4 \strokec4  c \cf5 \strokec5 =\cf4 \strokec4  collectRegisterFormValues\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\
+\cb3             \cf7 \strokec7 //CHECK IF ALL FIELDS HAS VALUE\cf4 \cb1 \strokec4 \
+\cb3             \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (!\cf4 \strokec4 isObjectComplete\cf5 \strokec5 (\cf4 \strokec4 c\cf5 \strokec5 ))\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                 buttonAction\cf5 \strokec5 (\cf8 \strokec8 "hide"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3                 alert\cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 warningFields \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 'Please complete all required fields'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3                 $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '.fcLoader'\cf5 \strokec5 ).\cf4 \strokec4 removeClass\cf5 \strokec5 (\cf8 \strokec8 'fcLoadingSeek'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3               \cf2 \strokec2 return\cf4 \strokec4  \cf6 \strokec6 Promise\cf5 \strokec5 .\cf4 \strokec4 reject\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3             \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 shouldUploadResume \cf5 \strokec5 &&\cf4 \strokec4  \cf5 \strokec5 !\cf4 \strokec4 c\cf5 \strokec5 .\cf4 \strokec4 cVFileContent\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                 buttonAction\cf5 \strokec5 (\cf8 \strokec8 "hide"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3                 alert\cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 warningResume \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 'Please upload your resume'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3                 $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '.fcLoader'\cf5 \strokec5 ).\cf4 \strokec4 removeClass\cf5 \strokec5 (\cf8 \strokec8 'fcLoadingSeek'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3                 \cf2 \strokec2 return\cf4 \strokec4  \cf6 \strokec6 Promise\cf5 \strokec5 .\cf4 \strokec4 reject\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \}\cf4 \strokec4  \cf2 \strokec2 else\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                 c\cf5 \strokec5 .\cf4 \strokec4 cVFileContent \cf5 \strokec5 =\cf4 \strokec4  c\cf5 \strokec5 .\cf4 \strokec4 cVFileContent \cf5 \strokec5 ??\cf4 \strokec4  u\cf5 \strokec5 .\cf4 \strokec4 candidate\cf5 \strokec5 .\cf4 \strokec4 cVFileContent\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3                 c\cf5 \strokec5 .\cf4 \strokec4 cVFileName \cf5 \strokec5 =\cf4 \strokec4  c\cf5 \strokec5 .\cf4 \strokec4 cVFileName \cf5 \strokec5 ??\cf4 \strokec4  u\cf5 \strokec5 .\cf4 \strokec4 candidate\cf5 \strokec5 .\cf4 \strokec4 cVFileName\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3             c\cf5 \strokec5 .\cf4 \strokec4 phone \cf5 \strokec5 =\cf4 \strokec4  c\cf5 \strokec5 .\cf4 \strokec4 phone \cf5 \strokec5 ||\cf4 \strokec4  u\cf5 \strokec5 .\cf4 \strokec4 candidate\cf5 \strokec5 .\cf4 \strokec4 phone \cf5 \strokec5 ||\cf4 \strokec4  \cf2 \strokec2 null\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3             c\cf5 \strokec5 .\cf4 \strokec4 mobile \cf5 \strokec5 =\cf4 \strokec4  c\cf5 \strokec5 .\cf4 \strokec4 mobile \cf5 \strokec5 ||\cf4 \strokec4  u\cf5 \strokec5 .\cf4 \strokec4 candidate\cf5 \strokec5 .\cf4 \strokec4 mobile \cf5 \strokec5 ||\cf4 \strokec4  \cf2 \strokec2 null\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\
+\cb3             \cf2 \strokec2 delete\cf4 \strokec4  c\cf5 \strokec5 .\cf4 \strokec4 dudaSiteID\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3             \cf2 \strokec2 delete\cf4 \strokec4  c\cf5 \strokec5 .\cf4 \strokec4 defaultPhoneCountry\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3             \cf2 \strokec2 delete\cf4 \strokec4  c\cf5 \strokec5 .\cf4 \strokec4 validatePhone\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\
+\cb3             \cf2 \strokec2 return\cf4 \strokec4  shazamme\cf5 \strokec5 .\cf4 \strokec4 submit\cf5 \strokec5 (\{\cf4 \cb1 \strokec4 \
+\cb3                 action\cf5 \strokec5 :\cf4 \strokec4  \cf8 \strokec8 'Edit Candidate Info'\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 ...\cf4 \strokec4 u\cf5 \strokec5 .\cf4 \strokec4 candidate\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 ...\cf4 \strokec4 c\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \})\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 .\cf4 \strokec4 then\cf5 \strokec5 (\cf4 \strokec4  r \cf5 \strokec5 =>\cf4 \strokec4  r\cf5 \strokec5 .\cf4 \strokec4 status \cf5 \strokec5 &&\cf4 \strokec4  shazamme\cf5 \strokec5 .\cf4 \strokec4 user\cf5 \strokec5 (\cf2 \strokec2 true\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 ||\cf4 \strokec4  \cf6 \strokec6 Promise\cf5 \strokec5 .\cf4 \strokec4 reject\cf5 \strokec5 ()\cf4 \strokec4  \cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 let\cf4 \strokec4  apply \cf5 \strokec5 =\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 u\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             \cf2 \strokec2 let\cf4 \strokec4  referralSource \cf5 \strokec5 =\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                 referralSource\cf5 \strokec5 :\cf4 \strokec4  uri\cf5 \strokec5 .\cf4 \strokec4 searchParams\cf5 \strokec5 .\cf2 \strokec2 get\cf5 \strokec5 (\cf8 \strokec8 "utm_source"\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 ||\cf4 \strokec4  shazamme\cf5 \strokec5 .\cf4 \strokec4 session\cf5 \strokec5 (\cf8 \strokec8 'referralSource'\cf5 \strokec5 ),\cf4 \cb1 \strokec4 \
+\cb3                 referralMedium\cf5 \strokec5 :\cf4 \strokec4  uri\cf5 \strokec5 .\cf4 \strokec4 searchParams\cf5 \strokec5 .\cf2 \strokec2 get\cf5 \strokec5 (\cf8 \strokec8 "utm_medium"\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 ||\cf4 \strokec4  shazamme\cf5 \strokec5 .\cf4 \strokec4 session\cf5 \strokec5 (\cf8 \strokec8 'referralMedium'\cf5 \strokec5 ),\cf4 \cb1 \strokec4 \
+\cb3                 referralTerm\cf5 \strokec5 :\cf4 \strokec4  uri\cf5 \strokec5 .\cf4 \strokec4 searchParams\cf5 \strokec5 .\cf2 \strokec2 get\cf5 \strokec5 (\cf8 \strokec8 "utm_term"\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 ||\cf4 \strokec4  shazamme\cf5 \strokec5 .\cf4 \strokec4 session\cf5 \strokec5 (\cf8 \strokec8 'referralTerm'\cf5 \strokec5 ),\cf4 \cb1 \strokec4 \
+\cb3                 referralCampaign\cf5 \strokec5 :\cf4 \strokec4  uri\cf5 \strokec5 .\cf4 \strokec4 searchParams\cf5 \strokec5 .\cf2 \strokec2 get\cf5 \strokec5 (\cf8 \strokec8 "utm_campaign"\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 ||\cf4 \strokec4  shazamme\cf5 \strokec5 .\cf4 \strokec4 session\cf5 \strokec5 (\cf8 \strokec8 'referralCampaign'\cf5 \strokec5 ),\cf4 \cb1 \strokec4 \
+\cb3                 referralContent\cf5 \strokec5 :\cf4 \strokec4  uri\cf5 \strokec5 .\cf4 \strokec4 searchParams\cf5 \strokec5 .\cf2 \strokec2 get\cf5 \strokec5 (\cf8 \strokec8 "utm_content"\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 ||\cf4 \strokec4  shazamme\cf5 \strokec5 .\cf4 \strokec4 session\cf5 \strokec5 (\cf8 \strokec8 'referralContent'\cf5 \strokec5 ),\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \};\cf4 \cb1 \strokec4 \
+\
+\cb3             \cf2 \strokec2 let\cf4 \strokec4  a \cf5 \strokec5 =\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                 jobID\cf5 \strokec5 :\cf4 \strokec4  getJobID\cf5 \strokec5 (),\cf4 \cb1 \strokec4 \
+\cb3                 screeningAnswers\cf5 \strokec5 :\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 showScreeningQuestions \cf5 \strokec5 &&\cf4 \strokec4  screeningAnswers\cf5 \strokec5 ())\cf4 \strokec4  \cf5 \strokec5 ||\cf4 \strokec4  \cf2 \strokec2 undefined\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 ...\cf4 \strokec4 referralSource\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \};\cf4 \cb1 \strokec4 \
+\
+\cb3             \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 hasItemsTobeUploaded\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                 \cf2 \strokec2 if\cf5 \strokec5 (\cf4 \strokec4 $\cf5 \strokec5 (\cf8 \strokec8 '#uploadExisting'\cf5 \strokec5 ).\cf4 \strokec4 is\cf5 \strokec5 (\cf8 \strokec8 ':checked'\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 &&\cf4 \strokec4  u\cf5 \strokec5 ?.\cf4 \strokec4 candidate\cf5 \strokec5 ?.\cf4 \strokec4 cVFileContent\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                     a\cf5 \strokec5 .\cf4 \strokec4 resumeFile \cf5 \strokec5 =\cf4 \strokec4  u\cf5 \strokec5 ?.\cf4 \strokec4 candidate\cf5 \strokec5 ?.\cf4 \strokec4 cVFileContent\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3                     a\cf5 \strokec5 .\cf4 \strokec4 resumeFileName \cf5 \strokec5 =\cf4 \strokec4 u\cf5 \strokec5 ?.\cf4 \strokec4 candidate\cf5 \strokec5 ?.\cf4 \strokec4 cVFileName\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 \}\cf4 \strokec4  \cf2 \strokec2 else\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                     \cf2 \strokec2 try\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                         \cf2 \strokec2 let\cf4 \strokec4  resume \cf5 \strokec5 =\cf4 \strokec4  checkFileUploaded\cf5 \strokec5 (\cf4 \strokec4 hasResumeFileElement\cf5 \strokec5 ,\cf4 \strokec4 shouldUploadResume\cf5 \strokec5 ,\cf8 \strokec8 "resume"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3                         a\cf5 \strokec5 .\cf4 \strokec4 resumeFile \cf5 \strokec5 =\cf4 \strokec4  resume \cf5 \strokec5 &&\cf4 \strokec4  btoa\cf5 \strokec5 (\cf4 \strokec4 uploadedFiles\cf5 \strokec5 .\cf4 \strokec4 resumeFile\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3                         a\cf5 \strokec5 .\cf4 \strokec4 resumeFileName \cf5 \strokec5 =\cf4 \strokec4  resume \cf5 \strokec5 &&\cf4 \strokec4  uploadedFiles\cf5 \strokec5 .\cf4 \strokec4 resumeName\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3                     \cf5 \strokec5 \}\cf4 \strokec4  \cf2 \strokec2 catch\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                         $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '.fcLoader'\cf5 \strokec5 ).\cf4 \strokec4 removeClass\cf5 \strokec5 (\cf8 \strokec8 'fcLoadingSeek'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3                         \cf2 \strokec2 return\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3                     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3                 \cf2 \strokec2 try\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                     \cf2 \strokec2 let\cf4 \strokec4  cover \cf5 \strokec5 =\cf4 \strokec4  checkFileUploaded\cf5 \strokec5 (\cf4 \strokec4 hasCoverFileElement\cf5 \strokec5 ,\cf4 \strokec4 shouldUploadCover\cf5 \strokec5 ,\cf8 \strokec8 "coverLetter"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3                     a\cf5 \strokec5 .\cf4 \strokec4 coverLetterFile \cf5 \strokec5 =\cf4 \strokec4  cover \cf5 \strokec5 &&\cf4 \strokec4  btoa\cf5 \strokec5 (\cf4 \strokec4 uploadedFiles\cf5 \strokec5 .\cf4 \strokec4 coverLetterFile\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3                     a\cf5 \strokec5 .\cf4 \strokec4 coverLetterFileName \cf5 \strokec5 =\cf4 \strokec4  cover \cf5 \strokec5 &&\cf4 \strokec4  uploadedFiles\cf5 \strokec5 .\cf4 \strokec4 coverLetterFileName\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 \}\cf4 \strokec4  \cf2 \strokec2 catch\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                     $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '.fcLoader'\cf5 \strokec5 ).\cf4 \strokec4 removeClass\cf5 \strokec5 (\cf8 \strokec8 'fcLoadingSeek'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3                     \cf2 \strokec2 return\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3                 \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 hasResumeFileElement \cf5 \strokec5 &&\cf4 \strokec4  shouldUploadResume \cf5 \strokec5 &&\cf4 \strokec4  \cf5 \strokec5 !\cf4 \strokec4 a\cf5 \strokec5 .\cf4 \strokec4 resumeFile\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                     alert\cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 warningResume \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 'Please upload your resume'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3                     \cf2 \strokec2 return\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3                 \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 hasCoverFileElement \cf5 \strokec5 &&\cf4 \strokec4  shouldUploadCover \cf5 \strokec5 &&\cf4 \strokec4  \cf5 \strokec5 !\cf4 \strokec4 a\cf5 \strokec5 .\cf4 \strokec4 coverLetterFile\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                     alert\cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 warningCoverLetter \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 'Please upload your cover letter, or tick the "I don\\'t have cover letter"'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3                     \cf2 \strokec2 return\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3             \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 showGender\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                 a\cf5 \strokec5 .\cf4 \strokec4 customField1 \cf5 \strokec5 =\cf4 \strokec4  $\cf5 \strokec5 (\cf8 \strokec8 '#gender'\cf5 \strokec5 ).\cf4 \strokec4 val\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3             \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 showAboriginal\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                 a\cf5 \strokec5 .\cf4 \strokec4 customField2 \cf5 \strokec5 =\cf4 \strokec4  $\cf5 \strokec5 (\cf8 \strokec8 '#aboriginal'\cf5 \strokec5 ).\cf4 \strokec4 is\cf5 \strokec5 (\cf8 \strokec8 ':checked'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3             \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 enableTracing\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                 a\cf5 \strokec5 .\cf4 \strokec4 session \cf5 \strokec5 =\cf4 \strokec4  shazamme\cf5 \strokec5 .\cf4 \strokec4 uuid\cf5 \strokec5 (),\cf4 \cb1 \strokec4 \
+\
+\cb3                 w\cf5 \strokec5 .\cf4 \strokec4 log\cf5 \strokec5 (\cf8 \strokec8 'apply'\cf5 \strokec5 ,\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                     candidate\cf5 \strokec5 :\cf4 \strokec4  u\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                     application\cf5 \strokec5 :\cf4 \strokec4  a\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3             shazamme\cf5 \strokec5 .\cf4 \strokec4 submit\cf5 \strokec5 (\{\cf4 \cb1 \strokec4 \
+\cb3                 action\cf5 \strokec5 :\cf4 \strokec4  \cf8 \strokec8 'Apply Job'\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                 dudaSiteID\cf5 \strokec5 :\cf4 \strokec4  data\cf5 \strokec5 .\cf4 \strokec4 siteId\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                 application\cf5 \strokec5 :\cf4 \strokec4  a\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                 candidate\cf5 \strokec5 :\cf4 \strokec4  u\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \}).\cf4 \strokec4 then\cf5 \strokec5 (\cf4 \strokec4  \cf5 \strokec5 ()\cf4 \strokec4  \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                 buttonAction\cf5 \strokec5 (\cf8 \strokec8 "stop"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3                 action\cf5 \strokec5 .\cf4 \strokec4 clearKeys\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\
+\cb3                 \cf2 \strokec2 let\cf4 \strokec4  path \cf5 \strokec5 =\cf4 \strokec4  \cf8 \strokec8 `/\cf5 \strokec5 $\{\cf4 \strokec4 thankYouPage\cf5 \strokec5 \}\cf8 \strokec8 `\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\
+\cb3                 \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 includeLastSearch\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                     shazamme\cf5 \strokec5 .\cf4 \strokec4 site\cf5 \strokec5 ()\cf4 \cb1 \strokec4 \
+\cb3                         \cf5 \strokec5 .\cf4 \strokec4 then\cf5 \strokec5 (\cf4 \strokec4  s \cf5 \strokec5 =>\cf4 \strokec4  shazamme\cf5 \strokec5 .\cf4 \strokec4 fetch\cf5 \strokec5 (\{\cf4 \cb1 \strokec4 \
+\cb3                             path\cf5 \strokec5 :\cf4 \strokec4  \cf8 \strokec8 `/job-results/\cf5 \strokec5 $\{\cf4 \strokec4 s\cf5 \strokec5 .\cf4 \strokec4 siteID\cf5 \strokec5 \}\cf8 \strokec8 /\cf5 \strokec5 $\{\cf4 \strokec4 getJobID\cf5 \strokec5 ()\}\cf8 \strokec8 `\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                             isExternal\cf5 \strokec5 :\cf4 \strokec4  \cf2 \strokec2 true\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                             useCache\cf5 \strokec5 :\cf4 \strokec4  \cf2 \strokec2 true\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                         \cf5 \strokec5 \}))\cf4 \cb1 \strokec4 \
+\cb3                         \cf5 \strokec5 .\cf4 \strokec4 then\cf5 \strokec5 (\cf4 \strokec4  j \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                             \cf2 \strokec2 let\cf4 \strokec4  query \cf5 \strokec5 =\cf4 \strokec4  \cf5 \strokec5 [];\cf4 \cb1 \strokec4 \
+\
+\cb3                             \cf2 \strokec2 let\cf4 \strokec4  push \cf5 \strokec5 =\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 n\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                                 \cf2 \strokec2 let\cf4 \strokec4  v \cf5 \strokec5 =\cf4 \strokec4  j\cf5 \strokec5 ?.\cf4 \strokec4 data\cf5 \strokec5 [\cf4 \strokec4 n\cf5 \strokec5 ];\cf4 \cb1 \strokec4 \
+\
+\cb3                                 \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 v\cf5 \strokec5 ?.\cf4 \strokec4 length \cf5 \strokec5 >\cf4 \strokec4  \cf9 \strokec9 0\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                                     query\cf5 \strokec5 .\cf4 \strokec4 push\cf5 \strokec5 (\cf8 \strokec8 `\cf5 \strokec5 $\{\cf4 \strokec4 n\cf5 \strokec5 \}\cf8 \strokec8 =\cf5 \strokec5 $\{\cf4 \strokec4 encodeURIComponent\cf5 \strokec5 (\cf4 \strokec4 v\cf5 \strokec5 )\}\cf8 \strokec8 `\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3                                 \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cb3                             \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3                             data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 redirectJobField\cf5 \strokec5 .\cf4 \strokec4 forEach\cf5 \strokec5 (\cf4 \strokec4  i \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                                 push\cf5 \strokec5 (\cf4 \strokec4 i\cf5 \strokec5 .\cf4 \strokec4 field\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3                             \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\
+\cb3                             window\cf5 \strokec5 .\cf4 \strokec4 location\cf5 \strokec5 .\cf4 \strokec4 href \cf5 \strokec5 =\cf4 \strokec4  \cf8 \strokec8 `/\cf5 \strokec5 $\{\cf4 \strokec4 thankYouPage\cf5 \strokec5 \}\cf8 \strokec8 ?\cf5 \strokec5 $\{\cf4 \strokec4 query\cf5 \strokec5 .\cf4 \strokec4 join\cf5 \strokec5 (\cf8 \strokec8 '&'\cf5 \strokec5 )\}\cf8 \strokec8 `\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3                         \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 \}\cf4 \strokec4  \cf2 \strokec2 else\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                     window\cf5 \strokec5 .\cf4 \strokec4 location\cf5 \strokec5 .\cf4 \strokec4 href \cf5 \strokec5 =\cf4 \strokec4  path\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3         shazamme\cf5 \strokec5 .\cf4 \strokec4 user\cf5 \strokec5 ().\cf4 \strokec4 then\cf5 \strokec5 (\cf4 \strokec4  u \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 u\cf5 \strokec5 ?.\cf4 \strokec4 candidate\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                 checkForDuplicate\cf5 \strokec5 (\cf4 \strokec4 u\cf5 \strokec5 .\cf4 \strokec4 candidate\cf5 \strokec5 .\cf4 \strokec4 candidateID\cf5 \strokec5 ).\cf4 \strokec4 then\cf5 \strokec5 (\cf4 \strokec4  exists \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                     \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 exists\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                         \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 confirm\cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 duplicateWarning \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 'DUPLICATE WARNING MESSAGE'\cf5 \strokec5 ))\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                             \cf2 \strokec2 let\cf4 \strokec4  link \cf5 \strokec5 =\cf4 \strokec4  window\cf5 \strokec5 .\cf4 \strokec4 location\cf5 \strokec5 .\cf4 \strokec4 href\cf5 \strokec5 .\cf4 \strokec4 includes\cf5 \strokec5 (\cf4 \strokec4 dudaAlias\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 ?\cf4 \strokec4  \cf8 \strokec8 `/site/\cf5 \strokec5 $\{\cf4 \strokec4 dudaAlias\cf5 \strokec5 \}\cf8 \strokec8 /\cf5 \strokec5 $\{\cf4 \strokec4 dashboardPage\cf5 \strokec5 \}\cf8 \strokec8 ?preview=true&insitepreview=true&dm_device=desktop`\cf5 \strokec5 :\cf8 \strokec8 `/\cf5 \strokec5 $\{\cf4 \strokec4 dashboardPage\cf5 \strokec5 \}\cf8 \strokec8 `\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\
+\cb3                             window\cf5 \strokec5 .\cf4 \strokec4 location\cf5 \strokec5 .\cf4 \strokec4 href \cf5 \strokec5 =\cf4 \strokec4  link\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3                         \cf5 \strokec5 \}\cf4 \strokec4  \cf2 \strokec2 else\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                             window\cf5 \strokec5 .\cf4 \strokec4 location\cf5 \strokec5 .\cf4 \strokec4 reload\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\cb3                         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cb3                         \cf2 \strokec2 return\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3                     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3                     updateCandidate\cf5 \strokec5 (\cf4 \strokec4 u\cf5 \strokec5 )\cf4 \cb1 \strokec4 \
+\cb3                         \cf5 \strokec5 .\cf4 \strokec4 then\cf5 \strokec5 (\cf4 \strokec4  \cf5 \strokec5 ()\cf4 \strokec4  \cf5 \strokec5 =>\cf4 \strokec4  apply\cf5 \strokec5 (\cf4 \strokec4 u\cf5 \strokec5 .\cf4 \strokec4 candidate\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 )\cf4 \cb1 \strokec4 \
+\cb3                         \cf5 \strokec5 .\cf2 \strokec2 catch\cf5 \strokec5 (\cf4 \strokec4  \cf5 \strokec5 ()\cf4 \strokec4  \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                             $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '.fcLoader'\cf5 \strokec5 ).\cf4 \strokec4 removeClass\cf5 \strokec5 (\cf8 \strokec8 'fcLoadingSeek'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3                         \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \}\cf4 \strokec4  \cf2 \strokec2 else\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                 buttonAction\cf5 \strokec5 (\cf8 \strokec8 "apply"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3                 \cf7 \strokec7 //register then login the candidate\cf4 \cb1 \strokec4 \
+\cb3                 register\cf5 \strokec5 ().\cf4 \strokec4 then\cf5 \strokec5 (\cf4 \strokec4  u \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                     \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 u\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                         loginFrom \cf5 \strokec5 =\cf4 \strokec4  \cf8 \strokec8 "registrationForm"\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3                         buttonAction\cf5 \strokec5 (\cf8 \strokec8 "hide"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3                         apply\cf5 \strokec5 (\cf4 \strokec4 u\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3                     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 \}).\cf2 \strokec2 catch\cf5 \strokec5 (\cf4 \strokec4  \cf5 \strokec5 ()\cf4 \strokec4  \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                     $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '.fcLoader'\cf5 \strokec5 ).\cf4 \strokec4 removeClass\cf5 \strokec5 (\cf8 \strokec8 'fcLoadingSeek'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3                     buttonAction\cf5 \strokec5 (\cf8 \strokec8 "hide"\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\
+\cb3                 \cf2 \strokec2 return\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\
+\cb3     $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 '.eye'\cf5 \strokec5 ).\cf4 \strokec4 on\cf5 \strokec5 (\cf8 \strokec8 'click'\cf5 \strokec5 ,\cf4 \strokec4  \cf2 \strokec2 function\cf5 \strokec5 ()\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3         \cf2 \strokec2 let\cf4 \strokec4  i \cf5 \strokec5 =\cf4 \strokec4  $\cf5 \strokec5 (\cf2 \strokec2 this\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3         i\cb1 \
+\cb3             \cf5 \strokec5 .\cf4 \strokec4 toggleClass\cf5 \strokec5 (\cf8 \strokec8 'fa-eye-slash'\cf5 \strokec5 )\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 .\cf4 \strokec4 toggleClass\cf5 \strokec5 (\cf8 \strokec8 'fa-eye'\cf5 \strokec5 )\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 .\cf4 \strokec4 siblings\cf5 \strokec5 (\cf8 \strokec8 'input'\cf5 \strokec5 )\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 .\cf4 \strokec4 attr\cf5 \strokec5 (\cf8 \strokec8 'type'\cf5 \strokec5 ,\cf4 \strokec4  \cf2 \strokec2 function\cf5 \strokec5 (\cf4 \strokec4 i\cf5 \strokec5 ,\cf4 \strokec4  v\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                 \cf2 \strokec2 return\cf4 \strokec4  v \cf5 \strokec5 ===\cf4 \strokec4  \cf8 \strokec8 'text'\cf4 \strokec4  \cf5 \strokec5 ?\cf4 \strokec4  \cf8 \strokec8 'password'\cf4 \strokec4  \cf5 \strokec5 :\cf4 \strokec4  \cf8 \strokec8 'text'\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\
+\cb3     \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 validatePhoneNumber \cf5 \strokec5 &&\cf4 \strokec4  \cf2 \strokec2 typeof\cf4 \strokec4  libphonenumber \cf5 \strokec5 ===\cf4 \strokec4  \cf8 \strokec8 'object'\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3         $\cf5 \strokec5 (\cf4 \strokec4 element\cf5 \strokec5 ).\cf4 \strokec4 find\cf5 \strokec5 (\cf8 \strokec8 'input[type=telephone]'\cf5 \strokec5 ).\cf4 \strokec4 on\cf5 \strokec5 (\cf8 \strokec8 'change'\cf5 \strokec5 ,\cf4 \strokec4  \cf2 \strokec2 function\cf5 \strokec5 ()\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             \cf2 \strokec2 const\cf4 \strokec4  f \cf5 \strokec5 =\cf4 \strokec4  $\cf5 \strokec5 (\cf2 \strokec2 this\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3             f\cf5 \strokec5 .\cf4 \strokec4 removeClass\cf5 \strokec5 (\cf8 \strokec8 'invalid'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3             \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 f\cf5 \strokec5 .\cf4 \strokec4 val\cf5 \strokec5 ().\cf4 \strokec4 trim\cf5 \strokec5 ().\cf4 \strokec4 length \cf5 \strokec5 ===\cf4 \strokec4  \cf9 \strokec9 0\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                 \cf2 \strokec2 return\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3             \cf2 \strokec2 try\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                 \cf2 \strokec2 const\cf4 \strokec4  tel \cf5 \strokec5 =\cf4 \strokec4  libphonenumber\cf5 \strokec5 .\cf4 \strokec4 parsePhoneNumber\cf5 \strokec5 (\cf4 \strokec4 f\cf5 \strokec5 .\cf4 \strokec4 val\cf5 \strokec5 (),\cf4 \strokec4  data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 defaultPhoneCountry \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 'AU'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3                 \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (!\cf4 \strokec4 tel\cf5 \strokec5 .\cf4 \strokec4 country \cf5 \strokec5 ||\cf4 \strokec4  \cf5 \strokec5 !\cf4 \strokec4 tel\cf5 \strokec5 .\cf4 \strokec4 isValid\cf5 \strokec5 ())\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                     f\cf5 \strokec5 .\cf4 \strokec4 addClass\cf5 \strokec5 (\cf8 \strokec8 'invalid'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 \}\cf4 \strokec4  \cf2 \strokec2 else\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                     f\cf5 \strokec5 .\cf4 \strokec4 val\cf5 \strokec5 (\cf4 \strokec4 tel\cf5 \strokec5 .\cf4 \strokec4 formatInternational\cf5 \strokec5 ());\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \}\cf4 \strokec4  \cf2 \strokec2 catch\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                 f\cf5 \strokec5 .\cf4 \strokec4 addClass\cf5 \strokec5 (\cf8 \strokec8 'invalid'\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3     shazamme\cf5 \strokec5 .\cf4 \strokec4 store\cf5 \strokec5 (\cf8 \strokec8 'applicationURL'\cf5 \strokec5 ,\cf4 \strokec4  window\cf5 \strokec5 .\cf4 \strokec4 location\cf5 \strokec5 .\cf4 \strokec4 href\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3     shazamme\cf5 \strokec5 .\cf4 \strokec4 store\cf5 \strokec5 (\cf8 \strokec8 "jobID"\cf5 \strokec5 ,\cf4 \strokec4  getJobID\cf5 \strokec5 ());\cf4 \cb1 \strokec4 \
+\
+\cb3     \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (!\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 inEditor\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3         shazamme\cf5 \strokec5 .\cf4 \strokec4 site\cf5 \strokec5 ()\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 .\cf4 \strokec4 then\cf5 \strokec5 (\cf4 \strokec4  s \cf5 \strokec5 =>\cf4 \strokec4  shazamme\cf5 \strokec5 .\cf4 \strokec4 fetch\cf5 \strokec5 (\{\cf4 \cb1 \strokec4 \
+\cb3                 path\cf5 \strokec5 :\cf4 \strokec4  \cf8 \strokec8 `/job-results/\cf5 \strokec5 $\{\cf4 \strokec4 s\cf5 \strokec5 .\cf4 \strokec4 siteID\cf5 \strokec5 \}\cf8 \strokec8 /\cf5 \strokec5 $\{\cf4 \strokec4 getJobID\cf5 \strokec5 ()\}\cf8 \strokec8 `\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                 isExternal\cf5 \strokec5 :\cf4 \strokec4  \cf2 \strokec2 true\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                 useCache\cf5 \strokec5 :\cf4 \strokec4  \cf2 \strokec2 true\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \}))\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 .\cf4 \strokec4 then\cf5 \strokec5 (\cf4 \strokec4  j \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                 \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 j\cf5 \strokec5 ?.\cf4 \strokec4 data\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                     shazamme\cf5 \strokec5 .\cf4 \strokec4 store\cf5 \strokec5 (\cf8 \strokec8 'currentJobViewed'\cf5 \strokec5 ,\cf4 \strokec4  \cf6 \strokec6 JSON\cf5 \strokec5 .\cf4 \strokec4 stringify\cf5 \strokec5 (\cf4 \strokec4 j\cf5 \strokec5 ));\cf4 \cb1 \strokec4 \
+\
+\cb3                     \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 j\cf5 \strokec5 .\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 applicationURL\cf5 \strokec5 ?.\cf4 \strokec4 length \cf5 \strokec5 >\cf4 \strokec4  \cf9 \strokec9 0\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                         window\cf5 \strokec5 .\cf4 \strokec4 location \cf5 \strokec5 =\cf4 \strokec4  j\cf5 \strokec5 .\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 applicationURL\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3                     \cf5 \strokec5 \}\cf4 \strokec4  \cf2 \strokec2 else\cf4 \strokec4  \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 j\cf5 \strokec5 .\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 jobID \cf5 \strokec5 ===\cf4 \strokec4  data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 jobID\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                         w\cf5 \strokec5 .\cf4 \strokec4 pub\cf5 \strokec5 (\cf8 \strokec8 'job-application-fixed-job'\cf5 \strokec5 ,\cf4 \strokec4  j\cf5 \strokec5 .\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 jobID\cf5 \strokec5 ,\cf4 \strokec4  \cf2 \strokec2 true\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3                     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 \}\cf4 \strokec4  \cf2 \strokec2 else\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                     $\cf5 \strokec5 (\cf8 \strokec8 '.shmApplicationMainContainer'\cf5 \strokec5 ).\cf4 \strokec4 hide\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\cb3                     $\cf5 \strokec5 (\cf8 \strokec8 '.section-no-job-message'\cf5 \strokec5 ).\cf4 \strokec4 show\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3     \cf2 \strokec2 const\cf4 \strokec4  handleUser \cf5 \strokec5 =\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 u\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3         \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 u\cf5 \strokec5 ?.\cf4 \strokec4 isNew\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             showOrHideForms\cf5 \strokec5 (\{\cf4 \cb1 \strokec4 \
+\cb3                 salutation\cf5 \strokec5 :\cf4 \strokec4  \cf8 \strokec8 ' '\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                 firstName\cf5 \strokec5 :\cf4 \strokec4  u\cf5 \strokec5 .\cf4 \strokec4 firstName\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                 surname\cf5 \strokec5 :\cf4 \strokec4  u\cf5 \strokec5 .\cf4 \strokec4 lastName\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                 eMail\cf5 \strokec5 :\cf4 \strokec4  u\cf5 \strokec5 .\cf4 \strokec4 email\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                 phone\cf5 \strokec5 :\cf4 \strokec4  \cf8 \strokec8 ''\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                 mobile\cf5 \strokec5 :\cf4 \strokec4  \cf8 \strokec8 ''\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3                 isNew\cf5 \strokec5 :\cf4 \strokec4  \cf2 \strokec2 true\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\
+\cb3             \cf2 \strokec2 return\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3         \cf2 \strokec2 let\cf4 \strokec4  session \cf5 \strokec5 =\cf4 \strokec4  u\cf5 \strokec5 ?.\cf4 \strokec4 candidate\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\
+\cb3         showOrHideForms\cf5 \strokec5 (\cf4 \strokec4 session\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+\cb3         session\cf5 \strokec5 ?.\cf4 \strokec4 candidateID \cf5 \strokec5 &&\cf4 \strokec4  checkForDuplicate\cf5 \strokec5 (\cf4 \strokec4 session\cf5 \strokec5 .\cf4 \strokec4 candidateID\cf5 \strokec5 ).\cf4 \strokec4 then\cf5 \strokec5 (\cf4 \strokec4  exists \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 exists\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                 \cf2 \strokec2 if\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 confirm\cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 config\cf5 \strokec5 .\cf4 \strokec4 duplicateWarning \cf5 \strokec5 ||\cf4 \strokec4  \cf8 \strokec8 'DUPLICATE WARNING MESSAGE'\cf5 \strokec5 ))\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                     \cf2 \strokec2 let\cf4 \strokec4  link \cf5 \strokec5 =\cf4 \strokec4  window\cf5 \strokec5 .\cf4 \strokec4 location\cf5 \strokec5 .\cf4 \strokec4 href\cf5 \strokec5 .\cf4 \strokec4 includes\cf5 \strokec5 (\cf4 \strokec4 dudaAlias\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 ?\cf4 \strokec4  \cf8 \strokec8 `/site/\cf5 \strokec5 $\{\cf4 \strokec4 dudaAlias\cf5 \strokec5 \}\cf8 \strokec8 /\cf5 \strokec5 $\{\cf4 \strokec4 dashboardPage\cf5 \strokec5 \}\cf8 \strokec8 ?preview=true&insitepreview=true&dm_device=desktop`\cf5 \strokec5 :\cf8 \strokec8 `/\cf5 \strokec5 $\{\cf4 \strokec4 dashboardPage\cf5 \strokec5 \}\cf8 \strokec8 `\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\
+\cb3                     window\cf5 \strokec5 .\cf4 \strokec4 location\cf5 \strokec5 .\cf4 \strokec4 href \cf5 \strokec5 =\cf4 \strokec4  link\cf5 \strokec5 ;\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 \}\cf4 \strokec4  \cf2 \strokec2 else\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3                     window\cf5 \strokec5 .\cf4 \strokec4 location\cf5 \strokec5 .\cf4 \strokec4 reload\cf5 \strokec5 ();\cf4 \cb1 \strokec4 \
+\cb3                 \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cb3             \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\cb3     shazamme\cf5 \strokec5 .\cf4 \strokec4 user\cf5 \strokec5 ().\cf4 \strokec4 then\cf5 \strokec5 (\cf4 \strokec4  u \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3         handleUser\cf5 \strokec5 (\cf4 \strokec4 u\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\
+\cb3     w\cf5 \strokec5 .\cf4 \strokec4 sub\cf5 \strokec5 (\cf8 \strokec8 'site-auth'\cf5 \strokec5 ,\cf4 \strokec4  \cf5 \strokec5 (\cf4 \strokec4 u\cf5 \strokec5 )\cf4 \strokec4  \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3         handleUser\cf5 \strokec5 (\cf4 \strokec4 u\cf5 \strokec5 );\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \cb3 \strokec5 \}\cf4 \cb1 \strokec4 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3 $\cf5 \strokec5 (\cf8 \strokec8 'head'\cf5 \strokec5 )\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 .\cf4 \strokec4 append\cf5 \strokec5 (\cf4 \strokec4 $\cf5 \strokec5 (\cf8 \strokec8 '<link rel="stylesheet" type="text/css" href="https://sdk.shazamme.io/css/fontawesome/css/fontawesome.min.css" crossorigin="anonymous" />'\cf5 \strokec5 ))\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 .\cf4 \strokec4 append\cf5 \strokec5 (\cf4 \strokec4 $\cf5 \strokec5 (\cf8 \strokec8 '<link rel="stylesheet" type="text/css" href="https://sdk.shazamme.io/css/fontawesome/css/regular.min.css" crossorigin="anonymous" />'\cf5 \strokec5 ));\cf4 \cb1 \strokec4 \
+\
+\cb3 $\cf5 \strokec5 .\cf4 \strokec4 getScript\cf5 \strokec5 (\cf4 \cb1 \strokec4 \
+\cb3     \cf8 \strokec8 'https://sdk.shazamme.io/js/shazamme-1.0.3.min.js'\cf5 \strokec5 ,\cf4 \cb1 \strokec4 \
+\
+\cb3     \cf2 \strokec2 function\cf5 \strokec5 ()\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3         \cf6 \strokec6 Promise\cf5 \strokec5 .\cf4 \strokec4 all\cf5 \strokec5 ([\cf4 \cb1 \strokec4 \
+\cb3             shazamme\cf5 \strokec5 .\cf4 \strokec4 ready\cf5 \strokec5 (\cf4 \strokec4 data\cf5 \strokec5 .\cf4 \strokec4 siteId\cf5 \strokec5 ,\cf4 \strokec4  data\cf5 \strokec5 .\cf4 \strokec4 page\cf5 \strokec5 ),\cf4 \cb1 \strokec4 \
+\cb3             shazamme\cf5 \strokec5 .\cf4 \strokec4 script\cf5 \strokec5 (\cf8 \strokec8 'https://sdk.shazamme.io/js/plugin/libphonenumber/1.10.54/plugin.min.js'\cf5 \strokec5 ),\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 ]).\cf4 \strokec4 then\cf5 \strokec5 (\cf4 \strokec4  \cf5 \strokec5 ()\cf4 \strokec4  \cf5 \strokec5 =>\cf4 \strokec4  \cf5 \strokec5 \{\cf4 \cb1 \strokec4 \
+\cb3             main\cf5 \strokec5 (\cf4 \strokec4 shazamme\cf5 \strokec5 .\cf4 \strokec4 register\cf5 \strokec5 (\cf8 \strokec8 'application-form'\cf5 \strokec5 ,\cf4 \strokec4  data\cf5 \strokec5 ,\cf4 \strokec4  \cf2 \strokec2 true\cf5 \strokec5 ));\cf4 \cb1 \strokec4 \
+\cb3         \cf5 \strokec5 \});\cf4 \cb1 \strokec4 \
+\cb3     \cf5 \strokec5 \}\cf4 \cb1 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \cb3 \strokec5 );\cf4 \cb1 \strokec4 \
+\
+}
