@@ -4,3 +4,6 @@ node_modules/
 .env
 .env.*
 .aws-*
+
+# generated legacy-port entry files (temp, rebuilt each run)
+dist/.gen/

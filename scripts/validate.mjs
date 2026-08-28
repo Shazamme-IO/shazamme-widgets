@@ -35,6 +35,9 @@ function walk(dir) {
   const out = [];
   if (!existsSync(dir)) return out;
   for (const entry of readdirSync(dir)) {
+    // Skip build/.gen — those are pre-bundle esbuild entry files (ESM `import`),
+    // not shippable IIFE bundles, so they'd false-flag the syntax gate.
+    if (entry === '.gen') continue;
     const full = join(dir, entry);
     if (statSync(full).isDirectory()) out.push(...walk(full));
     else if (full.endsWith('.js')) out.push(full);
