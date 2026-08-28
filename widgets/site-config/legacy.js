@@ -27,7 +27,6 @@ function UX() {
     }
 
     this.buildHref = (path, query) => {
-        if (path && path.charAt(0) !== '/') path = '/' + path;
         return data.inEditor ? `/site/${data.siteId}${path}?preview=true&insitepreview=true&dm_device=desktop${query ? '&' + query : ''}`:`https://${window.location.hostname}${path}${query ? '?' + query : ''}`;
     }
 
@@ -506,6 +505,16 @@ const alertDialog = (o) => {
     el.find('.dialog-content .message').copyCSS(_alertDialogT?.find('.dialog-content .message'));
     el.find('.dialog-content .button-main').copyCSS(_alertDialogT?.find('.dialog-content .button-main'));
 
+    // Rounded corners: box 12px, OK button 5px. copyCSS above copies the
+    // template's computed styles inline (square), so override inline with
+    // !important to win. overflow:hidden clips the dark title band to the round.
+    const _box = el.find('.dialog-content')[0];
+    if (_box) {
+        _box.style.setProperty('border-radius', '12px', 'important');
+        _box.style.setProperty('overflow', 'hidden', 'important');
+    }
+    el.find('.button-main').each((_, b) => b.style.setProperty('border-radius', '5px', 'important'));
+
     return el;
 
 }
@@ -624,10 +633,10 @@ let main = (w) => {
 
             seg.splice(-1, 1);
 
-            return ('/' + seg.join('/')).replace(/^\/+/, '/');
+            return seg.join('/');
         }
 
-        return ('/' + (p?.href || d)).replace(/^\/+/, '/');
+        return p?.href || d ;
     }
 
     data.config.pathHome          = toPath(data.config.pathHome,          '/');
