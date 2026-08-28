@@ -1,14 +1,6 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-07-30T03:18:30.834Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-08-28T01:31:33.843Z. Registers window.ShazammeWidget["<name>"].
  */
-(function(){
-  if (typeof document === 'undefined') return;
-  if (document.getElementById("shm-css-job-results")) return;
-  var s = document.createElement('style');
-  s.id = "shm-css-job-results";
-  s.textContent = "/*\n * job-results — base / shared styles. Ported and cleaned from the 2026 +\n * proximity reference CSS. Google-map rules removed; the map container is styled\n * for a MapLibre GL canvas. Desktop-only and mobile-only rules live in\n * styles.desktop.css and styles.mobile.css.\n */\n\n.shmMainContainer {\n  display: flex;\n  align-items: flex-start;\n  gap: 15px;\n  color: #333;\n  padding-top: 20px;\n  width: 100%;\n  box-sizing: border-box;\n  min-height: 840px;\n}\n\n.shmMainContainer .stack {\n  display: flex;\n  white-space: nowrap;\n  align-items: center;\n}\n\n.hide,\n[hidden] {\n  display: none !important;\n}\n\n/* ===================== FILTER SIDEBAR ===================== */\n\n.section-job-result-filter {\n  flex-shrink: 0;\n  width: var(--shaz-filter-pct, 22%);\n  min-width: var(--shaz-filter-pct, 22%);\n  max-width: var(--shaz-filter-pct, 22%);\n  min-height: 840px;\n  box-sizing: border-box;\n}\n\n.shmFiltersContainer {\n  background: none;\n  padding: 10px;\n}\n\n.section-job-result-filter .filter-title {\n  font-size: 22px;\n  font-weight: bold;\n  text-align: left;\n  border-bottom: 1px solid #a6a6a6;\n  padding: 8px 5px;\n  margin: 0 3px 10px;\n}\n\n.section-job-result-filter .filter-label {\n  display: block;\n  padding: 0 10px;\n  text-align: left;\n}\n\n.section-job-result-filter .section-keyword-search {\n  position: relative;\n  margin-bottom: 10px;\n}\n\n.section-job-result-filter .filter-field {\n  padding: 10px;\n  width: 100%;\n  box-sizing: border-box;\n}\n\n.section-job-result-filter .filter-keyword-clear {\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  right: 8px;\n  margin: auto 0;\n  cursor: pointer;\n  z-index: 2;\n  display: none;\n  background: transparent;\n  border: none;\n  padding: 0;\n  width: 24px;\n  height: 24px;\n  border-radius: 50%;\n  align-items: center;\n  justify-content: center;\n  color: #888;\n}\n\n.section-job-result-filter .filter-field:not(:placeholder-shown) + .filter-keyword-clear {\n  display: flex;\n}\n\n.section-job-result-filter .filter-toggle {\n  display: block;\n  font-size: 16px;\n  border-bottom: 1px solid #a6a6a6;\n  padding: 5px;\n  margin: 0 5px;\n  text-align: left;\n  text-decoration: none;\n  color: inherit;\n  cursor: pointer;\n}\n\n.section-job-result-filter .filter-toggle.active {\n  font-weight: 500;\n  color: blue;\n}\n\n.section-job-result-filter .filter-toggle.filter-nested {\n  margin-left: 20px;\n  font-size: 0.95em;\n  border-bottom: 0;\n}\n\n.section-job-result-filter .filter-toggle input {\n  margin-right: 6px;\n}\n\n/* Radius slider */\n.section-job-result-filter .geo-range .field {\n  box-sizing: border-box;\n  appearance: none;\n  width: 100%;\n  height: 10px;\n  background-color: #b2b2b2;\n  border-radius: 50px;\n  margin: 10px 0;\n  border: 0;\n  outline: none;\n}\n\n.section-job-result-filter .geo-range .text {\n  margin-left: 10px;\n}\n\n/* Geo prediction dropdown */\n.prediction-result {\n  position: absolute;\n  width: 100%;\n  border: 1px solid #ccc;\n  display: none;\n  flex-direction: column;\n  overflow-y: auto;\n  box-shadow: rgba(0, 0, 0, 0.15) 0 2px 8px 0;\n  height: auto;\n  z-index: 99;\n  background: #fff;\n  padding: 10px 20px 20px;\n  text-align: left;\n  top: 100%;\n}\n\n.prediction-result .result-text {\n  display: block;\n  color: #000;\n  text-decoration: none;\n  padding: 4px 0;\n}\n\n.prediction-result .result-text.close {\n  text-align: right;\n  font-size: 0.7em;\n}\n\n/* ===================== RESULTS ===================== */\n\n.section-details {\n  flex: 1 1 0;\n  min-width: 0;\n  max-width: calc(100% - var(--shaz-filter-pct, 22%));\n  box-sizing: border-box;\n  min-height: 840px;\n}\n\n.shmResultCountContainer {\n  display: flex;\n  margin: 10px 0;\n}\n\n.shmResultCount {\n  font-weight: bold;\n  color: #333;\n}\n\n/* !important throughout so the host theme (Duda) can't override the toolbar\n * layout — it was forcing .action-item to `block`, which stacked the List/Map\n * toggle buttons vertically and misaligned the bar. */\n.action-bar {\n  display: flex !important;\n  justify-content: flex-end !important;\n  align-items: center;\n  gap: 5px;\n}\n\n.action-bar .action-item {\n  display: inline-block;\n  position: relative;\n  margin: 5px;\n}\n\n/* The List/Map toggle holds two buttons — keep them side by side (Duda's\n * generic .action-item = block otherwise stacks them). */\n.action-bar .action-item.solid {\n  display: flex !important;\n  flex-direction: row !important;\n}\n\n.action-bar .action-item button {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  min-width: 60px;\n  height: 40px;\n  padding: 5px 12px;\n  font-family: inherit;\n  background: #333;\n  color: white;\n  border: 0;\n}\n\n.action-bar .action-item.solid .toggle.active {\n  background: #000;\n}\n\n.menu {\n  display: none;\n  position: absolute;\n  top: 100%;\n  left: 0;\n  border: 1px solid #a6a6a6;\n  padding: 5px;\n  z-index: 3;\n  background: white;\n}\n\n.action-item:hover .menu {\n  display: block;\n}\n\n.menu-option {\n  display: block;\n  text-transform: uppercase;\n  text-align: left;\n  text-decoration: none;\n  color: #333;\n  margin: 5px 0;\n  white-space: nowrap;\n}\n\n.menu-option.active {\n  font-weight: 500;\n  color: blue;\n}\n\n.shmSearchResults.grid {\n  display: grid;\n  grid-template-columns: 1fr;\n  gap: 0 15px;\n}\n\n/* ===================== JOB CARD (standard) ===================== */\n\n.shmJobResultStd {\n  position: relative;\n  padding: 20px;\n  margin: 10px 0;\n  min-height: 100px;\n  width: 100%;\n  box-sizing: border-box;\n  background-color: #ececec;\n  transition: background 0.25s;\n}\n\n.shmJobResultStd .shmJobItemUpper {\n  display: flex;\n  align-items: flex-start;\n  justify-content: space-between;\n}\n\n.shmJobResultStd .shmJobtitle {\n  font-size: 25px;\n  color: #333;\n  text-align: left;\n  text-decoration: none;\n  font-weight: bold;\n}\n\n.shmJobResultStd .shmTimePostedText {\n  text-align: left;\n  font-size: 14px;\n  color: #666;\n}\n\n.shmJobResultStd .shmTag.job-new {\n  display: inline-block;\n  padding: 4px;\n  background-color: #00ffff;\n  font-size: 10px;\n  margin-bottom: 5px;\n}\n\n.shmJobResultStd .shmCTA {\n  display: flex;\n  align-items: center;\n  justify-content: flex-end;\n  gap: 6px;\n}\n\n.shmJobResultStd .shmSaveJob,\n.shmJobResultStd .shmSendEmail {\n  cursor: pointer;\n  text-decoration: none;\n  color: #333;\n  white-space: nowrap;\n}\n\n.shmJobResultStd .shmSaveJob:not(.active) .active {\n  display: none;\n}\n\n.shmJobResultStd .shmSaveJob.active .inactive {\n  display: none;\n}\n\n.shmJobResultStd .shmJobDetails {\n  display: block;\n  margin: 10px 0;\n}\n\n.shmJobResultStd .shmJobDetailsLeft {\n  display: flex;\n  flex-wrap: wrap;\n  align-items: center;\n  text-align: left;\n}\n\n.shmJobResultStd .shmDetailsDivider {\n  margin: 5px 10px;\n  color: inherit;\n}\n\n.shmJobResultStd .shmButtonLinks {\n  display: flex;\n  flex-wrap: nowrap;\n}\n\n.shmJobResultStd .shmButtonLinks a {\n  margin-right: 20px;\n  padding: 5px 15px;\n  border: 1px solid #000;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  text-decoration: none;\n}\n\n.shmJobResultStd .shmButtonLinks .shmGoReadMore {\n  background: #fff;\n  color: #000;\n}\n\n.shmJobResultStd .shmButtonLinks .shmGoApply {\n  background: #000;\n  color: #fff;\n  border: 0;\n}\n\n.shmNoResults {\n  padding: 40px 20px;\n  text-align: center;\n  color: #666;\n}\n\n/* ===================== PAGINATION ===================== */\n\n.section-job-results-paging {\n  display: flex;\n  justify-content: center;\n  width: 100%;\n  margin: 20px 0;\n}\n\n.section-job-results-paging .button-paging {\n  display: inline-block;\n  padding: 3px 8px;\n  margin: 0 5px;\n  border: 0;\n  text-decoration: none;\n  color: #666;\n  cursor: pointer;\n  background: none;\n}\n\n.section-job-results-paging .button-paging.active {\n  font-weight: 500;\n  background: #ececec;\n}\n\n.section-job-results-paging .button-paging.disabled {\n  color: #000;\n  cursor: default;\n}\n\n/* ===================== MAP (MapLibre GL) ===================== */\n\n.shmSearchMapResults {\n  width: 100%;\n  height: 700px;\n  min-height: 500px;\n  max-height: 80vh;\n  box-sizing: border-box;\n  margin-top: 20px;\n}\n\n.shmMainContainer #shmMap {\n  position: relative;\n  width: 100%;\n  height: 100%;\n  min-height: 500px;\n}\n\n.gmapInfoContainer {\n  min-width: 200px;\n}\n\n.gmapTitle {\n  font-size: 18px;\n  font-weight: bold;\n}\n\n@media (min-width: 768px) {\n/*\n * job-results — desktop-only overrides (applied above the Duda mobile breakpoint).\n * Mirrors the reference `.desktop` visibility split.\n */\n\n.mobile {\n  display: none !important;\n}\n\n.section-tool-bar {\n  display: flex;\n  justify-content: right;\n  padding: 20px 0 10px;\n}\n\n.toolbar-main.mobile {\n  display: none !important;\n}\n\n/* Two-up card grid on wide viewports when grid view is active. */\n.shmSearchResults.shmResultView.grid {\n  grid-template-columns: 1fr;\n}\n\n.shmResultCountContainer.desktop {\n  display: flex;\n}\n\n}\n@media (max-width: 767px) {\n/*\n * job-results — mobile-only overrides (applied below the Duda mobile breakpoint).\n * Ported and cleaned from the reference mobile CSS: single-column results, the\n * filter sidebar becomes a slide-in drawer, cards stack.\n */\n\n.desktop {\n  display: none !important;\n}\n\n.shmMainContainer {\n  display: block;\n  text-align: center;\n  padding-top: 20px;\n  width: 100% !important;\n}\n\n/* Filter sidebar → slide-in drawer */\n.section-job-result-filter {\n  position: fixed;\n  display: block;\n  background-color: #fff;\n  z-index: 1;\n  bottom: 0;\n  left: -100%;\n  max-height: 100%;\n  max-width: 100%;\n  overflow: auto;\n  padding: 50px 20px;\n  transition: all 0.35s;\n  width: 100% !important;\n  height: auto;\n}\n\n.section-job-result-filter.active {\n  left: 0;\n  top: 50px;\n  z-index: 201;\n}\n\n.section-details {\n  width: 100% !important;\n}\n\n.action-bar {\n  flex-direction: column;\n  align-items: center;\n}\n\n/* Single-column results */\n.shmSearchResults.grid {\n  grid-template-columns: 100% !important;\n  column-gap: 0 !important;\n}\n\n.shmJobResultStd {\n  width: 100%;\n}\n\n.shmJobResultStd .shmJobItemUpper {\n  flex-direction: column-reverse;\n  align-items: flex-start;\n}\n\n.shmJobResultStd .shmJobtitle {\n  font-size: 22px;\n  text-align: center !important;\n  width: 100%;\n}\n\n.shmJobResultStd .shmButtonLinks {\n  display: flex;\n  justify-content: space-between;\n}\n\n.shmJobResultStd .shmButtonLinks a {\n  margin-right: 8px;\n}\n\n.shmLocation,\n.shmSalary,\n.jobCategory,\n.work-type,\n.work-model {\n  text-align: left;\n}\n\n.shmResultCountContainer {\n  justify-content: center !important;\n}\n\n.shmSearchResults,\n.shmSearchMapResults {\n  margin-top: 40px;\n}\n\n}";
-  (document.head || document.documentElement).appendChild(s);
-})();
 "use strict";
 var module = module || {};
 module.exports = (() => {
@@ -30,1230 +22,2185 @@ module.exports = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // widgets/job-results/index.ts
-  var index_exports = {};
-  __export(index_exports, {
-    default: () => jobResults
+  // dist/.gen/job-results.index.js
+  var job_results_index_exports = {};
+  __export(job_results_index_exports, {
+    default: () => legacyController
   });
 
-  // core/config.ts
-  var DEFAULT_PAGE_SIZE = 20;
-  var DEFAULT_PROXIMITY = "6371";
-  function coerceBool(value, fallback = false) {
-    if (typeof value === "boolean") return value;
-    if (typeof value === "string") {
-      const v = value.trim().toLowerCase();
-      if (v === "true" || v === "1" || v === "yes" || v === "on") return true;
-      if (v === "false" || v === "0" || v === "no" || v === "off" || v === "") return false;
-    }
-    if (typeof value === "number") return value !== 0;
-    return fallback;
-  }
-  function coerceInt(value, fallback) {
-    if (typeof value === "number" && Number.isFinite(value)) return value;
-    if (typeof value === "string" && value.trim() !== "") {
-      const n = parseInt(value.trim(), 10);
-      if (Number.isFinite(n)) return n;
-    }
-    return fallback;
-  }
-  function coerceStr(value, fallback = "") {
-    if (typeof value === "string") return value;
-    if (value == null) return fallback;
-    return String(value);
-  }
-  function coerceProximity(value) {
-    return coerceStr(value) === "12756" ? "12756" : DEFAULT_PROXIMITY;
-  }
-  function readConfig(data) {
-    const c = data && data.config || {};
-    return {
-      jobCollection: coerceStr(c.JobCollection || c.jobCollection),
-      applicationPage: coerceStr(c.applicationPage),
-      detailsPage: coerceStr(c.detailsPage),
-      showJobTypeFilter: coerceBool(c.showJobTypeFilter),
-      showClassificationFilter: coerceBool(c.showClassificationFilter),
-      showSubClassificationFilter: coerceBool(c.showSubClassificationFilter),
-      useSubFilters: coerceBool(c.useSubFilters),
-      showLocationFilter: coerceBool(c.showLocationFilter),
-      proximityDiameter: coerceProximity(c.proximityDiameter),
-      geocodeApiKey: coerceStr(c.geocodeApiKey),
-      pageSize: coerceInt(c.pageSize, DEFAULT_PAGE_SIZE),
-      hideLeftNav: coerceBool(c.hideLeftNav)
-    };
-  }
-
-  // core/sdk.ts
-  function jobsFetchDesc(siteID, name = "Get Jobs") {
-    return {
-      name,
-      action: "Get Jobs",
-      useCache: true,
-      path: `/job-results/${siteID}`,
-      isExternal: true
-    };
-  }
-  var Sdk = class {
-    constructor(client) {
-      this.client = client;
-    }
-    /** Fetch the cached job collection for a site. Never passes `limit`. */
-    fetchJobs(siteID) {
-      return this.client.fetch(jobsFetchDesc(siteID));
-    }
-    /** Generic cached fetch (workModel / locationSeo lookups). */
-    fetch(desc) {
-      return this.client.fetch(desc);
-    }
-    submit(action, payload = {}) {
-      return this.client.submit({ action, ...payload });
-    }
-    site() {
-      return this.client.site();
-    }
-    pub(msg, payload) {
-      this.client.pub(msg, payload);
-    }
-    sub(msg, cb) {
-      this.client.sub(msg, cb);
-    }
-    unsub(msg, cb) {
-      var _a, _b;
-      (_b = (_a = this.client).unsub) == null ? void 0 : _b.call(_a, msg, cb);
-    }
-  };
-  function wrapSdk(client) {
-    return new Sdk(client);
-  }
-
-  // core/hierarchy.ts
-  function toIndex(value, id, seo, parent) {
-    return {
-      value,
-      id: id || value,
-      seo: seo || id,
-      parent: parent || void 0
-    };
-  }
-  function readField(job, key) {
-    const v = job[key];
-    return v == null ? "" : String(v);
-  }
-  function resolveId(job, level) {
-    return readField(job, String(level.idKey)) || readField(job, String(level.labelKey));
-  }
-  function buildHierarchy(jobs, opts) {
-    var _a, _b;
-    const { levels } = opts;
-    const idKeyToLevel = /* @__PURE__ */ new Map();
-    for (const l of levels) idKeyToLevel.set(String(l.idKey), l);
-    const parentFieldMap = /* @__PURE__ */ new Map();
-    const childFieldsMap = /* @__PURE__ */ new Map();
-    for (const l of levels) {
-      const parentLevel = l.parentField ? idKeyToLevel.get(String(l.parentField)) : void 0;
-      parentFieldMap.set(l.field, parentLevel == null ? void 0 : parentLevel.field);
-      if (parentLevel) {
-        const arr = (_a = childFieldsMap.get(parentLevel.field)) != null ? _a : [];
-        arr.push(l.field);
-        childFieldsMap.set(parentLevel.field, arr);
-      }
-    }
-    const index = {};
-    const counts = {};
-    const seen = {};
-    for (const l of levels) {
-      index[l.field] = [];
-      counts[l.field] = {};
-      seen[l.field] = /* @__PURE__ */ new Map();
-    }
-    for (const { data } of jobs) {
-      for (const level of levels) {
-        const id = resolveId(data, level);
-        if (!id) continue;
-        const value = readField(data, String(level.labelKey)) || id;
-        const seo = level.seoKey ? readField(data, String(level.seoKey)) : "";
-        let parent;
-        if (level.parentField) {
-          const parentLevel = idKeyToLevel.get(String(level.parentField));
-          parent = parentLevel ? resolveId(data, parentLevel) || void 0 : readField(data, String(level.parentField)) || void 0;
-        }
-        counts[level.field][id] = ((_b = counts[level.field][id]) != null ? _b : 0) + 1;
-        if (!seen[level.field].has(id)) {
-          const node = toIndex(value, id, seo || void 0, parent);
-          seen[level.field].set(id, node);
-          index[level.field].push(node);
-        }
-      }
-    }
-    const nodeById = (field, id) => {
-      var _a2;
-      return (_a2 = seen[field]) == null ? void 0 : _a2.get(id);
-    };
-    const children = (field, parentId) => {
-      var _a2;
-      return ((_a2 = index[field]) != null ? _a2 : []).filter((n) => n.parent === parentId);
-    };
-    const roots = (field) => {
-      var _a2;
-      return ((_a2 = index[field]) != null ? _a2 : []).filter((n) => !n.parent);
-    };
-    return {
-      index,
-      counts,
-      children,
-      roots,
-      levels,
-      nodeById,
-      parentField: (field) => parentFieldMap.get(field),
-      childFields: (field) => {
-        var _a2;
-        return (_a2 = childFieldsMap.get(field)) != null ? _a2 : [];
-      }
-    };
-  }
-  function without(arr, id) {
-    return arr.filter((x) => x !== id);
-  }
-  function withId(arr, id) {
-    return arr.includes(id) ? arr : [...arr, id];
-  }
-  function toggleFacet(state, tree, field, id) {
-    var _a, _b, _c;
-    const next = {};
-    for (const k of Object.keys(state)) next[k] = [...state[k]];
-    const isSelected = ((_a = next[field]) != null ? _a : []).includes(id);
-    if (isSelected) {
-      next[field] = without((_b = next[field]) != null ? _b : [], id);
-      cascadeRemove(next, tree, field, id);
-    } else {
-      next[field] = withId((_c = next[field]) != null ? _c : [], id);
-      autoSelectAncestors(next, tree, field, id);
-    }
-    for (const k of Object.keys(next)) {
-      if (next[k].length === 0) delete next[k];
-    }
-    return next;
-  }
-  function autoSelectAncestors(state, tree, field, id) {
-    var _a;
-    const node = tree.nodeById(field, id);
-    if (!node || !node.parent) return;
-    const pField = tree.parentField(field);
-    if (!pField) return;
-    state[pField] = withId((_a = state[pField]) != null ? _a : [], node.parent);
-    autoSelectAncestors(state, tree, pField, node.parent);
-  }
-  function cascadeRemove(state, tree, field, id) {
-    for (const childField of tree.childFields(field)) {
-      const selected = state[childField];
-      if (!selected || selected.length === 0) continue;
-      const descendants = selected.filter(
-        (childId) => {
-          var _a;
-          return ((_a = tree.nodeById(childField, childId)) == null ? void 0 : _a.parent) === id;
-        }
-      );
-      for (const d of descendants) {
-        state[childField] = without(state[childField], d);
-        cascadeRemove(state, tree, childField, d);
-      }
-    }
-  }
-
-  // core/filters.ts
-  var DEFAULT_KEYWORD_FIELDS = [
-    "jobName",
-    "title",
-    "category",
-    "subCategory",
-    "city",
-    "state",
-    "country",
-    "location",
-    "fullDescription",
-    "fullAddressForSearch",
-    "referenceNumber",
-    "tags"
-  ];
-  var LOCATION_FIELDS = [
-    "fullAddress",
-    "fullAddressForSearch",
-    "city",
-    "state",
-    "country",
-    "location"
-  ];
-  var MILES_TO_KM = 1.60934;
-  var DEFAULT_RANGE = 50;
-  var RESERVED = /* @__PURE__ */ new Set([
-    "keyword",
-    "geo",
-    "geoRange",
-    "geoAddress",
-    "geoIn",
-    "location",
-    "salaryFrom",
-    "salaryTo"
-  ]);
-  function includesCI(value, term) {
-    if (typeof value !== "string") return false;
-    return value.toLowerCase().includes(term);
-  }
-  function matchKeyword(job, term, fields = DEFAULT_KEYWORD_FIELDS) {
-    const t = term.toLowerCase().trim();
-    if (t === "") return true;
-    return fields.some((f) => includesCI(job[f], t));
-  }
-  function matchLocation(job, term) {
-    return matchKeyword(job, term, LOCATION_FIELDS);
-  }
-  function haversineKm(a, b) {
-    const R = 6371;
-    const toRad = (deg) => deg * Math.PI / 180;
-    const dLat = toRad(b.lat - a.lat);
-    const dLon = toRad(b.lon - a.lon);
-    const h = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
-  }
-  function rangeToKm(rawRange, proximityDiameter) {
-    const isMiles = (proximityDiameter || "6371") !== "12756";
-    return isMiles ? rawRange * MILES_TO_KM : rawRange;
-  }
-  function jobPoint(job) {
-    const lat = parseFloat(String(job.latitude));
-    const lon = parseFloat(String(job.longitude));
-    if (job.latitude == null || job.longitude == null || isNaN(lat) || isNaN(lon)) {
-      return null;
-    }
-    return { lat, lon };
-  }
-  function withinRange(job, geo, rangeKm) {
-    if (!geo || geo.length === 0) return true;
-    const p = jobPoint(job);
-    if (!p) return false;
-    return geo.some((g) => haversineKm(g, p) <= rangeKm);
-  }
-  function asStrings(v) {
-    return (v != null ? v : []).map((x) => String(x));
-  }
-  function applyFilters(jobs, state, opts = {}) {
-    var _a, _b;
-    const keys = Object.keys(state);
-    if (keys.length === 0) return jobs.slice();
-    const keywordTerms = asStrings(state.keyword);
-    const locationTerms = asStrings(state.location);
-    const geoPoints = (_a = state.geo) != null ? _a : [];
-    const hasGeo = geoPoints.length > 0;
-    const rawRange = state.geoRange && state.geoRange[0] != null ? parseFloat(String(state.geoRange[0])) : (_b = opts.defaultRange) != null ? _b : DEFAULT_RANGE;
-    const rangeKm = rangeToKm(rawRange, opts.proximityDiameter);
-    return jobs.filter((job) => {
-      var _a2;
-      if (keywordTerms.length > 0 && !keywordTerms.some((t) => matchKeyword(job, t, opts.keywordFields))) {
-        return false;
-      }
-      if (locationTerms.length > 0 && !locationTerms.some((t) => matchLocation(job, t))) {
-        return false;
-      }
-      if (hasGeo && !withinRange(job, geoPoints, rangeKm)) {
-        return false;
-      }
-      for (const f of keys) {
-        if (RESERVED.has(f)) continue;
-        const vals = asStrings(state[f]);
-        if (vals.length === 0) continue;
-        const jobVal = String((_a2 = job[f]) != null ? _a2 : "");
-        if (!vals.includes(jobVal)) return false;
-      }
-      return true;
+  // core/script-loader.ts
+  var CANONICAL_SDK_URL = "https://sdk.shazamme.io/js/shazamme-1.0.3.min.js";
+  var SDK_URL_RE = /shazamme(-1\.0\.\d+(-test)?)?\.min\.js/;
+  function injectScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = src;
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error(`Failed to load ${src}`));
+      (document.head || document.documentElement).appendChild(s);
     });
   }
-
-  // core/jobs.ts
-  var DEFAULT_LEVELS = [
-    { field: "jobTypeID", labelKey: "jobType", idKey: "jobTypeID" },
-    { field: "professionID", labelKey: "category", idKey: "professionID", seoKey: "professionSeo", parentField: "jobTypeID" },
-    { field: "roleID", labelKey: "subCategory", idKey: "roleID", seoKey: "roleSeo", parentField: "professionID" }
-  ];
-  function extractJobs(raw) {
-    if (Array.isArray(raw)) {
-      return raw.map((v) => {
-        var _a;
-        return (_a = v == null ? void 0 : v.data) != null ? _a : v;
-      });
-    }
-    const values = raw == null ? void 0 : raw.values;
-    if (Array.isArray(values)) return values.map((v) => v.data);
-    return [];
+  function loadSdk() {
+    if (window.__shazSDKPromise) return window.__shazSDKPromise;
+    const p = window.shazamme ? Promise.resolve() : injectScript(CANONICAL_SDK_URL);
+    window.__shazSDKPromise = p;
+    return p;
   }
-  function sortJobs(jobs, sort) {
-    const dir = sort.direction === "asc" ? 1 : -1;
-    return jobs.slice().sort((x, y) => {
-      const a = x[sort.field];
-      const b = y[sort.field];
-      if (a === b) return 0;
-      if (a == null) return 1;
-      if (b == null) return -1;
-      return a > b ? dir : -dir;
+  function loadOther(src) {
+    const cache = window.__shazScriptCache = window.__shazScriptCache || {};
+    const existing = cache[src];
+    if (existing) return existing;
+    const p = injectScript(src).catch((err) => {
+      delete cache[src];
+      throw err;
     });
+    cache[src] = p;
+    return p;
   }
-  function memoKey(state, sort) {
-    const parts = Object.keys(state).sort().map((k) => `${k}=${JSON.stringify(state[k])}`);
-    return `${parts.join("&")}::${sort.field}:${sort.direction}`;
+  function installScriptLoader() {
+    if (typeof window === "undefined" || window.__shazLoadScript) return;
+    window.__shazLoadScript = (src) => SDK_URL_RE.test(src) ? loadSdk() : loadOther(src);
   }
-  function buildModel(jobs, cfg, opts = {}) {
-    var _a, _b;
-    const levels = (_a = opts.levels) != null ? _a : DEFAULT_LEVELS;
-    const filterFn = (_b = opts.filterFn) != null ? _b : applyFilters;
-    const filterOpts = { proximityDiameter: cfg.proximityDiameter };
-    const all = jobs.slice();
-    let cacheKey = null;
-    let cached = null;
-    const compute = (state, sort) => {
-      const filtered = filterFn(all, state, filterOpts);
-      const sorted = sortJobs(filtered, sort);
-      const facets = buildHierarchy(
-        sorted.map((j) => ({ data: j })),
-        { levels }
-      );
-      cached = { sorted, facets, total: sorted.length };
-    };
-    return {
-      all: () => all,
-      query(state, sort, page, pageSize) {
-        const key = memoKey(state, sort);
-        if (key !== cacheKey || cached === null) {
-          cacheKey = key;
-          compute(state, sort);
-        }
-        const c = cached;
-        const start = pageSize > 0 ? page * pageSize : 0;
-        const end = pageSize > 0 ? start + pageSize : void 0;
-        return {
-          page: c.sorted.slice(start, end),
-          matching: c.sorted,
-          total: c.total,
-          facets: c.facets
-        };
-      }
-    };
-  }
-  async function loadJobs(sdk, cfg, opts = {}) {
-    const site = await sdk.site();
-    const raw = await sdk.fetchJobs(site.siteID);
-    return buildModel(extractJobs(raw), cfg, opts);
+  function ensureScriptLoader() {
+    installScriptLoader();
   }
 
-  // core/geo.ts
-  var GEOCODE_BASE = "https://geocode.maps.co/search";
-  function geocodeUrl(term, apiKey) {
-    return `${GEOCODE_BASE}?q=${encodeURIComponent(term)}&api_key=${apiKey}`;
-  }
-  async function geocode(term, apiKey, fetchImpl = fetch) {
-    const q = term.trim();
-    if (q === "") return [];
-    const res = await fetchImpl(geocodeUrl(q, apiKey));
-    const rows = await res.json();
-    if (!Array.isArray(rows)) return [];
-    return rows.map((r) => {
-      var _a;
-      return {
-        label: String((_a = r.display_name) != null ? _a : ""),
-        lat: parseFloat(String(r.lat)),
-        lon: parseFloat(String(r.lon))
-      };
-    }).filter((r) => !isNaN(r.lat) && !isNaN(r.lon));
-  }
-  function debounce(fn, delayMs) {
-    let timer;
-    return (...args) => {
-      if (timer !== void 0) clearTimeout(timer);
-      timer = setTimeout(() => fn(...args), delayMs);
+  // dist/.gen/job-results.index.js
+  function legacyController(ctx) {
+    ensureScriptLoader();
+    var data = ctx.data, element = ctx.element, $ = ctx.$ || window.jQuery || window.$, shazamme = ctx.shazamme || window.shazamme;
+    const ActionUrl = "https://shazamme.io/Job-Listing/src/php/actions";
+    const Path = {
+      login: "/login",
+      alerts: "/job-alerts",
+      dashboard: "/dashboard",
+      jobApply: data.config.applicationPage || "/job-application",
+      jobDetails: data.config.detailsPage || "/job-details"
     };
-  }
-
-  // core/dom.ts
-  function delegate(root, eventType, selector, handler) {
-    const listener = (event) => {
-      const target = event.target;
-      if (!(target instanceof Element)) return;
-      const matched = target.closest(selector);
-      if (matched && root.contains(matched)) {
-        handler(event, matched);
-      }
-    };
-    root.addEventListener(eventType, listener);
-    return () => root.removeEventListener(eventType, listener);
-  }
-  function el(tag, attrs = {}, children = []) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(attrs)) {
-      if (value == null) continue;
-      if (key === "class") {
-        node.className = String(value);
-      } else if (key === "text") {
-        node.textContent = String(value);
-      } else if (key === "html") {
-        node.innerHTML = String(value);
-      } else if (key === "dataset") {
-        for (const [dk, dv] of Object.entries(value)) {
-          node.dataset[dk] = String(dv);
-        }
-      } else {
-        node.setAttribute(key, String(value));
-      }
-    }
-    for (const child of children) {
-      node.appendChild(typeof child === "string" ? document.createTextNode(child) : child);
-    }
-    return node;
-  }
-  function setHtml(node, html) {
-    node.innerHTML = html;
-  }
-  var KEY_ATTR = "data-key";
-  function renderList(container, items, keyOf, renderItem) {
-    var _a;
-    const existing = /* @__PURE__ */ new Map();
-    for (const child of Array.from(container.children)) {
-      const key = child.getAttribute(KEY_ATTR);
-      if (key !== null) existing.set(key, child);
-    }
-    const nextKeys = /* @__PURE__ */ new Set();
-    let ref = container.firstChild;
-    for (const item of items) {
-      const key = keyOf(item);
-      nextKeys.add(key);
-      const prev = (_a = existing.get(key)) != null ? _a : null;
-      const node = renderItem(item, prev);
-      node.setAttribute(KEY_ATTR, key);
-      if (node === ref) {
-        ref = node.nextSibling;
-      } else {
-        container.insertBefore(node, ref);
-      }
-    }
-    for (const [key, node] of existing) {
-      if (!nextKeys.has(key)) container.removeChild(node);
-    }
-  }
-
-  // core/pubsub.ts
-  var MESSAGES = Object.freeze({
-    FILTER_CHANGE: "job-search-submit",
-    RESULTS_READY: "shazamme:results-ready",
-    LOGIN: "site-auth",
-    SAVE_JOB: "job-results-save-job"
-  });
-  function defineChannel(message) {
-    return {
-      message,
-      publish(sdk, payload) {
-        sdk.pub(message, payload);
+    const Collection = {
+      job: {
+        name: data.config.JobCollection || "Jobs",
+        action: "Get Jobs",
+        useCache: true,
+        debug: data.inEditor && data.config.debugMode && data.config.debugJobCollection,
+        endpoint: data.config.debugJobCollection
       },
-      subscribe(sdk, cb) {
-        const handler = (payload) => cb(payload);
-        sdk.sub(message, handler);
-        return () => sdk.unsub(message, handler);
+      locationSeo: {
+        name: data.config.LocationSeoCollection || "Location SEO",
+        action: "Get Location SEO",
+        useCache: true,
+        debug: data.inEditor && data.config.debugMode && data.config.debugLocationSeoCollection,
+        endpoint: data.config.debugLocationSeoCollection
+      },
+      workModel: {
+        name: data.config.WorkModelCollection || "Work Model",
+        action: "Get Work Models",
+        useCache: true,
+        debug: data.inEditor && data.config.debugMode && data.config.debugWorkModelCollection,
+        endpoint: data.config.debugWorkModelCollection
       }
     };
-  }
-  var filterChangeChannel = defineChannel(MESSAGES.FILTER_CHANGE);
-  var resultsReadyChannel = defineChannel(MESSAGES.RESULTS_READY);
-  var loginChannel = defineChannel(MESSAGES.LOGIN);
-  var saveJobChannel = defineChannel(MESSAGES.SAVE_JOB);
-  function onFilterChange(sdk, cb) {
-    return filterChangeChannel.subscribe(sdk, cb);
-  }
-
-  // widgets/job-results/cards.ts
-  var MS_PER_DAY = 864e5;
-  var NEW_JOB_MAX_DAYS = 1;
-  function str(job, key) {
-    const v = job[key];
-    return v == null ? "" : String(v);
-  }
-  function jobKey(job) {
-    return str(job, "jobID") || str(job, "referenceNumber") || str(job, "jobName");
-  }
-  function slugOf(job) {
-    const url = str(job, "jobURL");
-    if (url) {
-      const parts = url.split("/").filter(Boolean);
-      if (parts.length > 0) return parts[parts.length - 1];
+    const LocalStorage = {
+      lastSearch: "lastSearch"
+    };
+    const Subscribe = {
+      auth: "site-auth",
+      loginCancel: "login-dialog-cancel",
+      loginSubmit: "login-dialog-submit",
+      loginReady: "login-dialog-ready",
+      siteReady: "site-config-ready"
+    };
+    const Message = {
+      loginShow: "login-dialog-show",
+      saveJob: "job-results-save-job"
+    };
+    function ShApi() {
+      let allFilter = {};
+      this.ready = () => Promise.all([
+        shazamme.fetch(Collection.workModel).then((wm) => {
+          var _a;
+          if (wm) {
+            allFilter.workModelID = (_a = wm == null ? void 0 : wm.filter((i) => i.data.includeInAllSearches)) == null ? void 0 : _a.map((i) => i.data.workModelID);
+          }
+          return Promise.resolve();
+        }).catch(() => Promise.resolve())
+      ]);
+      this.getJobs = (pageNumber, pageSize, filters = {}, sort = {
+        field: "changedOnUTC",
+        direction: "desc"
+      }) => new Promise((resolve, reject) => {
+        shazamme.fetch(Collection.job).then((jobs) => {
+          let filtered = [];
+          if (data.config.catchAllFilter && data.config.catchAllProfession) {
+            jobs.filter((j) => {
+              var _a;
+              return ((_a = j.data.roleID) == null ? void 0 : _a.length) > 0 && !j.data.professionID;
+            }).forEach((j) => {
+              j.data.category = data.config.catchAllProfession;
+              j.data.professionID = data.config.professionCatchAll;
+              j.data.professionSeo = data.config.catchAllProfessionSeo;
+              j.data.professionCatchAll = true;
+            });
+          }
+          if (data.config.catchAllFilter && data.config.catchAllState) {
+            jobs.filter((j) => {
+              var _a;
+              return ((_a = j.data.city) == null ? void 0 : _a.length) > 0 && !j.data.state;
+            }).forEach((j) => {
+              j.data.state = data.config.catchAllState;
+              j.data.stateCatchAll = true;
+            });
+          }
+          if (filters) {
+            filtered = jobs.filter((j) => {
+              let ok = true;
+              let isMatch = (v) => {
+                if (typeof v !== "string") {
+                  return false;
+                }
+                v = v.toLowerCase();
+                for (let i = 0; i < filters[f].length; i++) {
+                  if (v.includes(filters[f][i].toLowerCase().trim())) {
+                    return true;
+                  }
+                }
+                return false;
+              };
+              for (f in filters) {
+                switch (f) {
+                  case "salaryFrom":
+                    ok = ok && j.data[f] >= filters[f][0];
+                    break;
+                  case "salaryTo":
+                    ok = ok && j.data[f] <= filters[f][0];
+                    break;
+                  case "keyword": {
+                    ok = ok && (data.config.toggleCategory === true && isMatch(j.data.category) || data.config.toggleSubCategory === true && isMatch(j.data.subCategory) || data.config.toggleContact === true && isMatch(j.data.contactName) || isMatch(j.data.contactEmail) || isMatch(j.data.contactPhone) || data.config.toggleLocation === true && (isMatch(j.data.location) || isMatch(j.data.fullAddressForSearch)) || data.config.toggleArea === true && isMatch(j.data.city) || data.config.toggleCountry === true && isMatch(j.data.country) || data.config.toggleFD === true && isMatch(j.data.fullDescription) || data.config.toggleRefNo === true && isMatch(j.data.referenceNumber) || isMatch(j.data.jobName) || isMatch(j.data.tags));
+                    break;
+                  }
+                  case "location": {
+                    ok = ok && (isMatch(j.data.fullAddress) || isMatch(j.data.fullAddressForSearch));
+                    break;
+                  }
+                  case "geo": {
+                    let p = { lat: parseFloat(j.data.latitude), lon: parseFloat(j.data.longitude) };
+                    let range = filters["geoRange"][0] * 1.61;
+                    let include = false;
+                    for (let i in allFilter) {
+                      include = include || allFilter[i].indexOf(j.data[i]) >= 0;
+                    }
+                    ok = ok && (include || p.lat && p.lon && this._distance(filters[f][0], p, parseInt(data.config.proximityDiameter || "6371")) <= range);
+                    break;
+                  }
+                  case "jobStartDate": {
+                    let d = /* @__PURE__ */ new Date(filters[f][0] + "T00:00:00");
+                    ok = ok && (isNaN(d) || j.data.jobEndDate && d <= new Date(j.data.jobEndDate));
+                    break;
+                  }
+                  case "jobEndDate": {
+                    let d = /* @__PURE__ */ new Date(filters[f][0] + "T00:00:00");
+                    ok = ok && (isNaN(d) || j.data.jobStartDate && d >= new Date(j.data.jobStartDate));
+                    break;
+                  }
+                  case "geoRange":
+                    break;
+                  case "geoAddress":
+                    break;
+                  case "geoIn":
+                    break;
+                  default:
+                    ok = ok && (filters[f].length === 0 || filters[f].indexOf(j.data[f]) >= 0);
+                    break;
+                }
+              }
+              return ok;
+            });
+          } else {
+            filtered.push(...jobs);
+          }
+          resolve({
+            values: filtered.sort((x, y) => {
+              if (x.data[sort.field] > y.data[sort.field]) {
+                if (sort.direction === "asc") {
+                  return 1;
+                } else {
+                  return -1;
+                }
+              }
+              if (x.data[sort.field] < y.data[sort.field]) {
+                if (sort.direction === "asc") {
+                  return -1;
+                } else {
+                  return 1;
+                }
+              }
+              return 0;
+            }).slice(pageSize > 0 ? pageNumber * pageSize : 0, pageSize > 0 ? pageNumber * pageSize + pageSize : void 0),
+            page: {
+              pageNumber,
+              totalPages: parseInt(Math.ceil(filtered.length / pageSize)),
+              totalItems: filtered.length
+            }
+          });
+        });
+      });
+      this.saveJob = (jobID, candidateID) => shazamme.submit({
+        action: "Save Job",
+        candidateID,
+        jobID,
+        isFavorite: true,
+        isSaved: false,
+        isAcknowledged: null
+      }, false);
+      this.createSave = (d) => shazamme.site().then(
+        (s) => shazamme.submit({
+          action: "Create Job Alert",
+          siteID: s.siteID,
+          ...d
+        })
+      );
+      this.marshalSaveJob = (jobID) => {
+        shazamme.store("previousApplicationPage", null);
+        shazamme.store("signInAction", null);
+        shazamme.store("previousApplicationPage", window.location.href);
+        shazamme.store("signInAction", JSON.stringify({
+          action: "Save Job",
+          candidateID: "",
+          jobID,
+          isFavorite: true,
+          isSaved: false,
+          isAcknowledged: null
+        }));
+      };
+      this.deleteSavedJob = (id) => shazamme.submit({
+        action: "Delete Saved Job",
+        candidateSavedJobID: id
+      }, false);
+      this.getSavedJobs = (candidateID) => shazamme.site().then(
+        () => shazamme.submit({
+          action: "Get Saved Jobs",
+          candidateID
+        }, false)
+      );
+      this.getLocationSeo = () => new Promise((resolve, reject) => {
+        let seo = {};
+        shazamme.fetch(Collection.locationSeo).then((r) => {
+          var _a;
+          if (r.length > 0) {
+            resolve(JSON.parse(((_a = r[0].data) == null ? void 0 : _a.value) || null));
+          } else {
+            resolve({});
+          }
+        });
+      });
+      this._distance = (p1, p2, d = 6371) => {
+        let _toRadians = (d2) => d2 * Math.PI / 180;
+        let dLat = _toRadians(p2.lat - p1.lat);
+        let dLon = _toRadians(p2.lon - p1.lon);
+        let a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(p1.lat) * Math.cos(p2.lat);
+        let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return d * c;
+      };
     }
-    return str(job, "referenceNumber") || str(job, "jobID");
-  }
-  function detailsHref(job, cfg) {
-    if (!cfg.detailsPage) return "javascript:void(0)";
-    return `/${cfg.detailsPage}/${slugOf(job)}`;
-  }
-  function applyHref(job, cfg) {
-    const own = str(job, "applicationURL");
-    if (own) return own;
-    if (!cfg.applicationPage) return detailsHref(job, cfg);
-    return `/${cfg.applicationPage}?jobID=${encodeURIComponent(str(job, "jobID"))}`;
-  }
-  function timeSince(job) {
-    const raw = str(job, "changedOnUTC");
-    const then = Date.parse(raw);
-    if (Number.isNaN(then)) return "";
-    const days = Math.floor((Date.now() - then) / MS_PER_DAY);
-    if (days <= 0) return "today";
-    if (days === 1) return "1 day ago";
-    if (days < 30) return `${days} days ago`;
-    const months = Math.floor(days / 30);
-    return months === 1 ? "1 month ago" : `${months} months ago`;
-  }
-  function isNew(job) {
-    const then = Date.parse(str(job, "changedOnUTC"));
-    if (Number.isNaN(then)) return false;
-    return Date.now() - then <= NEW_JOB_MAX_DAYS * MS_PER_DAY;
-  }
-  function locationText(job) {
-    const parts = [str(job, "city"), str(job, "state")].filter(Boolean);
-    if (parts.length > 0) return parts.join(", ");
-    return str(job, "country") || str(job, "location");
-  }
-  function detailRows(job) {
-    const rows = [];
-    const loc = locationText(job);
-    if (loc) rows.push(`<div class="shmLocation">${escapeHtml(loc)}</div>`);
-    const salary = str(job, "salary");
-    if (salary) rows.push(`<div class="shmSalary">${escapeHtml(salary)}</div>`);
-    const workType = str(job, "workType");
-    if (workType) rows.push(`<div class="work-type">${escapeHtml(workType)}</div>`);
-    const workModel = str(job, "workModel");
-    if (workModel) rows.push(`<div class="work-model">${escapeHtml(workModel)}</div>`);
-    const category = str(job, "category");
-    if (category) rows.push(`<div class="jobCategory">${escapeHtml(category)}</div>`);
-    return rows.join('<div class="shmDetailsDivider shmDividerEnabled">|</div>');
-  }
-  function escapeHtml(value) {
-    return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-  }
-  function cardHtml(job, cfg) {
-    const details = detailsHref(job, cfg);
-    const apply = applyHref(job, cfg);
-    const name = escapeHtml(str(job, "jobName") || str(job, "title"));
-    const posted = timeSince(job);
-    return `
-    <div class="shmJobItemDetails">
-      ${isNew(job) ? '<span class="shmTag job-new">New</span>' : ""}
-      ${posted ? `<div class="shmTimePostedText">Posted ${escapeHtml(posted)}</div>` : ""}
-      <div class="shmJobItemUpper">
-        <div class="shmJobtitle"><a href="${details}" class="shmJobtitle" data-rel="link-job-name">${name}</a></div>
-        <div class="shmUpperRight">
-          <div class="shmCTA">
-            <div class="shmSaveJob" data-rel="action-save-job" data-save-id="">
-              <span class="active">unsave job</span>
-              <span class="inactive">save job</span>
+    function UX() {
+      this.el = $(element);
+      this.uri = new URL(window.location.href);
+      this.jobStandardEl = (j) => {
+        var _a, _b, _c, _d;
+        let jobDate = /* @__PURE__ */ new Date(j.changedOnUTC + "Z");
+        let isNew = data.config.showNewIcon && jobDate && !isNaN(jobDate.getTime()) && (+/* @__PURE__ */ new Date() - jobDate) / (1e3 * 3600 * 24) <= 1;
+        let jobSalary = (j2) => {
+          if (data.config.useSalaryText) {
+            return j2.salaryText || "";
+          }
+          let currencySymbol = data.config.showSalaryCurrencySymbol && j2.currencySymbol || "";
+          let currencyCode = data.config.showSalaryCurrencyCode && j2.currencyCode || "";
+          let showCents = data.config.showCents;
+          let fractionDigits = showCents ? 2 : 0;
+          let salaryFrom = void 0;
+          let salaryTo = void 0;
+          let format = (salary2) => !isNaN(salary2) && `${currencySymbol}${salary2.toLocaleString(void 0, { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits })} ${currencyCode}`;
+          if (j2.salaryFrom >= 0) {
+            salaryFrom = showCents ? j2.salaryFrom : Math.floor(j2.salaryFrom);
+          }
+          if (j2.salaryTo >= 0) {
+            salaryTo = showCents ? j2.salaryTo : Math.floor(j2.salaryTo);
+          }
+          return salaryFrom > 0 && salaryTo > 0 ? `${format(salaryFrom)} - ${format(salaryTo)}` : salaryFrom > 0 ? `${format(salaryFrom)}` : salaryTo > 0 ? `${format(salaryTo)}` : data.config.noSalaryText || "";
+        };
+        let details = [];
+        let salary = jobSalary(j);
+        let location = [];
+        if (data.config.showCity && ((_a = j.city) == null ? void 0 : _a.length) > 0) location.push(j.city);
+        if (data.config.showState && ((_b = j.state) == null ? void 0 : _b.length) > 0 && !j.stateCatchAll) location.push(j.state);
+        if (data.config.showCountry && ((_c = j.country) == null ? void 0 : _c.length) > 0) details.push(`<div class="shmLocation">${j.country}</div>`);
+        if (location.length > 0) details.push(`<div class="shmLocation">${location.join(", ")}</div>`);
+        if (data.config.showSalary && salary !== "") details.push(`<div class="shmSalary">${salary}</div>`);
+        if (data.config.showBasicSalary && ((_d = j.salary) == null ? void 0 : _d.length) > 0) details.push(`<div class="shmSalary">${j.salary}</div>`);
+        if (data.config.showDate && !isNaN(jobDate)) details.push(`<div class="shmJobDateCreated">${jobDate.toLocaleDateString()}</div>`);
+        if (data.config.showWorkType && j.workType) details.push(`<div class="work-type">${j.workType}</div>`);
+        if (data.config.showWorkModel && j.workModel) details.push(`<div class="work-model">${j.workModel}</div>`);
+        if (data.config.showCategory && j.category) details.push(`<div class="jobCategory">${j.category}</div>`);
+        return `
+            <div class="shmJobResultStd shmJobResult" style="--shaz-hover-color:${data.config.jobResultHoverColor}" data-rel="article-job-result" data-id="${j.jobID}">
+
+                ${data.config.useTheming && j.pColorCode && `<div class="theme" style="--shaz-theme-color: ${j.pColorCode};"></div>` || ""}
+                ${data.config.themeBackground && j.pColorCode && `<div class="theme background" style="--shaz-theme-color: ${j.pColorCode};"></div>` || ""}
+
+
+                <div class="shmJobItemDetails">
+
+                ${data.config.showNewIcon && isNew ? `<span class="shmTag job-new">${data.config.newIconLabel || ""}</span>` : ""}
+
+                    ${data.config.showTimeSincePosted && !isNaN(jobDate) && `<div class="shmTimePostedText">${data.config.postedText || "Posted "} ${this._timeSince(jobDate)}</div>` || ""}
+
+                    <div class="shmJobItemUpper">
+                        <div class="shmJobtitle">
+                        <a  href="${j.detailsUri}" class="shmJobtitle" data-rel="link-job-name">${j.jobName}</a>
+                        </div>
+
+                        <div class="shmUpperRight" style="--alignSaveJobAndEmail:${data.config.alignSaveJobAndEmail}">
+                            <div class="shmCTA">
+                                <div class="shmSaveJob ${j.saveID ? " active" : ""}" style="--shaz-hover-color:${data.config.saveJobHoverColor}; --shaz-email-save-uppercase:${data.config.saveAndEmailUppercase}" data-rel="${j.saveID ? "action-unsave-job" : "action-save-job"}" data-save-id="${j.saveID || ""}">
+                                    ${data.config.actionButtonIcon ? `
+                                        <span class="icon-action active">${data.config.activeSaveButtonIcon || ""}</span>
+                                        <span class="icon-action inactive">${data.config.saveButtonIcon || ""}</span>
+                                        ` : ""}
+
+                                    ${data.config.actionButtonText ? `
+                                    <span class='active'>${data.config.unsaveJobText || "unsave job"}</span>
+                                    <span class='inactive'>${data.config.saveJobText || "save job"}</span>
+                                    ` : ""}
+                                </div>
+
+                                <div class="shmDividerContainer">
+                                ${data.config.showShmDivider ? `
+                                <span class="shmDivider">|</span>
+                                ` : ""}
+                                </div>
+
+                                <div class="shmSendEmail" style="--shaz-hover-color:${data.config.sendEmailHoverColor}; --shaz-email-save-uppercase:${data.config.saveAndEmailUppercase}">
+                                <a href="mailto:?subject=${data.config.shareEmailSubject} ${encodeURI(j.jobName)}&body=${encodeURI(data.config.emailBody || "Have a look at this amazing job!\n\n") + encodeURI(j.detailsUri)}" class="shmSendEmail">
+                                    ${data.config.actionButtonIcon ? `<span class="icon-action"><span class="text">${data.config.emailButtonIcon}</span></span>` : ""}
+                                    ${data.config.actionButtonText && (data.config.sendEmailText || "send email") || ""}
+                                </a>
+                                </div>
+                            </div>
+                            <div class="shmJobDateCreated"></div>
+                        </div>
+                    </div>
+                    <div class="shmJobDetails">
+
+                        <div class="shmJobDetailsPanel shmJobDetailsLeft" style="--alignJobDetails:${data.config.alignJobDetails}">
+                            ${details.join(`<div class="shmDetailsDivider shmDividerEnabled">${data.config.separatorText || "|"}</div>`)}
+                        </div>
+
+                        <div class="shmJobDetailsPanel shmJobDetailsRight">
+                            <ul class="shmRequirements">
+                                ${j.shortDescription || ""}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="shmButtonLinks">
+                    ${data.config.applybtn && `<a class="shmGoApply" href="${j.applicationURL || ux.buildHref(Path.jobApply, "jobID=" + j.jobID)}"><span class="text">${data.config.applyNowLabel || "Apply Now"}</span></a>` || ""}
+                    ${data.config.readmorebtn && `<a class="shmGoReadMore"  href="${j.detailsUri}"><span class="text">${data.config.readMoreLabel || "Read More"}</span></a>` || ""}
+                </div>
             </div>
-          </div>
+        `;
+      };
+      this.jobSimpleEl = (j) => {
+        var _a, _b, _c;
+        let jobDate = /* @__PURE__ */ new Date(j.changedOnUTC + "Z");
+        let isNew = data.config.showNewIcon && jobDate && !isNaN(jobDate.getTime()) && (+/* @__PURE__ */ new Date() - jobDate) / (1e3 * 3600 * 24) <= 1;
+        let jobSalary = (j2) => {
+          if (data.config.useSalaryText) {
+            return j2.salaryText || "";
+          }
+          let currencySymbol = data.config.showSalaryCurrencySymbol && j2.currencySymbol || "";
+          let currencyCode = data.config.showSalaryCurrencyCode && j2.currencyCode || "";
+          let showCents = data.config.showCents;
+          let fractionDigits = showCents ? 2 : 0;
+          let salaryFrom = void 0;
+          let salaryTo = void 0;
+          let format = (salary2) => !isNaN(salary2) && `${currencySymbol}${salary2.toLocaleString(void 0, { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits })} ${currencyCode}`;
+          if (j2.salaryFrom >= 0) {
+            salaryFrom = showCents ? j2.salaryFrom : Math.floor(j2.salaryFrom);
+          }
+          if (j2.salaryTo >= 0) {
+            salaryTo = showCents ? j2.salaryTo : Math.floor(j2.salaryTo);
+          }
+          return salaryFrom > 0 && salaryTo > 0 ? `${format(salaryFrom)} - ${format(salaryTo)}` : salaryFrom > 0 ? `${format(salaryFrom)}` : salaryTo > 0 ? `${format(salaryTo)}` : data.config.noSalaryText || "";
+        };
+        let salary = jobSalary(j);
+        let location = [];
+        if (data.config.showCity && ((_a = j.city) == null ? void 0 : _a.length) > 0) location.push(j.city);
+        if (data.config.showState && ((_b = j.state) == null ? void 0 : _b.length) > 0 && !j.stateCatchAll) location.push(j.state);
+        return `<div class="shmJobResultSimple flex-container"  data-rel="article-job-result" data-id="${j.jobID}">
+
+            ${data.config.useTheming && j.pColorCode && `<div class="theme" style="--shaz-theme-color: ${j.pColorCode};"></div>` || ""}
+            ${data.config.themeBackground && j.pColorCode && `<div class="theme background" style="--shaz-theme-color: ${j.pColorCode};"></div>` || ""}
+
+
+            <div class="topRow">
+                <div class="timeSincePostedRow">
+                    <div class="newTagContainer">
+                        ${data.config.showNewIcon && isNew ? `<span class="newTag">${data.config.newIconLabel || ""}</span>` : ""}
+                    </div>
+                    ${data.config.showTimeSincePosted && !isNaN(jobDate) && `<div class="TimeSincePosted">${data.config.postedText || "Posted "} ${this._timeSince(jobDate)}</div>` || ""}
+                </div>
+                <div class="actionItemsRow">
+
+                    <div class="shmSaveJob ${j.saveID ? " active" : ""}" data-rel="${j.saveID ? "action-unsave-job" : "action-save-job"}" data-save-id="${j.saveID || ""}" title="${j.saveID ? data.config.unsaveJobText || "unsave job" : data.config.saveJobText || "save job"}">
+
+                        ${data.config.actionButtonIcon ? `
+                            <span class="icon-action active">${data.config.activeSaveButtonIcon || ""}</span>
+                            <span class="icon-action inactive">${data.config.saveButtonIcon || ""}</span>
+                            ` : ""}
+
+                        ${data.config.actionButtonText ? `
+                        <span class='active'>${data.config.unsaveJobText || "unsave job"}</span>
+                        <span class='inactive'>${data.config.saveJobText || "save job"}</span>
+                        ` : ""}
+                    </div>
+
+                    <div class="shmDividerContainer"></div>
+
+                    <div class="shmSendEmail">
+                    <a href="mailto:?subject=${data.config.shareEmailSubject} ${encodeURI(j.jobName)}&body=${encodeURI((data.config.emailBody || "Have a look at this amazing job!") + "\n\n") + encodeURI(j.detailsUri)}" class="shmSendEmail" title=${data.config.sendEmailText || "send email"}>
+                        ${data.config.actionButtonIcon ? `<span class="icon-action">${data.config.emailButtonIcon}</span>` : ""}
+                        ${data.config.actionButtonText && (data.config.sendEmailText || "send email") || ""}
+                    </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="resultsContainer">
+                <div class="jobResultTitle"><a  href="${j.detailsUri}" class="jobResultTitle" data-rel="link-job-name">${j.jobName}</a></div>
+                ${data.config.showCategory && j.category && !j.professionCatchAll && `<div class="jobCategory">${j.category}</div>` || ""}
+                <div class="flex-col">
+                    ${data.config.showWorkType && j.workType && `<div class="flex-col-separator workType" style="padding-right: 0px !important; padding-left: calc(${data.config.workTypeModelSpacing}px * 2) !important; --shaz-spacing: ${data.config.workTypeModelSpacing}px;">${j.workType}</div>` || ""}
+                    ${data.config.showWorkModel && j.workModel && `<div class="flex-col-separator workModel" style="padding-right: 0px !important; padding-left: calc(${data.config.workTypeModelSpacing}px * 2) !important; --shaz-spacing: ${data.config.workTypeModelSpacing}px;">${j.workModel}</div>` || ""}
+                </div>
+                <div class="jobDescription">${j.shortDescription || ""}</div>
+
+
+
+                <div class="separator"></div>
+
+                <div class="bottomRow">
+
+                ${(location.length > 0 || data.config.showCountry) && `
+                    <div class="locationContainer">
+                        ${data.config.locationSalaryIcon ? `<div class="locationIcon">
+                            <span class="iconbottom">${data.config.locationIcon}</span>
+                         </div>` : ""}
+                         <div class="locationText">
+                             ${data.config.showCountry && `<div>${j.country || ""}</div>` || ""}
+                             ${location.length > 0 && `<div>${location.join(", ")}</div>` || ""}
+                         </div>
+                    </div>
+                    ` || ""}
+
+                    <div class="salaryContainer">
+                        ${data.config.showSalary && (j.salaryFrom > 0 || j.salaryTo > 0 || (salary == null ? void 0 : salary.length) > 0) ? `
+                            ${data.config.locationSalaryIcon ? `<div class="salaryIcon">
+                                <span class="iconbottom">${data.config.salaryIcon}</span>
+                            </div>` : ""}
+                            <div class="salaryText">${data.config.showSalary && salary || ""}</div>
+                        ` : ""}
+                    </div>
+
+                    <div class="salaryContainer">
+                        ${data.config.showBasicSalary && ((_c = j.salary) == null ? void 0 : _c.length) > 0 && `
+                            ${data.config.locationSalaryIcon ? `<div class="salaryIcon">
+                                <span class="iconbottom">${data.config.salaryIcon}</span>
+                            </div>` : ""}
+                            <div class="salaryText">${j.salary}</div>
+                        ` || ""}
+                    </div>
+
+                    <div class="actionButtonRow desktop">
+                        ${data.config.applybtn && `<a class="applyActionButton" href="${j.applicationURL || ux.buildHref(Path.jobApply, "jobID=" + j.jobID)}"><span class="text">${data.config.applyNowLabel || "Apply Now"}</span></a>` || ""}
+                        ${data.config.readmorebtn && `<a class="readMoreActionButton"  href="${j.detailsUri}"><span class="text">${data.config.readMoreLabel || "Read More"}</span></a>` || ""}
+                    </div>
+                </div>
+
+                <div class="actionButtonRow mobile">
+                    ${data.config.applybtn && `<a class="applyActionButton" href="${j.applicationURL || ux.buildHref(Path.jobApply, "jobID=" + j.jobID)}"><span class="text">${data.config.applyNowLabel || "Apply Now"}</span></a>` || ""}
+                    ${data.config.readmorebtn && `<a class="readMoreActionButton"  href="${j.detailsUri}"><span class="text">${data.config.readMoreLabel || "Read More"}</span></a>` || ""}
+                </div>
+            </div>
+        </div>`;
+      };
+      this.jobModernEl = (j) => {
+        var _a, _b, _c, _d;
+        let jobdate = new Date(j.postedDate);
+        let isNew = data.config.showNewIcon && jobdate && !isNaN(jobdate.getTime()) && (+/* @__PURE__ */ new Date() - jobdate) / (1e3 * 3600 * 24) <= 1;
+        let startDate = new Date(j.jobStartDate || void 0);
+        let endDate = new Date(j.jobEndDate || void 0);
+        let postedDate = (j2) => {
+          if (!data.config.showDate && !data.config.showTimeSincePosted) {
+            return "";
+          }
+          let out = [];
+          if (data.config.showDate && !isNaN(jobdate)) {
+            out.push(j2.postedDate);
+          }
+          if (data.config.showTimeSincePosted) {
+            out.push(this._timeSince(jobdate));
+          }
+          return out.join(" \xB7 ");
+        };
+        let jobSalary = (j2) => {
+          if (data.config.useSalaryText) {
+            return j2.salaryText || "";
+          }
+          if (!j2.isDisplaySalary) {
+            return "";
+          }
+          let currencySymbol = data.config.showSalaryCurrencySymbol && j2.currencySymbol || "";
+          let currencyCode = data.config.showSalaryCurrencyCode && j2.currencyCode || "";
+          let showCents = data.config.showCents;
+          let fractionDigits = showCents ? 2 : 0;
+          let salaryFrom = void 0;
+          let salaryTo = void 0;
+          let format = (salary) => !isNaN(salary) && `${currencySymbol}${salary.toLocaleString(void 0, { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits })} ${currencyCode}`;
+          if (j2.salaryFrom >= 0) {
+            salaryFrom = showCents ? j2.salaryFrom : Math.floor(j2.salaryFrom);
+          }
+          if (j2.salaryTo >= 0) {
+            salaryTo = showCents ? j2.salaryTo : Math.floor(j2.salaryTo);
+          }
+          return salaryFrom > 0 && salaryTo > 0 ? `${format(salaryFrom)} - ${format(salaryTo)}` : salaryFrom > 0 ? `${format(salaryFrom)}` : salaryTo > 0 ? `${format(salaryTo)}` : data.config.noSalaryText || "";
+        };
+        let position = j.positionTitle || j.advertiserName;
+        let location = [];
+        if (data.config.showCity && ((_a = j.city) == null ? void 0 : _a.length) > 0) location.push(j.city);
+        if (data.config.showState && ((_b = j.state) == null ? void 0 : _b.length) > 0 && !j.stateCatchAll) location.push(j.state);
+        return `
+        <div class="shmJobResultModern">
+
+                ${data.config.useTheming && j.pColorCode && `<div class="theme" style="--shaz-theme-color: ${j.pColorCode};"></div>` || ""}
+                ${data.config.themeBackground && j.pColorCode && `<div class="theme backgrouond" style="--shaz-theme-color: ${j.pColorCode};"></div>` || ""}
+
+            <div class="job-detail">
+                <div class="category-meta-container">
+                    <p class="job-category">${!j.professionCatchAll && j.category || ""}</p>
+
+                    <div class="meta">
+                        ${isNew && `<div class="meta-value">New Posting</div>` || ""}
+                        ${data.config.showCountry && j.country && `<div class="meta-value">${j.country}</div>` || ""}
+                        ${location.length > 0 && `<div class="meta-value">${location.join(", ")}</div>` || ""}
+                        ${data.config.metaToggle && j.subCategory && `<div class="meta-value">${j.subCategory}</div>` || ""}
+                    </div>
+                </div>
+                ${data.config.showWorkType && ((_c = j.workType) == null ? void 0 : _c.length) > 0 || data.config.showWorkModel && ((_d = j.workModel) == null ? void 0 : _d.length) > 0 ? `<div class="job-about">
+                        ${data.config.showWorkType && `<span class="text">${j.workType || ""}</span>` || ""}
+                        ${data.config.showWorkModel && `<span class="text">${j.workModel || ""}</span>` || ""}
+                    </div>` : ""}
+                <div class="section-main">
+                    <div class="description">
+                        <p class="job-title"><a href="${j.detailsUri}">${j.jobName || ""}</a></p>
+                        ${j.shortDescription && `<div class="label-job-description" style="--shaz-job-result-lines: ${data.config.jobDetailsLines || 3};">${j.shortDescription}</div>` || ""}
+                    </div>
+                    <div class="side-bar">
+                        ${j.customImageURL && j.customImageURL.length > 0 ? `<img class="image-logo" src="${j.customImageURL}" alt="company logo">` : ""}
+
+
+                        ${data.config.showReadMoreButton && `<a class="button-action read-more" href="${j.detailsUri}"><span class="text">${data.config.readMoreLabel || "Read More"}</span></a>` || ""}
+                        ${data.config.showApplyButton && `<a class="button-action apply" href="${j.applicationURL || ux.buildHref(Path.jobApply, "jobID=" + j.jobID)}"><span class="text">${data.config.applyNowLabel || "Apply Now"}</span></a>` || ""}
+
+
+                     </div>
+                 </div>
+
+                ${data.config.showJobPeriod && `
+                            <div class="job-period">
+                            ${!isNaN(startDate) && `<p>${data.config.startDateLabel} ${startDate.toLocaleDateString()}</p>` || ""}
+                            ${!isNaN(endDate) && `<p>${data.config.endDateLabel} ${endDate.toLocaleDateString()}</p>` || ""}
+                            </div>
+                        ` || ""}
+
+                ${data.config.showSalary && `<p class="label-salary">${jobSalary(j)}</p>` || ""}
+                ${data.config.showBasicSalary && `<p class="label-salary">${j.salary || ""}</p>` || ""}
+                ${(data.config.showDate || data.config.showTimeSincePosted) && `<p class="label-posted">${postedDate(j)}</p>` || ""}
+            </div>
+
+            ${data.config.showRecruiter && `
+            <div class="recruiter-detail">
+                <div class="section-bio">
+                    ${j.consultantPhotoURL && `<img class="image-head-shot" style="--consultantImagePosition:${data.config.consultantImagePosition}" src="${j.consultantPhotoURL || ""}" alt="${j.contactName}" />` || ""}
+
+                    <div class="bio-name">
+                        ${j.contactName && `<p class="contact-name">${j.contactName}</p>` || ""}
+                        ${position && `<p class="advertiser-name">${position}</p>` || ""}
+                    </div>
+                </div>
+
+                <div class="section-contact">
+                    ${j.contactPhone && `<a class='phone' href="tel:${j.contactPhone}">${j.contactPhone || data.config.contactPhone || "CALL ME"}</a>` || ""}
+                    ${j.contactEmail && `<a class='email' href="mailto:${j.contactEmail}">${j.contactEmail || data.config.contactEmail || "EMAIL ME"}</a>` || ""}
+                </div>
+            </div> ` || ""}
         </div>
-      </div>
-      <div class="shmJobDetails">
-        <div class="shmJobDetailsPanel shmJobDetailsLeft">${detailRows(job)}</div>
-      </div>
-    </div>
-    <div class="shmButtonLinks">
-      <a class="shmGoApply" href="${apply}"><span class="text">Apply Now</span></a>
-      <a class="shmGoReadMore" href="${details}"><span class="text">Read More</span></a>
-    </div>`;
-  }
-  function buildCard(job, cfg) {
-    const card = el("div", { class: "shmJobResultStd shmJobResult" });
-    card.setAttribute("data-rel", "article-job-result");
-    card.setAttribute("data-id", str(job, "jobID"));
-    setHtml(card, cardHtml(job, cfg));
-    return card;
-  }
-  function renderCards(container, result, cfg) {
-    if (result.page.length === 0) {
-      setHtml(container, '<div class="shmNoResults">No jobs match your search.</div>');
-      return;
-    }
-    renderList(
-      container,
-      result.page,
-      (job) => jobKey(job),
-      (job, existing) => existing != null ? existing : buildCard(job, cfg)
-    );
-  }
-  function renderCount(root, total) {
-    const nodes = root.querySelectorAll('[data-rel="label-results-count"]');
-    for (const node of Array.from(nodes)) node.textContent = String(total);
-  }
-
-  // widgets/job-results/paging.ts
-  var MAX_VISIBLE = 5;
-  function windowBounds(page, totalPages) {
-    const half = Math.floor(MAX_VISIBLE / 2);
-    let start = Math.max(0, page - half);
-    const end = Math.min(totalPages, start + MAX_VISIBLE);
-    start = Math.max(0, end - MAX_VISIBLE);
-    return [start, end];
-  }
-  function buildButtons(page, totalPages) {
-    const buttons = [];
-    buttons.push({ label: "<<", page: page - 1, active: false, disabled: page <= 0 });
-    const [start, end] = windowBounds(page, totalPages);
-    if (start > 0) {
-      buttons.push({ label: "1", page: 0, active: page === 0, disabled: false });
-      if (start > 1) buttons.push({ label: "...", page: null, active: false, disabled: true });
-    }
-    for (let i = start; i < end; i++) {
-      buttons.push({ label: String(i + 1), page: i, active: i === page, disabled: false });
-    }
-    if (end < totalPages) {
-      if (end < totalPages - 1) buttons.push({ label: "...", page: null, active: false, disabled: true });
-      buttons.push({ label: String(totalPages), page: totalPages - 1, active: page === totalPages - 1, disabled: false });
-    }
-    buttons.push({ label: ">>", page: page + 1, active: false, disabled: page >= totalPages - 1 });
-    return buttons;
-  }
-  function buttonHtml(b) {
-    const classes = ["button-paging"];
-    if (b.active) classes.push("active");
-    if (b.disabled) classes.push("disabled");
-    const rel = b.disabled || b.page === null ? "" : ' data-rel="paging-select"';
-    const pageAttr = b.page === null ? "" : ` data-page-number="${b.page}"`;
-    return `<a class="${classes.join(" ")}"${rel}${pageAttr}>${b.label}</a>`;
-  }
-  function renderPaging(container, total, pageSize, page) {
-    const totalPages = pageSize > 0 ? Math.ceil(total / pageSize) : 1;
-    if (totalPages <= 1) {
-      setHtml(container, "");
-      return;
-    }
-    const html = buildButtons(page, totalPages).map(buttonHtml).join("");
-    setHtml(container, html);
-  }
-
-  // widgets/job-results/facets.ts
-  var MASTER_LEVELS = [
-    { field: "jobTypeID", labelKey: "jobType", idKey: "jobTypeID" },
-    { field: "professionID", labelKey: "category", idKey: "professionID", seoKey: "professionSeo", parentField: "jobTypeID" },
-    { field: "roleID", labelKey: "subCategory", idKey: "roleID", seoKey: "roleSeo", parentField: "professionID" },
-    { field: "state", labelKey: "state", idKey: "state" },
-    { field: "city", labelKey: "city", idKey: "city", parentField: "state" },
-    { field: "workTypeID", labelKey: "workType", idKey: "workTypeID" },
-    { field: "workModelID", labelKey: "workModel", idKey: "workModelID" },
-    { field: "shiftType", labelKey: "shiftType", idKey: "shiftType" }
-  ];
-  function buildFacetTree(jobs) {
-    return buildHierarchy(
-      jobs.map((j) => ({ data: j })),
-      { levels: MASTER_LEVELS }
-    );
-  }
-  function groupsFor(cfg) {
-    const groups = [];
-    if (cfg.showJobTypeFilter) groups.push({ title: "Job Type", field: "jobTypeID" });
-    if (cfg.showClassificationFilter) {
-      const nest = cfg.useSubFilters && cfg.showSubClassificationFilter;
-      groups.push({ title: "Classification", field: "professionID", childField: nest ? "roleID" : void 0 });
-    }
-    if (cfg.showSubClassificationFilter && !cfg.useSubFilters) {
-      groups.push({ title: "Sub Classification", field: "roleID" });
-    }
-    if (cfg.showLocationFilter) {
-      groups.push({ title: "Location", field: "state", childField: cfg.useSubFilters ? "city" : void 0 });
-      if (!cfg.useSubFilters) groups.push({ title: "Area", field: "city" });
-    }
-    groups.push({ title: "Work Type", field: "workTypeID" });
-    groups.push({ title: "Work Model", field: "workModelID" });
-    groups.push({ title: "Shift", field: "shiftType" });
-    return groups;
-  }
-  function isActive(state, field, id) {
-    var _a;
-    return ((_a = state[field]) != null ? _a : []).includes(id);
-  }
-  function toggleHtml(node, field, count, active, nested) {
-    const tag = nested ? "a" : "div";
-    const classes = ["filter-toggle"];
-    if (nested) classes.push("filter-nested", "visible");
-    if (active) classes.push("active");
-    const seo = node.seo ? ` data-filter-path="${escapeHtml(node.seo)}"` : "";
-    const parent = node.parent ? ` data-filter-parent-value="${escapeHtml(node.parent)}"` : "";
-    const label = `${escapeHtml(node.value)} (${count})`;
-    return `<${tag} class="${classes.join(" ")}" href="javascript:void(0)" data-rel="filter-toggle" data-filter-type="${escapeHtml(field)}" data-filter-value="${escapeHtml(node.id)}"${seo}${parent}><input type="checkbox"${active ? " checked" : ""} /> ${label}</${tag}>`;
-  }
-  function groupHtml(group, tree, state) {
-    var _a, _b, _c, _d, _e;
-    const nodes = (_a = tree.index[group.field]) != null ? _a : [];
-    if (nodes.length === 0) return "";
-    const parts = [
-      `<p class="filter-title" data-rel="filter-group" data-filter-type="${escapeHtml(group.field)}">${escapeHtml(group.title)}</p>`
-    ];
-    for (const node of nodes) {
-      const count = (_c = (_b = tree.counts[group.field]) == null ? void 0 : _b[node.id]) != null ? _c : 0;
-      parts.push(toggleHtml(node, group.field, count, isActive(state, group.field, node.id), false));
-      if (group.childField) {
-        for (const child of tree.children(group.childField, node.id)) {
-          const childCount = (_e = (_d = tree.counts[group.childField]) == null ? void 0 : _d[child.id]) != null ? _e : 0;
-          parts.push(
-            toggleHtml(child, group.childField, childCount, isActive(state, group.childField, child.id), true)
+        `;
+      };
+      this.showJobResults = (html) => {
+        this.el.find("[data-rel=job-results-map]").hide();
+        this.el.find("[data-rel=job-results-list]").empty().append(html).show();
+        this.el.find("[data-rel=job-results-list] [data-rel=link-job-name]").on("mouseenter", function() {
+          $(this).addClass("over");
+        }).on("mouseleave", function() {
+          $(this).removeClass("over");
+        });
+        this.el.find("[data-rel=job-results-list] .shmJobResultStd").on("mouseenter", function() {
+          $(this).addClass("over");
+        }).on("mouseleave", function() {
+          $(this).removeClass("over");
+        });
+      };
+      this.showJobPins = (j) => {
+        var _a, _b;
+        let pins = j.filter((i) => i.latitude !== null && i.longitude !== null).map((i) => {
+          var _a2;
+          return {
+            page_item_url: i.jobURL,
+            latitude: i.latitude,
+            longitude: i.longitude,
+            state: i.state,
+            jobName: i.jobName,
+            profession: (_a2 = i.category) != null ? _a2 : ""
+          };
+        });
+        let center = new google.maps.LatLng(
+          ((_a = pins[0]) == null ? void 0 : _a.latitude) || -33.86785,
+          ((_b = pins[0]) == null ? void 0 : _b.longitude) || 151.20732
+        );
+        let map = new google.maps.Map(document.getElementById("shmMap"), {
+          zoom: 8,
+          center,
+          mapTypeId: google.maps.MapTypeId.ROADMAP,
+          rotateControl: true
+        });
+        let bounds = new google.maps.LatLngBounds();
+        let infowindow = new google.maps.InfoWindow();
+        pins.forEach((p) => {
+          let marker = new google.maps.Marker({
+            animation: google.maps.Animation.DROP,
+            position: new google.maps.LatLng(p.latitude, p.longitude),
+            map
+          });
+          bounds.extend(marker.position);
+          google.maps.event.addListener(marker, "click", ((marker2, i) => {
+            let pinEl = `
+                    <div class="gmapInfoContainer">
+                        <div class="gmapTitle">${p.jobName}</div>
+                        <div class="gmapLocation">${p.state}</div>
+                        <a class="gmapReadMoreProfession" href="${p.page_item_url}" target="_blank"> <span class="text">${p.profession}</span></a>
+                        <a class="gmapReadMore" href="${p.page_item_url}" target="_blank"> <span class="text">${data.config.mapReadMore || "Read More"}</span></a>
+                    </div>
+                `;
+            return () => {
+              infowindow.setContent(pinEl);
+              infowindow.open(map, marker2);
+            };
+          })(marker));
+        });
+        this.el.find("[data-rel=job-results-list]").hide();
+        this.el.find("[data-rel=job-results-map]").show();
+        map.fitBounds(bounds);
+      };
+      this.showPages = (pageNumber, totalPages, maxVisiblePages = 5) => {
+        if (totalPages < 2) {
+          return;
+        }
+        let pages = [];
+        let start = 1;
+        if (pageNumber >= maxVisiblePages - 1) {
+          start = pageNumber - Math.floor(maxVisiblePages / 2) + 1;
+        }
+        if (start + maxVisiblePages >= totalPages) {
+          start = totalPages - maxVisiblePages;
+        }
+        if (start < 0) {
+          start = 1;
+        }
+        let end = start + maxVisiblePages;
+        if (end > totalPages) {
+          end = totalPages;
+        }
+        let back = $("<a />").addClass(`button-paging ${pageNumber <= 0 ? "disabled" : ""}`).attr("data-rel", pageNumber > 0 ? "paging-select" : "").attr("data-page-number", pageNumber - 1).text("<<");
+        let next = $("<a />").addClass(`button-paging ${pageNumber >= totalPages - 1 ? "disabled" : ""}`).attr("data-rel", pageNumber < totalPages - 1 ? "paging-select" : "").attr("data-page-number", pageNumber + 1).text(">>");
+        pages.push(back);
+        if (start > maxVisiblePages) {
+          pages.push(
+            $("<a />").addClass(`button-paging`).attr("data-rel", "paging-select").attr("data-page-number", 0).text(1),
+            $("<a />").addClass(`button-paging disabled`).text("...")
           );
         }
-      }
-    }
-    return parts.join("");
-  }
-  function renderFacets(host, tree, cfg, state) {
-    const html = groupsFor(cfg).map((g) => groupHtml(g, tree, state)).join("");
-    setHtml(host, html);
-  }
-
-  // core/maps.ts
-  function toLngLat(p) {
-    return [p.lon, p.lat];
-  }
-  var MAPLIBRE_VERSION = "4.7.1";
-  var CDN_BASE = `https://cdn.jsdelivr.net/npm/maplibre-gl@${MAPLIBRE_VERSION}/dist`;
-  var MAPLIBRE_JS_URL = `${CDN_BASE}/maplibre-gl.js`;
-  var MAPLIBRE_CSS_URL = `${CDN_BASE}/maplibre-gl.css`;
-  var DEFAULT_STYLE_URL = "https://demotiles.maplibre.org/style.json";
-  var loadPromise = null;
-  function defaultLoadScript(url) {
-    return new Promise((resolve, reject) => {
-      const script = document.createElement("script");
-      script.src = url;
-      script.async = true;
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error(`Failed to load ${url}`));
-      document.head.appendChild(script);
-    });
-  }
-  function defaultLoadCss(url) {
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = url;
-    document.head.appendChild(link);
-  }
-  function loadMapLibre(loadScript = defaultLoadScript, loadCss = defaultLoadCss, win = window) {
-    if (win.maplibregl) return Promise.resolve(win.maplibregl);
-    if (loadPromise) return loadPromise;
-    loadPromise = (async () => {
-      loadCss(MAPLIBRE_CSS_URL);
-      await loadScript(MAPLIBRE_JS_URL);
-      const gl = win.maplibregl;
-      if (!gl) {
-        loadPromise = null;
-        throw new Error("maplibregl not present on window after load");
-      }
-      return gl;
-    })();
-    return loadPromise;
-  }
-  var DEFAULT_ZOOM = 2;
-  var FIT_PADDING = 40;
-  function createMap(container, options = {}) {
-    var _a, _b, _c;
-    const gl = (_a = options.maplibre) != null ? _a : window.maplibregl;
-    if (!gl) {
-      throw new Error("MapLibre not loaded \u2014 call loadMapLibre() first");
-    }
-    const map = new gl.Map({
-      container,
-      style: (_b = options.style) != null ? _b : DEFAULT_STYLE_URL,
-      center: options.center ? toLngLat(options.center) : [0, 0],
-      zoom: (_c = options.zoom) != null ? _c : DEFAULT_ZOOM
-    });
-    let markers = [];
-    let points = [];
-    const clearMarkers = () => {
-      for (const m of markers) m.remove();
-      markers = [];
-    };
-    return {
-      setMarkers(next) {
-        clearMarkers();
-        points = next.slice();
-        markers = points.map((p) => {
-          const marker = new gl.Marker().setLngLat(toLngLat({ lat: p.lat, lon: p.lon }));
-          if (p.popupHtml && marker.setPopup) {
-            marker.setPopup(new gl.Popup().setHTML(p.popupHtml));
-          }
-          marker.addTo(map);
-          return marker;
+        for (let i = start - 1; i < end; i++) {
+          pages.push(
+            $("<a />").addClass(`button-paging ${pageNumber === i ? "active" : ""}`).attr("data-rel", "paging-select").attr("data-page-number", i).text(i + 1)
+          );
+        }
+        if (end < totalPages) {
+          pages.push(
+            $("<a />").addClass(`button-paging disabled`).text("..."),
+            $("<a />").addClass(`button-paging`).attr("data-rel", "paging-select").attr("data-page-number", totalPages - 1).text(totalPages)
+          );
+        }
+        pages.push(next);
+        let resultsList = $(element).find("[data-rel=job-results-list]");
+        resultsList.find("[data-rel=job-results-paging]").remove();
+        $("<div></div>").addClass("section-job-results-paging").attr("data-rel", "job-results-paging").append(pages).appendTo(resultsList);
+      };
+      this.showFilters = (title, filters, type, parentType, collapsible, activeFilter2, validFilters) => {
+        const sort = (x, y) => {
+          var _a, _b;
+          return ((_a = x == null ? void 0 : x.value) == null ? void 0 : _a.toLowerCase()) > ((_b = y == null ? void 0 : y.value) == null ? void 0 : _b.toLowerCase()) ? 1 : -1;
+        };
+        let map = {};
+        let sender = this;
+        filters.sort(sort).forEach((f2) => {
+          map[f2.id] = {
+            count: 0,
+            ...f2
+          };
         });
-      },
-      fitToMarkers() {
-        if (points.length === 0) return;
-        const bounds = new gl.LngLatBounds();
-        for (const p of points) bounds.extend(toLngLat({ lat: p.lat, lon: p.lon }));
-        map.fitBounds(bounds, { padding: FIT_PADDING });
-      },
-      on(event, cb) {
-        map.on(event, cb);
-      },
-      destroy() {
-        clearMarkers();
-        points = [];
-        map.remove();
+        let html = [];
+        let collapsibleIcon = "data:image/svg+xml;base64," + btoa(data.config.collapseIcon);
+        html.push(`<p
+            class="
+                filter-title
+                ${collapsible && "collapsible"}"
+            data-rel="filter-group"
+            data-filter-type="${type}">
+                ${collapsible ? `<span
+                        class="collapse-icon"
+                        style="
+                            --collapse-icon-size: ${data.config.collapseIconSize}px;
+                            --collapse-icon-fill: ${data.config.collapseIconFill};
+                        "
+                    >${data.config.collapseIcon}</span>` : ""}
+                ${title}
+            </p>`);
+        for (let i in map) {
+          let f2 = map[i];
+          html.push(
+            `<div class="filter-toggle ${activeFilter2[type] && activeFilter2[type].indexOf(f2.id) >= 0 ? " active" : ""}"
+                    href="javascript:void(0)"
+                    data-rel="${!defaultFilter[type] || defaultFilter[type].indexOf(f2.id) === -1 ? "filter-toggle" : ""}"
+                    data-filter-type="${type}"
+                    data-filter-value="${f2.id}"
+                    ${f2.seo && `data-filter-path="${f2.seo}"` || ""}
+                    ${parentType && `data-filter-parent-type="${parentType}"` || ""}
+                    ${f2.parent && `data-filter-parent-value="${f2.parent}"` || ""}>
+                        <input type="checkbox" />
+                        ${f2.value} (${f2.count})
+                </div>`
+          );
+        }
+        if (validFilters && validFilters.length > 0) {
+          let map2 = {};
+          validFilters.sort(sort).forEach((f2) => {
+            map2[f2.id] = {
+              count: validFilters.filter((x) => x.id === f2.id).length,
+              ...f2
+            };
+          });
+          for (let i in map2) {
+            let f2 = map2[i];
+            html.push(
+              `<div class="filter-toggle more"
+                        href="javascript:void(0)"
+                        data-rel="filter-toggle"
+                        data-filter-type="${type}"
+                        data-filter-value="${f2.id}"
+                        ${f2.seo && `data-filter-path="${f2.seo}"` || ""}
+                        ${parentType && `data-filter-parent-type="${parentType}"` || ""}
+                        ${f2.parent && `data-filter-parent-value="${f2.parent}"` || ""}>
+
+                        <input type="checkbox" />
+                        ${f2.value} (${f2.count})
+                    </div>`
+            );
+          }
+        }
+        let filterList = this.el.find("[data-rel=filter-attribute]");
+        filterList.find(`[data-filter-type=${type}]`).remove();
+        filterList.find(`[data-filter-parent-type=${type}]`).remove();
+        filterList.append(html.join(""));
+        filterList.find(".filter-toggle.active").not("[data-rel=filter-toggle]").find("input[type=checkbox]").remove();
+        filterList.find(".filter-toggle.active > input[type=checkbox]").attr("checked", "checked");
+        if (collapsible) {
+          filterList.find(`[data-rel=filter-group][data-filter-type=${type}]`).click(function() {
+            filterList.find(`[data-rel=filter-toggle][data-filter-type=${type}], [data-rel=filter-toggle][data-filter-parent-type=${type}].active`).toggle();
+          });
+          if (data.config.autoCollapse && !data.config.useSubFilters) {
+            let f2 = filterList.find(`[data-rel=filter-toggle][data-filter-type=${type}]`);
+            if (!f2.is(".active")) {
+              f2.css({ display: "block" });
+              f2.hide();
+            }
+          }
+        }
+        setTimeout(() => {
+          for (let id in map) {
+            let count = filters.filter((i) => i.id === id).length;
+            sender.el.find(`[data-rel=filter-attribute] [data-filter-type="${type}"][data-filter-value="${id}"]`).html(`<input type="checkbox" /> ${map[id].value} (${count})`);
+          }
+          let filterList2 = sender.el.find("[data-rel=filter-attribute]");
+          filterList2.find(".filter-toggle.active").not("[data-rel=filter-toggle]").find("input[type=checkbox]").remove();
+          filterList2.find(".filter-toggle.active > input[type=checkbox]").attr("checked", "checked");
+        }, 300);
+      };
+      this.showSubFilters = (parentType, parent, filters, type, activeFilter2) => {
+        var _a, _b;
+        if (!((filters == null ? void 0 : filters.length) > 0) || !parent) return;
+        const sort = (x, y) => {
+          var _a2, _b2;
+          return ((_a2 = x == null ? void 0 : x.value) == null ? void 0 : _a2.toLowerCase()) > ((_b2 = y == null ? void 0 : y.value) == null ? void 0 : _b2.toLowerCase()) ? 1 : -1;
+        };
+        let map = {};
+        filters.sort(sort).forEach((f2) => {
+          map[f2.id] = {
+            count: filters.filter((x) => x.id === f2.id).length,
+            ...f2
+          };
+        });
+        let html = [];
+        for (let i in map) {
+          let f2 = map[i];
+          let active = ((_a = activeFilter2[type]) == null ? void 0 : _a.indexOf(f2.id)) >= 0 && "active";
+          let visible = ((_b = activeFilter2[parentType]) == null ? void 0 : _b.indexOf(parent.id)) >= 0 && "visible";
+          html.push(`
+                 <a class="filter-toggle filter-nested ${active || visible || ""}"
+                    href="javascript:void(0)"
+                    data-rel="${!defaultFilter[type] || defaultFilter[type].indexOf(f2.id) === -1 ? "filter-toggle" : ""}"
+                    data-filter-type="${type}"
+                    data-filter-parent-type="${parentType}"
+                    data-filter-parent-value="${parent.id}"
+                    data-filter-value="${f2.id}">
+
+                    <input type="checkbox" />
+                    ${f2.value} (${f2.count})
+                </a>
+            `);
+        }
+        let filterList = this.el.find("[data-rel=filter-attribute]");
+        filterList.find(`[data-filter-type="${type}"][data-filter-parent-type="${parentType}"][data-filter-parent-value="${parent.id}"]`).remove();
+        if (html.length > 0) {
+          filterList.find(`[data-filter-type="${parentType}"][data-filter-value="${parent.id}"]`).addClass("collapsible").attr("style", `--collapse-icon-size: ${data.config.subFilterIconSize}px; --collapse-icon:url(data:image/svg+xml;base64,${btoa(data.config.subFilterIcon)})`).attr("data-filter-children", "").after(html.join(""));
+        } else {
+          filterList.find(`[data-filter-type="${parentType}"][data-filter-value="${parent.id}"]`).removeClass("collapsible");
+        }
+        filterList.find(".filter-toggle.active").not("[data-rel=filter-toggle]").find("input[type=checkbox]").remove();
+        filterList.find(".filter-toggle.active > input[type=checkbox]").attr("checked", "checked");
+      };
+      this.showSalaryFilter = (opts) => {
+        return new SalaryFilter(opts).renderTo(this.el.find("[data-rel=filter-salary]"));
+      };
+      this.showLoading = (showing = true) => {
+        if (showing) {
+          this.el.find("[data-rel=modal-loading]").css({
+            "display": "flex"
+          }).show();
+        } else {
+          this.el.find("[data-rel=modal-loading]").hide();
+        }
+      };
+      this.buildHref = (path, query) => {
+        if (path && path.charAt(0) !== "/") path = "/" + path;
+        return data.inEditor ? `/site/${data.siteId}${path}?preview=true&insitepreview=true&dm_device=desktop${query ? "&" + query : ""}` : `https://${window.location.hostname}${path}${query ? "?" + query : ""}`;
+      };
+      this.loadScript = (src) => window.__shazLoadScript(src);
+      this._timeSince = (d) => {
+        if (!d || isNaN(d.getTime())) {
+          return null;
+        }
+        const day = 1e3 * 3600 * 24;
+        const hour = 1e3 * 3600;
+        const minute = 1e3 * 60;
+        let since = +/* @__PURE__ */ new Date() - d;
+        let denom = data.config.timeSinceDay || "day";
+        if (since / day >= 1) {
+          since = since / day;
+          denom = data.config.timeSinceDay || "day";
+        } else if (since / hour >= 1) {
+          since = since / hour;
+          denom = data.config.timeSinceHour || "hour";
+        } else if (since / minute >= 1) {
+          since = since / minute;
+          denom = data.config.timeSinceMinute || "minute";
+        } else {
+          since = 0;
+          denom = data.config.timeSinceNow || "just now";
+        }
+        return `${since > 0 ? Math.floor(since) : ""} ${denom}${Math.floor(since) > 1 && data.config.timeSinceUsePluralization ? "s " : " "} ${since > 0 ? data.config.timeSinceAgo || "ago" : ""}`;
+      };
+    }
+    function SalaryFilter(opts) {
+      let sender = this;
+      opts = opts || {};
+      this.onChange = (cb) => {
+        this._afterChange = cb;
+        return this;
+      };
+      this.min = () => {
+        return opts.min || this._defaultMin;
+      };
+      this.max = () => {
+        return opts.max || this._defaultMax;
+      };
+      this.step = () => {
+        return opts.step || this._defaultStep;
+      };
+      this.set = (vals) => {
+        if (!isNaN(vals.min)) {
+          this._lowerSlider.val(vals.min);
+        }
+        if (!isNaN(vals.max)) {
+          this._upperSlider.val(vals.max);
+        }
+        this._adjustColorRange();
+        this._adjustRangeDisplay();
+        this._setSalary();
+        return this;
+      };
+      this.renderTo = (parent) => {
+        this._el = $(`
+            <div class="control-salary-slider" data-rel="salary-slider">
+                <div class="slider">
+                   <input class="range" data-rel="range-set-lower" type="range" min="${this.min()}" max="${this.max()}" value="${this.min()}" step="${this.step()}">
+                     <span class="section-color" data-rel="range-color"></span>
+                   <input class="range" data-rel="range-set-upper" type="range" min="${this.min()}" max="${this.max()}" value="${this.max()}" step="${this.step()}">
+               </div>
+               <div class="label-display" data-rel="salary-display"></div>
+            </div>
+        `);
+        parent.find("[data-rel=salary-slider]").remove();
+        parent.append(this._el);
+        this._lowerSlider = this._el.find("[data-rel=range-set-lower]");
+        this._upperSlider = this._el.find("[data-rel=range-set-upper]");
+        this._rangeColor = this._el.find("[data-rel=range-color]");
+        this._addHandlers();
+        this._adjustRangeDisplay();
+        return this;
+      };
+      this._defaultMin = 0;
+      this._defaultMax = parseInt(data.config.salaryRangeMax) || 5e5;
+      this._defaultStep = parseInt(data.config.salaryRangeStep) || 1e3;
+      this._formatter = Intl.NumberFormat(navigator.language);
+      this._setSalaryTimeout = null;
+      this._afterChange = void 0;
+      this._addHandlers = function() {
+        this._upperSlider.on("input", function() {
+          let lowerVal = parseInt(sender._lowerSlider.val()) || 0;
+          let upperVal = parseInt(sender._upperSlider.val()) || 0;
+          let step = parseInt(sender._upperSlider.attr("step"));
+          if (upperVal < lowerVal + step) {
+            sender._lowerSlider.val(upperVal - step);
+            if (lowerVal == sender._lowerSlider.attr("min")) {
+              sender._upperSlider.val(step);
+            }
+          }
+          sender._adjustColorRange();
+          sender._adjustRangeDisplay();
+          sender._setSalary();
+        });
+        this._lowerSlider.on("input", function() {
+          let lowerVal = parseInt(sender._lowerSlider.val()) || 0;
+          let upperVal = parseInt(sender._upperSlider.val()) || 0;
+          let step = parseInt(sender._upperSlider.attr("step"));
+          if (lowerVal > upperVal - step) {
+            _upperSlider.val(lowerVal + step);
+            if (upperVal == sender._upperSlider.attr("max")) {
+              sender._lowerSlider.val(parseInt(sender._upperSlider.attr("max")) - step);
+            }
+          }
+          sender._adjustColorRange();
+          sender._adjustRangeDisplay();
+          sender._setSalary();
+        });
+      };
+      this._adjustColorRange = function() {
+        sender._rangeColor.css({
+          marginLeft: sender._lowerSlider.val() / parseInt(sender._lowerSlider.attr("max")) * 100 + "%",
+          width: sender._upperSlider.val() / parseInt(sender._upperSlider.attr("max")) * 100 - sender._lowerSlider.val() / parseInt(sender._lowerSlider.attr("max")) * 100 + "%"
+        });
+      };
+      this._adjustRangeDisplay = function() {
+        sender._el.find("[data-rel=salary-display]").text(`${sender._formatter.format(parseInt(sender._lowerSlider.val()))} - ${sender._formatter.format(parseInt(sender._upperSlider.val()))}`);
+      };
+      this._setSalary = function() {
+        if (sender._setSalaryTimeout) {
+          clearTimeout(sender._setSalaryTimeout);
+        }
+        sender._setSalaryTimeout = setTimeout(function() {
+          if (typeof sender._afterChange === "function") {
+            sender._afterChange(sender, {
+              min: parseInt(sender._lowerSlider.val()),
+              //Get lower slider value
+              max: parseInt(sender._upperSlider.val())
+              //Get upper slider value
+            });
+          }
+          sender._setSalaryTimeout = null;
+        }, 1e3);
+      };
+    }
+    const ux = new UX();
+    const shApi = new ShApi();
+    const jobResultsPageSize = parseInt(data.config.pageSize) || 20;
+    let activeFilter = {};
+    let defaultFilter = {};
+    let validFilter = {};
+    let activeSort = JSON.parse(data.config.defaultSort || null) || {
+      field: "changedOnUTC",
+      direction: "desc"
+    };
+    let savedJobs = [];
+    let mergedFilters = () => {
+      let filters = {};
+      for (let fType in defaultFilter) {
+        if (typeof defaultFilter[fType] === "string") {
+          filters[fType] = defaultFilter[fType];
+        } else if (typeof defaultFilter[fType] === "number" && !isNaN(defaultFilter[fType])) {
+          filters[fType] = defaultFilter[fType];
+        } else {
+          filters[fType] = [...defaultFilter[fType] || [], ...activeFilter[fType] || []];
+        }
       }
-    };
-  }
-
-  // widgets/job-results/map-view.ts
-  function str2(job, key) {
-    const v = job[key];
-    return v == null ? "" : String(v);
-  }
-  function toPoint(job) {
-    const lat = parseFloat(str2(job, "latitude"));
-    const lon = parseFloat(str2(job, "longitude"));
-    if (Number.isNaN(lat) || Number.isNaN(lon)) return null;
-    const name = escapeHtml(str2(job, "jobName") || str2(job, "title"));
-    const loc = escapeHtml([str2(job, "city"), str2(job, "state")].filter(Boolean).join(", "));
-    return {
-      id: str2(job, "jobID") || str2(job, "referenceNumber") || name,
-      lat,
-      lon,
-      popupHtml: `<div class="gmapInfoContainer"><div class="gmapTitle">${name}</div><div>${loc}</div></div>`
-    };
-  }
-  var MapView = class {
-    constructor(container) {
-      this.container = container;
-      this.adapter = null;
-      this.pending = [];
-    }
-    get isReady() {
-      return this.adapter !== null;
-    }
-    /** Load MapLibre (once) and create the map, then paint the pending markers. */
-    async ensure() {
-      if (this.adapter) return;
-      await loadMapLibre();
-      this.adapter = createMap(this.container);
-      this.setJobs(this.pending);
-    }
-    /** Update markers from a set of jobs. Buffers until the map is ready. */
-    setJobs(jobs) {
-      this.pending = jobs.slice();
-      if (!this.adapter) return;
-      const points = jobs.map(toPoint).filter((p) => p !== null);
-      this.adapter.setMarkers(points);
-      this.adapter.fitToMarkers();
-    }
-    destroy() {
-      var _a;
-      (_a = this.adapter) == null ? void 0 : _a.destroy();
-      this.adapter = null;
-    }
-  };
-
-  // widgets/job-results/state.ts
-  var DEFAULT_SORT = { field: "changedOnUTC", direction: "desc" };
-  var DEFAULT_GEO_RANGE = 50;
-  function initialState() {
-    return {
-      facets: {},
-      keyword: "",
-      location: "",
-      geo: null,
-      geoAddress: "",
-      geoRange: DEFAULT_GEO_RANGE,
-      sort: DEFAULT_SORT,
-      page: 0
-    };
-  }
-  function patch(state, next) {
-    return { ...state, ...next };
-  }
-  function toFilterInput(state) {
-    const input = {};
-    for (const [k, v] of Object.entries(state.facets)) {
-      if (v.length > 0) input[k] = [...v];
-    }
-    const keyword = state.keyword.trim();
-    if (keyword !== "") input.keyword = [keyword];
-    if (state.geo) {
-      input.geo = [state.geo];
-      input.geoRange = [state.geoRange];
-      if (state.geoAddress) input.geoAddress = [state.geoAddress];
-    } else {
-      const location = state.location.trim();
-      if (location !== "") input.location = [location];
-    }
-    return input;
-  }
-
-  // widgets/job-results/index.ts
-  var GEOCODE_DEBOUNCE_MS = 500;
-  var INPUT_DEBOUNCE_MS = 400;
-  var SDK_READY_TIMEOUT_MS = 1200;
-  var FAKE_JOBS = [
-    { jobID: "1", jobName: "Senior Nurse", category: "Healthcare", jobType: "Permanent", jobTypeID: "perm", professionID: "health", city: "London", state: "England", workType: "Full Time", changedOnUTC: (/* @__PURE__ */ new Date()).toISOString() },
-    { jobID: "2", jobName: "Site Engineer", category: "Construction", jobType: "Contract", jobTypeID: "contract", professionID: "build", city: "Manchester", state: "England", workType: "Contract", changedOnUTC: (/* @__PURE__ */ new Date()).toISOString() }
-  ];
-  function $one(root, sel) {
-    return root.querySelector(sel);
-  }
-  function readHash() {
-    var _a, _b;
-    try {
-      const raw = window.location.hash.replace(/^#/, "");
-      if (!raw) return {};
-      const parsed = JSON.parse(decodeURIComponent(raw));
-      return { facets: (_a = parsed.facets) != null ? _a : {}, keyword: (_b = parsed.keyword) != null ? _b : "" };
-    } catch (e) {
-      return {};
-    }
-  }
-  function writeHash(state) {
-    const payload = JSON.stringify({ facets: state.facets, keyword: state.keyword });
-    window.history.replaceState(null, "", `#${encodeURIComponent(payload)}`);
-  }
-  async function ensureSdkReady(shazamme, data) {
-    const s = shazamme;
-    const d = data;
-    const sid = s._sid || d.siteId || d.siteID;
-    if (!sid) return;
-    s._sid = s._sid || sid;
-    if (s._site) return;
-    if (typeof s.ready === "function") {
-      try {
-        await Promise.race([
-          Promise.resolve(s.ready(s._sid, d.page)),
-          new Promise((resolve) => setTimeout(resolve, SDK_READY_TIMEOUT_MS))
-        ]);
-      } catch (e) {
+      for (let fType in activeFilter) {
+        if (typeof activeFilter[fType] === "string") {
+          filters[fType] = activeFilter[fType];
+        } else if (typeof activeFilter[fType] === "number" && !isNaN(activeFilter[fType])) {
+          filters[fType] = activeFilter[fType];
+        } else {
+          filters[fType] = [...activeFilter[fType] || [], ...defaultFilter[fType] || []];
+        }
       }
-    }
-  }
-  function jobResults(ctx) {
-    var _a;
-    const { element, data, shazamme } = ctx;
-    const cfg = readConfig(data);
-    const sdk = wrapSdk(shazamme);
-    const proximityEnabled = cfg.showLocationFilter && cfg.geocodeApiKey.trim() !== "";
-    const details = $one(element, ".section-details");
-    const listEl = $one(element, '[data-rel="job-results-list"]');
-    const pagingEl = $one(element, '[data-rel="job-results-paging"]');
-    const facetHost = $one(element, '[data-rel="filter-attribute"]');
-    const sidebar = $one(element, '[data-rel="filter-sidebar"]');
-    const actionBar = $one(element, '[data-rel="action-bar"]');
-    const mapWrap = $one(element, '[data-rel="job-results-map"]');
-    const mapContainer = $one(element, "#shmMap");
-    const listWrap = $one(element, ".shmResultViewPagination");
-    if (!details || !listEl) return;
-    let model;
-    let tree;
-    let state = { ...initialState(), ...readHash() };
-    let lastPage = [];
-    let lastMatching = [];
-    let currentUser = null;
-    const mapView = mapContainer ? new MapView(mapContainer) : null;
-    const mainContainer = (_a = $one(element, "[data-shm-main]")) != null ? _a : element;
-    mainContainer.style.visibility = "hidden";
-    let revealed = false;
-    let hideNav = false;
-    const GRID_COLUMNS = "repeat(auto-fill, minmax(max(190px, calc((100% - 60px) / 4)), 1fr))";
-    const fillRow = (el2) => {
-      if (!el2) return;
-      el2.style.setProperty("flex", "1 1 100%", "important");
-      el2.style.setProperty("max-width", "100%", "important");
-      el2.style.setProperty("width", "100%", "important");
+      return filters;
     };
-    function applyGridLayout() {
-      if (!hideNav) return;
-      fillRow(element);
-      fillRow(element.parentElement);
-      fillRow(details);
-      const list = listEl;
-      list.style.setProperty("display", "grid", "important");
-      list.style.setProperty("grid-template-columns", GRID_COLUMNS, "important");
-      list.style.setProperty("gap", "20px", "important");
-      list.querySelectorAll(".shmJobResultStd").forEach((card) => {
-        card.style.setProperty("grid-column", "auto", "important");
-        card.style.setProperty("width", "auto", "important");
-        card.style.setProperty("margin", "0", "important");
+    let showJobs = (pageNumber) => {
+      let activeView = ux.el.find("[data-rel=button-toggle][data-toggle=results-view].active");
+      let showMap = activeView.is("[data-view=Map]");
+      shApi.getJobs(pageNumber, showMap ? 999 : jobResultsPageSize, mergedFilters(), activeSort).then((col) => {
+        if (showMap) {
+          ux.showJobPins(col.values.map((j) => j.data));
+          return;
+        }
+        let op = () => {
+          switch (data.config.layout) {
+            case "simple":
+              return ux.jobSimpleEl;
+            case "standard":
+              return ux.jobStandardEl;
+            case "modern":
+              return ux.jobModernEl;
+            default:
+              return ux.jobStandardEl;
+          }
+        };
+        let html = col.values.map((j) => op()({
+          ...j.data,
+          saveID: (savedJobs.find((s) => s.jobID === j.data.jobID) || {}).candidateSavedJobID,
+          detailsUri: ux.buildHref(`${Path.jobDetails}/${new URL(j.data.jobURL).pathname.split("/").pop()}`)
+        }));
+        ux.showJobResults(html);
+        ux.showPages(col.page.pageNumber, col.page.totalPages);
+        let params = window.location.hash.replace("#", "").split("/").filter((p) => p.indexOf("pg-") === -1);
+        if (pageNumber > 0) {
+          params.push(`pg-${pageNumber + 1}`);
+        }
+        let last = `#${params.join("/")}`.replace(/\/{2,}/g, "/");
+        shazamme.store(LocalStorage.lastSearch, JSON.stringify({
+          ...JSON.parse(shazamme.store(LocalStorage.lastSearch)),
+          path: last,
+          page: pageNumber
+        }));
+        window.location = `${last}`;
+        ux.el.find("[data-rel=paging-select]").click(function() {
+          let button = $(this);
+          let pageNumber2 = parseInt(button.attr("data-page-number"));
+          showJobs(pageNumber2);
+          ux.el.get(0).scrollIntoView({ behavior: "smooth" });
+        });
+        ux.el.find(`[data-rel=article-job-result] [data-rel=action-save-job], [data-rel=article-job-result] [data-rel=action-unsave-job]`).on("click", function() {
+          let button = $(this);
+          shazamme.pub(Message.saveJob, {
+            sender: button,
+            jobID: button.parents("[data-rel=article-job-result]").attr("data-id"),
+            saveID: button.attr("data-save-id")
+          });
+        });
+        ux.el.find("[data-rel=label-results-count]").text(col.page.totalItems).parent().show();
+        if (col.page.totalItems == 1) {
+          ux.el.find("[data-rel=label-results-message]").text(data.config.resultMessage);
+        } else {
+          ux.el.find("[data-rel=label-results-message]").text(data.config.resultMessagePlural || data.config.resultMessage);
+        }
       });
-    }
-    function render() {
-      const input = toFilterInput(state);
-      const result = model.query(input, state.sort, state.page, cfg.pageSize);
-      lastPage = result.page;
-      lastMatching = result.matching;
-      renderCards(listEl, result, cfg);
-      applyGridLayout();
-      renderCount(element, result.total);
-      if (pagingEl) renderPaging(pagingEl, result.total, cfg.pageSize, state.page);
-      if (facetHost) renderFacets(facetHost, tree, cfg, state.facets);
-      if (mapView == null ? void 0 : mapView.isReady) mapView.setJobs(result.matching);
-      writeHash(state);
-      resultsReadyChannel.publish(sdk, { total: result.total });
-      if (!revealed) {
-        revealed = true;
-        mainContainer.classList.add("shm-ready");
-        mainContainer.style.setProperty("visibility", "visible", "important");
+      if (data.inEditor && Object.keys(activeFilter).length > 0) {
+        ux.el.find("[data-rel=default-filter]").show();
+      } else {
+        ux.el.find("[data-rel=default-filter]:not([data-default-filter=show])").hide();
       }
-    }
-    function applyConfigVisibility() {
-      const locationBlock = $one(element, '[data-rel="filter-location-block"]');
-      const proximityBlock = $one(element, '[data-rel="filter-proximity-block"]');
-      if (locationBlock) locationBlock.hidden = !cfg.showLocationFilter;
-      if (proximityBlock) proximityBlock.hidden = !proximityEnabled;
-      const display = $one(element, '[data-rel="geo-range-display"]');
-      if (display) display.textContent = `${state.geoRange} ${cfg.proximityDiameter === "6371" ? "mi" : "km"}`;
-      const navAlreadyHidden = !!sidebar && getComputedStyle(sidebar).display === "none";
-      if (cfg.hideLeftNav || navAlreadyHidden || !sidebar) {
-        hideNav = true;
-        if (sidebar) sidebar.style.setProperty("display", "none", "important");
-        applyGridLayout();
+    };
+    let showFilters = () => {
+      let category = [];
+      let subCategory = [];
+      let workType = [];
+      let workModel = [];
+      let state = [];
+      let city = [];
+      let country = [];
+      let custom1 = [];
+      let custom2 = [];
+      let active = mergedFilters();
+      let professionSeo = [];
+      let roleSeo = [];
+      let workTypeSeo = [];
+      let locationSeo = [];
+      let citySeo = [];
+      let stateSeo = [];
+      let countrySeo = [];
+      let isSet = (f2) => {
+        var _a;
+        return ((_a = f2 == null ? void 0 : f2.id) == null ? void 0 : _a.length) > 0;
+      };
+      let fetch = (pageNumber) => {
+        shApi.getJobs(0, 0, active).then((jobs) => {
+          var _a, _b, _c, _d, _e, _f, _g, _h, _i;
+          if (jobs.values && jobs.values.length > 0) {
+            const toIndex = (v, i, s, p) => new Object({
+              value: v,
+              id: i || v,
+              seo: s || i,
+              parent: p
+            });
+            const locationSeo2 = (n, v) => {
+              var _a2;
+              return (_a2 = validFilter[n].find((x) => {
+                var _a3;
+                return ((_a3 = x == null ? void 0 : x.value) == null ? void 0 : _a3.toLowerCase()) === (v == null ? void 0 : v.toLowerCase());
+              })) == null ? void 0 : _a2.seo;
+            };
+            const createSubFilter = (f2, fType, groupType) => {
+              let group = [];
+              var p;
+              if ((f2 == null ? void 0 : f2.length) > 0) {
+                f2.filter((x) => x.parent).sort((x, y) => x.parent > y.parent ? 1 : -1).forEach((c) => {
+                  if ((p == null ? void 0 : p.id) !== c.parent) {
+                    ux.showSubFilters(groupType, p, group, fType, active);
+                    p = validFilter[groupType].find((x) => x.id === c.parent);
+                    group = [];
+                  }
+                  group.push(c);
+                });
+              }
+              ux.showSubFilters(groupType, p, group, fType, active);
+            };
+            const enableEv = (ev) => {
+              let filter = $(ev.target);
+              if (!filter.is("[data-rel=filter-toggle]")) {
+                filter = filter.parents("[data-rel=filter-toggle]");
+              }
+              let fType = filter.attr("data-filter-type");
+              let fValue = filter.attr("data-filter-value");
+              let active2 = activeFilter[fType] || [];
+              let activeIndex = active2.indexOf(fValue);
+              if (activeIndex >= 0) {
+                active2.splice(activeIndex, 1);
+                if (active2.length === 0) {
+                  delete activeFilter[fType];
+                }
+                ux.el.find(`[data-rel=filter-toggle][data-filter-parent-type="${fType}"][data-filter-parent-value="${fValue}"]`).hide().each((_, x) => {
+                  let f2 = $(x);
+                  let childType = f2.attr("data-filter-type");
+                  let childValue = f2.attr("data-filter-value");
+                  let childActive = activeFilter[childType] || [];
+                  let childActiveIndex = childActive.indexOf(childValue);
+                  if (childActiveIndex >= 0) {
+                    childActive.splice(childActiveIndex, 1);
+                    if (childActive.length === 0) {
+                      delete activeFilter[childType];
+                    } else {
+                      activeFilter[childType] = childActive;
+                    }
+                  }
+                });
+              } else {
+                active2.push(fValue);
+                if (filter.is("[data-filter-parent-type]")) {
+                  let parentType = filter.attr("data-filter-parent-type");
+                  let parentValue = filter.attr("data-filter-parent-value");
+                  let parentActive = activeFilter[parentType] || [];
+                  let parentActiveIndex = parentActive.indexOf(parentValue);
+                  if (parentActiveIndex === -1) {
+                    parentActive.push(parentValue);
+                  }
+                  activeFilter[parentType] = parentActive;
+                }
+              }
+              if (active2.length > 0) {
+                activeFilter[fType] = active2;
+              } else {
+                delete activeFilter[fType];
+              }
+              showJobs(0);
+              showFilters();
+              shazamme.pub("job-results-filter-change", activeFilter);
+            };
+            category.push(...jobs.values.filter((j) => {
+              var _a2;
+              return ((_a2 = j.data.professionID) == null ? void 0 : _a2.length) > 0;
+            }).map((j) => toIndex(j.data.category, j.data.professionID, j.data.professionSeo)));
+            subCategory.push(...jobs.values.filter((j) => {
+              var _a2;
+              return ((_a2 = j.data.roleID) == null ? void 0 : _a2.length) > 0;
+            }).map((j) => toIndex(j.data.subCategory, j.data.roleID, j.data.roleSeo, data.config.showClassificationFilter && j.data.professionID)));
+            workType.push(...jobs.values.filter((j) => {
+              var _a2;
+              return ((_a2 = j.data.workTypeID) == null ? void 0 : _a2.length) > 0;
+            }).map((j) => toIndex(j.data.workType, j.data.workTypeID, j.data.workTypeSeo)));
+            workModel.push(...jobs.values.filter((j) => {
+              var _a2;
+              return ((_a2 = j.data.workModelID) == null ? void 0 : _a2.length) > 0;
+            }).map((j) => toIndex(j.data.workModel, j.data.workModelID, j.data.workModelSeo)));
+            state.push(...jobs.values.filter((j) => {
+              var _a2;
+              return ((_a2 = j.data.state) == null ? void 0 : _a2.length) > 0;
+            }).map((j) => toIndex(j.data.state, j.data.state, locationSeo2("state", j.data.state))));
+            city.push(...jobs.values.filter((j) => {
+              var _a2;
+              return ((_a2 = j.data.state) == null ? void 0 : _a2.length) > 0;
+            }).map((j) => toIndex(j.data.city, j.data.city, locationSeo2("city", j.data.city), data.config.showLocationFilter && j.data.state)));
+            country.push(...jobs.values.filter((j) => {
+              var _a2;
+              return ((_a2 = j.data.country) == null ? void 0 : _a2.length) > 0;
+            }).map((j) => toIndex(j.data.country, j.data.country, locationSeo2("country", j.data.country))));
+            custom1.push(...jobs.values.filter((j) => {
+              var _a2;
+              return ((_a2 = j.data.customField1) == null ? void 0 : _a2.length) > 0;
+            }).map((j) => j.data.customField1 && toIndex(j.data.customField1)));
+            custom2.push(...jobs.values.filter((j) => {
+              var _a2;
+              return ((_a2 = j.data.customField2) == null ? void 0 : _a2.length) > 0;
+            }).map((j) => j.data.customField2 && toIndex(j.data.customField2)));
+            const validList = (type, isChild = false) => {
+              var _a2;
+              return Object.keys(active).length <= (isChild ? 2 : 1) && ((_a2 = validFilter[type]) == null ? void 0 : _a2.filter((v) => {
+                var _a3;
+                return ((_a3 = active[type]) == null ? void 0 : _a3.indexOf(v.id)) === -1;
+              }));
+            };
+            active.professionID = (_a = active == null ? void 0 : active.professionID) == null ? void 0 : _a.filter((x) => category.find((y) => y.id === x));
+            active.roleID = (_b = active == null ? void 0 : active.roleID) == null ? void 0 : _b.filter((x) => subCategory.find((y) => y.id === x));
+            active.workTypeID = (_c = active == null ? void 0 : active.workTypeID) == null ? void 0 : _c.filter((x) => workType.find((y) => y.id === x));
+            active.workModelID = (_d = active == null ? void 0 : active.workModelID) == null ? void 0 : _d.filter((x) => workModel.find((y) => y.id === x));
+            active.state = (_e = active == null ? void 0 : active.state) == null ? void 0 : _e.filter((x) => state.find((y) => y.id === x));
+            active.city = (_f = active == null ? void 0 : active.city) == null ? void 0 : _f.filter((x) => city.find((y) => y.id === x));
+            active.country = (_g = active == null ? void 0 : active.country) == null ? void 0 : _g.filter((x) => country.find((y) => y.id === x));
+            active.custom1 = (_h = active == null ? void 0 : active.custom1) == null ? void 0 : _h.filter((x) => custom1.find((y) => y.id === x));
+            active.custom2 = (_i = active == null ? void 0 : active.custom2) == null ? void 0 : _i.filter((x) => custom2.find((y) => y.value === x));
+            for (let x in active) {
+              if (active[x] === void 0 || active[x].length === 0) {
+                delete active[x];
+              }
+            }
+            data.config.showClassificationFilter && ux.showFilters(data.config.classification || "Classification", category, "professionID", null, data.config.classificationCollapse, active, []);
+            !data.config.useSubFilters && data.config.showSubClassificationFilter && ux.showFilters(data.config.subclassification || "Sub Classification", subCategory, "roleID", data.config.showClassificationFilter && "professionID", data.config.subclassificationCollapse, active, []);
+            data.config.showLocationFilter && ux.showFilters(data.config.location || "Location", state, "state", null, data.config.locationCollapse, active, []);
+            !data.config.useSubFilters && data.config.showAreaFilter && ux.showFilters(data.config.area || "Area", city, "city", data.config.showLocationFilter && "state", data.config.areaCollapse, active, []);
+            data.config.showCountryFilter && ux.showFilters(data.config.country || "Country", country, "country", null, data.config.countryCollapse, active, []);
+            data.config.showWorkTypeFilter && ux.showFilters(data.config.worktype || "Work Type", workType, "workTypeID", null, data.config.workTypeCollapse, active, []);
+            data.config.showWorkModelFilter && ux.showFilters(data.config.workModel || "Work Model", workModel, "workModelID", null, data.config.workModelCollapse, active, []);
+            data.config.showCustomField1Filter && ux.showFilters(data.config.customField1 || "Custom Field 1", custom1, "customField1", null, data.config.customField1Collapse, active, []);
+            data.config.showCustomField2Filter && ux.showFilters(data.config.customField2 || "Custom Field 1", custom2, "customField2", null, data.config.customField2Collapse, active, []);
+            if (data.config.useSubFilters) {
+              if (data.config.showAreaFilter) {
+                setTimeout(() => {
+                  createSubFilter(validFilter.city, "city", "state");
+                  ux.el.find("[data-rel=filter-toggle]").off("click", enableEv).on("click", enableEv);
+                }, 300);
+              }
+              if (data.config.showSubClassificationFilter) {
+                setTimeout(() => {
+                  createSubFilter(validFilter.roleID, "roleID", "professionID");
+                  ux.el.find("[data-rel=filter-toggle]").off("click", enableEv).on("click", enableEv);
+                }, 300);
+              }
+            }
+            data.config.enableSeo && seoNavigate();
+            ux.el.find("[data-rel=filter-toggle]").on("click", enableEv);
+          }
+        });
+      };
+      fetch(0);
+    };
+    let seoNavigate = () => {
+      let seoPath = [];
+      let seoName = [];
+      let unique = (v, i, self) => self.indexOf(v) === i;
+      for (let i in activeFilter) {
+        let n = [];
+        activeFilter[i].filter(unique).forEach((x) => {
+          var _a;
+          let f2 = (_a = validFilter[i]) == null ? void 0 : _a.find((y) => y.id === x);
+          if (f2) {
+            n.push(f2.value);
+            seoPath.push(f2.seo);
+          }
+        });
+        if (n.length > 0) {
+          seoName.push(n.join(", "));
+        }
       }
-    }
-    function setView(view) {
-      const isMap = view === "Map";
-      if (mapWrap) mapWrap.hidden = !isMap;
-      if (listWrap) listWrap.hidden = isMap;
-      actionBar == null ? void 0 : actionBar.querySelectorAll('[data-toggle="results-view"]').forEach((b) => b.classList.toggle("active", b.getAttribute("data-view") === view));
-      if (isMap && mapView) {
-        mapView.setJobs(lastMatching);
-        mapView.ensure().catch(() => void 0);
+      let lastSearch = {
+        ...JSON.parse(shazamme.store(LocalStorage.lastSearch)),
+        name: seoName.join(" < ")
+      };
+      let path = `#/${seoPath.join("/")}${lastSearch.page > 0 ? `/pg-${lastSearch.page}` : ""}`;
+      lastSearch.path = path;
+      shazamme.store(LocalStorage.lastSearch, JSON.stringify(lastSearch));
+      window.location = path;
+    };
+    let toggleView = (view) => {
+      if ((view == null ? void 0 : view.length) > 0) {
+        ux.el.find("[data-rel=action-toggle-view]").each((_, i) => {
+          let off = $(i);
+          ux.el.find("[data-rel=job-results-list]").removeClass(off.attr("data-view"));
+          off.removeClass("active");
+        });
+        ux.el.find(`[data-rel=action-toggle-view][data-view=${view}]`).addClass("active");
+        ux.el.find("[data-rel=job-results-list]").addClass(view);
       }
-    }
-    function showPredictions(results) {
-      const host = $one(element, '[data-rel="geo-prediction"]');
-      if (!host) return;
-      if (results.length === 0) {
-        setHtml(host, "");
-        host.style.display = "none";
+    };
+    let fetchValidFilters = () => new Promise((resolve, reject) => {
+      let category = [];
+      let subCategory = [];
+      let workType = [];
+      let workModel = [];
+      let state = [];
+      let city = [];
+      let country = [];
+      let custom1 = [];
+      let custom2 = [];
+      let toIndex = (v, i, s, p) => {
+        return {
+          value: v,
+          id: i || v,
+          seo: (s || i || v).toLowerCase().replace(/[^a-z0-9-._]/g, "-").replace(/-{2,}/g, "-"),
+          parent: p
+        };
+      };
+      let seo = {};
+      let seoIndex = (n, v) => {
+        var _a, _b;
+        return (_b = (_a = seo[n]) == null ? void 0 : _a.find((x) => {
+          var _a2;
+          return ((_a2 = x == null ? void 0 : x.value) == null ? void 0 : _a2.toLowerCase()) === (v == null ? void 0 : v.toLowerCase());
+        })) == null ? void 0 : _b.seo;
+      };
+      let fetch = (pageNumber) => {
+        shApi.getJobs(0, 0, defaultFilter).then((jobs) => {
+          if (jobs.values && jobs.values.length > 0) {
+            category.push(...jobs.values.filter((j) => {
+              var _a;
+              return ((_a = j.data.professionID) == null ? void 0 : _a.length) > 0;
+            }).map((j) => toIndex(j.data.category, j.data.professionID, j.data.professionSeo)));
+            subCategory.push(...jobs.values.filter((j) => {
+              var _a;
+              return ((_a = j.data.roleID) == null ? void 0 : _a.length) > 0;
+            }).map((j) => toIndex(j.data.subCategory, j.data.roleID, j.data.roleSeo, j.data.professionID)));
+            workType.push(...jobs.values.filter((j) => {
+              var _a;
+              return ((_a = j.data.workTypeID) == null ? void 0 : _a.length) > 0;
+            }).map((j) => toIndex(j.data.workType, j.data.workTypeID, j.data.workTypeSeo)));
+            workModel.push(...jobs.values.filter((j) => {
+              var _a;
+              return ((_a = j.data.workModelID) == null ? void 0 : _a.length) > 0;
+            }).map((j) => toIndex(j.data.workModel, j.data.workModelID, j.data.workModelSeo)));
+            state.push(...jobs.values.filter((j) => {
+              var _a;
+              return ((_a = j.data.state) == null ? void 0 : _a.length) > 0;
+            }).map((j) => toIndex(j.data.state, j.data.state, seoIndex("state", j.data.state))));
+            city.push(...jobs.values.filter((j) => {
+              var _a;
+              return ((_a = j.data.city) == null ? void 0 : _a.length) > 0;
+            }).map((j) => j.data.state && j.data.city && toIndex(j.data.city, j.data.city, seoIndex("city", j.data.city), j.data.state)));
+            country.push(...jobs.values.filter((j) => {
+              var _a;
+              return ((_a = j.data.country) == null ? void 0 : _a.length) > 0;
+            }).map((j) => toIndex(j.data.country, j.data.country, seoIndex("country", j.data.country))));
+            custom1.push(...jobs.values.filter((j) => {
+              var _a;
+              return ((_a = j.data.customField1) == null ? void 0 : _a.length) > 0;
+            }).map((j) => j.data.customField1 && toIndex(j.data.customField1)));
+            custom2.push(...jobs.values.filter((j) => {
+              var _a;
+              return ((_a = j.data.customField2) == null ? void 0 : _a.length) > 0;
+            }).map((j) => j.data.customField2 && toIndex(j.data.customField2)));
+            resolve({
+              professionID: category.filter((v) => v == null ? void 0 : v.value),
+              roleID: subCategory.filter((v) => v == null ? void 0 : v.value),
+              workTypeID: workType.filter((v) => v == null ? void 0 : v.value),
+              workModelID: workModel.filter((v) => v == null ? void 0 : v.value),
+              state: state.filter((v) => v == null ? void 0 : v.value),
+              city: city.filter((v) => v == null ? void 0 : v.value),
+              country: country.filter((v) => v == null ? void 0 : v.value),
+              customField1: custom1.filter((v) => v == null ? void 0 : v.value),
+              customField2: custom2.filter((v) => v == null ? void 0 : v.value)
+            });
+          } else {
+            resolve({});
+          }
+        });
+      };
+      if (data.config.enableSeo) {
+        shazamme.fetch(Collection.locationSeo).then((r) => {
+          var _a;
+          if (r.length > 0) {
+            return Promise.resolve(JSON.parse(((_a = r[0].data) == null ? void 0 : _a.value) || null));
+          } else {
+            return Promise.resolve({});
+          }
+        }).then((r) => {
+          var _a, _b, _c;
+          seo.city = (_a = r == null ? void 0 : r.city) == null ? void 0 : _a.map((v) => new Object({ value: v.city, seo: v.seo }));
+          seo.state = (_b = r == null ? void 0 : r.state) == null ? void 0 : _b.map((v) => new Object({ value: v.state, seo: v.seo }));
+          seo.country = (_c = r == null ? void 0 : r.country) == null ? void 0 : _c.map((v) => new Object({ value: v.country, seo: v.seo }));
+          if (data.config.catchAllFilter && data.config.catchAllState && data.config.catchAllStateSeo) {
+            seo.state = seo.state || [];
+            seo.state.push({ value: data.config.catchAllState, seo: data.config.catchAllStateSeo });
+          }
+          fetch(0);
+        });
+      } else {
+        fetch(0);
+      }
+    });
+    let filtersFromParams = (useConfig = false) => {
+      var _a, _b, _c;
+      let filters = {};
+      let add = (filter, value) => {
+        if ((value == null ? void 0 : value.length) > 0) {
+          filters[filter] = value.split(",");
+        }
+      };
+      if (!useConfig) {
+        let params = ux.uri.searchParams;
+        add("keyword", (_a = params.get("keyword")) == null ? void 0 : _a.toLowerCase());
+        add("category", params.get("category"));
+        add("subCategory", params.get("subcategory"));
+        add("location", (_b = params.get("location")) == null ? void 0 : _b.toLowerCase());
+        add("state", params.get("state"));
+        add("city", params.get("city"));
+        add("workType", params.get("workType"));
+        add("workModel", params.get("workModel"));
+        add("advertiserID", params.get("advertiserID"));
+        add("country", params.get("country"));
+        add("professionID", params.get("professionID"));
+        add("roleID", params.get("roleID"));
+        add("workTypeID", params.get("workTypeID"));
+        let salaryFrom = parseInt(params.get("salaryFrom"));
+        let salaryTo = parseInt(params.get("salaryTo"));
+        if (salaryFrom > 0) filters.salaryFrom = [salaryFrom];
+        if (salaryTo > 0) filters.salaryTo = [salaryTo];
+        if (data.config.enableProximitySearch) {
+          let geo = (_c = params.get("geo")) == null ? void 0 : _c.split(",");
+          if ((geo == null ? void 0 : geo.length) == 2) {
+            filters["geo"] = [{
+              lat: parseFloat(geo[0]),
+              lon: parseFloat(geo[1])
+            }];
+            filters["geoRange"] = [parseFloat(params.get("geoRange")) || 10];
+            add("geoAddress", params.get("geoAddress"));
+            add("geoIn", params.get("geoIn"));
+          }
+        }
+      } else {
+        add("keyword", data.config.defaultKeyword);
+        add("category", data.config.defaultCategory);
+        add("subCategory", data.config.defaultSubCategory);
+        add("state", data.config.defaultState);
+        add("city", data.config.defaultCity);
+        add("advertiserID", data.config.defaultAdvertiserID);
+        add("country", data.config.defaultCountry);
+        add("workType", data.config.defaultWorkType);
+        add("jobType", data.config.defaultJobtype);
+        add("customField1", data.config.defaultCustomField1);
+        add("customField2", data.config.defaultCustomField2);
+        add("tags", data.config.defaultTags);
+        add("industry", data.config.defaultIndustry);
+      }
+      return filters;
+    };
+    let filtersFromSeo = (f2) => {
+      let search = (index, value) => {
+        var _a;
+        return ((_a = index == null ? void 0 : index.filter((x) => (x == null ? void 0 : x.seo) === value)) == null ? void 0 : _a.map((x) => x.id)) || [];
+      };
+      let unique = (v, i, self) => self.indexOf(v) === i;
+      let seo = {
+        professionID: [],
+        roleID: [],
+        city: [],
+        state: [],
+        country: [],
+        workTypeID: [],
+        workModelID: []
+      };
+      ux.uri.hash.substring(1).split("/").forEach((x) => {
+        data.config.showClassificationFilter && seo.professionID.push(...search(f2.professionID, x).filter(unique));
+        data.config.showSubClassificationFilter && seo.roleID.push(...search(f2.roleID, x).filter(unique));
+        data.config.showAreaFilter && seo.city.push(...search(f2.city, x).filter(unique));
+        data.config.showLocationFilter && seo.state.push(...search(f2.state, x).filter(unique));
+        data.config.showCountryFilter && seo.country.push(...search(f2.country, x).filter(unique));
+        data.config.showWorkTypeFilter && seo.workTypeID.push(...search(f2.workTypeID, x).filter(unique));
+        data.config.showWorkModelFilter && seo.workModelID.push(...search(f2.workModelID, x).filter(unique));
+      });
+      return seo;
+    };
+    const saveSearch = (u, n, a) => shazamme.site().then(
+      (s) => {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k;
+        return shazamme.submit({
+          action: "Create Job Alert",
+          siteID: s.siteID,
+          candidateID: u.candidateID,
+          searchName: n,
+          professionID: (_a = activeFilter.professionID) == null ? void 0 : _a.join(","),
+          keyword: (_b = activeFilter.keyword) == null ? void 0 : _b.join(","),
+          roleID: (_c = activeFilter.roleID) == null ? void 0 : _c.join(","),
+          salaryFrom: (_d = activeFilter.salaryFrom) == null ? void 0 : _d.join(","),
+          salaryTo: (_e = activeFilter.salaryTo) == null ? void 0 : _e.join(","),
+          salaryTypeID: (_f = activeFilter.salaryTypeID) == null ? void 0 : _f.join(","),
+          workTypeID: (_g = activeFilter.workTypeID) == null ? void 0 : _g.join(","),
+          city: (_h = activeFilter.city) == null ? void 0 : _h.join(","),
+          state: (_i = activeFilter.state) == null ? void 0 : _i.join(","),
+          address: (_j = activeFilter.geoAddress) == null ? void 0 : _j.join(","),
+          radius: (_k = activeFilter.geoRange) == null ? void 0 : _k.join(","),
+          radiusIn: activeFilter.geoIn || "miles",
+          isNeedAlert: a
+        });
+      }
+    );
+    let enableProximitySearch = () => {
+      const places = new google.maps.places.PlacesService(document.getElementById("shmMap"));
+      const autocomplete = new google.maps.places.AutocompleteService();
+      ux.el.find("[data-gapi]").on("keyup", function() {
+        let field = $(this);
+        let range = field.parents(".section-keyword-search").find("[data-filter=geoRange]");
+        clearTimeout(this._debounce);
+        field.siblings("[data-prediction]").hide();
+        this._debounce = setTimeout(async () => {
+          let value = field.val();
+          delete activeFilter[field.attr("data-gapi")];
+          delete activeFilter[range.attr("data-filter")];
+          delete activeFilter[field.attr("data-gapi-text")];
+          field.attr("_last", "");
+          if (value.length == 0) {
+            showJobs(0);
+            showFilters();
+            shazamme.pub("job-results-filter-change", activeFilter);
+            return;
+          }
+          const request = {
+            input: value
+          };
+          autocomplete.getPlacePredictions({ input: value }, (r) => {
+            const menu = field.siblings("[data-prediction]");
+            r == null ? void 0 : r.forEach((p) => {
+              places.getDetails({ placeId: p.place_id, fields: ["geometry"] }, (d) => {
+                menu.append(`<a href="javascript: void(0);" class="result-text" data-value="${d.geometry.location.lat()},${d.geometry.location.lng()}">${p.description}</a>`);
+              });
+            });
+            if ((r == null ? void 0 : r.length) > 0) {
+              menu.empty().append(`<a href="javascript: void(0);" class="result-text close" data-value="">x</a>`).show().on("click", "[data-value]", function() {
+                let opt = $(this);
+                let value2 = opt.attr("data-value");
+                field.val(opt.text());
+                opt.parents("[data-prediction]").hide();
+                if (value2.length > 0) {
+                  let geo = value2.split(",");
+                  activeFilter[field.attr("data-gapi")] = [{
+                    lat: parseFloat(geo[0]),
+                    lon: parseFloat(geo[1])
+                  }];
+                  activeFilter[field.attr("data-gapi-text")] = [opt.text()];
+                  activeFilter[range.attr("data-filter")] = [range.val()];
+                  field.attr("_last", opt.text());
+                }
+              });
+            }
+          });
+        }, 500);
+      }).on("blur", function() {
+        let field = $(this);
+        setTimeout(() => {
+          field.val(field.attr("_last")).siblings("[data-prediction]").hide();
+          showJobs(0);
+          showFilters();
+          shazamme.pub("job-results-filter-change", activeFilter);
+        }, 300);
+      });
+    };
+    let readConfiguration = (w) => w.config().then((c) => {
+      if (c == null ? void 0 : c.defaultFilter) {
+        defaultFilter = {
+          ...defaultFilter,
+          ...c == null ? void 0 : c.defaultFilter
+        };
+        if (data.inEditor) {
+          ux.el.find("[data-rel=default-filter]").attr("data-default-filter", "show").show();
+        }
+      }
+      return Promise.resolve();
+    });
+    ux.el.find("[data-rel=action-menu]").click(function(ev) {
+      let menu = $(ev.target).attr("data-menu");
+      ux.el.find(`[data-rel=menu][data-menu=${menu}]`).toggle();
+    });
+    ux.el.find("[data-rel=menu-option]").click(function(ev) {
+      let opt = $(ev.target);
+      let menu = opt.parents("[data-menu]").attr("data-menu");
+      ux.el.find(`[data-rel=action-menu][data-menu=${menu}]`).text(opt.text());
+      opt.parents("[data-rel=menu]").hide();
+    });
+    ux.el.find("[data-sort-field]").removeClass("active");
+    ux.el.find(`[data-sort-field=${activeSort.field}][data-sort-direction=${activeSort.direction}]`).addClass("active");
+    ux.el.find("[data-sort-field]").click(function(ev) {
+      let opt = $(this);
+      ux.el.find("[data-sort-field]").removeClass("active");
+      opt.addClass("active");
+      activeSort = {
+        field: opt.attr("data-sort-field"),
+        direction: opt.attr("data-sort-direction")
+      };
+      showJobs(0);
+      opt.parents("[data-rel=modal]").hide();
+    });
+    ux.el.find("[data-rel=button-toggle]").click(function(ev) {
+      let opt = $(ev.target);
+      if (!opt.is("button")) {
+        opt = opt.parents("button");
+      }
+      ux.el.find(`[data-rel=button-toggle][data-toggle=${opt.attr("data-toggle")}]`).removeClass("active");
+      opt.addClass("active");
+      showJobs(0);
+    });
+    ux.el.find("[data-rel=action-save-search]").click(function() {
+      let button = $(this);
+      let dialog = ux.el.find("[data-rel=modal][data-modal=favorite]");
+      dialog.find("input, textarea, select").val("");
+      if (button.is("[data-save-alert]") && data.config.alertUri) {
+        window.location.href = data.config.alertUri.href;
         return;
       }
-      const rows = results.slice(0, 6).map(
-        (r) => `<a href="javascript:void(0)" class="result-text" data-value="${r.lat},${r.lon}" data-label="${escapeHtml(r.label)}">${escapeHtml(r.label)}</a>`
-      ).join("");
-      setHtml(host, `${rows}<a href="javascript:void(0)" class="result-text close" data-value="" data-label="">close</a>`);
-      host.style.display = "flex";
-    }
-    const runGeocode = debounce((term) => {
-      geocode(term, cfg.geocodeApiKey).then(showPredictions).catch(() => void 0);
-    }, GEOCODE_DEBOUNCE_MS);
-    const applyKeyword = debounce((field, value) => {
-      if (field === "keyword") {
-        state = patch(state, { keyword: value, page: 0 });
-      } else if (field === "location") {
-        state = patch(state, { location: value, geo: null, geoAddress: "", page: 0 });
-        if (proximityEnabled && value.trim() !== "") runGeocode(value);
-      }
-      render();
-    }, INPUT_DEBOUNCE_MS);
-    function wireEvents() {
-      if (sidebar) {
-        delegate(sidebar, "click", '[data-rel="filter-toggle"]', (ev, matched) => {
-          ev.preventDefault();
-          const field = matched.getAttribute("data-filter-type");
-          const id = matched.getAttribute("data-filter-value");
-          if (!field || !id) return;
-          state = patch(state, { facets: toggleFacet(state.facets, tree, field, id), page: 0 });
-          render();
+      if (data.config.quickSave) {
+        if (button.is("[data-save-alert]")) {
+          dialog.find("[data-rel=title]").text(data.config.createAlertBtn);
+          dialog.find("[data-rel=description]").text(data.config.alertDescription);
+          dialog.find("[data-rel=value-favorite-alert]").get(0).checked = true;
+        } else {
+          dialog.find("[data-rel=title]").text(data.config.favoriteSearch);
+          dialog.find("[data-rel=description]").text(data.config.favoriteDescription);
+          dialog.find("[data-rel=value-favorite-alert]").get(0).checked = false;
+        }
+        dialog.show();
+      } else {
+        shazamme.store("createAlert", JSON.stringify({
+          ...activeFilter,
+          alert: button.is("[data-save-alert]")
+        }));
+        shazamme.user().then((u) => {
+          var _a;
+          if ((_a = u == null ? void 0 : u.candidate) == null ? void 0 : _a.candidateID) {
+            window.location.href = ux.buildHref(Path.alerts);
+          } else {
+            if (shazamme.bag(Subscribe.loginReady)) {
+              let loginSubmit = shazamme.sub(Subscribe.loginSubmit, () => {
+                window.location.href = ux.buildHref(Path.alerts);
+              });
+              let loginCancel = shazamme.sub(Subscribe.loginCancel, () => {
+                shazamme.unsub(loginSubmit);
+                shazamme.unsub(loginCancel);
+              });
+              shazamme.pub(Message.loginShow);
+            } else {
+              window.location.href = ux.buildHref(Path.login);
+            }
+          }
         });
-        delegate(sidebar, "input", '[data-rel="job-result-filter-keyword"]', (_ev, matched) => {
+      }
+    });
+    ux.el.find("[data-rel=button-toggle-filter]").on("click", function() {
+      ux.el.find(".section-job-result-filter").toggleClass("active");
+      ux.el.find(".section-details").toggleClass("blur");
+    });
+    ux.el.find("[data-rel=action-toggle-view]").on("click", function() {
+      toggleView($(this).attr("data-view"));
+    });
+    if (data.config.apikey && data.config.apikey.length > 0) {
+      ux.el.find("[data-toggle=results-view]").show();
+    }
+    const main = (w) => {
+      var _a, _b, _c;
+      activeFilter = filtersFromParams();
+      defaultFilter = filtersFromParams(true);
+      toggleView(ux.el.find(`[data-device-default=${data.device}]`).attr("data-view"));
+      if (activeFilter.keyword) {
+        ux.el.find("[data-rel=job-result-filter-keyword][data-keyword-field=keyword]").val(activeFilter.keyword);
+        ux.el.find(`[data-rel=job-result-filter-keyword-clear][data-keyword-field=keyword]`).show();
+      }
+      if (activeFilter.location) {
+        ux.el.find("[data-rel=job-result-filter-keyword][data-keyword-field=location]").val(activeFilter.location);
+        ux.el.find(`[data-rel=job-result-filter-keyword-clear][data-keyword-field=location]`).show();
+      }
+      if (activeFilter.geoAddress) {
+        ux.el.find("[data-gapi]").val(activeFilter.geoAddress[0]).parents(".section-keyword-search").find("[data-filter=geoRange]").val(activeFilter.geoRange[0]).siblings("[data-rel=geo-range-display]").text(`${activeFilter.geoRange[0]} ${data.config.proximityDiameter == "6371" ? "mi" : "km"}`);
+        ux.el.find(`[data-rel=job-result-filter-gapi-clear]`).show();
+      }
+      if (data.config.enableProximitySearch) {
+        enableProximitySearch();
+      }
+      ux.showLoading();
+      shazamme.site().then((s) => {
+        var _a2, _b2;
+        const site = shazamme.bag("site-config");
+        Collection.job = {
+          path: `/job-results/${s.siteID}`,
+          useCache: true,
+          isExternal: true,
+          lang: ((_a2 = site == null ? void 0 : site.configuration) == null ? void 0 : _a2.jobLocalization) && data.locale,
+          fieldMap: (_b2 = site == null ? void 0 : site.configuration) == null ? void 0 : _b2.jobFieldMap
+        };
+        return Promise.resolve();
+      }).then(() => Promise.all([
+        shazamme.fetch(Collection.job),
+        shApi.ready(),
+        readConfiguration(w)
+      ])).then(() => fetchValidFilters()).then((valid) => {
+        var _a2;
+        validFilter = valid;
+        if (data.config.enableSeo) {
+          let seo = filtersFromSeo(valid);
+          for (let i in seo) {
+            let s = seo[i];
+            if ((s == null ? void 0 : s.length) > 0) {
+              let f2 = activeFilter[i] = activeFilter[i] || [];
+              f2.push(...s);
+              activeFilter[i] = f2;
+            }
+          }
+        }
+        let page = parseInt((_a2 = window.location.hash.split("/").find((p) => p.indexOf("pg-") >= 0)) == null ? void 0 : _a2.substr(3)) - 1 || 0;
+        showJobs(page);
+        showFilters();
+        w.pub("job-search-set", activeFilter);
+        ux.showLoading(false);
+      });
+      if (data.config.showSalaryFilter) {
+        ux.showSalaryFilter().onChange((sender, args) => {
+          if (args.min == sender.min() && args.max == sender.max()) {
+            if (activeFilter.salaryFrom || activeFilter.salaryTo) {
+              delete activeFilter.salaryFrom;
+              delete activeFilter.salaryTo;
+              showJobs(0);
+              showFilters();
+              shazamme.pub("job-results-filter-change", activeFilter);
+            }
+          } else {
+            activeFilter["salaryFrom"] = [args.min];
+            activeFilter["salaryTo"] = [args.max];
+            showJobs(0);
+            showFilters();
+            shazamme.pub("job-results-filter-change", activeFilter);
+          }
+        }).set({
+          min: ((_a = activeFilter.salaryFrom) == null ? void 0 : _a.at(0)) > 0 ? activeFilter.salaryFrom[0] : void 0,
+          max: ((_b = activeFilter.salaryTo) == null ? void 0 : _b.at(0)) > 0 ? activeFilter.salaryTo[0] : void 0
+        });
+      }
+      w.sub("job-search-submit", (m) => {
+        activeFilter = m;
+        if (m.keyword) {
+          ux.el.find("[data-rel=job-result-filter-keyword][data-keyword-field=keyword]").val(m.keyword);
+          ux.el.find(`[data-rel=job-result-filter-keyword-clear][data-keyword-field=keyword]`).show();
+          activeFilter.keyword = m.keyword.map((k) => k.toLowerCase());
+        } else {
+          ux.el.find("[data-rel=job-result-filter-keyword][data-keyword-field=keyword]").val("");
+          ux.el.find(`[data-rel=job-result-filter-keyword-clear][data-keyword-field=keyword]`).hide();
+        }
+        if (!m.geo) {
+          delete activeFilter.geoAddress;
+          delete activeFilter.geoRange;
+        } else {
+          let geo = activeFilter.geo[0].split(",");
+          if ((geo == null ? void 0 : geo.length) == 2) {
+            activeFilter.geo = [{
+              lat: parseFloat(geo[0]),
+              lon: parseFloat(geo[1])
+            }];
+            activeFilter.geoRange = [parseFloat(activeFilter.geoRange[0]) || 10];
+            ux.el.find("[data-gapi]").val(activeFilter.geoAddress[0] || "").parents(".section-keyword-search").find("[data-filter=geoRange]").val(activeFilter.geoRange[0]).siblings("[data-rel=geo-range-display]").text(`${activeFilter.geoRange[0]} ${data.config.proximityDiameter == "6371" ? "mi" : "km"}`);
+          } else {
+            delete activeFilter.geo;
+            delete activeFilter.geoAddress;
+            delete activeFilter.geoRange;
+          }
+        }
+        showJobs(0);
+        showFilters();
+      }).sub("job-results-filter-change", (m) => {
+        w.pub("job-search-set", m);
+      }).sub(Message.saveJob, (m) => {
+        const go = (cid) => {
           var _a2;
-          const field = (_a2 = matched.getAttribute("data-keyword-field")) != null ? _a2 : "";
-          applyKeyword(field, matched.value);
+          let op = void 0;
+          if (((_a2 = m.saveID) == null ? void 0 : _a2.length) > 0) {
+            op = shApi.deleteSavedJob(m.saveID);
+          } else {
+            op = shApi.saveJob(m.jobID, cid);
+          }
+          op.then((r) => {
+            if (m.saveID) {
+              m.sender.removeClass("active").attr("data-save-id", "").attr("title", data.config.saveJobText || "save job");
+              let i = savedJobs.findIndex((s) => s.candidateSavedJobID === m.saveID);
+              if (i >= 0) {
+                savedJobs.splice(i, 1);
+              }
+            } else {
+              let saveID = r.response.item.candidateSavedJobID;
+              m.sender.addClass("active").attr("data-save-id", saveID).attr("title", data.config.unsaveJobText || "unsave job");
+              savedJobs.push({
+                jobID: m.jobID,
+                candidateSavedJobID: saveID
+              });
+            }
+          });
+        };
+        shazamme.user().then((u) => {
+          if (!(u == null ? void 0 : u.candidate)) {
+            if (shazamme.bag(Subscribe.loginReady)) {
+              w.sub(Subscribe.loginSubmit, (u2) => {
+                var _a2;
+                shApi.getSavedJobs((_a2 = u2 == null ? void 0 : u2.candidate) == null ? void 0 : _a2.candidateID).then((r) => {
+                  var _a3, _b2, _c2;
+                  if (!((_b2 = (_a3 = r == null ? void 0 : r.response) == null ? void 0 : _a3.items) == null ? void 0 : _b2.find((j) => j.jobID === m.jobID))) {
+                    go((_c2 = u2 == null ? void 0 : u2.candidate) == null ? void 0 : _c2.candidateID);
+                  }
+                });
+                w.unsub(Subscribe.loginSubmit).unsub(Subscribe.loginCancel);
+              }).sub(Subscribe.loginCancel, () => {
+                w.unsub(Subscribe.loginSubmit).unsub(Subscribe.loginCancel);
+              });
+              w.pub(Message.loginShow);
+            } else {
+              shApi.marshalSaveJob(m.jobID);
+              window.location = ux.buildHref(Path.login);
+            }
+          } else {
+            go(u.candidate.candidateID);
+          }
         });
-        delegate(sidebar, "click", '[data-rel="job-result-filter-keyword-clear"]', (_ev, matched) => {
-          const field = matched.getAttribute("data-keyword-field");
-          if (field === "keyword") state = patch(state, { keyword: "", page: 0 });
-          else if (field === "location") state = patch(state, { location: "", geo: null, geoAddress: "", page: 0 });
-          const input = sidebar.querySelector(`[data-keyword-field="${field}"]`);
-          if (input) input.value = "";
-          render();
+      });
+      const manageUser = (u) => {
+        if (u == null ? void 0 : u.candidate) {
+          shApi.getSavedJobs(u.candidate.candidateID).then((r) => {
+            let saved = [];
+            r.response.items.forEach((j) => {
+              saved.push({
+                jobID: j.jobID,
+                candidateSavedJobID: j.candidateSavedJobID
+              });
+              ux.el.find(`[data-rel=article-job-result][data-id=${j.jobID}] [data-rel=action-save-job]`).attr("data-rel", "action-unsave-job").attr("title", data.config.unsaveJobText || "unsave job").attr("data-save-id", j.candidateSavedJobID).addClass("active");
+            });
+            savedJobs = saved;
+          });
+          ux.el.find("[data-user-known]").hide();
+          ux.el.find("[data-user-known=true]").show();
+        } else {
+          ux.el.find(`[data-rel=article-job-result] [data-rel=action-save-job], [data-rel=article-job-result] [data-rel=action-unsave-job]`).attr("data-rel", "action-save-job").attr("data-save-id", "").attr("title", data.config.saveJobText || "save job").removeClass("active");
+          ux.el.find("[data-user-known]").hide();
+          ux.el.find("[data-user-known=false]").show();
+        }
+      };
+      shazamme.store("createAlert", null);
+      if (ux.uri.hash.length === 0) {
+        shazamme.store(LocalStorage.lastSearch, null);
+      }
+      shazamme.user().then((u) => {
+        manageUser(u);
+      });
+      w.sub(Subscribe.auth, (u) => manageUser(u));
+      w.sub(Subscribe.siteReady, () => {
+        var _a2, _b2, _c2, _d, _e, _f, _g;
+        const site = shazamme.bag("site-config");
+        Path.login = ((_a2 = site == null ? void 0 : site.configuration) == null ? void 0 : _a2.pathLogin) || Path.login;
+        Path.alerts = ((_b2 = site == null ? void 0 : site.configuration) == null ? void 0 : _b2.pathAlerts) || Path.alerts;
+        Path.dashboard = ((_c2 = site == null ? void 0 : site.configuration) == null ? void 0 : _c2.pathDashboard) || Path.dashboard;
+        Path.jobApply = ((_d = site == null ? void 0 : site.configuration) == null ? void 0 : _d.pathJobApply) || Path.jobApply;
+        Path.jobDetails = ((_e = site == null ? void 0 : site.configuration) == null ? void 0 : _e.pathJobDetails) || Path.jobDetails;
+        if ((((_f = site == null ? void 0 : site.configuration) == null ? void 0 : _f.jobLocalization) || ((_g = site == null ? void 0 : site.configuration) == null ? void 0 : _g.jobFieldMap)) && !(Collection.job.lang || Collection.job.fieldMap)) {
+          shazamme.site().then((s) => {
+            var _a3, _b3;
+            Collection.job = {
+              path: `/job-results/${s.siteID}`,
+              useCache: true,
+              isExternal: true,
+              lang: ((_a3 = site == null ? void 0 : site.configuration) == null ? void 0 : _a3.jobLocalization) && data.locale,
+              fieldMap: (_b3 = site == null ? void 0 : site.configuration) == null ? void 0 : _b3.jobFieldMap
+            };
+            ux.showLoading();
+            shazamme.fetch(Collection.job).then(() => fetchValidFilters()).then((valid) => {
+              var _a4;
+              validFilter = valid;
+              if (data.config.enableSeo) {
+                let seo = filtersFromSeo(valid);
+                for (let i in seo) {
+                  let s2 = seo[i];
+                  if ((s2 == null ? void 0 : s2.length) > 0) {
+                    let f2 = activeFilter[i] = activeFilter[i] || [];
+                    f2.push(...s2);
+                    activeFilter[i] = f2;
+                  }
+                }
+              }
+              let page = parseInt((_a4 = window.location.hash.split("/").find((p) => p.indexOf("pg-") >= 0)) == null ? void 0 : _a4.substr(3)) - 1 || 0;
+              showJobs(page);
+              showFilters();
+              w.pub("job-search-set", activeFilter);
+              ux.showLoading(false);
+            });
+          });
+        }
+      });
+      if (data.inEditor) {
+        ux.el.find("[data-rel=action-set-default-filter]").on("click", function() {
+          w.config().then(
+            (c) => w.config({
+              ...c,
+              defaultFilter: activeFilter
+            })
+          ).then(() => {
+            window.location.reload();
+          });
         });
-        delegate(sidebar, "click", '[data-rel="geo-prediction"] .result-text', (ev, matched) => {
-          var _a2, _b;
-          ev.preventDefault();
-          const value = (_a2 = matched.getAttribute("data-value")) != null ? _a2 : "";
-          const label = (_b = matched.getAttribute("data-label")) != null ? _b : "";
-          const host = $one(element, '[data-rel="geo-prediction"]');
-          if (host) host.style.display = "none";
-          if (value === "") return;
-          const [lat, lon] = value.split(",").map((n) => parseFloat(n));
-          const input = sidebar.querySelector('[data-keyword-field="location"]');
-          if (input) input.value = label;
-          state = patch(state, { geo: { lat, lon }, geoAddress: label, location: "", page: 0 });
-          render();
-        });
-        delegate(sidebar, "input", '[data-filter="geoRange"]', (_ev, matched) => {
-          const val = parseInt(matched.value, 10) || DEFAULT_GEO_RANGE;
-          const display = $one(element, '[data-rel="geo-range-display"]');
-          if (display) display.textContent = `${val} ${cfg.proximityDiameter === "6371" ? "mi" : "km"}`;
-          state = patch(state, { geoRange: val, page: 0 });
-          if (state.geo) render();
+        ux.el.find("[data-rel=action-remove-default-filter]").on("click", function() {
+          w.config().then((c) => {
+            c == null ? true : delete c.defaultFilter;
+            return w.config({
+              ...c
+            });
+          }).then(() => {
+            window.location.reload();
+          });
         });
       }
-      if (actionBar) {
-        delegate(actionBar, "click", "[data-sort-field]", (ev, matched) => {
-          ev.preventDefault();
-          const field = matched.getAttribute("data-sort-field");
-          const direction = matched.getAttribute("data-sort-direction");
-          if (!field || !direction) return;
-          actionBar.querySelectorAll("[data-sort-field]").forEach((n) => n.classList.remove("active"));
-          matched.classList.add("active");
-          state = patch(state, { sort: { field, direction: direction === "asc" ? "asc" : "desc" }, page: 0 });
-          render();
-        });
-        delegate(actionBar, "click", '[data-toggle="results-view"]', (ev, matched) => {
-          ev.preventDefault();
-          setView(matched.getAttribute("data-view"));
+      ux.el.addClass("shaz-job-results").find(".shmMainContainer").removeClass("hidden");
+      if (((_c = data.config.dialogWaitAnimation) == null ? void 0 : _c.indexOf("lottie.host")) >= 0) {
+        data.config.dialogWaitAnimation = "https://assets2.lottiefiles.com/packages/lf20_szlepvdh.json";
+        ux.el.find("[data-rel=wait]").each(function() {
+          let src = $(this).attr("src") || "";
+          if (src.indexOf("lottie.host") >= 0) {
+            $(this).attr("src", "https://assets2.lottiefiles.com/packages/lf20_szlepvdh.json");
+          }
         });
       }
-      delegate(details, "click", '[data-rel="paging-select"]', (ev, matched) => {
+    };
+    ux.el.find("[data-rel=job-result-filter-keyword]").val(activeFilter[$(this).attr("data-keyword-field")] || "").on("keyup", function() {
+      var _a;
+      clearTimeout(this.submitTimeout);
+      let field = $(this).attr("data-keyword-field");
+      if (((_a = this.value) == null ? void 0 : _a.length) > 0) {
+        ux.el.find(`[data-rel=job-result-filter-keyword-clear][data-keyword-field=${field}]`).show();
+      } else {
+        ux.el.find(`[data-rel=job-result-filter-keyword-clear][data-keyword-field=${field}]`).hide();
+      }
+      this.submitTimeout = setTimeout(() => {
+        let kw = $(this).val().trim();
+        if (kw.length > 0) {
+          activeFilter[field] = kw.toLowerCase().split(",");
+        } else {
+          delete activeFilter[field];
+        }
+        showJobs(0);
+        shazamme.pub("job-results-filter-change", activeFilter);
+        showFilters();
+      }, 500);
+    }).on("change", function() {
+      var _a;
+      clearTimeout(this.submitTimeout);
+      let field = $(this).attr("data-keyword-field");
+      if (((_a = this.value) == null ? void 0 : _a.length) > 0) {
+        ux.el.find(`[data-rel=job-result-filter-keyword-clear][data-keyword-field=${field}]`).show();
+      } else {
+        ux.el.find(`[data-rel=job-result-filter-keyword-clear][data-keyword-field=${field}]`).hide();
+      }
+      this.submitTimeout = setTimeout(() => {
+        let kw = $(this).val().trim();
+        if (kw.length > 0) {
+          activeFilter[field] = kw.toLowerCase().split(",");
+        } else {
+          delete activeFilter[field];
+        }
+        showJobs(0);
+        shazamme.pub("job-results-filter-change", activeFilter);
+        showFilters();
+      }, 500);
+    });
+    ux.el.find("[data-rel=job-result-filter-keyword-clear]").on("click", function() {
+      let field = $(this).attr("data-keyword-field");
+      ux.el.find(`[data-rel=job-result-filter-keyword][data-keyword-field=${field}]`).val("");
+      $(this).hide();
+      delete activeFilter[field];
+      showJobs(0);
+      showFilters();
+      shazamme.pub("job-results-filter-change", activeFilter);
+    });
+    ux.el.find("[data-rel=job-result-filter-gapi-clear]").on("click", function() {
+      let field = ux.el.find(`[data=gapi=${$(this).attr("data-geo-field")}]`);
+      let range = field.parents(".section-keyword-search").find("[data-filter=geoRange]");
+      field.val("");
+      $(this).hide();
+      delete activeFilter[field.attr("data-gapi")];
+      delete activeFilter[range.attr("data-filter")];
+      delete activeFilter[field.attr("data-gapi-text")];
+      showJobs(0);
+      showFilters();
+      shazamme.pub("job-results-filter-change", activeFilter);
+    });
+    ux.el.find("[data-filter=geoRange]").on("input", function() {
+      let f2 = $(this);
+      f2.siblings("[data-rel=geo-range-display]").text(`${f2.val()} ${data.config.proximityDiameter == "6371" ? "mi" : "km"}`);
+      clearTimeout(this._debounce);
+      this._debounce = setTimeout(() => {
+        activeFilter[f2.attr("data-filter")] = [parseInt(f2.val())];
+        showJobs(0);
+        showFilters();
+        shazamme.pub("job-results-filter-change", activeFilter);
+      }, 500);
+    }).siblings("[data-rel=geo-range-display]").text(() => `${ux.el.find("[data-filter=geoRange]").val()} ${data.config.proximityDiameter == "6371" ? "mi" : "km"}`);
+    ux.el.find("[data-rel=action-mobile-save-search]").on("click", function() {
+      let button = $(this);
+      let dialog = ux.el.find("[data-rel=modal][data-modal=favorite]");
+      dialog.find("input, textarea, select").val("");
+      if (button.is("[data-save-alert]")) {
+        if (data.config.alertUri) {
+          window.location.href = data.config.alertUri.href;
+          return;
+        }
+        dialog.find("[data-rel=title]").text(data.config.createAlertBtn);
+        dialog.find("[data-rel=description]").text(data.config.alertDescription);
+        dialog.find("[data-rel=value-favorite-alert]").get(0).checked = true;
+      } else {
+        dialog.find("[data-rel=title]").text(data.config.favoriteSearch);
+        dialog.find("[data-rel=description]").text(data.config.favoriteDescription);
+        dialog.find("[data-rel=value-favorite-alert]").get(0).checked = false;
+      }
+      dialog.show();
+    });
+    ux.el.find("[data-rel=modal][data-modal=favorite] [data-rel=action-save]").on("click", function() {
+      var _a;
+      const dialog = ux.el.find("[data-rel=modal][data-modal=favorite]");
+      const email = dialog.find("[data-rel=value-favorite-email]");
+      const site = shazamme.bag("site-config");
+      if (email.is(":visible")) {
+        if (email.val().length === 0) {
+          let warning = data.config.warnNoEmail || "Please provide a valid email address";
+          ((_a = site == null ? void 0 : site.alertDialog({
+            title: data.config.warnNoEmailTitle || "No Email Provided",
+            message: warning
+          })) == null ? void 0 : _a.appendTo(ux.el)) || alert(warning);
+          return;
+        }
+      }
+      dialog.find("[data-rel=wait]").show();
+      shazamme.user().then((u) => (u == null ? void 0 : u.candidate) && Promise.resolve(u.candidate) || shazamme.quickRegister(email.val())).then((u) => {
+        var _a2, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k;
+        let s = {
+          candidateID: u == null ? void 0 : u.candidateID,
+          searchName: ux.el.find("[data-rel=value-favorite-name]").val(),
+          professionID: (_a2 = activeFilter.professionID) == null ? void 0 : _a2.join(","),
+          keyword: (_b = activeFilter.keyword) == null ? void 0 : _b.join(","),
+          roleID: (_c = activeFilter.roleID) == null ? void 0 : _c.join(","),
+          salaryFrom: (_d = activeFilter.salaryFrom) == null ? void 0 : _d.join(","),
+          salaryTo: (_e = activeFilter.salaryTo) == null ? void 0 : _e.join(","),
+          salaryTypeID: (_f = activeFilter.salaryTypeID) == null ? void 0 : _f.join(","),
+          workTypeID: (_g = activeFilter.workTypeID) == null ? void 0 : _g.join(","),
+          city: (_h = activeFilter.city) == null ? void 0 : _h.join(","),
+          state: (_i = activeFilter.state) == null ? void 0 : _i.join(","),
+          address: (_j = activeFilter.geoAddress) == null ? void 0 : _j.join(","),
+          radius: (_k = activeFilter.geoRange) == null ? void 0 : _k.join(","),
+          radiusIn: activeFilter.geoIn || "miles",
+          isNeedAlert: dialog.find("[data-rel=value-favorite-alert]").is(":checked")
+        };
+        shApi.createSave(s).then(() => {
+          dialog.find("[data-rel=wait]").hide();
+          dialog.find("[data-rel=okay]").show();
+          setTimeout(() => {
+            dialog.find("[data-rel=okay]").hide();
+            dialog.hide();
+          }, 1e3);
+        });
+      }).catch((ex) => {
         var _a2;
-        ev.preventDefault();
-        const p = parseInt((_a2 = matched.getAttribute("data-page-number")) != null ? _a2 : "0", 10);
-        state = patch(state, { page: Number.isNaN(p) ? 0 : p });
-        render();
+        let warning = (ex == null ? void 0 : ex.code) === "auth/invalid-email" ? data.config.warnBadEmail || "Please provide a valid email address" : (ex == null ? void 0 : ex.msg) || ex || data.config.warnSaveAlert || "We ran into an issue saving your search";
+        ((_a2 = site == null ? void 0 : site.alertDialog({
+          title: data.config.warnSaveAlertTitle || "Could Not Save",
+          message: warning
+        })) == null ? void 0 : _a2.appendTo(ux.el)) || alert(warning);
       });
-      delegate(details, "click", '[data-rel="action-save-job"], [data-rel="action-unsave-job"]', (ev, matched) => {
-        var _a2;
-        ev.preventDefault();
-        const card = matched.closest('[data-rel="article-job-result"]');
-        const jobID = (_a2 = card == null ? void 0 : card.getAttribute("data-id")) != null ? _a2 : "";
-        if (jobID === "") return;
-        const saving = matched.getAttribute("data-rel") === "action-save-job";
-        matched.classList.toggle("active", saving);
-        matched.setAttribute("data-rel", saving ? "action-unsave-job" : "action-save-job");
-        const action = saving ? "Save Job" : "Delete Saved Job";
-        sdk.submit(action, { jobID, candidateID: currentUser == null ? void 0 : currentUser.userID }).catch(() => void 0);
-      });
-    }
-    function subscribe() {
-      onFilterChange(sdk, (payload) => {
-        var _a2, _b, _c, _d;
-        state = patch(state, {
-          facets: (_a2 = payload.state) != null ? _a2 : {},
-          keyword: (_b = payload.keyword) != null ? _b : "",
-          geo: (_c = payload.geo) != null ? _c : null,
-          geoRange: (_d = payload.geoRange) != null ? _d : state.geoRange,
-          page: 0
-        });
-        render();
-      });
-      loginChannel.subscribe(sdk, (user) => {
-        currentUser = user;
-      });
-    }
-    (async () => {
-      await ensureSdkReady(shazamme, data);
-      try {
-        model = await loadJobs(sdk, cfg, { levels: MASTER_LEVELS });
-      } catch (e) {
-        model = buildModel(FAKE_JOBS, cfg, { levels: MASTER_LEVELS });
+    });
+    ux.el.find("button[data-modal]").on("click", function() {
+      let button = $(this);
+      ux.el.find(`[data-rel=modal]`).hide();
+      ux.el.find(`[data-rel=modal][data-modal=${button.attr("data-modal")}]`).show();
+    });
+    ux.el.find("[data-rel=modal] [data-rel=action-close]").on("click", function() {
+      let dialog = $(this).parents("[data-rel=modal]");
+      dialog.hide();
+    });
+    ux.el.find("[data-rel=modal] button .animation").hide();
+    if (data.device === "mobile") {
+      let toolbar = $(".toolbar-main.mobile");
+      let toolbarY = toolbar.offset().top;
+      let top = $(".hamburger-header ").height() || 0;
+      window.onscroll = () => {
+        if (toolbarY < window.pageYOffset) {
+          toolbar.addClass("pinned");
+          toolbar.css({
+            top: `${top}px`
+          });
+        } else {
+          toolbar.removeClass("pinned");
+          toolbar.css({
+            top: "unset"
+          });
+        }
+      };
+      if (data.inEditor) {
+        ux.el.find("[data-rel=modal] button .animation").first().show();
       }
-      tree = buildFacetTree(model.all());
-      applyConfigVisibility();
-      wireEvents();
-      subscribe();
-      render();
-    })();
+    }
+    ux.loadScript("https://sdk.shazamme.io/js/shazamme-1.0.3.min.js").then(() => shazamme.ready(data.inEditor && data.config.debugSiteID || data.siteId, data.page)).then(
+      () => {
+        var _a;
+        return Promise.all([
+          shazamme.style("https://sdk.shazamme.io/css/fontawesome/css/fontawesome.min.css"),
+          shazamme.style("https://sdk.shazamme.io/css/fontawesome/css/regular.min.css"),
+          ((_a = data.config.apikey) == null ? void 0 : _a.length) > 0 && shazamme.gapi(data.config.apikey).maps(["maps", data.config.enableProximitySearch && "places"]) || Promise.resolve()
+        ]);
+      }
+    ).then(() => main(shazamme.register("job-results", data)));
+    ux.loadScript("https://sdk.shazamme.io/plugin/lottie-files/lottie-player-2.0.8.js").then();
   }
-  return __toCommonJS(index_exports);
+  return __toCommonJS(job_results_index_exports);
 })();
 (function(){
   var reg = (typeof module !== 'undefined' && module.exports) || {};
