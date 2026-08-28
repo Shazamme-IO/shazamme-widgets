@@ -921,7 +921,7 @@ function UX() {
                     ${parentType && `data-filter-parent-type="${parentType}"` || ''}
                     ${f.parent && `data-filter-parent-value="${f.parent}"` || ''}>
                         <input type="checkbox" />
-                        ${f.value} (${f.count})
+                        <span class="text">${f.value} (${f.count})</span>
                 </div>`
             );
         }
@@ -1073,7 +1073,7 @@ function UX() {
     }
 
     this.buildHref = (path, query) => {
-        if (path && path.charAt(0) !== '/') path = '/' + path;
+                if (path && path.charAt(0) !== '/') path = '/' + path;
         return data.inEditor ? `/site/${data.siteId}${path}?preview=true&insitepreview=true&dm_device=desktop${query ? '&' + query : ''}`:`https://${window.location.hostname}${path}${query ? '?' + query : ''}`;
     }
 
@@ -2051,6 +2051,14 @@ ux.el.find('[data-rel=action-toggle-view]').on('click', function() {
 if (data.config.apikey && data.config.apikey.length > 0) {
     ux.el.find('[data-toggle=results-view]').show();
 }
+
+ux.el.find('[data-rel=action-filter-reset]').on('click', function() {
+    activeFilter = {}
+
+    showJobs(0);
+    showFilters();
+    shazamme.pub('job-results-filter-change', activeFilter);
+});
 
 const main = (w) => {
     activeFilter = filtersFromParams();
