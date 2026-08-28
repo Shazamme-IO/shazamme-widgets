@@ -1,9 +1,8 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-08-28T01:31:33.843Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-08-28T02:14:29.653Z. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
-var module = module || {};
-module.exports = (() => {
+var __shazWidgetExport = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
   var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -2203,10 +2202,11 @@ module.exports = (() => {
   return __toCommonJS(job_results_index_exports);
 })();
 (function(){
-  var reg = (typeof module !== 'undefined' && module.exports) || {};
+  var reg = (typeof window !== 'undefined' && window.__shazWidgetExport) || {};
   var controller = reg.default || reg;
   if (typeof window !== 'undefined') {
     window.ShazammeWidget = window.ShazammeWidget || {};
     window.ShazammeWidget["job-results"] = controller;
+    window.__shazWidgetExport = void 0;
   }
 })();

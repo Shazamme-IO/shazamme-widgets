@@ -239,14 +239,20 @@ function cssPrelude(name, css) {
 }
 
 // Wrap the compiled module so its default export becomes the registered controller.
+// We capture esbuild's output via a UNIQUE temp global (__shazWidgetExport), NOT
+// `module.exports` — using `module` as the globalName pollutes `window.module`,
+// which makes UMD plugins the widgets load later (countrySelect, libphonenumber,
+// fuse.js, lottie) take the CommonJS branch → `require is not defined` → the
+// plugin never registers. Read the temp, register the controller, then clear it.
 function footer(name) {
   return [
     `(function(){`,
-    `  var reg = (typeof module !== 'undefined' && module.exports) || {};`,
+    `  var reg = (typeof window !== 'undefined' && window.__shazWidgetExport) || {};`,
     `  var controller = reg.default || reg;`,
     `  if (typeof window !== 'undefined') {`,
     `    window.ShazammeWidget = window.ShazammeWidget || {};`,
     `    window.ShazammeWidget[${JSON.stringify(name)}] = controller;`,
+    `    window.__shazWidgetExport = void 0;`,
     `  }`,
     `})();`,
   ].join('\n');
@@ -265,7 +271,7 @@ async function bundleWidget(name, kind) {
     entryPoints: [entry],
     bundle: true,
     format: 'iife',
-    globalName: 'module.exports',
+    globalName: '__shazWidgetExport',
     target: 'es2018',
     banner: { js: widgetBanner },
     footer: { js: footer(name) },
