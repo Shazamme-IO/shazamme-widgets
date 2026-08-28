@@ -75,7 +75,6 @@ function UX() {
     }
 
     this.buildHref = (path, query) => {
-        if (path && path.charAt(0) !== '/') path = '/' + path;
         return data.inEditor ? `/site/${data.siteId}${path}?preview=true&insitepreview=true&dm_device=desktop${query ? '&' + query : ''}`:`https://${window.location.hostname}${path}${query ? '?' + query : ''}`;
     }
 
