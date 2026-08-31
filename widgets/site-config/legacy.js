@@ -49,6 +49,16 @@ let _alertDialogT = undefined;
 let _loadingDialogT = undefined;
 let _toastT = undefined;
 
+// Track the first genuine user interaction. Widgets fetch their data on page load
+// and publish `loadingShow` during that read, which paints a full-screen dark/light
+// overlay on every visit. We suppress the overlay for those initial loads but keep it
+// for user-triggered loads (form submit, file upload, etc.) — those happen only after
+// the visitor has interacted with the page.
+let _userEngaged = false;
+['pointerdown', 'keydown', 'touchstart', 'wheel'].forEach( ev =>
+    window.addEventListener(ev, () => { _userEngaged = true; }, { capture: true, passive: true, once: true })
+);
+
 const enableFileUploads = (w) => {
     if (this._fileUploads) {
         return;
@@ -676,6 +686,13 @@ let main = (w) => {
     });
 
     w.sub(Message.loadingShow, () => {
+        // Suppress the full-screen overlay for initial page-load fetches (the dark/light
+        // flash). User-triggered loads still show it — see _userEngaged. In the editor we
+        // always show it so builders can style the dialog.
+        if (!_userEngaged && !data.inEditor) {
+            return;
+        }
+
         let dialog = ux.el.find('[data-rel=dialog][data-dialog=loading]:gt(0)');
 
         if (dialog.length > 0) {
