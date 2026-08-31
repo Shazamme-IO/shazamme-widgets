@@ -486,6 +486,14 @@ const loadingDialog = () => {
     el.find('.dialog-content .title').copyCSS(_loadingDialogT?.find('.dialog-content .title'));
     el.find('.dialog-content').copyCSS(_loadingDialogT?.find('.dialog-content'));
 
+    // Suppress the overlay for the initial page-load fetch (before the visitor interacts).
+    // Every widget shows loading via this factory — gating here covers direct callers
+    // (lead-form, candidate-form, job-apply, …) as well as the loadingShow subscriber.
+    // User-triggered loads happen after interaction, so the overlay still shows for those.
+    if (!_userEngaged && !data.inEditor) {
+        el.css('display', 'none');
+    }
+
     return el;
 }
 
