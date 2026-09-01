@@ -68,10 +68,14 @@ function recomputeHours() {
 // active layout's calculation by re-triggering its already-bound input handlers.
 $('#hoursPerDay, #hoursPerDaymobile').on('keyup change', function () {
     recomputeHours();
+    // Re-run the active layout's calc by re-firing its bound keyup handler. Pass a
+    // digit `key` so the widget's own input-sanitizer (which reads e.key.length)
+    // passes through instead of throwing on a synthetic event with no key.
+    var ev = { type: 'keyup', key: '0' };
     if (Layouts == "layout1") {
-        $('#hourlyRate, #hourlyRatemobile, #currentannual, #currentannualmobile').trigger('keyup');
+        $('#hourlyRate, #hourlyRatemobile, #currentannual, #currentannualmobile').trigger(ev);
     } else {
-        $('#yourpay, #yourpaymobile').trigger('keyup');
+        $('#yourpay, #yourpaymobile').trigger(ev);
     }
 });
 // === end Hours-per-Day block ===============================================
