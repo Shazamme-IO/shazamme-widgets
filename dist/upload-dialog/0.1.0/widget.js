@@ -1,7 +1,7 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-08-28T02:55:08.505Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-08-28T07:31:23.270Z. Registers window.ShazammeWidget["<name>"].
  */
-"use strict";
+
 var __shazWidgetExport = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;

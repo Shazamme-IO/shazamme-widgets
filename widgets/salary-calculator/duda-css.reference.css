@@ -1,0 +1,598 @@
+.tabmain{
+    width:100%;
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    grid-gap:10px;
+}
+.tabsdata{
+    width:100%;
+    
+}
+
+.tabtext1{
+   text-align: left;
+   background:#28a745;
+    color: white;
+    padding:10px;
+}
+.tabtext2{
+   text-align: left;
+   background:#2e5e4e;
+    color: white;
+    padding:10px;
+}
+.firsttablayout{
+    display:flex;
+    width:100%;
+    padding:15px;
+    background:white;
+    gap:5px;
+    border: 10px solid #28a745;
+    align-items: center;
+}
+.secondtablayout{
+    padding:10px;
+    background:white;
+    padding:15px;
+    background:white;
+     gap:5px;
+    border: 10px solid #2e5e4e;
+    /*align-items: center;*/
+}
+.clsannual{
+    display:flex;
+    align-items: center;
+    padding:10px;
+}
+.curannualcls{
+    width:40%;
+    text-align: left;
+    color:black;
+}
+.clshourlysecond{
+    display:flex;
+    padding:10px;
+    align-items: center;
+}
+.secondhourlycls{
+    width:40%;
+    text-align: left;
+    color:black;
+}
+.clsaddloading{
+    display:flex;
+    align-items: center;
+    padding:10px;
+}
+.addloadcls{
+     width:40%;
+    text-align: left;
+    color:black;
+}
+.clshourlyplus{
+    display:flex;
+    align-items: center;
+    padding:10px;
+}
+.hourpluslycls{
+    width:40%;
+    text-align: left;
+    color:black;
+}
+.titlecls,.moderntitlecls{
+    text-align: left;
+    color:black;
+    padding: 10px 0px;
+    font-size:20px;
+    font-weight:bold;
+}
+.firstlinecls{
+    border-bottom: 2px solid #ccc;
+}
+.secondlinecls{
+    border-bottom: 1px solid #393
+}
+.clshourlylabel
+{
+    text-align: left;
+    width:40%;
+    color:black;
+    font-size:14px;
+}
+.clshourlyinput{
+    width:25%;
+}
+.clscalculate{
+    width:15%;
+}
+.calculationtxtcls{
+    text-align: left;
+    padding: 10px 0px;
+    color: black;
+}
+
+.secondrow{
+    background: #ffffff;
+    padding: 20px 0px;
+}
+.secondrowsub{
+    background: #f7f7f7;
+    padding:0px 20px;
+}
+.taxblecls{
+  display: flex;
+  align-items: center;
+  padding:10px;
+}
+.clstaxblelabel{
+    text-align: left;
+    width:17%;
+    color:black;
+    font-size:14px;
+}
+.clstaxableinput{
+    width:23%;
+}
+/*.clsquestion{
+    width:10%;
+    padding:0px 10px;
+  
+}
+.questionmarkcls{
+    border: 1px solid #393;
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+.questionmarkcls[title]:hover:after {
+  content: attr(title);
+  background:blue;
+  color:white;
+  padding:2px;
+  left: 0;
+}*/
+.clsquestion {
+    width: 10%;
+    padding: 0px 10px;
+    position: relative;
+}
+
+.questionmarkcls {
+    border: 1px solid #393;
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+    position: relative;
+    cursor: pointer;
+    background: white;
+    color: #393;
+}
+
+/* Tooltip Styling */
+.questionmarkcls::after {
+    content: attr(data-title); /* Custom tooltip */
+    background: #2e5d4ecc;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    position: absolute;
+    top: 50%;
+    left: 140%; /* Positions the tooltip to the right */
+    transform: translateY(-50%); /* Keeps it vertically centered */
+    white-space: nowrap;
+    font-size: 12px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease-in-out;
+    z-index: 10;
+}
+
+/* Show Tooltip on Hover */
+.questionmarkcls:hover::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+
+.calcbox{
+    padding:10px;
+    background: #fff;
+}
+
+.results{
+    padding: 10px 0px 0px 0px;
+}
+.results table {
+     background:white;
+      width: 100%;
+     // padding: 20px 0px;
+      //margin-bottom:20px;
+      border-collapse: collapse;
+      padding:10px;
+    }
+.results table th, .results table td {
+      padding: 10px;
+      //text-align: left;
+      border-bottom: 1px solid #ddd;
+      color:black;
+}
+/*.results table th {
+      background-color: #f2f2f2;
+}*/
+.notecls {
+      font-size: 13px;
+      color: #666;
+      padding: 10px 0px;
+      text-align: left;
+}
+.hourlyratemaincls{
+    padding: 10px 0px;
+    text-align: left;
+}
+.hourlyalign{
+    display:flex;
+}
+.hourlyvalcls{
+    width:20%;
+}
+.payrolemaincls{
+    padding: 10px 0px;
+    text-align: left;
+}
+.payrolealign{
+    display:flex;
+}
+.payrolevalcls{
+    width:20%;
+}
+.lesspaymaincls{
+    padding: 10px 0px;
+    text-align: left;
+}
+.lesspayalign{
+    display:flex;
+}
+.lesspayvalcls{
+    width:20%;
+}
+.supermaincls{
+    padding: 10px 0px;
+    text-align: left;
+}
+.superalign{
+    display:flex;
+}
+.supervalcls{
+    width:20%;
+}
+.lesssupermaincls{
+    padding: 10px 0px;
+    text-align: left;
+}
+.lesssuperalign{
+    display:flex;
+}
+.lesssupervalcls{
+    width:20%;
+}
+.totalcostmaincls{
+    padding: 10px 0px;
+    text-align: left;
+}
+.totalcostalign{
+    display:flex;
+}
+.totalcostvalcls{
+    width:20%;
+}
+#moreless-button1{
+    text-align:right;
+    padding-bottom: 20px;
+    color:black;
+}
+#moreless-button2{
+    text-align:right;
+    padding-bottom: 20px;
+    color:black;
+}
+.clsinputbox{
+    background-color: rgba(0, 0, 0, 0) !important;
+    border-color: rgb(0, 0, 0) !important;
+    border-width: 1px !important;
+    border-style: solid !important;
+}
+.clsdesc{
+    color: black;
+    padding: 10px 0px;
+   
+}
+
+
+
+//modern layout CSS
+.header-row{
+    display: flex;
+    flex-direction: row;
+    font-weight: bold;
+    color: black;
+    gap: 150px;
+}
+.checkbox-group {
+    display: flex;
+    align-items: center;
+}
+
+#pay-toggle {
+    display: none;
+}
+
+#pay-toggle + label {
+    position: relative;
+    padding-left: 40px;
+    cursor: pointer;
+}
+
+#pay-toggle + label:before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 30px;
+    height: 16px;
+    background-color: #ccc;
+    border-radius: 50px;
+    transition: background-color 0.3s;
+}
+
+#pay-toggle:checked + label:before {
+    background-color: grey;
+}
+
+#pay-toggle + label:after {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+    background-color: white;
+    border-radius: 50%;
+    transition: left 0.3s;
+}
+
+#pay-toggle:checked + label:after {
+    left: 18px;
+}
+
+
+.input-group {
+    margin-bottom: 15px;
+}
+
+label {
+    font-size: 16px;
+    color: #333;
+    display: block;
+    margin-bottom: 5px;
+}
+
+input[type="text"] {
+    width: 100%;
+    padding: 8px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+#calculation-table {
+    width: 100%;
+    // max-width: 800px;
+    margin-top: 30px;
+    padding: 15px 0px 15px 0px;
+    background-color: #ffffff;
+    border-radius: 8px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 12px;
+    text-align: center;
+    border: 1px solid #ddd;
+}
+
+th {
+    
+    color: #333;
+     text-align: center;
+}
+
+td {
+    font-size: 14px;
+    color: #666;
+}
+.modernthead th{
+    padding: 12px;
+    text-align: center;
+    border: 0px solid #ddd;
+    
+}
+.moderntbody td{
+    padding: 12px;
+    text-align: center;
+    border: 0px solid #ddd;
+}
+
+td#calculation-table {
+    font-weight: bold;
+    color: #333;
+}
+.moderncls{
+    padding:20px;
+}
+.salary-breakdown {
+    margin-top: 15px;
+    margin-left: 10px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+    text-align: left;
+}
+.clsinputbox1{
+    background-color: rgba(0, 0, 0, 0) !important;
+    border-color: rgb(0, 0, 0) !important;
+    border-width: 1px !important;
+    border-style: solid !important;
+}
+.salary-visual {
+  width: 100%;
+  margin: 0 auto;
+//   padding: 20px;
+}
+
+
+.input-group {
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+input[type="number"] {
+  padding: 6px 10px;
+  width: 140px;
+}
+
+.salary-bar {
+  display: flex;
+  width: 100%;
+  height: 14px;
+  overflow: hidden;
+  margin: 20px 0;
+  background-color: #ccc;
+}
+
+.take-home {
+  background-color: #ec008c;
+  transition: width 0.3s ease;
+}
+
+.taxes {
+  background-color: #1d4e89;
+  transition: width 0.3s ease;
+}
+
+.base-portion {
+  background-color: #28a745;
+  transition: width 0.3s ease;
+}
+
+.super-portion {
+  background-color: #333;
+  transition: width 0.3s ease;
+}
+
+.legend {
+  color: black;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.square {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  vertical-align: middle;
+  border-radius: 2px;
+}
+
+.pink  { background-color: #ec008c; }
+.blue  { background-color: #1d4e89; }
+.green { background-color: #28a745; }
+.black { background-color: #333; }
+
+.base-salary {
+
+  color: black;
+//   font-weight: 600;
+  margin-top: 15px;
+  text-align: right;
+}
+
+.salary-super-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 10px;
+  background: #fff;
+  width: 100%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  margin-top: 30px;
+}
+
+.salary-super-card h2 {
+  margin: 0 0 5px;
+  font-size: 7px;
+}
+
+.super-note {
+  font-size: 12px;
+  color: #777;
+  margin-bottom: 10px;
+}
+
+.bar2-total {
+  margin-top: 15px;
+  color: black;
+//   font-weight: 600;
+  font-size: 18px;
+  text-align: right;
+}
+.bar2-position{
+    display: flex;
+    flex-direction: row;
+}
+.salrybreakdowncls {
+    color: black;
+    padding: 10px 0px;
+}
+.totslaincsupercls {
+    color: black;
+    
+}
+.bar2para {
+    
+    color: black;
+}
+#time-period {
+   
+    cursor: pointer;
+    border-radius: 5px;
+    font-size: 14px;
+    background-color: #fff;
+    width: 200px;
+    box-sizing: border-box;
+ 
+}
+
+
+
+/* Hours-per-Day field (added with editable hours feature) */
+.clshoursperday{ display:flex; align-items:center; gap:10px; margin:8px 0; }
+.clshoursperdaylabel{ flex:0 0 auto; font-weight:500; }
+.clshoursperdayinput{ flex:1 1 auto; }
+.clshoursperdayinput input{ width:100%; }

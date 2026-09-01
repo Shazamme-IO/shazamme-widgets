@@ -48,6 +48,16 @@ let _alertDialogT = undefined;
 let _loadingDialogT = undefined;
 let _toastT = undefined;
 
+// Track the first genuine user interaction. Widgets fetch their data on page load
+// and publish `loadingShow` during that read, which paints a full-screen dark/light
+// overlay on every visit. We suppress the overlay for those initial loads but keep it
+// for user-triggered loads (form submit, file upload, etc.) — those happen only after
+// the visitor has interacted with the page.
+let _userEngaged = false;
+['pointerdown', 'keydown', 'touchstart', 'wheel'].forEach( ev =>
+    window.addEventListener(ev, () => { _userEngaged = true; }, { capture: true, passive: true, once: true })
+);
+
 const enableFileUploads = (w) => {
     if (this._fileUploads) {
         return;
@@ -475,6 +485,14 @@ const loadingDialog = () => {
     el.find('.dialog-content .title').copyCSS(_loadingDialogT?.find('.dialog-content .title'));
     el.find('.dialog-content').copyCSS(_loadingDialogT?.find('.dialog-content'));
 
+    // Suppress the overlay for the initial page-load fetch (before the visitor interacts).
+    // Every widget shows loading via this factory — gating here covers direct callers
+    // (lead-form, candidate-form, job-apply, …) as well as the loadingShow subscriber.
+    // User-triggered loads happen after interaction, so the overlay still shows for those.
+    if (!_userEngaged && !data.inEditor) {
+        el.css('display', 'none');
+    }
+
     return el;
 }
 
@@ -685,6 +703,13 @@ let main = (w) => {
     });
 
     w.sub(Message.loadingShow, () => {
+        // Suppress the full-screen overlay for initial page-load fetches (the dark/light
+        // flash). User-triggered loads still show it — see _userEngaged. In the editor we
+        // always show it so builders can style the dialog.
+        if (!_userEngaged && !data.inEditor) {
+            return;
+        }
+
         let dialog = ux.el.find('[data-rel=dialog][data-dialog=loading]:gt(0)');
 
         if (dialog.length > 0) {

@@ -1,5 +1,14 @@
 const ActionUrl = 'https://shazamme.io/Job-Listing/src/php/actions';
 
+// Track the first genuine user interaction. The widget calls showLoading() during its
+// initial job fetch on page load, which paints a full-screen overlay on every visit. We
+// suppress that overlay for the initial load but keep it for user-triggered loads
+// (search, filter, paging) — those happen only after the visitor has interacted.
+let _userEngaged = false;
+['pointerdown', 'keydown', 'touchstart', 'wheel'].forEach( ev =>
+    window.addEventListener(ev, () => { _userEngaged = true; }, { capture: true, passive: true, once: true })
+);
+
 const Path = {
     login: "/login",
     alerts: "/job-alerts",
@@ -1061,6 +1070,12 @@ function UX() {
     }
 
     this.showLoading = (showing = true) => {
+        // Skip the load-time overlay before the visitor interacts (see _userEngaged);
+        // keep it for user-triggered loads (search, filter, paging).
+        if (showing && !_userEngaged) {
+            return;
+        }
+
         if (showing) {
             this.el.find("[data-rel=modal-loading]")
                 .css({

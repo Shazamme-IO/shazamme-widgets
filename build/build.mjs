@@ -115,7 +115,7 @@ function arrowBodyEnd(src, start) {
   throw new Error('unterminated loadScript arrow body');
 }
 
-function wrapLegacy(name, source) {
+function wrapLegacy(name, source, allowNoSdk = false) {
   let patched = source;
   let helperPatched = false;
   let bootstrapPatched = false;
@@ -148,9 +148,9 @@ function wrapLegacy(name, source) {
     bootstrapPatched = true;
   }
 
-  if (!helperPatched && !bootstrapPatched) {
+  if (!helperPatched && !bootstrapPatched && !allowNoSdk) {
     throw new Error(
-      `[${name}] no SDK-load path found (no this.loadScript helper and no $.getScript SDK url). Cannot port without routing the SDK load through window.__shazLoadScript.`,
+      `[${name}] no SDK-load path found (no this.loadScript helper and no $.getScript SDK url). Cannot port without routing the SDK load through window.__shazLoadScript. If this widget genuinely needs no SDK, add an empty widgets/${name}/.no-sdk sentinel file to opt out.`,
     );
   }
 
@@ -168,9 +168,14 @@ function wrapLegacy(name, source) {
 // window.ShazammeWidget[name].
 function generateLegacyEntry(name) {
   const legacyPath = join(WIDGETS_DIR, name, 'legacy.js');
+  // A widget may opt out of the SDK-load requirement with an empty `.no-sdk`
+  // sentinel — for self-contained widgets that use only Duda-provided jQuery and
+  // never load the Shazamme SDK (e.g. salary-calculator).
+  const allowNoSdk = existsSync(join(WIDGETS_DIR, name, '.no-sdk'));
   const { patched, helperPatched, bootstrapPatched } = wrapLegacy(
     name,
     readFileSync(legacyPath, 'utf8'),
+    allowNoSdk,
   );
 
   mkdirSync(GEN_DIR, { recursive: true });
@@ -281,7 +286,37 @@ async function bundleWidget(name, kind) {
   await build({ ...common, outfile: join(outDir, 'widget.js'), minify: false });
   await build({ ...common, outfile: join(outDir, 'widget.min.js'), minify: true });
 
+  // Legacy ports are VERBATIM Duda widgets, authored + proven in Duda's non-strict
+  // `function(element,data,api){}` wrapper. esbuild bundles the ESM entry as an IIFE
+  // with a `"use strict"` prologue, which turns their sloppy-mode idioms into fatal
+  // runtime errors — e.g. an implicit-global `for (f in filters)` loop var throws
+  // `ReferenceError: f is not defined` under strict, but silently created a global
+  // inline. (2026-08-28 prod incident: filters/keyword stopped working fleet-wide the
+  // moment widgets went external.) Strip the directive so legacy bundles execute in
+  // the SAME sloppy mode they shipped in for years. Native `index.ts` widgets keep
+  // strict — they were written for it.
+  if (kind === 'legacy') {
+    stripUseStrict(join(outDir, 'widget.js'));
+    stripUseStrict(join(outDir, 'widget.min.js'));
+  }
+
   console.log(`✓ built ${name} → dist/${name}/${VERSION}/widget.{js,min.js}`);
+}
+
+// Remove esbuild's single `"use strict"` directive prologue from a bundle so it runs
+// in sloppy mode (see the legacy note in bundleWidget). Only the first occurrence —
+// the one esbuild inserts at the top of the IIFE — is removed; legacy widgets contain
+// no other. Fails LOUDLY if the directive is absent, so a future esbuild/layout change
+// can never silently re-ship strict-mode legacy bundles.
+function stripUseStrict(file) {
+  const src = readFileSync(file, 'utf8');
+  const stripped = src.replace(/(["'])use strict\1;?/, '');
+  if (stripped === src) {
+    throw new Error(
+      `[strip-strict] no "use strict" directive found in ${file} — esbuild output layout changed; refusing to ship a possibly-strict legacy bundle.`,
+    );
+  }
+  writeFileSync(file, stripped, 'utf8');
 }
 
 async function main() {
