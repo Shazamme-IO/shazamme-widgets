@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-09-01T06:12:02.556Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-09-01T06:30:01.358Z. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -134,10 +134,11 @@ var __shazWidgetExport = (() => {
     })();
     $("#hoursPerDay, #hoursPerDaymobile").on("keyup change", function() {
       recomputeHours();
+      var ev = { type: "keyup", key: "0" };
       if (Layouts == "layout1") {
-        $("#hourlyRate, #hourlyRatemobile, #currentannual, #currentannualmobile").trigger("keyup");
+        $("#hourlyRate, #hourlyRatemobile, #currentannual, #currentannualmobile").trigger(ev);
       } else {
-        $("#yourpay, #yourpaymobile").trigger("keyup");
+        $("#yourpay, #yourpaymobile").trigger(ev);
       }
     });
     if (data.config.supertoggle === true) {
