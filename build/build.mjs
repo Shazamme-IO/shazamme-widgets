@@ -115,7 +115,7 @@ function arrowBodyEnd(src, start) {
   throw new Error('unterminated loadScript arrow body');
 }
 
-function wrapLegacy(name, source) {
+function wrapLegacy(name, source, allowNoSdk = false) {
   let patched = source;
   let helperPatched = false;
   let bootstrapPatched = false;
@@ -148,9 +148,9 @@ function wrapLegacy(name, source) {
     bootstrapPatched = true;
   }
 
-  if (!helperPatched && !bootstrapPatched) {
+  if (!helperPatched && !bootstrapPatched && !allowNoSdk) {
     throw new Error(
-      `[${name}] no SDK-load path found (no this.loadScript helper and no $.getScript SDK url). Cannot port without routing the SDK load through window.__shazLoadScript.`,
+      `[${name}] no SDK-load path found (no this.loadScript helper and no $.getScript SDK url). Cannot port without routing the SDK load through window.__shazLoadScript. If this widget genuinely needs no SDK, add an empty widgets/${name}/.no-sdk sentinel file to opt out.`,
     );
   }
 
@@ -168,9 +168,14 @@ function wrapLegacy(name, source) {
 // window.ShazammeWidget[name].
 function generateLegacyEntry(name) {
   const legacyPath = join(WIDGETS_DIR, name, 'legacy.js');
+  // A widget may opt out of the SDK-load requirement with an empty `.no-sdk`
+  // sentinel — for self-contained widgets that use only Duda-provided jQuery and
+  // never load the Shazamme SDK (e.g. salary-calculator).
+  const allowNoSdk = existsSync(join(WIDGETS_DIR, name, '.no-sdk'));
   const { patched, helperPatched, bootstrapPatched } = wrapLegacy(
     name,
     readFileSync(legacyPath, 'utf8'),
+    allowNoSdk,
   );
 
   mkdirSync(GEN_DIR, { recursive: true });

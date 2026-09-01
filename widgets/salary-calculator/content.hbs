@@ -1,0 +1,912 @@
+
+{{#equals layouttypes "layout1"}}
+<div class="main" id="desktopid">
+    <div class="titlecls">{{titlecls}}</div>
+    <div class="tabmain">
+        <div class="tabtext1">{{tab1text}}</div>  
+        <div class="tabtext2">{{tab2text}}</div>
+    </div>        
+    
+    <div class="firsttablayout">
+        <div class="clshourlylabel">{{hourlyrate}} {{#equals locdropdown "uk"}} ({{uksymbol}}): {{else}} ({{aussymbol}}): {{/equals}} </div>
+        <div class="clshourlyinput"><input class="clsinputbox" type="text" id="hourlyRate" inputmode="numeric" pattern="[0-9]*"></div>
+        <div class="clshoursperday">
+            <div class="clshoursperdaylabel">{{hoursperdaytxt}}</div>
+            <div class="clshoursperdayinput"><input class="clsinputbox" type="number" min="1" step="0.5" id="hoursPerDay"></div>
+        </div>
+        <div class="dmWidget clscalculate"><span class="text">{{calculatebtntxt}}</span></div>
+        <div class="clsquestion">
+            <div class="questionmarkcls" data-title="{{queexclusivegst}}">?</div>
+        </div>
+    </div>    
+    
+    <div class="secondtablayout" style="display:none">
+        <div class="clsannual">
+            <div class="curannualcls">{{currentannualsal}} {{#equals locdropdown "uk"}} ({{uksymbol}}) {{else}} ({{aussymbol}}) {{/equals}} </div>
+            <div class="currentannualinput"><input class="clsinputbox" type="text" id="currentannual"></div>
+        </div>
+        <div class="clshourlysecond">
+            <div class="secondhourlycls">{{secondhourly}}{{#equals locdropdown "uk"}} ({{uksymbol}}): {{else}} ({{aussymbol}}): {{/equals}} </div>
+            <div class="secondhourlyinput"><input class="clsinputbox" type="number" id="secondhourly" readonly=""></div>
+            <div class="clsquestion">
+                <div class="questionmarkcls" data-title="{{quebasedhourstxt}}">?</div>
+            </div>
+        </div>
+        <div class="clsaddloading">
+            <div class="addloadcls">{{addloading}}</div>
+            <div class="addloadinput"><input class="clsinputbox" type="text" id="addload" value="{{addloadtxt}}"></div>
+            <div class="clsquestion">
+                <div class="questionmarkcls" data-title="{{que25loadtxt}}">?</div>
+            </div>
+        </div>
+        <div class="clshourlyplus">
+            <div class="hourpluslycls">{{hourlyrateplus}} {{#equals locdropdown "uk"}} ({{uksymbol}}) {{else}} ({{aussymbol}}) {{/equals}}</div>
+            <div class="hourlyplusinput"><input class="clsinputbox" type="number" id="hourlyplus" readonly=""></div>
+        </div>
+     </div>
+    
+    <div class="firsttabcalculation">
+        <div class="calculationtxtcls">Calculations</div>
+        <hr class="firstlinecls" style="border-bottom: 2px solid #ccc;">
+        <div class="secondrow">
+            <div class="secondrowsub">
+                <div class="taxblecls">
+                    <div class="clstaxblelabel" id="taxhourrate">{{taxhourlyrate}} {{#equals locdropdown "uk"}} ({{uksymbol}}): {{else}} ({{aussymbol}}): {{/equals}} </div>
+                    <div class="clstaxableinput"><input class="clsinputbox" type="number" id="hourlyid" readonly=""></div>
+                    <div class="clsquestion">
+                        <div class="questionmarkcls" data-title="{{quelesspayrolltxt}}">?</div>
+                    </div>
+                </div>
+                <div class="moreless-button" id="moreless-button1">+ View Details</div>
+                <hr class="secondlinecls" style=" border-bottom: 1px solid #393;">
+                <div class="resulttable" style="display: none;">
+                    <div class="calcbox">
+                        <div class="hourlyratemaincls">    
+                            <div class="hourlyratecls">{{dthouryrate}} {{#equals locdropdown "uk"}} ({{uksymbol}}): {{else}} ({{aussymbol}}): {{/equals}} </div>
+                            <div class="hourlyalign">
+                                <div class="hourlyvalcls"><input type="text" class="clsinputbox"  id="hourlyRate1" value="0" readonly=""></div>
+                                   <div class="clsquestion">
+                                        <div class="questionmarkcls" data-title="{{queexclusivegst}}">?</div>
+                                   </div>
+                            </div>
+                        </div>    
+                        <div class="payrolemaincls">    
+                            <div class="payrolecls">{{payrollfees}} </div>
+                            <div class="payrolealign">
+                                <div class="payrolevalcls">    <input type="text" class="clsinputbox" id="payrollval" value="{{lesspayvalper}}" ></div>
+                                   <div class="clsquestion">
+                                        <div class="questionmarkcls" data-title="{{quepayrollper}}">?</div>
+                                   </div>
+                            </div>
+                        </div>    
+                        <div class="lesspaymaincls">    
+                            <div class="lesspaycls">{{lesspayroll}} {{#equals locdropdown "uk"}} ({{uksymbol}}): {{else}} ({{aussymbol}}): {{/equals}} </div>
+                            <div class="lesspayalign">
+                                <div class="lesspayvalcls">    <input type="number" class="clsinputbox" id="lesspayval" value="0" readonly=""></div>
+                                   <!--<div class="clsquestion">
+                                        <div class="questionmarkcls" title="If you have any payroll fees, enter the percentage here ">?</div>
+                                   </div>-->
+                            </div>
+                        </div>   
+                        
+                        <div class="supermaincls">    
+                            <div class="supercls">{{superannpercentage}}</div>
+                            <div class="superalign">
+                                <div class="supervalcls">    <input type="text" class="clsinputbox"   id="annuationval" value="0" ></div>
+                                   <div class="clsquestion">
+                                        <div class="questionmarkcls" data-title="{{quesuperperc}}">?</div>
+                                   </div>
+                            </div>
+                        </div>  
+                           
+                        <div class="lesssupermaincls">    
+                            <div class="lesssupercls">{{lesssuperanntxt}} {{#equals locdropdown "uk"}} ({{uksymbol}}): {{else}} ({{aussymbol}}): {{/equals}} </div>
+                            <div class="lesssuperalign">
+                                <div class="lesssupervalcls">    <input type="number" class="clsinputbox"  id="lassannuationval" value="0" readonly=""></div>
+                            </div>
+                        </div>     
+                          
+                        <div class="totalcostmaincls">    
+                            <div class="totalcostcls">{{totalcost}} {{#equals locdropdown "uk"}} ({{uksymbol}}): {{else}} ({{aussymbol}}): {{/equals}} </div>
+                            <div class="totalcostalign">
+                                <div class="totalcostvalcls">    <input type="number"  class="clsinputbox" id="totalcost" value="0" readonly=""></div>
+                                   <div class="clsquestion">
+                                        <div class="questionmarkcls" data-title="{{totalcosttxt}}">?</div>
+                                   </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="results">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th></th>  
+                                <th>Base Salary<br> {{#equals locdropdown "uk"}} ({{uksymbol}}) {{else}} ({{aussymbol}}) {{/equals}} </th>
+                                <th class="superheadercls">Super<br> {{#equals locdropdown "uk"}} ({{uksymbol}}) {{else}} ({{aussymbol}}) {{/equals}} </th>
+                                <th class="totalheadercls">Total Salary <br> {{#equals locdropdown "uk"}} ({{uksymbol}}) {{else}} ({{aussymbol}}) {{/equals}}</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultTable">
+                           
+                          
+                            
+                                <tr id="hourlyrow1">
+                                    <td style="display: flex;align-items: center;">
+                                        <div>Hourly </div>
+                                        <div class="clsquestion">
+                                            <div class="questionmarkcls" data-title="{{quetaxhrtxt}}">?</div>
+                                        </div>
+                                    </td>
+                                    <td id="hourlyResult" style="text-align: right;">0</td>
+                                    <td id="hourlySuper" style="text-align: right;">0</td>
+                                    <td id="hourlyTotal" style="text-align: right;">0</td>
+                                </tr>
+                              
+                                <tr id="dailyrow1">
+                                    <td style="display: flex;align-items: center;">
+                                        <div>Daily </div>
+                                        <div class="clsquestion">
+                                            <div class="questionmarkcls" data-title="{{quebasehrday}}">?</div>
+                                        </div>
+                                    </td>
+                                    <td id="dailyResult" style="text-align: right;">0</td>
+                                    <td id="dailySuper" style="text-align: right;">0</td>
+                                    <td id="dailyTotal" style="text-align: right;">0</td>
+                                </tr>
+                               
+                            <tr id="fornighyrow1">
+                                <td style="display: flex;align-items: center;">
+                                    <div>Fortnightly </div>
+                                    <div class="clsquestion">
+                                        <div class="questionmarkcls" data-title="{{quebasehrfornight}}">?</div>
+                                    </div>
+                                </td>  
+                                <td id="fortnightlyResult" style="text-align: right;">0</td>
+                                <td id="fortnightlySuper" style="text-align: right;">0</td>
+                                <td id="fortnightlyTotal" style="text-align: right;">0</td>
+                            </tr>
+                            
+                            <tr id="monthlyrow1">
+                                <td style="display: flex;align-items: center;"> 
+                                    <div>Monthly </div>
+                                    <div class="clsquestion">
+                                        <div class="questionmarkcls" data-title="{{quebasehrmonth}}">?</div>
+                                    </div>
+                                 </td>
+                                <td id="monthlyResult" style="text-align: right;">0</td>
+                                <td id="monthlySuper" style="text-align: right;">0</td>
+                                <td id="monthlyTotal" style="text-align: right;">0</td>
+                            </tr>
+                            
+                            <tr id="yearlyrow1">
+                                <td style="display: flex;align-items: center;"> 
+                                    <div>Yearly </div>
+                                    <div class="clsquestion">
+                                        <div class="questionmarkcls" data-title="{{quebaseyear}}">?</div>
+                                    </div>
+                                </td>  
+                                <td id="yearlyResult" style="text-align: right;">0</td>
+                                <td id="yearlySuper" style="text-align: right;">0</td>
+                                <td id="yearlyTotal" style="text-align: right;">0</td>
+                            </tr>
+                           
+                        </tbody>
+                    </table>
+                </div>
+                <div class="notecls"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="secondtabcalculation" style="display:none">
+        <div class="calculationtxtcls">Calculations</div>
+        <hr class="firstlinecls" style="border-bottom: 2px solid #ccc;">
+        <div class="secondrow">
+            <div class="secondrowsub">
+                <div class="taxblecls">
+                    <div class="clstaxblelabel" id="taxhourrate">{{taxhourlyrate}} {{#equals locdropdown "uk"}} ({{uksymbol}}): {{else}} ({{aussymbol}}): {{/equals}} </div>
+                    <div class="clstaxableinput"><input class="clsinputbox" type="number" id="hourlyid1" readonly=""></div>
+                    <div class="clsquestion">
+                        <div class="questionmarkcls" data-title="{{quelesspayrolltxt}}">?</div>
+                    </div>
+                </div>
+                <div class="moreless-button" id="moreless-button2">+ View Details</div>
+                <hr class="secondlinecls" style=" border-bottom: 1px solid #393;">
+                <div class="resulttable" style="display: none;">
+                    <div class="calcbox">
+                        <div class="hourlyratemaincls">    
+                            <div class="hourlyratecls">{{dthouryrate}} {{#equals locdropdown "uk"}} ({{uksymbol}}): {{else}} ({{aussymbol}}): {{/equals}} </div>
+                            <div class="hourlyalign">
+                                <div class="hourlyvalcls"><input type="text" class="clsinputbox"  id="hourlyRate12" value="0" readonly=""></div>
+                                   <div class="clsquestion">
+                                        <div class="questionmarkcls" data-title="{{queexclusivegst}}">?</div>
+                                   </div>
+                            </div>
+                        </div>    
+                        <div class="payrolemaincls">    
+                            <div class="payrolecls">{{payrollfees}}  </div>
+                            <div class="payrolealign">
+                                <div class="payrolevalcls">    <input type="text" class="clsinputbox" id="payrollval1" value="{{lesspayvalper}}" ></div>
+                                   <div class="clsquestion">
+                                        <div class="questionmarkcls" data-title="{{quepayrollper}}">?</div>
+                                   </div>
+                            </div>
+                        </div>    
+                         <div class="lesspaymaincls">    
+                            <div class="lesspaycls">{{lesspayroll}} {{#equals locdropdown "uk"}} ({{uksymbol}}): {{else}} ({{aussymbol}}): {{/equals}} </div>
+                            <div class="lesspayalign">
+                                <div class="lesspayvalcls">    <input type="number" class="clsinputbox" id="lesspayval1" value="0" readonly=""></div>
+                                   <!--<div class="clsquestion">
+                                        <div class="questionmarkcls" title="If you have any payroll fees, enter the percentage here ">?</div>
+                                   </div>-->
+                            </div>
+                        </div>   
+                        <div class="supermaincls">    
+                            <div class="supercls">{{superannpercentage}}</div>
+                            <div class="superalign">
+                                <div class="supervalcls">    <input type="text" class="clsinputbox"   id="annuationval1" value="0" ></div>
+                                   <div class="clsquestion">
+                                        <div class="questionmarkcls" data-title="{{quesuperperc}}">?</div>
+                                   </div>
+                            </div>
+                        </div>  
+                           
+                        <div class="lesssupermaincls">    
+                            <div class="lesssupercls">{{lesssuperanntxt}} {{#equals locdropdown "uk"}} ({{uksymbol}}): {{else}} ({{aussymbol}}): {{/equals}} </div>
+                            <div class="lesssuperalign">
+                                <div class="lesssupervalcls">    <input type="number" class="clsinputbox"  id="lassannuationval1" value="0" readonly=""></div>
+                            </div>
+                        </div>     
+                          
+                        <div class="totalcostmaincls">    
+                            <div class="totalcostcls">{{totalcost}} {{#equals locdropdown "uk"}} ({{uksymbol}}): {{else}} ({{aussymbol}}): {{/equals}} </div>
+                            <div class="totalcostalign">
+                                <div class="totalcostvalcls">    <input type="number"  class="clsinputbox" id="totalcost1" value="0" readonly=""></div>
+                                   <div class="clsquestion">
+                                        <div class="questionmarkcls" data-title="{{totalcosttxt}}">?</div>
+                                   </div>
+                            </div>
+                        </div>    
+                    </div>
+                </div>
+                <div class="results">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th></th>  
+                                <th>Base Salary <br> {{#equals locdropdown "uk"}} ({{uksymbol}}) {{else}} ({{aussymbol}}) {{/equals}}</th>
+                                <th  class="superheadercls">Super<br> {{#equals locdropdown "uk"}} ({{uksymbol}}) {{else}} ({{aussymbol}}) {{/equals}}</th>
+                                <th class="totalheadercls">Total Package<br> {{#equals locdropdown "uk"}} ({{uksymbol}}) {{else}} ({{aussymbol}}) {{/equals}}</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultTable">
+                            
+                            <tr id="hourlyrow2">
+                                <td style="display: flex;align-items: center;">
+                                    <div>Hourly </div>
+                                    <div class="clsquestion">
+                                        <div class="questionmarkcls" data-title="{{quetaxhrtxt}}">?</div>
+                                    </div>
+                                </td>
+                                <td id="hourlyResult1" style="text-align: right;">0</td>
+                                <td id="hourlySuper1" style="text-align: right;">0</td>
+                                <td id="hourlyTotal1" style="text-align: right;">0</td>
+                            </tr>
+                           
+                            <tr id="dailyrow2">
+                                <td style="display: flex;align-items: center;">
+                                    <div>Daily </div>
+                                    <div class="clsquestion">
+                                            <div class="questionmarkcls" data-title="{{quebasehrday}}">?</div>
+                                    </div>
+                                </td>
+                                <td id="dailyResult1" style="text-align: right;">0</td>
+                                <td id="dailySuper1" style="text-align: right;">0</td>
+                                <td id="dailyTotal1" style="text-align: right;">0</td>
+                            </tr>
+                           
+                            <tr id="fornighyrow2">
+                                <td style="display: flex;align-items: center;">
+                                    <div>Fortnightly </div>
+                                    <div class="clsquestion">
+                                        <div class="questionmarkcls" data-title="{{quebasehrfornight}}">?</div>
+                                    </div>
+                                </td>  
+                                <td id="fortnightlyResult1" style="text-align: right;">0</td>
+                                <td id="fortnightlySuper1" style="text-align: right;">0</td>
+                                <td id="fortnightlyTotal1" style="text-align: right;">0</td>
+                            </tr>
+                           
+                            <tr id="monthlyrow2">
+                                <td style="display: flex;align-items: center;"> 
+                                    <div>Monthly </div>
+                                    <div class="clsquestion">
+                                        <div class="questionmarkcls" data-title="{{quebasehrmonth}}">?</div>
+                                    </div>
+                                </td>
+                                <td id="monthlyResult1" style="text-align: right;">0</td>
+                                <td id="monthlySuper1" style="text-align: right;">0</td>
+                                <td id="monthlyTotal1" style="text-align: right;">0</td>
+                            </tr>
+                           
+                            <tr id="yearlyrow2">
+                                <td style="display: flex;align-items: center;"> 
+                                    <div>Yearly </div>
+                                    <div class="clsquestion">
+                                        <div class="questionmarkcls" data-title="{{quebaseyear}}">?</div>
+                                    </div>
+                                </td>  
+                                <td id="yearlyResult1" style="text-align: right;">0</td>
+                                <td id="yearlySuper1" style="text-align: right;">0</td>
+                                <td id="yearlyTotal1" style="text-align: right;">0</td>
+                            </tr>
+                            
+                        </tbody>
+                    </table>
+                </div>
+                <div class="notecls"></div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="main" id="mobileid">
+    <div class="titlecls">{{titlecls}}</div>
+    <div class="accordion">
+        <div class="accordion-header tabtext1">
+            <span>{{tab1text}}</span>
+            <img src="https://irp.cdn-website.com/a2af1f94/dms3rep/multi/mini-arrow-down-svgrepo-com-7a4953e1.svg" style="width: 30px;" />
+        </div>
+        <div class="accordion-content firsttablayout firsttabcalculation">
+            <div class="firsttablayoutMobile">
+                <div class="clshourlylabel">{{hourlyrate}} {{#equals locdropdown "uk"}} ({{uksymbol}}): {{else}} ({{aussymbol}}): {{/equals}} </div>
+                <div class="clshourlyinput"><input class="clsinputbox" type="text" id="hourlyRatemobile"></div>
+                <div class="clshoursperday">
+                    <div class="clshoursperdaylabel">{{hoursperdaytxt}}</div>
+                    <div class="clshoursperdayinput"><input class="clsinputbox" type="number" min="1" step="0.5" id="hoursPerDaymobile"></div>
+                </div>
+                <div class="dmWidget clscalculate"><span class="text">{{calculatebtntxt}}</span></div>
+                <div class="clsquestion">
+                    <div class="questionmarkcls" data-title="{{queexclusivegst}}">?</div>
+                </div>
+            </div>    
+        </div>
+        
+        <div class="accordion-header tabtext2">
+            {{tab2text}}
+            <img src="https://irp.cdn-website.com/a2af1f94/dms3rep/multi/mini-arrow-down-svgrepo-com-7a4953e1.svg" style="width: 30px;" />
+        </div>
+        
+        <div class="accordion-content secondtablayout secondtabcalculation">
+            <div class="secondtablayoutMobile">
+                <div class="clsannual">
+                    <div class="curannualcls">{{currentannualsal}} {{#equals locdropdown "uk"}} ({{uksymbol}}): {{else}} ({{aussymbol}}): {{/equals}} </div>
+                    <div class="currentannualinput"><input class="clsinputbox" type="text" id="currentannualmobile"></div>
+                </div>
+                <div class="clshourlysecond">
+                    <div class="secondhourlycls">{{secondhourly}} {{#equals locdropdown "uk"}} ({{uksymbol}}): {{else}} ({{aussymbol}}): {{/equals}} </div>
+                    <div style="display: flex;align-items: center;">
+                        <div class="secondhourlyinput"><input class="clsinputbox" type="number" id="secondhourlymobile" readonly=""></div>
+                        <div class="clsquestion">
+                            <div class="questionmarkcls" data-title="{{quebasedhourstxt}}">?</div>
+                        </div>
+                    </div>
+                        
+                </div>
+                <div class="clsaddloading">
+                    <div class="addloadcls">{{addloading}}</div>
+                     <div style="display: flex;align-items: center;">
+                    <div class="addloadinput"><input class="clsinputbox" type="text" id="addloadmobile" value="{{addloadtxt}}"></div>
+                    <div class="clsquestion">
+                        <div class="questionmarkcls" data-title="{{que25loadtxt}}">?</div>
+                    </div>
+                    </div>
+                </div>
+                <div class="clshourlyplus">
+                    <div class="hourpluslycls">{{hourlyrateplus}} {{#equals locdropdown "uk"}} ({{uksymbol}}) {{else}} ({{aussymbol}}) {{/equals}}</div>
+                    <div class="hourlyplusinput"><input class="clsinputbox" type="number" id="hourlyplusmobile" readonly=""></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    
+    <div class="firsttabcalculation">
+        <div class="calculationtxtcls">Calculations</div>
+        <hr class="firstlinecls" style="border-bottom: 2px solid #ccc;">
+        <div class="secondrow">
+            <div class="secondrowsub">
+                <div class="taxblecls">
+                    <div class="clstaxblelabel" id="taxhourratemobile">{{taxhourlyrate}} {{#equals locdropdown "uk"}} ({{uksymbol}}): {{else}} ({{aussymbol}}): {{/equals}} </div>
+                    <div style="display: flex;align-items: center;">
+                        <div class="clstaxableinput"><input class="clsinputbox" type="number" id="hourlyidmobile" readonly=""></div>
+                        <div class="clsquestion">
+                            <div class="questionmarkcls" data-title="{{quelesspayrolltxt}}">?</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="moreless-button" id="moreless-button1mobile">+ View Details</div>
+                <hr class="secondlinecls" style=" border-bottom: 1px solid #393;">
+                <div class="resulttable" style="display: none;">
+                    <div class="calcbox">                   
+                        <div class="hourlyratemaincls">    
+                            <div class="hourlyratecls">{{dthouryrate}} {{#equals locdropdown "uk"}} ({{uksymbol}}): {{else}} ({{aussymbol}}): {{/equals}} </div>
+                            <div class="hourlyalign">                            
+                                <div class="hourlyvalcls"><input type="text" class="clsinputbox"  id="hourlyRate1mobile" value="0" readonly=""></div>                            
+                                <div class="clsquestion">
+                                        <div class="questionmarkcls" data-title="{{queexclusivegst}}">?</div>
+                                </div>
+                            </div>
+                        </div>                        
+                        <div class="payrolemaincls">    
+                            <div class="payrolecls">{{payrollfees}}  </div>
+                            <div class="payrolealign">                            
+                                <div class="payrolevalcls">    <input type="text" class="clsinputbox" id="payrollvalmobile" value="{{lesspayvalper}}" ></div>                            
+                                <div class="clsquestion">
+                                        <div class="questionmarkcls" data-title="{{quepayrollper}}">?</div>
+                                </div>
+                            </div>
+                        </div>    
+                        <div class="lesspaymaincls">    
+                            <div class="lesspaycls">{{lesspayroll}} {{#equals locdropdown "uk"}} ({{uksymbol}}): {{else}} ({{aussymbol}}): {{/equals}} </div>
+                            <div class="lesspayalign">                            
+                                <div class="lesspayvalcls">    <input type="number" class="clsinputbox" id="lesspayvalmobile" value="0" readonly=""></div>                            
+                                <!--<div class="clsquestion">
+                                        <div class="questionmarkcls" title="If you have any payroll fees, enter the percentage here ">?</div>
+                                </div>-->
+                            </div>
+                        </div>                       
+                        <div class="supermaincls">    
+                            <div class="supercls">{{superannpercentage}}</div>
+                            <div class="superalign">                            
+                                <div class="supervalcls">    <input type="text" class="clsinputbox"   id="annuationvalmobile" value="0" ></div>                            
+                                <div class="clsquestion">
+                                        <div class="questionmarkcls" data-title="{{quesuperperc}}">?</div>
+                                </div>
+                            </div>
+                        </div>                         
+                        <div class="lesssupermaincls">    
+                            <div class="lesssupercls">{{lesssuperanntxt}} {{#equals locdropdown "uk"}} ({{uksymbol}}): {{else}} ({{aussymbol}}): {{/equals}} </div>
+                            <div class="lesssuperalign">                            
+                                <div class="lesssupervalcls">    <input type="number" class="clsinputbox"  id="lassannuationvalmobile" value="0" readonly=""></div>                                                           
+                            </div>
+                        </div>                           
+                        <div class="totalcostmaincls">    
+                            <div class="totalcostcls">{{totalcost}} {{#equals locdropdown "uk"}} ({{uksymbol}}): {{else}} ({{aussymbol}}): {{/equals}} </div>
+                            <div class="totalcostalign">                            
+                                <div class="totalcostvalcls">    <input type="number"  class="clsinputbox" id="totalcostmobile" value="0" readonly=""></div>                            
+                                <div class="clsquestion">
+                                        <div class="questionmarkcls" data-title="{{totalcosttxt}}">?</div>
+                                </div>
+                            </div>
+                        </div>                                        
+                    </div>
+                </div>
+                <div class="results">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th></th>  
+                                <th>Base Salary <br> {{#equals locdropdown "uk"}} ({{uksymbol}}) {{else}} ({{aussymbol}}) {{/equals}}</th>
+                                <th class="superheadercls">Super<br> {{#equals locdropdown "uk"}} ({{uksymbol}}) {{else}} ({{aussymbol}}) {{/equals}}</th>
+                                <th class="totalheadercls">Total Package<br> {{#equals locdropdown "uk"}} ({{uksymbol}}) {{else}} ({{aussymbol}}) {{/equals}}</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultTable">
+                           
+                            <tr id="hourlyrow3">
+                                <td style="display: flex;align-items: center;">
+                                    <div>Hourly </div>
+                                    <div class="clsquestion">
+                                    <div class="questionmarkcls" data-title="{{quetaxhrtxt}}">?</div>
+                                </div>
+                                </td>
+                                <td id="hourlyResultmobile" style="text-align: right;">0</td>
+                                <td id="hourlySupermobile" style="text-align: right;">0</td>
+                                <td id="hourlyTotalmobile" style="text-align: right;">0</td>
+                            </tr>
+                           
+                            <tr id="dailyrow3">
+                                <td style="display: flex;align-items: center;">
+                                    <div>Daily </div>
+                                    <div class="clsquestion">
+                                    <div class="questionmarkcls" data-title="{{quebasehrday}}">?</div>
+                                </div>
+                                </td>
+                                <td id="dailyResultmobile" style="text-align: right;">0</td>
+                                <td id="dailySupermobile" style="text-align: right;">0</td>
+                                <td id="dailyTotalmobile" style="text-align: right;">0</td>
+                            </tr>
+                            
+
+                            <tr id="fornighyrow3">
+                                <td style="display: flex;align-items: center;">
+                                    <div>Fortnightly </div>
+                                    <div class="clsquestion">
+                                        <div class="questionmarkcls" data-title="{{quebasehrfornight}}">?</div>
+                                    </div>
+                                </td>  
+                                <td id="fortnightlyResultmobile" style="text-align: right;">0</td>
+                                <td id="fortnightlySupermobile" style="text-align: right;">0</td>
+                                <td id="fortnightlyTotalmobile" style="text-align: right;">0</td>
+                            </tr>
+                          
+                            <tr id="monthlyrow3">
+                                <td style="display: flex;align-items: center;"> 
+                                    <div>Monthly </div>
+                                        <div class="clsquestion">
+                                        <div class="questionmarkcls" data-title="{{quebasehrmonth}}">?</div>
+                                    </div>
+                                </td>
+                                <td id="monthlyResultmobile" style="text-align: right;">0</td>
+                                <td id="monthlySupermobile" style="text-align: right;">0</td>
+                                <td id="monthlyTotalmobile" style="text-align: right;">0</td>
+                            </tr>
+                           
+                            <tr id="yearlyrow3">
+                                <td style="display: flex;align-items: center;"> 
+                                    <div>Yearly </div>
+                                        <div class="clsquestion">
+                                        <div class="questionmarkcls" data-title="{{quebaseyear}}">?</div>
+                                    </div>
+                                </td>  
+                                <td id="yearlyResultmobile" style="text-align: right;">0</td>
+                                <td id="yearlySupermobile" style="text-align: right;">0</td>
+                                <td id="yearlyTotalmobile" style="text-align: right;">0</td>
+                        </tr>
+                       
+                        </tbody>
+                    </table>
+                </div>
+                <div class="notecls"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="secondtabcalculation" style="display:none">
+        <div class="calculationtxtcls">Calculations</div>
+        <hr class="firstlinecls" style="border-bottom: 2px solid #ccc;">
+        <div class="secondrow">
+            <div class="secondrowsub">
+                <div class="taxblecls">
+                    <div class="clstaxblelabel" id="taxhourratemobile">{{taxhourlyrate}} {{#equals locdropdown "uk"}} ({{uksymbol}}): {{else}} ({{aussymbol}}): {{/equals}} </div>
+                    <div class="clstaxableinput"><input class="clsinputbox" type="number" id="hourlyid1mobile" readonly=""></div>
+                    <div class="clsquestion">
+                        <div class="questionmarkcls" data-title="{{quelesspayrolltxt}}">?</div>
+                    </div>
+                </div>
+                <div class="moreless-button" id="moreless-button2mobile">+ View Details</div>
+                <hr class="secondlinecls" style=" border-bottom: 1px solid #393;">
+                <div class="resulttable" style="display: none;">
+                    <div class="calcbox">                
+                        <div class="hourlyratemaincls">    
+                            <div class="hourlyratecls">{{dthouryrate}} {{#equals locdropdown "uk"}} ({{uksymbol}}): {{else}} ({{aussymbol}}): {{/equals}} </div>
+                            <div class="hourlyalign">                            
+                                <div class="hourlyvalcls"><input type="text" class="clsinputbox"  id="hourlyRate12mobile" value="0" readonly=""></div>                            
+                                <div class="clsquestion">
+                                    <div class="questionmarkcls" data-title="{{queexclusivegst}}">?</div>
+                                </div>
+                            </div>
+                        </div>                        
+                        <div class="payrolemaincls">    
+                            <div class="payrolecls">{{payrollfees}} </div>
+                            <div class="payrolealign">                            
+                                <div class="payrolevalcls">    <input type="text" class="clsinputbox" id="payrollval1mobile" value="{{lesspayvalper}}" ></div>                            
+                                <div class="clsquestion">
+                                    <div class="questionmarkcls" data-title="{{quepayrollper}}">?</div>
+                                </div>
+                            </div>
+                        </div>    
+                        <div class="lesspaymaincls">    
+                            <div class="lesspaycls">{{lesspayroll}} {{#equals locdropdown "uk"}} ({{uksymbol}}): {{else}} ({{aussymbol}}): {{/equals}} </div>
+                            <div class="lesspayalign">                            
+                                <div class="lesspayvalcls">    <input type="number" class="clsinputbox" id="lesspayval1mobile" value="0" readonly=""></div>                            
+                                <!--<div class="clsquestion">
+                                        <div class="questionmarkcls" title="If you have any payroll fees, enter the percentage here ">?</div>
+                                </div>-->
+                            </div>
+                        </div>                    
+                        <div class="supermaincls">    
+                            <div class="supercls">{{superannpercentage}}</div>
+                            <div class="superalign">                            
+                                <div class="supervalcls">    <input type="text" class="clsinputbox"  id="annuationval1mobile" value="0" ></div>                            
+                                <div class="clsquestion">
+                                    <div class="questionmarkcls" data-title="{{quesuperperc}}">?</div>
+                                </div>
+                            </div>
+                        </div>                      
+                        <div class="lesssupermaincls">    
+                            <div class="lesssupercls">{{lesssuperanntxt}} {{#equals locdropdown "uk"}} ({{uksymbol}}): {{else}} ({{aussymbol}}): {{/equals}} </div>
+                            <div class="lesssuperalign">                            
+                                <div class="lesssupervalcls">    <input type="number" class="clsinputbox"  id="lassannuationval1mobile" value="0" readonly=""></div>
+                            </div>
+                        </div>                         
+                        <div class="totalcostmaincls">    
+                            <div class="totalcostcls">{{totalcost}} {{#equals locdropdown "uk"}} ({{uksymbol}}): {{else}} ({{aussymbol}}): {{/equals}} </div>
+                            <div class="totalcostalign">                            
+                                <div class="totalcostvalcls">    <input type="number"  class="clsinputbox" id="totalcost1mobile" value="0" readonly=""></div>                            
+                                <div class="clsquestion">
+                                    <div class="questionmarkcls" data-title="{{totalcosttxt}}">?</div>
+                                </div>
+                            </div>
+                        </div>                                                                    
+                    </div>        
+                </div>
+                <div class="results">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th></th>  
+                                <th>Base Salary <br> {{#equals locdropdown "uk"}} ({{uksymbol}}) {{else}} ({{aussymbol}}) {{/equals}} </th>
+                                <th class="superheadercls">Super<br> {{#equals locdropdown "uk"}} ({{uksymbol}}) {{else}} ({{aussymbol}}) {{/equals}} </th>
+                                <th class="totalheadercls">Total Package<br> {{#equals locdropdown "uk"}} ({{uksymbol}}) {{else}} ({{aussymbol}}) {{/equals}} </th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultTable">
+                            
+                            <tr id="hourlyrow4">
+                                <td style="display: flex;align-items: center;">
+                                    <div>Hourly </div>
+                                    <div class="clsquestion">
+                                        <div class="questionmarkcls" data-title="{{quetaxhrtxt}}">?</div>
+                                    </div>
+                                </td>
+                                <td id="hourlyResult1mobile" style="text-align: right;">0</td>
+                                <td id="hourlySuper1mobile" style="text-align: right;">0</td>
+                                <td id="hourlyTotal1mobile" style="text-align: right;">0</td>
+                            </tr>
+                           
+                            <tr id="dailyrow4">
+                                <td style="display: flex;align-items: center;">
+                                    <div>Daily </div>
+                                    <div class="clsquestion">
+                                        <div class="questionmarkcls" data-title="{{quebasehrday}}">?</div>
+                                    </div>
+                                </td>
+                                <td id="dailyResult1mobile" style="text-align: right;">0</td>
+                                <td id="dailySuper1mobile" style="text-align: right;">0</td>
+                                <td id="dailyTotal1mobile" style="text-align: right;">0</td>
+                            </tr>
+                           
+                            <tr id="fornighyrow4">
+                                <td style="display: flex;align-items: center;">
+                                    <div>Fortnightly </div>
+                                    <div class="clsquestion">
+                                        <div class="questionmarkcls" data-title="{{quebasehrfornight}}">?</div>
+                                    </div>
+                                </td>  
+                                <td id="fortnightlyResult1mobile" style="text-align: right;">0</td>
+                                <td id="fortnightlySuper1mobile" style="text-align: right;">0</td>
+                                <td id="fortnightlyTotal1mobile" style="text-align: right;">0</td>
+                            </tr>
+                            
+                            <tr id="monthlyrow4">
+                                <td style="display: flex;align-items: center;"> 
+                                    <div>Monthly </div>
+                                    <div class="clsquestion">
+                                        <div class="questionmarkcls" data-title="{{quebasehrmonth}}">?</div>
+                                    </div>
+                                </td>
+                                <td id="monthlyResult1mobile" style="text-align: right;">0</td>
+                                <td id="monthlySuper1mobile" style="text-align: right;">0</td>
+                                <td id="monthlyTotal1mobile" style="text-align: right;">0</td>
+                            </tr>
+                           
+                            <tr id="yearlyrow4">
+                                <td style="display: flex;align-items: center;"> 
+                                    <div>Yearly </div>
+                                    <div class="clsquestion">
+                                        <div class="questionmarkcls" data-title="{{quebaseyear}}">?</div>
+                                    </div>
+                                </td>  
+                                <td id="yearlyResult1mobile" style="text-align: right;">0</td>
+                                <td id="yearlySuper1mobile" style="text-align: right;">0</td>
+                                <td id="yearlyTotal1mobile" style="text-align: right;">0</td>
+                            </tr>
+                            
+                        </tbody>
+                    </table>
+                </div>
+                <div class="notecls"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{else}}
+
+<div class="main" id="desktopview">
+    <div class="moderncls">
+    <div class="moderntitlecls">{{moderntitlecls}}</div>
+<div class="header-row">
+    <div class="input-group">
+        <label class="yourpaycls" for="yourpay" style="text-align:left;">{{ratemobile}}</label>
+        <input class="clsinputbox1" type="text" id="yourpay" inputmode="numeric" pattern="[0-9]*">
+    </div>
+    <div class="input-group">
+        <label class="yourpaycls" for="hoursPerDay" style="text-align:left;">{{hoursperdaytxt}}</label>
+        <input class="clsinputbox1" type="number" min="1" step="0.5" id="hoursPerDay">
+    </div>
+    <div class="input-grpup">
+        <label for="time-period" class="yourpaycls" style="text-align:left;">{{timeperiodmobile}}</label>
+            <select class="clsinputbox1" id="time-period" style="padding: 8px;">
+                <option value="yearly">Annually</option>
+                <option value="monthly">Monthly</option>
+                <option value="fortnightly">Fortnightly</option>
+                <option value="daily">Daily</option>
+                <option value="hourly">Hourly</option>
+            </select>
+    </div>
+    <div class="input-group">
+        <label class="annuationcls" for="annuation" style="text-align:left;">{{superannuationmobile}}</label>
+        <input class="clsinputbox1" type="text" id="modernsuperannuation"  inputmode="numeric" pattern="[0-9]*">
+    </div>
+</div>
+<!--<div class="checkbox-group">
+    <input type="checkbox" id="pay-toggle">
+    <label class="payincludecls" for="pay-toggle">
+            <span id="toggle-label-text">Pay includes superannuation</span>
+    </label>
+</div>-->
+ <div class="results">
+                    <table style="border-spacing: 0;border-collapse: separate;border-radius: 10px;border: 1px solid #ddd; padding:0px;overflow: hidden;">
+                        <thead class="modernthead">
+                            <tr>
+                                
+                                <th style="text-align: right;"></th>  
+                                <th style="text-align: right;">{{hourlytxt}}</th>
+                                <th style="text-align: right;">{{dailytxt}}</th>
+                                <th style="text-align: right;">{{fornighttxt}}</th>
+                                <th style="text-align: right;">{{monthlytxt}}</th>
+                                <th style="text-align: right;">{{anuallytxt}}</th>
+                            </tr>
+                        </thead>
+                        <tbody  class="moderntbody" id="resultTable">
+                            <tr>
+                                <td style="text-align:left !importnat;">
+                                     <div>{{basesalary}} {{#equals locdropdown "uk"}} ({{uksymbol}}) {{else}} ({{aussymbol}}) {{/equals}}</div>
+                                    
+                                </td>
+                                <td id="hourlyResult" style="text-align: right;">0</td>
+                                <td id="dailyResult" style="text-align: right;">0</td>
+                                <td id="fortnightlyResult" style="text-align: right;">0</td>
+                                <td id="monthlyResult" style="text-align: right;">0</td>
+                                <td id="yearlyResult" style="text-align: right;">0</td>
+                            </tr>
+                            <tr>
+                                <td style="text-align:left !importnat;">
+                                    <div>{{supertxt}} {{#equals locdropdown "uk"}} ({{uksymbol}}) {{else}} ({{aussymbol}}) {{/equals}}</div>
+                                   
+                                </td>
+                                <td id="hourlySuper" style="text-align: right;">0</td>
+                                <td id="dailySuper" style="text-align: right;">0</td>
+                                <td id="fortnightlySuper" style="text-align: right;">0</td>
+                                <td id="monthlySuper" style="text-align: right;">0</td>
+                                <td id="yearlySuper" style="text-align: right;">0</td>
+                            </tr>
+                            <tr>
+                                <td style="text-align:left !importnat;">
+                                    <div>{{totalpackage}} {{#equals locdropdown "uk"}} ({{uksymbol}}) {{else}} ({{aussymbol}}) {{/equals}} </div>
+                                   
+                                </td>  
+                                <td id="hourlyTotal" style="text-align: right;">0</td>
+                                <td id="dailyTotal" style="text-align: right;">0</td>
+                                <td id="fortnightlyTotal" style="text-align: right;">0</td>
+                                <td id="monthlyTotal" style="text-align: right;">0</td>
+                                <td id="yearlyTotal" style="text-align: right;">0</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+
+ <div class="salary-visual"> 
+ <div class="salary-super-card">
+    <div class="salrybreakdowncls"  style="text-align:left;">Salary Breakdown Bar</div>
+
+    <div class="salary-bar">
+      <div class="take-home"></div>
+      <div class="taxes"></div>
+    </div>
+   <div class="legend">
+      <div  style="display: flex;align-items: center;"><div class="square pink"></div> <div id="takeHomeLabel">{{basesalary}} {{#equals locdropdown "uk"}} {{uksymbol}} {{else}} {{aussymbol}} {{/equals}} 0.00</div></div>
+      <div style="display: flex;align-items: center;"><div class="square blue"></div> <div id="taxesLabel"> {{supertxt}} {{#equals locdropdown "uk"}} {{uksymbol}} {{else}} {{aussymbol}} {{/equals}}0.00</div></div>
+    </div>
+    <div class="base-salary">
+      {{totalpackage}} <span id="baseSalaryLabel">{{#equals locdropdown "uk"}} {{uksymbol}} {{else}} {{aussymbol}} {{/equals}}0.00</span> </div>
+</div>
+    <!--<div class="salary-super-card">
+      <div class="totslaincsupercls"  style="text-align:left;">Total salary including super</div>
+      <div class="bar2para"  style="text-align:left;" class="super-note">Superannuation is paid by your employer on top of your base salary</div>
+
+      <div class="salary-bar">
+        <div class="base-portion"></div>
+        <div class="super-portion"></div>
+      </div>
+
+      <div class="legend">
+          <span><span class="square green"></span> {{totalpackage}}  <span id="basePortionLabel">0.00</span></span>
+          <span><span class="square black"></span> {{supertxt}} <span id="superPortionLabel">0.00</span></span>
+       </div> 
+        <div class="bar2-total">
+          Total including super <span id="totalWithSuperLabel">0.00</span>
+        </div>
+      
+    </div>-->
+  </div>
+</div>
+</div>
+
+<div class="main" id="mobileview">
+        <div class="moderncls">
+    <div class="moderntitlecls">{{moderntitlecls}}</div>
+<div class="header-row">
+    <div class="input-group">
+        <label class="yourpaycls" for="yourpay" style="text-align:left;">{{ratemobile}}</label>
+        <input class="clsinputbox1" type="text" id="yourpaymobile" inputmode="numeric" pattern="[0-9]">
+    </div>
+    <div class="input-group">
+        <label class="yourpaycls" for="hoursPerDaymobile" style="text-align:left;">{{hoursperdaytxt}}</label>
+        <input class="clsinputbox1" type="number" min="1" step="0.5" id="hoursPerDaymobile">
+    </div>
+    <div class="input-group">
+        <label for="time-period" class="yourpaycls" style="text-align:left;">{{timeperiodmobile}}</label>
+            <select class="clsinputbox1" id="time-periodmobile" style="padding: 8px;">
+                <option value="yearly">Annually</option>
+                <option value="monthly">Monthly</option>
+                <option value="fortnightly">Fortnightly</option>
+                <option value="daily">Daily</option>
+                <option value="hourly">Hourly</option>
+            </select>
+    </div>
+    <div class="input-group">
+        <label class="annuationcls" for="annuation" style="text-align:left;">{{superannuationmobile}}</label>
+        <input class="clsinputbox1" type="text" id="modernsuperannuationmobile"  inputmode="numeric" pattern="[0-9]">
+    </div>
+</div>
+<div class="resultsmobile">
+<div class="scroll-barmobile">
+  <div class="timelabels-mobile">
+        <div class="timelabel active-label" data-value="yearly">Annually</div>
+        <div class="timelabel" data-value="monthly">Monthly</div>
+        <div class="timelabel" data-value="fortnightly">Fortnightly</div>
+        <div class="timelabel" data-value="daily">Daily</div>
+        <div class="timelabel" data-value="hourly">Hourly</div>
+  </div>
+</div>
+    <div class="modern-summary-row">
+    <div class="summary-label">Base Salary {{#equals locdropdown "uk"}} ({{uksymbol}}) {{else}} ({{aussymbol}}) {{/equals}}</div>
+    <div class="summary-value" id="baseSalaryValue">0</div>
+  </div>
+  <div class="modern-summary-row">
+    <div class="summary-label">Superannuation {{#equals locdropdown "uk"}} ({{uksymbol}}) {{else}} ({{aussymbol}}) {{/equals}}</div>
+    <div class="summary-value" id="superValue">0</div>
+  </div>
+  <div class="modern-summary-row">
+    <div class="summary-label">Total Package {{#equals locdropdown "uk"}} ({{uksymbol}}) {{else}} ({{aussymbol}}) {{/equals}}</div>
+    <div class="summary-value" id="totalPackageValue">0</div>
+  </div>
+</div>
+ <div class="salary-visual"> 
+ <div class="salary-super-card">
+    <div class="salrybreakdowncls"  style="text-align:left;">Salary Breakdown Bar</div>
+    <div class="salary-barmobile">
+      <div class="take-home" id="take-homemobile"></div>
+      <div class="taxes" id="taxes-mobile"></div>
+    </div>
+   <div class="legend">
+      <div  style="display: flex;align-items: center;"><div class="square pink"></div> <div id="takeHomeLabelmobile">{{basesalary}} {{#equals locdropdown "uk"}} {{uksymbol}} {{else}} {{aussymbol}} {{/equals}}0.00</div></div>
+      <div style="display: flex;align-items: center;"><div class="square blue"></div> <div id="taxesLabelmobile"> {{supertxt}} {{#equals locdropdown "uk"}} {{uksymbol}} {{else}} {{aussymbol}} {{/equals}}0.00</div></div>
+    </div>
+    <div class="base-salary">
+      {{totalpackage}} <span id="baseSalaryLabelmobile">{{#equals locdropdown "uk"}} {{uksymbol}} {{else}} {{aussymbol}} {{/equals}}0.00</span> </div>
+</div>
+
+  </div>
+</div>
+</div>
+{{/equals}}
+
+

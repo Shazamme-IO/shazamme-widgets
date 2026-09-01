@@ -1,0 +1,453 @@
+.ClsThermometerMain{
+    width: 100%;
+    height: 400px;
+}
+
+.ClsDonarListMain{
+    width:100%;
+    padding: 0px 10px;
+}
+
+.clsNewMainSub2{
+    flex-direction: column;
+    height: 800px;
+}
+
+
+.accordion {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.accordion-header {
+  background: linear-gradient(90deg, #ff416c, #ff4b2b);
+  color: white;
+  padding: 12px 16px;
+  cursor: pointer;
+  border-radius: 0px;
+  font-weight: bold;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  transition: background 0.3s ease;
+}
+
+.accordion-header:hover {
+  background: linear-gradient(90deg, #ff4b2b, #ff416c);
+}
+
+.accordion-content {
+  display: none;
+  padding: 16px;
+  background-color: #fff;
+  border-radius: 0px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.imagerotated{
+    transform: rotate(180deg);
+    transition: transform 0.3s ease;
+}
+
+.tabtext1,.tabtext2{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.clshourlyinput{
+    width: 100%;
+}
+
+.clsannual{
+    flex-direction: column;
+    align-items: normal;
+}
+
+.curannualcls{
+    width: 100%;
+}
+
+.clshourlysecond{
+    flex-direction: column;
+    align-items: normal;
+}
+
+.secondhourlycls{
+    width: 100%;
+}
+.clsaddloading{
+    flex-direction: column;
+    align-items: normal;
+}
+.addloadcls{
+     width: 100%;
+}
+.clshourlyplus{
+    flex-direction: column;
+    align-items: normal;
+}
+.hourpluslycls{
+     width: 100%;
+}
+.hourlyplusinput{
+     width: 80%;
+}
+.taxblecls{
+     flex-direction: column;
+    align-items: normal;
+}
+.clstaxblelabel{
+    width: 100%; 
+}
+.clstaxableinput{
+     width: 80%; 
+}
+.hourlyvalcls{
+     width: 80%; 
+}
+.payrolevalcls{
+     width: 80%;
+}
+.lesspayvalcls{
+    width: 80%;
+}
+.supervalcls{
+    width: 80%;
+}
+.lesssupervalcls{
+    width: 80%;
+}
+.totalcostvalcls{
+    width: 80%;
+}
+.results{
+    width: 100%;
+    overflow-x: scroll;
+}
+.moreless-button{
+    text-align: right;
+}
+.notecls {
+      font-size: 12px;
+      color: #666;
+      padding: 10px 0px;
+      text-align: left;
+}
+
+//modern layout CSS
+.header-row{
+    display: flex;
+    flex-direction: column;
+    font-weight: bold;
+    color: black;
+    gap: 10px;
+}
+.checkbox-group {
+    display: flex;
+    align-items: center;
+}
+
+.input-group {
+    margin-bottom: 15px;
+}
+
+label {
+    font-size: 16px;
+    color: #333;
+    display: block;
+    margin-bottom: 5px;
+}
+
+input[type="text"] {
+    width: 100%;
+    padding: 8px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+#calculation-table {
+    width: 100%;
+    // max-width: 800px;
+    margin-top: 30px;
+    padding: 15px 0px 15px 0px;
+    background-color: #ffffff;
+    border-radius: 8px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 12px;
+    text-align: center;
+    border: 1px solid #ddd;
+}
+
+th {
+    
+    color: #333;
+     text-align: center;
+}
+
+td {
+    font-size: 14px;
+    color: #666;
+}
+.modernthead th{
+    padding: 12px;
+    text-align: center;
+    border: 0px solid #ddd;
+    
+}
+.moderntbody td{
+    padding: 12px;
+    text-align: center;
+    border: 0px solid #ddd;
+}
+
+td#calculation-table {
+    font-weight: bold;
+    color: #333;
+}
+.moderncls{
+    padding:20px;
+}
+.salary-breakdown {
+    margin-top: 15px;
+    margin-left: 10px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+    text-align: left;
+}
+.clsinputbox1{
+    background-color: rgba(0, 0, 0, 0) !important;
+    border-color: rgb(0, 0, 0) !important;
+    border-width: 1px !important;
+    border-style: solid !important;
+}
+.salary-visual {
+  width: 100%;
+  margin: 0 auto;
+//   padding: 20px;
+}
+
+
+.input-group {
+//   gap: 20px;
+  margin-bottom: 20px;
+}
+
+input[type="number"] {
+  padding: 6px 10px;
+  width: 140px;
+}
+
+.salary-barmobile {
+  display: flex;
+  width: 100%;
+  height: 14px;
+  overflow: hidden;
+  margin: 20px 0;
+  background-color: #ccc;
+}
+
+.take-home {
+  background-color: #ec008c;
+  transition: width 0.3s ease;
+}
+
+.taxes {
+  background-color: #1d4e89;
+  transition: width 0.3s ease;
+}
+
+.base-portion {
+  background-color: #28a745;
+  transition: width 0.3s ease;
+}
+
+.super-portion {
+  background-color: #333;
+  transition: width 0.3s ease;
+}
+
+.legend {
+  color: black;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.square {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  vertical-align: middle;
+  border-radius: 2px;
+}
+
+.pink  { background-color: #ec008c; }
+.blue  { background-color: #1d4e89; }
+.green { background-color: #28a745; }
+.black { background-color: #333; }
+
+.base-salary {
+  font-size: 18px;
+  color: black;
+//   font-weight: 600;
+  margin-top: 15px;
+  text-align: right;
+}
+
+.salary-super-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 10px;
+  background: #fff;
+  width: 100%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  margin-top: 30px;
+}
+
+.salary-super-card h2 {
+  margin: 0 0 5px;
+  font-size: 7px;
+}
+
+.super-note {
+  font-size: 12px;
+  color: #777;
+  margin-bottom: 10px;
+}
+
+.bar2-total {
+  margin-top: 15px;
+  color: black;
+//   font-weight: 600;
+  font-size: 18px;
+  text-align: right;
+}
+.bar2-position{
+    display: flex;
+    flex-direction: row;
+}
+.salrybreakdowncls {
+    color: black;
+    padding: 10px 0px;
+}
+.totslaincsupercls {
+    color: black;
+    
+}
+.bar2para {
+    
+    color: black;
+}
+// .clsinputbox1 {
+//     /* Add dropdown-specific styles */
+//     cursor: pointer;
+//     background-repeat: no-repeat;
+//     background-position: right 12px center;
+//     background-size: 16px;
+//     padding-right: 40px;
+// }
+#time-periodmobile {
+    // padding: 10px 12px;
+    cursor: pointer;
+    // border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    background-color: #fff;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.salary-line {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+.modern-summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+}
+
+.summary-label {
+  font-weight: 500;
+  color: #444;
+}
+
+.summary-value {
+  font-weight: bold;
+  color: #000;
+}
+
+.scroll-barmobile {
+  overflow-x: auto;
+  white-space: nowrap;
+  padding: 0px;
+  margin-bottom: 15px;
+  
+}
+.timelabels-mobile {
+  width: 100%;
+  display: flex;              
+  gap: 5px;                  
+//   flex-wrap: nowrap;          
+}
+
+.timelabels-mobile {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  white-space: nowrap;
+//   padding: 0 10px;
+}
+
+.timelabel {
+  padding-bottom: 10px;
+  border-radius: 0px;
+  cursor: pointer;
+  font-weight: 500;
+  color: #555;
+  transition: 0.3s;
+}
+
+.active-label {
+  border-bottom: 2px solid blue;
+  color: blue !important;
+}
+
+.timelabels-mobile {
+    &::-webkit-scrollbar {
+        width: 1px;
+    }
+    &::-webkit-scrollbar:horizontal {
+        height: 1px;
+    }
+    &::-webkit-scrollbar-track {
+        background-color: transparentize(#ccc, 0.5);
+    }
+    &::-webkit-scrollbar-thumb {
+        border-radius: 10px;
+        background: transparentize(#ccc, 0.5);
+        box-shadow: inset 0 0 6px rgba(0,0,0,0.5); 
+    }
+}
+ 
+
