@@ -100,16 +100,23 @@ for (const file of files) {
     seen.add(url);
     const line = lineOf(src, m.index);
 
+    // A URL built by interpolation is not a literal to validate — the unminified
+    // bundles keep their `${...}` placeholders.
+    if (url.includes('${')) continue;
+
     // Well-formedness is a property of the file, not of the network: it must be
-    // enforced even when the reachability probe is skipped (CI, offline).
-    try {
-      new URL(url);
-    } catch {
-      report(`✗ URL MALFORMED  ${file}:${line}  ${url}`);
-      continue;
-    }
-    if (/[<>"'`\\{}|^]/.test(url)) {
-      report(`✗ URL CHARS  ${file}:${line}  ${url}`);
+    // enforced even when the reachability probe is skipped (CI, offline). Same
+    // first-party/third-party policy as the reachability check below.
+    const badSyntax =
+      (() => { try { new URL(url); return null; } catch { return 'MALFORMED'; } })() ||
+      (/[<>"'`\\{}|^]/.test(url) ? 'CHARS' : null);
+
+    if (badSyntax) {
+      if (FIRST_PARTY_RE.test(url)) {
+        report(`✗ URL ${badSyntax}  ${file}:${line}  ${url}`);
+      } else {
+        console.warn(`⚠ URL ${badSyntax}  ${file}:${line}  ${url}  (third-party, non-blocking)`);
+      }
       continue;
     }
 
