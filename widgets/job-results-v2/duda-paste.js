@@ -86,6 +86,17 @@
       });
     return window.__shazScriptCache[BUNDLE];
   }
+  // Duda re-runs this tab on every editor settings change, and the controller has no
+  // teardown: mounting again over the rendered DOM stacks a second set of listeners on
+  // the same nodes, so N tweaks make one facet click render N times. Restore the
+  // pristine template first, discarding the old nodes and their listeners. (SDK channel
+  // subscriptions still accumulate — that needs a teardown in the controller itself.)
+  if (element.__shazTemplate === undefined) {
+    element.__shazTemplate = element.innerHTML;
+  } else {
+    element.innerHTML = element.__shazTemplate;
+  }
+
   Promise.all([sdkReady(), bundle()]).then(function () {
     var controller = window.ShazammeWidget && window.ShazammeWidget[NAME];
     if (typeof controller !== "function") {
