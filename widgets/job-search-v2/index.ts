@@ -136,6 +136,12 @@ export default function jobSearch(ctx: WidgetContext): void {
   // (not `background`) preserves the select's custom arrow image.
   function normalizeFields(): void {
     root.querySelectorAll<HTMLElement>('.flex-items-js input, .flex-items-js select').forEach((el) => {
+      // A multi-select's option checkboxes live under .flex-items-js too (the wrapper
+      // carries both classes), and sizing one as a 46px white field turns every option
+      // into a giant empty box with its label squeezed to zero width.
+      if (el.closest('.multi-select-dropdown')) return;
+      if (el instanceof HTMLInputElement && (el.type === 'checkbox' || el.type === 'radio')) return;
+
       el.style.setProperty('height', '46px', 'important');
       el.style.setProperty('background-color', '#fff', 'important');
       el.style.setProperty('border', '1.5px solid #d1d1d1', 'important');

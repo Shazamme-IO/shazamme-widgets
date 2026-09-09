@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 26bb4f976556. Registers window.ShazammeWidget["<name>"].
+ * Build 5b9a0bc87571. Registers window.ShazammeWidget["<name>"].
  */
 (function(){
   if (typeof document === 'undefined') return;
@@ -610,6 +610,8 @@ var __shazWidgetExport = (() => {
     };
     function normalizeFields() {
       root.querySelectorAll(".flex-items-js input, .flex-items-js select").forEach((el) => {
+        if (el.closest(".multi-select-dropdown")) return;
+        if (el instanceof HTMLInputElement && (el.type === "checkbox" || el.type === "radio")) return;
         el.style.setProperty("height", "46px", "important");
         el.style.setProperty("background-color", "#fff", "important");
         el.style.setProperty("border", "1.5px solid #d1d1d1", "important");

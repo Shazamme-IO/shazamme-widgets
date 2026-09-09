@@ -184,6 +184,34 @@ describe('jobSearch controller', () => {
     expect((last.payload as { state: Record<string, string[]> }).state.professionID.length).toBe(2);
   });
 
+  it('leaves multi-select option checkboxes unstyled — normalizeFields is for form fields', async () => {
+    // The multi-select wrapper carries .flex-items-js, so a bare `.flex-items-js input`
+    // sweep also hits each option's checkbox: sized as a 46px white field, every option
+    // renders as a giant empty box with its label squeezed to zero width.
+    const published: Published[] = [];
+    jobSearch({
+      element,
+      data: { config: { showJobCategories: 'true' } },
+      $: {},
+      shazamme: stubClient(makeJobs(), published),
+    });
+    await flush();
+    await flush();
+
+    const wrap = element.querySelector<HTMLElement>('[data-ms-field="professionID"]')!;
+    const optionBoxes = wrap.querySelectorAll<HTMLInputElement>('.multi-select-dropdown input[type="checkbox"]');
+
+    expect(optionBoxes.length).toBeGreaterThan(0);
+    for (const box of Array.from(optionBoxes)) {
+      expect(box.style.height).toBe('');
+      expect(box.style.border).toBe('');
+    }
+
+    // the real form fields still get normalized
+    const select = element.querySelector<HTMLSelectElement>('.flex-items-js select');
+    if (select) expect(select.style.height).toBe('46px');
+  });
+
   it('locks sub-classification until a classification is chosen, and resets it on change', async () => {
     jobSearch({
       element,
