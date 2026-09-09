@@ -107,6 +107,9 @@
 
     shell.classList.remove("shm-ready");
     shell.style.removeProperty("visibility");
+    // clone.innerHTML excludes the clone root, so a fallback-to-element hide has to be
+    // cleared on the live element's own style snapshot instead.
+    if (shell === clone) element.style.removeProperty("visibility");
 
     var mark = clone.querySelector("[data-shaz-mounted]");
     if (mark && mark.parentNode) mark.parentNode.removeChild(mark);
@@ -176,7 +179,13 @@
     var shell = element.querySelector("[data-shm-main], .job-search-root") || element;
     // Match the gate selector itself: getComputedStyle().visibility is inherited, so a
     // widget inside a deliberately hidden ancestor would otherwise be forced visible.
-    var hidden = shell && shell.matches("[data-shm-main]:not(.shm-ready), .job-search-root:not(.shm-ready)");
+    // Two hide mechanisms: the CSS gate keyed on shm-ready, and — when the template
+    // has neither marker and the controller falls back to the element itself — a plain
+    // inline visibility:hidden.
+    var hidden = shell && (
+      shell.matches("[data-shm-main]:not(.shm-ready), .job-search-root:not(.shm-ready)") ||
+      shell.style.visibility === "hidden"
+    );
 
     if (elapsed > 120000) return clearInterval(watch);
     if (elapsed < 30000 || !hidden) return;
