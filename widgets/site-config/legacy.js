@@ -649,6 +649,10 @@ let main = (w) => {
         .appendTo(ux.el)
         .hide();
 
+    // Only relative paths get a leading slash: an absolute or protocol-relative href
+    // would otherwise become /https://example.com/… and flow into buildHref.
+    const rootPath = (v) => (/^([a-z][a-z0-9+.-]*:)?\/\//i.test(v) ? v : ('/' + v).replace(/^\/+/, '/'));
+
     const toPath = (p, d) => {
         if (p?.type === 'dynamic_page') {
             let seg = p.href.split('/');
@@ -659,10 +663,10 @@ let main = (w) => {
 
             // An empty join must fall back to `d`, not to '/': '' was falsy so callers'
             // `|| '/register'` fallbacks engaged, whereas '/' silently routes to home.
-            return joined ? ('/' + joined).replace(/^\/+/, '/') : d;
+            return joined ? rootPath(joined) : d;
         }
 
-        return p?.href ? ('/' + p.href).replace(/^\/+/, '/') : d;
+        return p?.href ? rootPath(p.href) : d;
     }
 
     data.config.pathHome          = toPath(data.config.pathHome,          '/');

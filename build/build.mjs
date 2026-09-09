@@ -11,6 +11,7 @@
 
 import { build } from 'esbuild';
 import { readFileSync, writeFileSync, readdirSync, mkdirSync, existsSync, statSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, relative, sep } from 'node:path';
 
@@ -26,7 +27,11 @@ const VERSION = pkg.version;
 
 const banner = [
   `/* shazamme-widgets — ${pkg.name} v${VERSION}`,
-  ` * Built from v${pkg.version}. Registers window.ShazammeWidget["<name>"].`,
+  // A build timestamp made every rebuild produce a diff, which is how source and the
+  // shipped bundles drifted apart unnoticed. BUILD_ID is a content hash stamped after
+  // the bundle is written: it identifies which build is live from a plain CDN fetch
+  // while staying byte-reproducible for the CI drift gate.
+  ` * Build BUILD_ID. Registers window.ShazammeWidget["<name>"].`,
   ` */`,
 ].join('\n');
 
@@ -300,6 +305,10 @@ async function bundleWidget(name, kind) {
     stripUseStrict(join(outDir, 'widget.min.js'));
   }
 
+  for (const f of ['widget.js', 'widget.min.js']) {
+    stampBuildId(join(outDir, f));
+  }
+
   console.log(`✓ built ${name} → dist/${name}/${VERSION}/widget.{js,min.js}`);
 }
 
@@ -308,6 +317,14 @@ async function bundleWidget(name, kind) {
 // the one esbuild inserts at the top of the IIFE — is removed; legacy widgets contain
 // no other. Fails LOUDLY if the directive is absent, so a future esbuild/layout change
 // can never silently re-ship strict-mode legacy bundles.
+// Replace the BUILD_ID placeholder with a short hash of the bundle's own content.
+function stampBuildId(file) {
+  const src = readFileSync(file, 'utf8');
+  const body = src.replace(' * Build BUILD_ID.', '');
+  const id = createHash('sha256').update(body).digest('hex').slice(0, 12);
+  writeFileSync(file, src.replace('BUILD_ID', id), 'utf8');
+}
+
 function stripUseStrict(file) {
   const src = readFileSync(file, 'utf8');
   const stripped = src.replace(/(["'])use strict\1;?/, '');

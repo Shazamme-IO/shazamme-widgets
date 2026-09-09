@@ -78,5 +78,15 @@
       throw new Error(NAME + " bundle loaded but registered no controller");
     }
     controller({ element: element, data: data, $: window.jQuery || window.$, shazamme: window.shazamme });
-  }).catch(function (e) { console.warn("[" + NAME + "] failed to mount", e); });
+  }).catch(function (e) {
+    // The controller hides the shell before it renders, so a throw anywhere after that
+    // leaves a permanently blank widget. Lift the hide before reporting.
+    try {
+      var shell = element.querySelector("[data-shm-main], .job-search-root") || element;
+      shell.classList.add("shm-ready");
+      shell.style.setProperty("visibility", "visible", "important");
+    } catch (ignored) { /* nothing more we can do */ }
+
+    console.error("[" + NAME + "] failed to mount", e);
+  });
 })();

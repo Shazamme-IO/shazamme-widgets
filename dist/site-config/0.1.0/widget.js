@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built from v0.1.0. Registers window.ShazammeWidget["<name>"].
+ * Build 11ec9c4d48f6. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -515,14 +515,15 @@ var __shazWidgetExport = (() => {
       _toastT = $(".shazamme-toast").css({
         opacity: 0
       }).clone().appendTo(ux.el).hide();
+      const rootPath = (v) => /^([a-z][a-z0-9+.-]*:)?\/\//i.test(v) ? v : ("/" + v).replace(/^\/+/, "/");
       const toPath = (p, d) => {
         if ((p == null ? void 0 : p.type) === "dynamic_page") {
           let seg = p.href.split("/");
           seg.splice(-1, 1);
           let joined = seg.join("/");
-          return joined ? ("/" + joined).replace(/^\/+/, "/") : d;
+          return joined ? rootPath(joined) : d;
         }
-        return (p == null ? void 0 : p.href) ? ("/" + p.href).replace(/^\/+/, "/") : d;
+        return (p == null ? void 0 : p.href) ? rootPath(p.href) : d;
       };
       data.config.pathHome = toPath(data.config.pathHome, "/");
       data.config.pathLogin = toPath(data.config.pathLogin, "/login");

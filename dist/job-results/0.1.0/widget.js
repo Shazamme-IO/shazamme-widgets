@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built from v0.1.0. Registers window.ShazammeWidget["<name>"].
+ * Build e88dcd3c1ece. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {

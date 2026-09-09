@@ -36,6 +36,10 @@ jobs:
             exit 1
           fi
       - run: npm run validate -- --skip-url-checks
+      # Advisory: asset URLs are external state, so they report but never block.
+      - name: asset URLs (advisory)
+        continue-on-error: true
+        run: npm run validate
 
   # Asset URLs are external state, so they cannot gate a PR — but nothing checked
   # them automatically once CI started skipping them. Nightly, and non-blocking.
