@@ -19,8 +19,8 @@
   var NAME = "job-results-v2";
   var BUNDLE = "https://sdk.shazamme.io/js/widget/" + NAME + "/widget.min.js";
   var SDK = "https://sdk.shazamme.io/js/shazamme-1.0.3.min.js";
-  // A blocked or failed script must reject, not hang: an unsettled promise leaves the
-  // widget unmounted with nothing in the console to explain why.
+  // Used for the bundle only: a blocked or failed bundle must reject, not hang — an
+  // unsettled promise leaves the widget unmounted with nothing in the console.
   function load(src) {
     return new Promise(function (res, rej) {
       var s = document.createElement("script");
@@ -30,14 +30,19 @@
       document.head.appendChild(s);
     });
   }
-  // Start the SDK load if nobody else has, but never publish our promise as
-  // window.__shazSDKPromise: core/script-loader hands that exact promise to the
-  // ported legacy widgets, which would then call shazamme.* on a failed load.
-  // Dedupe through the per-URL script cache instead.
-  if (!window.shazamme && !window.__shazSDKPromise) {
-    window.__shazScriptCache = window.__shazScriptCache || {};
-    window.__shazScriptCache[SDK] = window.__shazScriptCache[SDK] || load(SDK).catch(function () {});
-  }
+  // Publish the shared promise so no other stub injects a second copy of the SDK — a
+  // double load can leave ready() unresolved. It must settle exactly like the older
+  // stubs' promise, which every legacy widget chains on: resolve once the SDK is
+  // there, never settle on failure (resolving would let them call shazamme.* on a
+  // global that never loaded). Our own mount waits on sdkReady() instead, so a
+  // promise that never settles cannot strand this widget.
+  window.__shazSDKPromise = window.__shazSDKPromise || new Promise(function (res) {
+    if (window.shazamme) return res();
+    var s = document.createElement("script");
+    s.src = SDK;
+    s.onload = res;
+    document.head.appendChild(s);
+  });
 
   // Wait on the SDK global, not on any promise: __shazSDKPromise is first-writer-wins
   // across stubs with different settle contracts (older ones never settle on error,

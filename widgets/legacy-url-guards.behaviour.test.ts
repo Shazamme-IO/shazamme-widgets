@@ -10,7 +10,10 @@ import { describe, it, expect } from 'vitest';
 const here = dirname(fileURLToPath(import.meta.url));
 const WIDGETS = ['site-config', 'login-dialog', 'upload-dialog', 'job-results', 'job-search'];
 
-function extractBuildHref(widget: string): (path: string, query?: string) => string {
+function extractBuildHref(
+  widget: string,
+  inEditor = false,
+): (path: string, query?: string) => string {
   const src = readFileSync(join(here, widget, 'legacy.js'), 'utf8');
   const start = src.indexOf('this.buildHref = (path, query) => {');
   expect(start, `${widget}: buildHref not found`).toBeGreaterThan(-1);
@@ -30,7 +33,7 @@ function extractBuildHref(widget: string): (path: string, query?: string) => str
     `return (path, query) => ${body};`,
   ) as (d: unknown, w: unknown) => (p: string, q?: string) => string;
 
-  return make({ inEditor: false, siteId: 'site1' }, { location: { hostname: 'clientsite.com' } });
+  return make({ inEditor, siteId: 'site1' }, { location: { hostname: 'clientsite.com' } });
 }
 
 describe.each(WIDGETS)('%s buildHref', (widget) => {
@@ -46,5 +49,12 @@ describe.each(WIDGETS)('%s buildHref', (widget) => {
 
   it('never concatenates host and path', () => {
     expect(buildHref('register')).not.toContain('clientsite.comregister');
+  });
+
+  it('adds the slash in the Duda editor branch too', () => {
+    const inEditor = extractBuildHref(widget, true);
+
+    expect(inEditor('register')).toContain('/site/site1/register');
+    expect(inEditor('register')).not.toContain('site1register');
   });
 });

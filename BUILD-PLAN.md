@@ -30,7 +30,7 @@ build/build.mjs  esbuild bundler + window.ShazammeWidget wrapper + CSS inject
 scripts/
   validate.mjs   ported syntax + URL gate
   deploy.mjs     aws s3 cp -> js/widget/<name>/<ver>/ (+ CloudFront invalidate)
-loaders/         paste-into-Duda loader snippet per widget
+widgets/<name>/duda-paste.js         paste-into-Duda loader snippet per widget
 ```
 
 ## Phases
