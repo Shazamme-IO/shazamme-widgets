@@ -8,8 +8,8 @@
 //
 // This is the NATIVE (v2) controller — the one the widget's settings panel,
 // HTML template and CSS tab were written for. Loading the legacy port here
-// instead silently drops every v2-only setting (hideLeftNav, job-type filter,
-// grid layout), because the legacy bundle never reads those keys.
+// instead silently drops every v2-only setting this widget's panel exposes,
+// because the legacy bundle never reads those keys.
 //
 // Starts the SDK load only if no other stub has, and waits for the SDK global
 // itself rather than any shared promise. Future widget updates ship from
@@ -51,11 +51,12 @@
   function sdkReady() {
     return new Promise(function (res, rej) {
       // Elapsed time, not tick count: a background tab clamps timers to >=1s, which
-      // would stretch a 15s deadline counted in ticks to minutes.
+      // would stretch the deadline counted in ticks to many minutes. Generous, because
+      // giving up early leaves an empty shell for an SDK that was merely slow.
       var started = Date.now();
       (function poll() {
         if (window.shazamme) return res();
-        if (Date.now() - started > 15000) return rej(new Error("SDK did not load in 15s"));
+        if (Date.now() - started > 60000) return rej(new Error("SDK did not load in 60s"));
         setTimeout(poll, 50);
       })();
     });
@@ -94,6 +95,12 @@
   // Snapshot the markup as Duda authored it: without our mount marker, and without the
   // reveal artifacts a failed previous run may have left behind — snapshotting those
   // would bake the anti-FOUC hide open for this element forever.
+  function restoreStyle(node, style) {
+    if (!node) return;
+    if (style === null || style === undefined) node.removeAttribute("style");
+    else node.setAttribute("style", style);
+  }
+
   function snapshot() {
     var clone = element.cloneNode(true);
     var shell = clone.querySelector("[data-shm-main], .job-search-root") || clone;
@@ -112,10 +119,24 @@
   // template is snapshotted rather than overwritten with a stale one. The template
   // itself lives on an expando, which an editor clone can drop — restore only when we
   // actually hold one.
-  if (element.querySelector("[data-shaz-mounted]") && typeof element.__shazTemplate === "string") {
+  var mounted = element.querySelector("[data-shaz-mounted]");
+
+  if (mounted && typeof element.__shazTemplate === "string") {
     element.innerHTML = element.__shazTemplate;
+    // The controller also stamps !important width/flex on the element and its row
+    // (fillRow); innerHTML alone would leave a stretched layout after hideLeftNav is
+    // turned off.
+    restoreStyle(element, element.__shazStyle);
+    restoreStyle(element.parentElement, element.__shazParentStyle);
+  } else if (mounted) {
+    // Rendered DOM, but no template to restore — an editor clone keeps the marker and
+    // drops the expando. Snapshotting now would bake the rendered cards in as the
+    // template, so leave it be and say why.
+    console.warn("[" + NAME + "] remounting without a pristine template — refresh the editor if the widget looks stale");
   } else {
     element.__shazTemplate = snapshot();
+    element.__shazStyle = element.getAttribute("style");
+    element.__shazParentStyle = element.parentElement && element.parentElement.getAttribute("style");
   }
 
   // Two re-runs can be in flight at once (settings changed twice while the bundle is
@@ -153,7 +174,9 @@
   var watch = element.__shazRevealWatch = setInterval(function () {
     var elapsed = Date.now() - watchStarted;
     var shell = element.querySelector("[data-shm-main], .job-search-root") || element;
-    var hidden = shell && getComputedStyle(shell).visibility === "hidden";
+    // Match the gate selector itself: getComputedStyle().visibility is inherited, so a
+    // widget inside a deliberately hidden ancestor would otherwise be forced visible.
+    var hidden = shell && shell.matches("[data-shm-main]:not(.shm-ready), .job-search-root:not(.shm-ready)");
 
     if (elapsed > 120000) return clearInterval(watch);
     if (elapsed < 30000 || !hidden) return;
