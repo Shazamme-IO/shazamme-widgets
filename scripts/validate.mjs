@@ -59,10 +59,6 @@ function pasteStubs() {
 }
 
 const args = process.argv.slice(2).filter((a) => a !== '--skip-url-checks');
-// Paste stubs reference the bundle they will load once deployed, so a 404 there is a
-// warning rather than a failure — otherwise a brand-new widget could not be checked in
-// until it shipped. A typo still surfaces in the output.
-const isPasteStub = (f) => f.endsWith('duda-paste.js');
 // A live-network dependency in CI turns an sdk.shazamme.io outage into a red build on
 // unrelated PRs. The syntax gate needs no network and always runs.
 const SKIP_URLS = process.argv.includes('--skip-url-checks');
@@ -110,22 +106,14 @@ for (const file of files) {
       }
       if (res.status >= 400) {
         if (FIRST_PARTY_RE.test(url)) {
-          if (isPasteStub(file)) {
-            console.warn(`⚠ URL ${res.status}  ${file}:${line}  ${url}  (paste stub — not yet deployed?)`);
-          } else {
-            report(`✗ URL ${res.status}  ${file}:${line}  ${url}`);
-          }
+          report(`✗ URL ${res.status}  ${file}:${line}  ${url}`);
         } else {
           console.warn(`⚠ URL ${res.status}  ${file}:${line}  ${url}  (third-party, non-blocking)`);
         }
       }
     } catch (e) {
       if (FIRST_PARTY_RE.test(url)) {
-        if (isPasteStub(file)) {
-          console.warn(`⚠ URL ERR ${file}:${line}  ${url}  (${e.message}) — paste stub`);
-        } else {
-          report(`✗ URL ERR ${file}:${line}  ${url}  (${e.message})`);
-        }
+        report(`✗ URL ERR ${file}:${line}  ${url}  (${e.message})`);
       } else {
         console.warn(`⚠ URL ERR ${file}:${line}  ${url}  (${e.message}; third-party, non-blocking)`);
       }

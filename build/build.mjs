@@ -317,14 +317,6 @@ async function bundleWidget(name, kind) {
 // the one esbuild inserts at the top of the IIFE — is removed; legacy widgets contain
 // no other. Fails LOUDLY if the directive is absent, so a future esbuild/layout change
 // can never silently re-ship strict-mode legacy bundles.
-// Replace the BUILD_ID placeholder with a short hash of the bundle's own content.
-function stampBuildId(file) {
-  const src = readFileSync(file, 'utf8');
-  const body = src.replace(' * Build BUILD_ID.', '');
-  const id = createHash('sha256').update(body).digest('hex').slice(0, 12);
-  writeFileSync(file, src.replace('BUILD_ID', id), 'utf8');
-}
-
 function stripUseStrict(file) {
   const src = readFileSync(file, 'utf8');
   const stripped = src.replace(/(["'])use strict\1;?/, '');
@@ -334,6 +326,22 @@ function stripUseStrict(file) {
     );
   }
   writeFileSync(file, stripped, 'utf8');
+}
+
+// Replace the BUILD_ID placeholder with a short hash of the bundle's own content, so a
+// CDN fetch identifies the build without a timestamp making every rebuild a diff.
+// Fails LOUDLY if the placeholder is gone: a silently unstamped bundle would leave
+// every deployed file claiming the same anonymous identity.
+function stampBuildId(file) {
+  const src = readFileSync(file, 'utf8');
+  if (!src.includes('BUILD_ID')) {
+    throw new Error(`[build-id] no BUILD_ID placeholder in ${file} — banner layout changed.`);
+  }
+  const id = createHash('sha256')
+    .update(src.replace(' * Build BUILD_ID.', ''))
+    .digest('hex')
+    .slice(0, 12);
+  writeFileSync(file, src.replace('BUILD_ID', id), 'utf8');
 }
 
 async function main() {
