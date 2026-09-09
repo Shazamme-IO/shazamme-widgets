@@ -112,13 +112,12 @@
     var shell = element.querySelector("[data-shm-main], .job-search-root") || element;
     var hidden = shell && getComputedStyle(shell).visibility === "hidden";
 
-    // Mounted and visible: nothing left to watch.
-    if (!hidden && elapsed > 30000) return clearInterval(watch);
     if (elapsed > 120000) return clearInterval(watch);
     if (elapsed < 30000 || !hidden) return;
 
+    // Deliberately keeps watching after a reveal: the controller re-hides the shell
+    // when it finally mounts, and its floating async mount can reject after that.
     console.error("[" + NAME + "] still hidden " + Math.round(elapsed / 1000) + "s after load — revealing");
     reveal();
-    clearInterval(watch);
   }, 2000);
 })();

@@ -142,9 +142,9 @@ function UX() {
         };
 
         // Without this, a caller passing "job-results" builds https://site.comjob-results.
-        // An absolute or protocol-relative href is already a destination and passes
-        // through untouched.
-        if (/^[a-z][a-z0-9+.-]*:\/\//i.test(path || '')) {
+        // An http(s) href is already a destination and passes through untouched. Only
+        // http(s): any other scheme (javascript:, data:) must stay neutralised.
+        if (/^https?:\/\//i.test(path || '')) {
             return query ? addQuery(path, query) : path;
         }
 

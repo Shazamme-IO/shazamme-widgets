@@ -1117,7 +1117,7 @@ function UX() {
                     return `${base}${base.includes('?') ? '&' : '?'}${q}${frag ? '#' + frag : ''}`;
                 };
 
-                if (/^[a-z][a-z0-9+.-]*:\/\//i.test(path || '')) {
+                if (/^https?:\/\//i.test(path || '')) {
                     return query ? addQuery(path, query) : path;
                 }
 

@@ -78,6 +78,13 @@ describe.each(WIDGETS)('%s buildHref', (widget) => {
       .toBe('https://clientsite.com/job-application?src=web&jobID=123');
   });
 
+  it('neutralises a non-http scheme instead of passing it through', () => {
+    const hostile = buildHref('javascript://x%0aalert(1)');
+
+    expect(hostile.startsWith('https://clientsite.com/')).toBe(true);
+    expect(hostile.startsWith('javascript:')).toBe(false);
+  });
+
   it('adds the slash in the Duda editor branch too', () => {
     const inEditor = extractBuildHref(widget, true);
 

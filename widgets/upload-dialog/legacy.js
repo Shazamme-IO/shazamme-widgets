@@ -28,11 +28,11 @@ function UX() {
 
         // Restored from the deployed bundle (PR #9): drive-by web edits deleted this
         // from source, so a rebuild would ship https://clientsite.comregister.
-        // An href with an explicit scheme is already a destination — prefixing it would
+        // An http(s) href is already a destination — prefixing it would
         // produce https://clientsite.com/https://careers.example.com/register. A
         // protocol-relative "//x" is not passed through: from a page-path config it is
         // almost always a doubled slash, and honouring it would navigate off-site.
-        if (/^[a-z][a-z0-9+.-]*:\/\//i.test(path || '')) {
+        if (/^https?:\/\//i.test(path || '')) {
             return query ? addQuery(path, query) : path;
         }
 
