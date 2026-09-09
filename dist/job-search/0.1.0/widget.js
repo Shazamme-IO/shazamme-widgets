@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 22d5504f0ddf. Registers window.ShazammeWidget["<name>"].
+ * Build d2a481fcaa4f. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -167,8 +167,10 @@ var __shazWidgetExport = (() => {
       };
       this.buildHref = (path, query) => {
         const addQuery = (href, q) => {
-          let [base, frag] = href.split("#");
-          return `${base}${base.includes("?") ? "&" : "?"}${q}${frag ? "#" + frag : ""}`;
+          let hash = href.indexOf("#");
+          let base = hash === -1 ? href : href.slice(0, hash);
+          let frag = hash === -1 ? "" : href.slice(hash);
+          return `${base}${base.includes("?") ? "&" : "?"}${q}${frag}`;
         };
         if (/^https?:\/\//i.test(path || "")) {
           return query ? addQuery(path, query) : path;

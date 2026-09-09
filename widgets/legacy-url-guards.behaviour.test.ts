@@ -85,6 +85,10 @@ describe.each(WIDGETS)('%s buildHref', (widget) => {
     expect(hostile.startsWith('javascript:')).toBe(false);
   });
 
+  it('keeps everything after a second # in the fragment', () => {
+    expect(buildHref('/apply#a#b', 'jobID=1')).toBe('https://clientsite.com/apply?jobID=1#a#b');
+  });
+
   it('adds the slash in the Duda editor branch too', () => {
     const inEditor = extractBuildHref(widget, true);
 

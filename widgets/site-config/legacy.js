@@ -30,9 +30,11 @@ function UX() {
         // A query appended after a fragment lands inside it (…#form?jobID=1), losing the
         // parameter — split the fragment off first.
         const addQuery = (href, q) => {
-            let [base, frag] = href.split('#');
+            let hash = href.indexOf('#');
+            let base = hash === -1 ? href : href.slice(0, hash);
+            let frag = hash === -1 ? '' : href.slice(hash);
 
-            return `${base}${base.includes('?') ? '&' : '?'}${q}${frag ? '#' + frag : ''}`;
+            return `${base}${base.includes('?') ? '&' : '?'}${q}${frag}`;
         };
 
         // Restored from the deployed bundle (PR #9): drive-by web edits deleted this

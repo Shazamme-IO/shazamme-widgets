@@ -91,18 +91,32 @@
   // the same nodes, so N tweaks make one facet click render N times. Restore the
   // pristine template first, discarding the old nodes and their listeners. (SDK channel
   // subscriptions still accumulate — that needs a teardown in the controller itself.)
-  if (element.__shazTemplate === undefined) {
-    element.__shazTemplate = element.innerHTML;
-  } else {
+  // The marker survives only as long as our rendered DOM: when the HTML tab is edited,
+  // Duda replaces the element's markup and the marker goes with it, so the fresh
+  // template is snapshotted rather than overwritten with a stale one.
+  if (element.querySelector("[data-shaz-mounted]")) {
     element.innerHTML = element.__shazTemplate;
+  } else {
+    element.__shazTemplate = element.innerHTML;
   }
 
+  // Two re-runs can be in flight at once (settings changed twice while the bundle is
+  // still downloading). Only the newest may mount, or both resolve onto the same DOM.
+  var generation = (element.__shazMountGeneration = (element.__shazMountGeneration || 0) + 1);
+
   Promise.all([sdkReady(), bundle()]).then(function () {
+    if (generation !== element.__shazMountGeneration) return;
+
     var controller = window.ShazammeWidget && window.ShazammeWidget[NAME];
     if (typeof controller !== "function") {
       throw new Error(NAME + " bundle loaded but registered no controller");
     }
     controller({ element: element, data: data, $: window.jQuery || window.$, shazamme: window.shazamme });
+
+    var marker = document.createElement("span");
+    marker.setAttribute("data-shaz-mounted", NAME);
+    marker.hidden = true;
+    element.appendChild(marker);
   }).catch(function (e) {
     reveal();
     console.error("[" + NAME + "] failed to mount", e);
