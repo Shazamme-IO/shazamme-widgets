@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-08-28T07:31:23.270Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-09-09T08:21:04.924Z. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -106,6 +106,12 @@ var __shazWidgetExport = (() => {
     let _alertDialogT = void 0;
     let _loadingDialogT = void 0;
     let _toastT = void 0;
+    let _userEngaged = false;
+    ["pointerdown", "keydown", "touchstart", "wheel"].forEach(
+      (ev) => window.addEventListener(ev, () => {
+        _userEngaged = true;
+      }, { capture: true, passive: true, once: true })
+    );
     const enableFileUploads = (w) => {
       if (this._fileUploads) {
         return;
@@ -400,6 +406,9 @@ var __shazWidgetExport = (() => {
     `).copyCSS(_loadingDialogT, null, ["display"]);
       el.find(".dialog-content .title").copyCSS(_loadingDialogT == null ? void 0 : _loadingDialogT.find(".dialog-content .title"));
       el.find(".dialog-content").copyCSS(_loadingDialogT == null ? void 0 : _loadingDialogT.find(".dialog-content"));
+      if (!_userEngaged && !data.inEditor) {
+        el.css("display", "none");
+      }
       return el;
     };
     const alertDialog = (o) => {
@@ -425,6 +434,12 @@ var __shazWidgetExport = (() => {
       el.find(".dialog-content .title").copyCSS(_alertDialogT == null ? void 0 : _alertDialogT.find(".dialog-content .title"));
       el.find(".dialog-content .message").copyCSS(_alertDialogT == null ? void 0 : _alertDialogT.find(".dialog-content .message"));
       el.find(".dialog-content .button-main").copyCSS(_alertDialogT == null ? void 0 : _alertDialogT.find(".dialog-content .button-main"));
+      const _box = el.find(".dialog-content")[0];
+      if (_box) {
+        _box.style.setProperty("border-radius", "12px", "important");
+        _box.style.setProperty("overflow", "hidden", "important");
+      }
+      el.find(".button-main").each((_, b) => b.style.setProperty("border-radius", "5px", "important"));
       return el;
     };
     const toast = (m, t = 2500) => new Promise((res, rej) => {
@@ -544,6 +559,9 @@ var __shazWidgetExport = (() => {
         ux.el.find(".site-configuration-toolbar [data-rel=external-tool]").append($(el).addClass("button-config"));
       });
       w.sub(Message.loadingShow, () => {
+        if (!_userEngaged && !data.inEditor) {
+          return;
+        }
         let dialog = ux.el.find("[data-rel=dialog][data-dialog=loading]:gt(0)");
         if (dialog.length > 0) {
           dialog.remove();

@@ -18,6 +18,10 @@ function UX() {
     }
 
     this.buildHref = (path, query) => {
+        // Restored from the deployed bundle (PR #9): drive-by web edits deleted this
+        // from source, so a rebuild would ship https://clientsite.comregister.
+        if (path && path.charAt(0) !== '/') path = '/' + path;
+
         return data.inEditor ? `/site/${data.siteId}${path}?preview=true&insitepreview=true&dm_device=desktop${query ? '&' + query : ''}`:`https://${window.location.hostname}${path}${query ? '?' + query : ''}`;
     }
 
