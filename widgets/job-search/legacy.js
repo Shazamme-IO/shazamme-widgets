@@ -105,6 +105,25 @@ function UX() {
     this.el = $(element);
     this.uri = new URL(window.location.href);
 
+    // The widget's Duda CSS tab hides the search bar until it is populated
+    // (`.job-search-root:not(.shm-ready){visibility:hidden!important}`) to kill the
+    // template FOUC. Nothing else removes that hide, so the reveal must run on every
+    // exit path — including failures — or a fully rendered widget stays invisible.
+    // The inline `!important` survives Duda re-asserting the root's class attribute.
+    this.reveal = () => {
+        let root = this.el.find('.job-search-root');
+        let target = root.length > 0 ? root : this.el;
+
+        target.addClass('shm-ready');
+        target.each( (i, node) => {
+            node.style.setProperty('visibility', 'visible', 'important');
+
+            if (node.style.opacity === '0') {
+                node.style.opacity = '1';
+            }
+        });
+    };
+
     this.showLoading = (showing = true) => {
         if (showing) {
             $(element).find(".client-answers-loading").show();
@@ -114,6 +133,12 @@ function UX() {
     }
 
     this.buildHref = (path, query) => {
+        // Without this, a caller passing "job-results" builds https://site.comjob-results.
+        // The deployed bundle already had the guard — it was lost from source, so a
+        // rebuild would have shipped the regression. login-dialog, site-config and
+        // upload-dialog still have it only in their committed dist: see PR #12.
+        if (path && path.charAt(0) !== '/') path = '/' + path;
+
         return data.inEditor ? `/site/${data.siteId}${path}?preview=true&insitepreview=true&dm_device=desktop${query ? '&' + query : ''}`:`https://${window.location.hostname}${path}${query ? '?' + query : ''}`;
     }
 
@@ -196,7 +221,7 @@ const main = (w) => {
         }
 
         updateSubCategoryLock();
-        fetchValues();
+        fetchValues().catch( e => console.warn('[job-search] refresh failed', e) );
     });
 
     if (data.config.googleApiKey && data.config.showGeoSearch) {
@@ -221,7 +246,7 @@ const main = (w) => {
                 field.attr('_last', '');
 
                 if (value.length == 0) {
-                    fetchValues();
+                    fetchValues().catch( e => console.warn('[job-search] refresh failed', e) );
                     return;
                 }
 
@@ -244,7 +269,7 @@ const main = (w) => {
                                     field.attr('_last', opt.text());
                                 }
 
-                                fetchValues();
+                                fetchValues().catch( e => console.warn('[job-search] refresh failed', e) );
                             });
 
                         r.forEach( p => {
@@ -266,7 +291,7 @@ const main = (w) => {
                     .siblings('[data-prediction]')
                     .hide();
 
-                fetchValues();
+                fetchValues().catch( e => console.warn('[job-search] refresh failed', e) );
             }, 300);
         });
     }
@@ -277,7 +302,7 @@ const main = (w) => {
 
         if (field.val().length == 0) {
             delete activeFilter[filter];
-            fetchValues();
+            fetchValues().catch( e => console.warn('[job-search] refresh failed', e) );
 
             return;
         }
@@ -341,7 +366,7 @@ const main = (w) => {
                 delete activeFilter[field.attr('data-autocomplete')];
             }
 
-            fetchValues();
+            fetchValues().catch( e => console.warn('[job-search] refresh failed', e) );
         }, 250);
     }).on('change', function() {
         let field = $(this);
@@ -353,7 +378,7 @@ const main = (w) => {
 
         }
 
-        fetchValues();
+        fetchValues().catch( e => console.warn('[job-search] refresh failed', e) );
     });
 
     ux.el.find('input[data-submit]')
@@ -394,19 +419,29 @@ const main = (w) => {
     };
 
     let fetchDebounceTimer = null;
+    let debouncedCallers = [];
     let pendingFetchResolvers = [];
     let isFetching = false;
     let allJobsCache = null;  // in-memory cache of the full unfiltered job list
 
     let fetchValues = () => new Promise( (resolve, reject) => {
-        // Debounce: cancel any pending fetch and wait 80ms before running
+        // Debounce: cancel any pending fetch and wait 80ms before running. A caller whose
+        // timer is cancelled still settles off the winning fetch — dropping it left the
+        // boot chain (and with it the reveal) pending forever on a same-tick second call.
+        debouncedCallers.push({ resolve, reject });
+
         if (fetchDebounceTimer) {
             clearTimeout(fetchDebounceTimer);
         }
 
         fetchDebounceTimer = setTimeout( () => {
             fetchDebounceTimer = null;
-            _doFetch().then(resolve).catch(reject);
+
+            let waiting = debouncedCallers.splice(0);
+
+            _doFetch()
+                .then( v => waiting.forEach( c => c.resolve(v) ) )
+                .catch( e => waiting.forEach( c => c.reject(e) ) );
         }, 80);
     });
 
@@ -505,7 +540,9 @@ const main = (w) => {
             // drain any resolvers that queued while this fetch was in flight
             let pending = pendingFetchResolvers.splice(0);
             if (pending.length > 0) {
-                _doFetch().then( () => pending.forEach( r => r() ) );
+                _doFetch()
+                    .then( () => pending.forEach( r => r() ) )
+                    .catch( e => { console.warn('[job-search] refresh failed', e); pending.forEach( r => r() ); } );
             }
         };
 
@@ -573,19 +610,32 @@ const main = (w) => {
         updateSubCategoryLock();
 
         // Use the in-memory cache when only filters have changed — avoids a network round-trip
+        // A failed fetch must settle this promise and clear the in-flight flag, or every
+        // later filter change queues a resolver behind a fetch that already died.
+        let _failFetch = (e) => {
+            isFetching = false;
+
+            // Callers that queued behind this fetch must still settle — dropping them
+            // is the same hang this fix exists to remove. Callers still waiting on a
+            // debounce timer settle when that timer fires, so leave them armed.
+            pendingFetchResolvers.splice(0).forEach( r => r() );
+
+            reject(e);
+        };
+
         if (allJobsCache) {
             // Filter the cached full list locally, no fetch needed
-            shApi.getJobs(0, 0, activeFilter, { field: 'changedOnUTC', direction: 'desc' }).then( j => {
-                processJobs(j.values);
-            });
+            shApi.getJobs(0, 0, activeFilter, { field: 'changedOnUTC', direction: 'desc' })
+                .then( j => processJobs(j.values) )
+                .catch(_failFetch);
         } else {
             // First load: fetch from network, populate cache
             shazamme.fetch(Collection.jobResults).then( rawJobs => {
                 allJobsCache = rawJobs;
-                shApi.getJobs(0, 0, activeFilter, { field: 'changedOnUTC', direction: 'desc' }).then( j => {
-                    processJobs(j.values);
-                });
-            });
+
+                return shApi.getJobs(0, 0, activeFilter, { field: 'changedOnUTC', direction: 'desc' })
+                    .then( j => processJobs(j.values) );
+            }).catch(_failFetch);
         }
     });
 
@@ -661,7 +711,7 @@ const main = (w) => {
                 }
 
                 allJobsCache = null; // invalidate cache — collection endpoint changed
-                fetchValues();
+                fetchValues().catch( e => console.warn('[job-search] refresh failed', e) );
             });
         }
     })
@@ -676,6 +726,10 @@ const main = (w) => {
         return Promise.resolve({ fetchValues, })
     });
 }
+
+// Fail-safe: if the SDK or the option fetch never completes, the FOUC hide must still
+// lift — a blank widget is worse than a brief flash of the unpopulated search bar.
+setTimeout( () => ux.reveal(), 5000 );
 
 Promise.all([
     ux.loadScript('https://cdn.jsdelivr.net/npm/fuse.js@6.4.0').then(),
@@ -721,5 +775,8 @@ Promise.all([
                 ux.el.find("[data-autocomplete=roleID]").val(ux.uri.searchParams.get("roleID"));
 
                 ux.el.find("[data-filter], [data-autocomplete]").trigger('change');
-            });
-    });
+            })
+            .then( () => ux.reveal() )
+            .catch( e => { console.warn('[job-search] boot failed', e); ux.reveal(); } );
+    })
+    .catch( e => { console.warn('[job-search] boot failed', e); ux.reveal(); } );
