@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-09-09T00:20:18.569Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-09-09T01:36:13.408Z. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -151,7 +151,12 @@ var __shazWidgetExport = (() => {
         let root = this.el.find(".job-search-root");
         let target = root.length > 0 ? root : this.el;
         target.addClass("shm-ready");
-        target.each((i, node) => node.style.setProperty("visibility", "visible", "important"));
+        target.each((i, node) => {
+          node.style.setProperty("visibility", "visible", "important");
+          if (node.style.opacity === "0") {
+            node.style.opacity = "1";
+          }
+        });
       };
       this.showLoading = (showing = true) => {
         if (showing) {
@@ -224,7 +229,7 @@ var __shazWidgetExport = (() => {
           ux.el.find(`[data-filter=${subFilterKey}]`).val("");
         }
         updateSubCategoryLock();
-        fetchValues();
+        fetchValues().catch((e) => console.warn("[job-search] refresh failed", e));
       });
       if (data.config.googleApiKey && data.config.showGeoSearch) {
         const places = new google.maps.places.PlacesService(document.querySelector(".gapi-map"));
@@ -242,7 +247,7 @@ var __shazWidgetExport = (() => {
             delete activeFilter[field.attr("data-gapi-text")];
             field.attr("_last", "");
             if (value.length == 0) {
-              fetchValues();
+              fetchValues().catch((e) => console.warn("[job-search] refresh failed", e));
               return;
             }
             autocomplete.getPlacePredictions({ input: value }, (r) => {
@@ -258,7 +263,7 @@ var __shazWidgetExport = (() => {
                     activeFilter[range.attr("data-filter")] = [range.val()];
                     field.attr("_last", opt.text());
                   }
-                  fetchValues();
+                  fetchValues().catch((e) => console.warn("[job-search] refresh failed", e));
                 });
                 r.forEach((p) => {
                   places.getDetails({ placeId: p.place_id, fields: ["geometry"] }, (d) => {
@@ -272,7 +277,7 @@ var __shazWidgetExport = (() => {
           let field = $(this);
           setTimeout(() => {
             field.val(field.attr("_last")).siblings("[data-prediction]").hide();
-            fetchValues();
+            fetchValues().catch((e) => console.warn("[job-search] refresh failed", e));
           }, 300);
         });
       }
@@ -281,7 +286,7 @@ var __shazWidgetExport = (() => {
         let filter = field.attr("data-autocomplete");
         if (field.val().length == 0) {
           delete activeFilter[filter];
-          fetchValues();
+          fetchValues().catch((e) => console.warn("[job-search] refresh failed", e));
           return;
         }
         let keys = fuseSettings.keys[filter];
@@ -324,7 +329,7 @@ var __shazWidgetExport = (() => {
           } else {
             delete activeFilter[field.attr("data-autocomplete")];
           }
-          fetchValues();
+          fetchValues().catch((e) => console.warn("[job-search] refresh failed", e));
         }, 250);
       }).on("change", function() {
         let field = $(this);
@@ -333,7 +338,7 @@ var __shazWidgetExport = (() => {
         } else {
           delete activeFilter[field.attr("data-autocomplete")];
         }
-        fetchValues();
+        fetchValues().catch((e) => console.warn("[job-search] refresh failed", e));
       });
       ux.el.find("input[data-submit]").on("keypress", function(e) {
         switch (e.which) {
@@ -448,7 +453,10 @@ var __shazWidgetExport = (() => {
           resolve();
           let pending = pendingFetchResolvers.splice(0);
           if (pending.length > 0) {
-            _doFetch().then(() => pending.forEach((r) => r()));
+            _doFetch().then(() => pending.forEach((r) => r())).catch((e) => {
+              console.warn("[job-search] refresh failed", e);
+              pending.forEach((r) => r());
+            });
           }
         };
         let processJobs = (j) => {
@@ -529,8 +537,7 @@ var __shazWidgetExport = (() => {
         updateSubCategoryLock();
         let _failFetch = (e) => {
           isFetching = false;
-          debouncedCallers.splice(0);
-          pendingFetchResolvers.splice(0);
+          pendingFetchResolvers.splice(0).forEach((r) => r());
           reject(e);
         };
         if (allJobsCache) {
@@ -602,7 +609,7 @@ var __shazWidgetExport = (() => {
               fieldMap: (_b2 = site == null ? void 0 : site.configuration) == null ? void 0 : _b2.jobFieldMap
             };
             allJobsCache = null;
-            fetchValues();
+            fetchValues().catch((e) => console.warn("[job-search] refresh failed", e));
           });
         }
       });

@@ -41,3 +41,15 @@ describe.each([
     expect(src).toMatch(/setTimeout\(\s*\(\)\s*=>\s*ux\.reveal\(\),\s*\d+\s*\)/);
   });
 });
+
+// The deployed artifact is the bundle, not the source: a stale dist ships the bug even
+// when the source is correct. Guard the built output too.
+describe.each(['job-results', 'job-search'])('%s bundle ships the reveal', (widget) => {
+  const bundle = join(here, '..', 'dist', widget, '0.1.0', 'widget.min.js');
+
+  it('contains the shm-ready reveal', () => {
+    const built = readFileSync(bundle, 'utf8');
+    expect(built).toContain('shm-ready');
+    expect(built).toMatch(/setProperty\("visibility","visible","important"\)/);
+  });
+});

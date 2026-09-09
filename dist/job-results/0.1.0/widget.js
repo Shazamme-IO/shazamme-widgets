@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-09-09T00:20:18.569Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-09-09T01:36:13.408Z. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -314,7 +314,12 @@ var __shazWidgetExport = (() => {
         let main2 = this.el.find("[data-shm-main]");
         let target = main2.length > 0 ? main2 : this.el;
         target.addClass("shm-ready");
-        target.each((i, node) => node.style.setProperty("visibility", "visible", "important"));
+        target.each((i, node) => {
+          node.style.setProperty("visibility", "visible", "important");
+          if (node.style.opacity === "0") {
+            node.style.opacity = "1";
+          }
+        });
       };
       this.jobStandardEl = (j) => {
         var _a, _b, _c, _d;
@@ -2223,7 +2228,10 @@ var __shazWidgetExport = (() => {
           ((_a = data.config.apikey) == null ? void 0 : _a.length) > 0 && shazamme.gapi(data.config.apikey).maps(["maps", data.config.enableProximitySearch && "places"]) || Promise.resolve()
         ]);
       }
-    ).then(() => main(shazamme.register("job-results", data)));
+    ).then(() => main(shazamme.register("job-results", data))).catch((e) => {
+      console.warn("[job-results] boot failed", e);
+      ux.reveal();
+    });
     ux.loadScript("https://sdk.shazamme.io/plugin/lottie-files/lottie-player-2.0.8.js").then();
   }
   return __toCommonJS(job_results_index_exports);

@@ -318,7 +318,15 @@ function UX() {
         let target = main.length > 0 ? main : this.el;
 
         target.addClass('shm-ready');
-        target.each( (i, node) => node.style.setProperty('visibility', 'visible', 'important') );
+        target.each( (i, node) => {
+            node.style.setProperty('visibility', 'visible', 'important');
+
+            // The proximity template also hides the shell with an inline opacity:0 that
+            // only main() clears — on the failure and fail-safe paths it never runs.
+            if (node.style.opacity === '0') {
+                node.style.opacity = '1';
+            }
+        });
     };
 
     this.jobStandardEl = j => {
@@ -2705,7 +2713,8 @@ ux.loadScript('https://sdk.shazamme.io/js/shazamme-1.0.3.min.js')
                 || Promise.resolve(),
         ])
     )
-    .then( () => main(shazamme.register('job-results', data)) );
+    .then( () => main(shazamme.register('job-results', data)) )
+    .catch( e => { console.warn('[job-results] boot failed', e); ux.reveal(); } );
 
 ux.loadScript('https://sdk.shazamme.io/plugin/lottie-files/lottie-player-2.0.8.js')
     .then();

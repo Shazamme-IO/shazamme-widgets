@@ -115,7 +115,13 @@ function UX() {
         let target = root.length > 0 ? root : this.el;
 
         target.addClass('shm-ready');
-        target.each( (i, node) => node.style.setProperty('visibility', 'visible', 'important') );
+        target.each( (i, node) => {
+            node.style.setProperty('visibility', 'visible', 'important');
+
+            if (node.style.opacity === '0') {
+                node.style.opacity = '1';
+            }
+        });
     };
 
     this.showLoading = (showing = true) => {
@@ -127,9 +133,10 @@ function UX() {
     }
 
     this.buildHref = (path, query) => {
-        // Every other widget normalizes this; without it a caller passing "register"
-        // builds https://site.comregister. The deployed bundle already had the guard —
-        // it was lost from source, so a rebuild would have shipped the regression.
+        // Without this, a caller passing "job-results" builds https://site.comjob-results.
+        // The deployed bundle already had the guard — it was lost from source, so a
+        // rebuild would have shipped the regression. login-dialog, site-config and
+        // upload-dialog still have it only in their committed dist: see PR #12.
         if (path && path.charAt(0) !== '/') path = '/' + path;
 
         return data.inEditor ? `/site/${data.siteId}${path}?preview=true&insitepreview=true&dm_device=desktop${query ? '&' + query : ''}`:`https://${window.location.hostname}${path}${query ? '?' + query : ''}`;
@@ -214,7 +221,7 @@ const main = (w) => {
         }
 
         updateSubCategoryLock();
-        fetchValues();
+        fetchValues().catch( e => console.warn('[job-search] refresh failed', e) );
     });
 
     if (data.config.googleApiKey && data.config.showGeoSearch) {
@@ -239,7 +246,7 @@ const main = (w) => {
                 field.attr('_last', '');
 
                 if (value.length == 0) {
-                    fetchValues();
+                    fetchValues().catch( e => console.warn('[job-search] refresh failed', e) );
                     return;
                 }
 
@@ -262,7 +269,7 @@ const main = (w) => {
                                     field.attr('_last', opt.text());
                                 }
 
-                                fetchValues();
+                                fetchValues().catch( e => console.warn('[job-search] refresh failed', e) );
                             });
 
                         r.forEach( p => {
@@ -284,7 +291,7 @@ const main = (w) => {
                     .siblings('[data-prediction]')
                     .hide();
 
-                fetchValues();
+                fetchValues().catch( e => console.warn('[job-search] refresh failed', e) );
             }, 300);
         });
     }
@@ -295,7 +302,7 @@ const main = (w) => {
 
         if (field.val().length == 0) {
             delete activeFilter[filter];
-            fetchValues();
+            fetchValues().catch( e => console.warn('[job-search] refresh failed', e) );
 
             return;
         }
@@ -359,7 +366,7 @@ const main = (w) => {
                 delete activeFilter[field.attr('data-autocomplete')];
             }
 
-            fetchValues();
+            fetchValues().catch( e => console.warn('[job-search] refresh failed', e) );
         }, 250);
     }).on('change', function() {
         let field = $(this);
@@ -371,7 +378,7 @@ const main = (w) => {
 
         }
 
-        fetchValues();
+        fetchValues().catch( e => console.warn('[job-search] refresh failed', e) );
     });
 
     ux.el.find('input[data-submit]')
@@ -533,7 +540,9 @@ const main = (w) => {
             // drain any resolvers that queued while this fetch was in flight
             let pending = pendingFetchResolvers.splice(0);
             if (pending.length > 0) {
-                _doFetch().then( () => pending.forEach( r => r() ) );
+                _doFetch()
+                    .then( () => pending.forEach( r => r() ) )
+                    .catch( e => { console.warn('[job-search] refresh failed', e); pending.forEach( r => r() ); } );
             }
         };
 
@@ -605,8 +614,12 @@ const main = (w) => {
         // later filter change queues a resolver behind a fetch that already died.
         let _failFetch = (e) => {
             isFetching = false;
-            debouncedCallers.splice(0);
-            pendingFetchResolvers.splice(0);
+
+            // Callers that queued behind this fetch must still settle — dropping them
+            // is the same hang this fix exists to remove. Callers still waiting on a
+            // debounce timer settle when that timer fires, so leave them armed.
+            pendingFetchResolvers.splice(0).forEach( r => r() );
+
             reject(e);
         };
 
@@ -698,7 +711,7 @@ const main = (w) => {
                 }
 
                 allJobsCache = null; // invalidate cache — collection endpoint changed
-                fetchValues();
+                fetchValues().catch( e => console.warn('[job-search] refresh failed', e) );
             });
         }
     })
