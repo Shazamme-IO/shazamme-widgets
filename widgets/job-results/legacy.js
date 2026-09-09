@@ -1109,11 +1109,19 @@ function UX() {
     }
 
     this.buildHref = (path, query) => {
-                if (/^([a-z][a-z0-9+.-]*:)?\/\//i.test(path || '')) {
-                    return query ? `${path}${path.includes('?') ? '&' : '?'}${query}` : path;
+                // A query appended after a fragment lands inside it (…#form?jobID=1), losing the
+                // parameter — split the fragment off first.
+                const addQuery = (href, q) => {
+                    let [base, frag] = href.split('#');
+
+                    return `${base}${base.includes('?') ? '&' : '?'}${q}${frag ? '#' + frag : ''}`;
+                };
+
+                if (/^[a-z][a-z0-9+.-]*:\/\//i.test(path || '')) {
+                    return query ? addQuery(path, query) : path;
                 }
 
-                if (path && path.charAt(0) !== '/') path = '/' + path;
+                path = path ? ('/' + path).replace(/^\/+/, '/') : path;
         return data.inEditor ? `/site/${data.siteId}${path}?preview=true&insitepreview=true&dm_device=desktop${query ? '&' + query : ''}`:`https://${window.location.hostname}${path}${query ? '?' + query : ''}`;
     }
 

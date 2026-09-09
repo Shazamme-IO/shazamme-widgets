@@ -50,10 +50,12 @@
   // strand this widget unmounted.
   function sdkReady() {
     return new Promise(function (res, rej) {
-      var waited = 0;
+      // Elapsed time, not tick count: a background tab clamps timers to >=1s, which
+      // would stretch a 15s deadline counted in ticks to minutes.
+      var started = Date.now();
       (function poll() {
         if (window.shazamme) return res();
-        if ((waited += 50) > 15000) return rej(new Error("SDK did not load in 15s"));
+        if (Date.now() - started > 15000) return rej(new Error("SDK did not load in 15s"));
         setTimeout(poll, 50);
       })();
     });
@@ -96,14 +98,20 @@
   });
 
   // The controller hides the shell, returns, and finishes mounting in a floating async
-  // IIFE — a rejection in there reaches no catch of ours. Fail-safe: if the shell is
-  // still hidden well after mount should have finished, lift the hide anyway. A brief
-  // flash of the unpopulated shell beats a permanently blank widget.
-  setTimeout(function () {
+  // IIFE — a rejection in there reaches no catch of ours. Fail-safe: keep checking, and
+  // reveal only once mounting has had well past the SDK deadline plus a slow feed to
+  // finish, so a healthy-but-slow load is not flashed unpopulated. It re-checks rather
+  // than firing once, because the controller re-hides the shell when it finally mounts.
+  var watchStarted = Date.now();
+  var watch = setInterval(function () {
+    var elapsed = Date.now() - watchStarted;
+    if (elapsed > 120000) return clearInterval(watch);
+    if (elapsed < 30000) return;
+
     var shell = element.querySelector("[data-shm-main], .job-search-root") || element;
     if (shell && getComputedStyle(shell).visibility === "hidden") {
-      console.error("[" + NAME + "] still hidden 10s after mount — revealing");
+      console.error("[" + NAME + "] still hidden " + Math.round(elapsed / 1000) + "s after load — revealing");
       reveal();
     }
-  }, 10000);
+  }, 2000);
 })();

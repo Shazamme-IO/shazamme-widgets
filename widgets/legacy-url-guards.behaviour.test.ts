@@ -60,6 +60,14 @@ describe.each(WIDGETS)('%s buildHref', (widget) => {
     expect(buildHref('https://careers.example.com/register')).not.toContain('clientsite.com/https');
   });
 
+  it('collapses a doubled slash instead of going off-site', () => {
+    expect(buildHref('//jobs', 'keyword=x')).toBe('https://clientsite.com/jobs?keyword=x');
+  });
+
+  it('keeps a query out of the fragment on an absolute href', () => {
+    expect(buildHref('https://x.com/apply#form', 'jobID=1')).toBe('https://x.com/apply?jobID=1#form');
+  });
+
   it('adds the slash in the Duda editor branch too', () => {
     const inEditor = extractBuildHref(widget, true);
 

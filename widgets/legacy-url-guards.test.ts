@@ -1,7 +1,8 @@
-// The buildHref leading-slash guard has already been deleted once by drive-by web
-// edits (119633d, 7ec7c84, 8082f0c) and survived only in the committed dist, so a
-// rebuild shipped https://clientsite.comregister. These guards fail loudly if it
-// goes missing again — from the source or from the built bundle.
+// The buildHref path normalization has already been deleted once by drive-by web edits
+// (119633d, 7ec7c84, 8082f0c) and survived only in the committed dist, so a rebuild
+// shipped https://clientsite.comregister. legacy-url-guards.behaviour.test.ts asserts
+// what it *does*; this file asserts it survives into the shipped bundle, which cannot
+// be executed here.
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -21,14 +22,9 @@ const WIDGETS = readdirSync(here)
   .filter((w) => readFileSync(join(here, w, 'legacy.js'), 'utf8').includes('this.buildHref ='));
 
 describe.each(WIDGETS)('%s normalizes hrefs', (widget) => {
-  it('keeps the leading-slash guard in source', () => {
-    const src = readFileSync(join(here, widget, 'legacy.js'), 'utf8');
-    expect(src).toContain("charAt(0) !== '/'");
-  });
-
-  it('keeps it in the built bundle', () => {
+  it('normalizes the path in the built bundle', () => {
     const bundle = join(here, '..', 'dist', widget, VERSION, 'widget.min.js');
-    expect(readFileSync(bundle, 'utf8')).toContain('charAt(0)!=="/"');
+    expect(readFileSync(bundle, 'utf8')).toContain('replace(/^\\/+/,"/")');
   });
 });
 
@@ -36,7 +32,7 @@ describe('site-config toPath', () => {
   const src = readFileSync(join(here, 'site-config', 'legacy.js'), 'utf8');
 
   it('normalizes the leading slash on _site:path* values', () => {
-    expect(src).toMatch(/replace\(\/\^\\\/\+\/, '\/'\)/);
+    expect(src).toContain("replace(/^\\/+/, '/')");
   });
 
   it('falls back to the default rather than to "/" when the path is empty', () => {
