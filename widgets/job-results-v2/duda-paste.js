@@ -41,19 +41,36 @@
     s.onerror = res;
     document.head.appendChild(s);
   });
+
+  // Never wait on that shared promise alone: it is first-writer-wins across three
+  // stubs with three different contracts (this one resolves on error, the older ones
+  // never settle on error, core/script-loader's loadSdk rejects). Poll for the SDK
+  // itself instead, so a stub we did not write cannot strand this widget unmounted.
+  function sdkReady() {
+    return new Promise(function (res, rej) {
+      var waited = 0;
+      (function poll() {
+        if (window.shazamme) return res();
+        if ((waited += 50) > 15000) return rej(new Error("SDK did not load in 15s"));
+        setTimeout(poll, 50);
+      })();
+    });
+  }
   // Memoized per URL: two instances of the same widget on one page would otherwise
   // both inject the script before either had registered a controller.
   function bundle() {
     if (window.ShazammeWidget && window.ShazammeWidget[NAME]) return Promise.resolve();
     window.__shazScriptCache = window.__shazScriptCache || {};
-    window.__shazScriptCache[BUNDLE] = window.__shazScriptCache[BUNDLE] || load(BUNDLE);
+    // Evict a failed load so a transient CDN error does not poison the key for every
+    // other instance on the page.
+    window.__shazScriptCache[BUNDLE] = window.__shazScriptCache[BUNDLE] ||
+      load(BUNDLE).catch(function (e) {
+        delete window.__shazScriptCache[BUNDLE];
+        throw e;
+      });
     return window.__shazScriptCache[BUNDLE];
   }
-  Promise.all([window.__shazSDKPromise.catch(function () {}), bundle()]).then(function () {
-    if (!window.shazamme) {
-      throw new Error("SDK failed to load");
-    }
-
+  Promise.all([sdkReady(), bundle()]).then(function () {
     var controller = window.ShazammeWidget && window.ShazammeWidget[NAME];
     if (typeof controller !== "function") {
       throw new Error(NAME + " bundle loaded but registered no controller");

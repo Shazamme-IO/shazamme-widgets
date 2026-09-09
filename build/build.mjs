@@ -26,7 +26,7 @@ const VERSION = pkg.version;
 
 const banner = [
   `/* shazamme-widgets — ${pkg.name} v${VERSION}`,
-  ` * Built ${new Date().toISOString()}. Registers window.ShazammeWidget["<name>"].`,
+  ` * Built from v${pkg.version}. Registers window.ShazammeWidget["<name>"].`,
   ` */`,
 ].join('\n');
 

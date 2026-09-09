@@ -17,4 +17,12 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run check
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm run test
+      # The build banner is deterministic, so a dist that differs from source means
+      # someone edited a widget without rebuilding — the drift that shipped a widget
+      # with no reveal and deleted the URL guard from three bundles.
+      - name: dist matches source
+        run: git diff --exit-code dist || (echo "::error::dist is stale — run npm run build and commit" && exit 1)
+      - run: npm run validate -- --skip-url-checks

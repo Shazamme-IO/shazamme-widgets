@@ -58,7 +58,10 @@ function pasteStubs() {
     .filter((f) => existsSync(f));
 }
 
-const args = process.argv.slice(2);
+const args = process.argv.slice(2).filter((a) => a !== '--skip-url-checks');
+// A live-network dependency in CI turns an sdk.shazamme.io outage into a red build on
+// unrelated PRs. The syntax gate needs no network and always runs.
+const SKIP_URLS = process.argv.includes('--skip-url-checks');
 const files = args.length ? args : [...walk(DIST_DIR), ...pasteStubs()];
 
 if (!files.length) {
@@ -91,7 +94,7 @@ for (const file of files) {
 
   // 2) Asset URL reachability — dedupe, then HEAD each once.
   const seen = new Set();
-  for (const m of src.matchAll(URL_RE)) {
+  for (const m of SKIP_URLS ? [] : src.matchAll(URL_RE)) {
     const url = m[0];
     if (!ASSET_RE.test(url) || seen.has(url)) continue;
     seen.add(url);
@@ -122,4 +125,4 @@ if (problems) {
   console.error(`\n✗ ${problems} problem(s) found — publish blocked.`);
   process.exit(1);
 }
-console.log(`✓ ${files.length} file(s) validated — all asset URLs reachable, all parse clean.`);
+console.log(`✓ ${files.length} file(s) validated — ${SKIP_URLS ? 'URL checks skipped' : 'all asset URLs reachable'}, all parse clean.`);
