@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build c51b59bbfd1e. Registers window.ShazammeWidget["<name>"].
+ * Build 9645eeec2924. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -939,7 +939,7 @@ var __shazWidgetExport = (() => {
           return query ? addQuery(path, query) : path;
         }
         path = path ? ("/" + path).replace(/^\/+/, "/") : path;
-        return data.inEditor ? `/site/${data.siteId}${path}?preview=true&insitepreview=true&dm_device=desktop${query ? "&" + query : ""}` : `https://${window.location.hostname}${path}${query ? "?" + query : ""}`;
+        return data.inEditor ? addQuery(`/site/${data.siteId}${path}`, `preview=true&insitepreview=true&dm_device=desktop${query ? "&" + query : ""}`) : query ? addQuery(`https://${window.location.hostname}${path}`, query) : `https://${window.location.hostname}${path}`;
       };
       this.loadScript = (src) => window.__shazLoadScript(src);
       this._timeSince = (d) => {

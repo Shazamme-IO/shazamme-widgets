@@ -38,7 +38,11 @@ function UX() {
 
         path = path ? ('/' + path).replace(/^\/+/, '/') : path;
 
-        return data.inEditor ? `/site/${data.siteId}${path}?preview=true&insitepreview=true&dm_device=desktop${query ? '&' + query : ''}`:`https://${window.location.hostname}${path}${query ? '?' + query : ''}`;
+        // Same fragment/existing-query hazard on this branch: a configured path may
+        // carry '#' or '?' of its own.
+        return data.inEditor
+            ? addQuery(`/site/${data.siteId}${path}`, `preview=true&insitepreview=true&dm_device=desktop${query ? '&' + query : ''}`)
+            : (query ? addQuery(`https://${window.location.hostname}${path}`, query) : `https://${window.location.hostname}${path}`);
     }
 
     this.loadScript = (src) => new Promise( (res, rej) => {

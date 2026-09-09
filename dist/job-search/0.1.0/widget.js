@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 001526aa8ccd. Registers window.ShazammeWidget["<name>"].
+ * Build 20219f575d61. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -174,7 +174,7 @@ var __shazWidgetExport = (() => {
           return query ? addQuery(path, query) : path;
         }
         path = path ? ("/" + path).replace(/^\/+/, "/") : path;
-        return data.inEditor ? `/site/${data.siteId}${path}?preview=true&insitepreview=true&dm_device=desktop${query ? "&" + query : ""}` : `https://${window.location.hostname}${path}${query ? "?" + query : ""}`;
+        return data.inEditor ? addQuery(`/site/${data.siteId}${path}`, `preview=true&insitepreview=true&dm_device=desktop${query ? "&" + query : ""}`) : query ? addQuery(`https://${window.location.hostname}${path}`, query) : `https://${window.location.hostname}${path}`;
       };
       this.loadScript = (src) => window.__shazLoadScript(src);
     }
@@ -581,7 +581,7 @@ var __shazWidgetExport = (() => {
           push(params, "advertiserID", data.config.txt_Advertisers);
         }
         if (data.config.useRedirect) {
-          window.location = ux.buildHref("/" + Path.jobResults, params.join("&"));
+          window.location = ux.buildHref(Path.jobResults, params.join("&"));
         } else {
           w.pub("job-search-submit", params);
         }

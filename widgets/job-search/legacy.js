@@ -150,7 +150,11 @@ function UX() {
 
         path = path ? ('/' + path).replace(/^\/+/, '/') : path;
 
-        return data.inEditor ? `/site/${data.siteId}${path}?preview=true&insitepreview=true&dm_device=desktop${query ? '&' + query : ''}`:`https://${window.location.hostname}${path}${query ? '?' + query : ''}`;
+        // Same fragment/existing-query hazard on this branch: a configured path may
+        // carry '#' or '?' of its own.
+        return data.inEditor
+            ? addQuery(`/site/${data.siteId}${path}`, `preview=true&insitepreview=true&dm_device=desktop${query ? '&' + query : ''}`)
+            : (query ? addQuery(`https://${window.location.hostname}${path}`, query) : `https://${window.location.hostname}${path}`);
     }
 
     this.loadScript = (src) => {
@@ -679,7 +683,10 @@ const main = (w) => {
         }
 
         if (data.config.useRedirect) {
-            window.location = ux.buildHref('/' + Path.jobResults, params.join('&'));
+            // buildHref normalizes the leading slash itself; pre-prefixing one hid an
+            // absolute searchResultPage from its scheme check and produced
+            // https://site.com/https://careers.example.com/jobs.
+            window.location = ux.buildHref(Path.jobResults, params.join('&'));
         } else {
             w.pub('job-search-submit', params);
 

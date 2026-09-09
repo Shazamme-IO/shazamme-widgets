@@ -102,16 +102,23 @@
   // reveal only once mounting has had well past the SDK deadline plus a slow feed to
   // finish, so a healthy-but-slow load is not flashed unpopulated. It re-checks rather
   // than firing once, because the controller re-hides the shell when it finally mounts.
-  var watchStarted = Date.now();
-  var watch = setInterval(function () {
-    var elapsed = Date.now() - watchStarted;
-    if (elapsed > 120000) return clearInterval(watch);
-    if (elapsed < 30000) return;
+  // Duda re-runs this tab on every settings change in the editor, so a previous
+  // watchdog must be cleared or they accumulate.
+  if (element.__shazRevealWatch) clearInterval(element.__shazRevealWatch);
 
+  var watchStarted = Date.now();
+  var watch = element.__shazRevealWatch = setInterval(function () {
+    var elapsed = Date.now() - watchStarted;
     var shell = element.querySelector("[data-shm-main], .job-search-root") || element;
-    if (shell && getComputedStyle(shell).visibility === "hidden") {
-      console.error("[" + NAME + "] still hidden " + Math.round(elapsed / 1000) + "s after load — revealing");
-      reveal();
-    }
+    var hidden = shell && getComputedStyle(shell).visibility === "hidden";
+
+    // Mounted and visible: nothing left to watch.
+    if (!hidden && elapsed > 30000) return clearInterval(watch);
+    if (elapsed > 120000) return clearInterval(watch);
+    if (elapsed < 30000 || !hidden) return;
+
+    console.error("[" + NAME + "] still hidden " + Math.round(elapsed / 1000) + "s after load — revealing");
+    reveal();
+    clearInterval(watch);
   }, 2000);
 })();

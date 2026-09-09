@@ -68,6 +68,16 @@ describe.each(WIDGETS)('%s buildHref', (widget) => {
     expect(buildHref('https://x.com/apply#form', 'jobID=1')).toBe('https://x.com/apply?jobID=1#form');
   });
 
+  it('keeps a query out of the fragment on a relative path', () => {
+    expect(buildHref('/job-application#apply-form', 'jobID=123'))
+      .toBe('https://clientsite.com/job-application?jobID=123#apply-form');
+  });
+
+  it('merges with a query the configured path already carries', () => {
+    expect(buildHref('/job-application?src=web', 'jobID=123'))
+      .toBe('https://clientsite.com/job-application?src=web&jobID=123');
+  });
+
   it('adds the slash in the Duda editor branch too', () => {
     const inEditor = extractBuildHref(widget, true);
 
