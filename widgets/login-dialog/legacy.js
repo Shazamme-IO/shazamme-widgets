@@ -77,6 +77,12 @@ function UX() {
     this.buildHref = (path, query) => {
         // Restored from the deployed bundle (PR #9): drive-by web edits deleted this
         // from source, so a rebuild would ship https://clientsite.comregister.
+        // An absolute or protocol-relative href is already a destination — prefixing it
+        // would produce https://clientsite.com/https://careers.example.com/register.
+        if (/^([a-z][a-z0-9+.-]*:)?\/\//i.test(path || '')) {
+            return query ? `${path}${path.includes('?') ? '&' : '?'}${query}` : path;
+        }
+
         if (path && path.charAt(0) !== '/') path = '/' + path;
 
         return data.inEditor ? `/site/${data.siteId}${path}?preview=true&insitepreview=true&dm_device=desktop${query ? '&' + query : ''}`:`https://${window.location.hostname}${path}${query ? '?' + query : ''}`;

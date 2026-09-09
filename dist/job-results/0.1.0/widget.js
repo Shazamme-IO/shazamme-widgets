@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build e88dcd3c1ece. Registers window.ShazammeWidget["<name>"].
+ * Build 49e8612a2822. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -931,6 +931,9 @@ var __shazWidgetExport = (() => {
         }
       };
       this.buildHref = (path, query) => {
+        if (/^([a-z][a-z0-9+.-]*:)?\/\//i.test(path || "")) {
+          return query ? `${path}${path.includes("?") ? "&" : "?"}${query}` : path;
+        }
         if (path && path.charAt(0) !== "/") path = "/" + path;
         return data.inEditor ? `/site/${data.siteId}${path}?preview=true&insitepreview=true&dm_device=desktop${query ? "&" + query : ""}` : `https://${window.location.hostname}${path}${query ? "?" + query : ""}`;
       };

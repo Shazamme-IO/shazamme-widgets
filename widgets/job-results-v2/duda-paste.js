@@ -58,6 +58,18 @@
       })();
     });
   }
+  // Lift the widget's own anti-FOUC hide
+  // (`[data-shm-main]:not(.shm-ready){visibility:hidden!important}` in the Duda CSS
+  // tab). Only the controller normally does this; on any failure path nothing else
+  // will, and the widget renders invisibly — the devdemo2 outage.
+  function reveal() {
+    try {
+      var shell = element.querySelector("[data-shm-main], .job-search-root") || element;
+      shell.classList.add("shm-ready");
+      shell.style.setProperty("visibility", "visible", "important");
+    } catch (ignored) { /* nothing more we can do */ }
+  }
+
   // Memoized per URL: two instances of the same widget on one page would otherwise
   // both inject the script before either had registered a controller.
   function bundle() {
@@ -79,14 +91,19 @@
     }
     controller({ element: element, data: data, $: window.jQuery || window.$, shazamme: window.shazamme });
   }).catch(function (e) {
-    // The controller hides the shell before it renders, so a throw anywhere after that
-    // leaves a permanently blank widget. Lift the hide before reporting.
-    try {
-      var shell = element.querySelector("[data-shm-main], .job-search-root") || element;
-      shell.classList.add("shm-ready");
-      shell.style.setProperty("visibility", "visible", "important");
-    } catch (ignored) { /* nothing more we can do */ }
-
+    reveal();
     console.error("[" + NAME + "] failed to mount", e);
   });
+
+  // The controller hides the shell, returns, and finishes mounting in a floating async
+  // IIFE — a rejection in there reaches no catch of ours. Fail-safe: if the shell is
+  // still hidden well after mount should have finished, lift the hide anyway. A brief
+  // flash of the unpopulated shell beats a permanently blank widget.
+  setTimeout(function () {
+    var shell = element.querySelector("[data-shm-main], .job-search-root") || element;
+    if (shell && getComputedStyle(shell).visibility === "hidden") {
+      console.error("[" + NAME + "] still hidden 10s after mount — revealing");
+      reveal();
+    }
+  }, 10000);
 })();

@@ -134,9 +134,12 @@ function UX() {
 
     this.buildHref = (path, query) => {
         // Without this, a caller passing "job-results" builds https://site.comjob-results.
-        // The deployed bundle already had the guard — it was lost from source, so a
-        // rebuild would have shipped the regression. login-dialog, site-config and
-        // upload-dialog still have it only in their committed dist: see PR #12.
+        // An absolute or protocol-relative href is already a destination and passes
+        // through untouched.
+        if (/^([a-z][a-z0-9+.-]*:)?\/\//i.test(path || '')) {
+            return query ? `${path}${path.includes('?') ? '&' : '?'}${query}` : path;
+        }
+
         if (path && path.charAt(0) !== '/') path = '/' + path;
 
         return data.inEditor ? `/site/${data.siteId}${path}?preview=true&insitepreview=true&dm_device=desktop${query ? '&' + query : ''}`:`https://${window.location.hostname}${path}${query ? '?' + query : ''}`;

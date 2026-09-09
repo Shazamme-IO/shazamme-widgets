@@ -2,13 +2,17 @@
 // `data.inEditor &&` would pass, and an equivalent `!path.startsWith('/')` rewrite
 // would fail. This extracts each widget's real buildHref and calls it.
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const WIDGETS = ['site-config', 'login-dialog', 'upload-dialog', 'job-results', 'job-search'];
+// Derived, not hardcoded: a newly ported widget with an unguarded buildHref must fail
+// here rather than quietly sit outside the list.
+const WIDGETS = readdirSync(here)
+  .filter((w) => existsSync(join(here, w, 'legacy.js')))
+  .filter((w) => readFileSync(join(here, w, 'legacy.js'), 'utf8').includes('this.buildHref ='));
 
 function extractBuildHref(
   widget: string,
@@ -49,6 +53,11 @@ describe.each(WIDGETS)('%s buildHref', (widget) => {
 
   it('never concatenates host and path', () => {
     expect(buildHref('register')).not.toContain('clientsite.comregister');
+  });
+
+  it('passes an absolute href straight through', () => {
+    expect(buildHref('https://careers.example.com/register')).toBe('https://careers.example.com/register');
+    expect(buildHref('https://careers.example.com/register')).not.toContain('clientsite.com/https');
   });
 
   it('adds the slash in the Duda editor branch too', () => {

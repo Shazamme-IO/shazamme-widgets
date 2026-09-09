@@ -94,11 +94,27 @@ for (const file of files) {
 
   // 2) Asset URL reachability — dedupe, then HEAD each once.
   const seen = new Set();
-  for (const m of SKIP_URLS ? [] : src.matchAll(URL_RE)) {
+  for (const m of src.matchAll(URL_RE)) {
     const url = m[0];
     if (!ASSET_RE.test(url) || seen.has(url)) continue;
     seen.add(url);
     const line = lineOf(src, m.index);
+
+    // Well-formedness is a property of the file, not of the network: it must be
+    // enforced even when the reachability probe is skipped (CI, offline).
+    try {
+      new URL(url);
+    } catch {
+      report(`✗ URL MALFORMED  ${file}:${line}  ${url}`);
+      continue;
+    }
+    if (/[<>"'`\\{}|^]/.test(url)) {
+      report(`✗ URL CHARS  ${file}:${line}  ${url}`);
+      continue;
+    }
+
+    if (SKIP_URLS) continue;
+
     try {
       let res = await fetch(url, { method: 'HEAD', redirect: 'follow' });
       if (res.status === 405 || res.status === 501) {

@@ -1109,6 +1109,10 @@ function UX() {
     }
 
     this.buildHref = (path, query) => {
+                if (/^([a-z][a-z0-9+.-]*:)?\/\//i.test(path || '')) {
+                    return query ? `${path}${path.includes('?') ? '&' : '?'}${query}` : path;
+                }
+
                 if (path && path.charAt(0) !== '/') path = '/' + path;
         return data.inEditor ? `/site/${data.siteId}${path}?preview=true&insitepreview=true&dm_device=desktop${query ? '&' + query : ''}`:`https://${window.location.hostname}${path}${query ? '?' + query : ''}`;
     }
