@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-09-09T08:21:04.924Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-09-09T08:27:41.925Z. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -519,9 +519,10 @@ var __shazWidgetExport = (() => {
         if ((p == null ? void 0 : p.type) === "dynamic_page") {
           let seg = p.href.split("/");
           seg.splice(-1, 1);
-          return ("/" + seg.join("/")).replace(/^\/+/, "/");
+          let joined = seg.join("/");
+          return joined ? ("/" + joined).replace(/^\/+/, "/") : d;
         }
-        return ("/" + ((p == null ? void 0 : p.href) || d)).replace(/^\/+/, "/");
+        return (p == null ? void 0 : p.href) ? ("/" + p.href).replace(/^\/+/, "/") : d;
       };
       data.config.pathHome = toPath(data.config.pathHome, "/");
       data.config.pathLogin = toPath(data.config.pathLogin, "/login");

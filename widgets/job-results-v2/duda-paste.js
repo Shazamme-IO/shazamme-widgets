@@ -30,14 +30,27 @@
       document.head.appendChild(s);
     });
   }
-  window.__shazSDKPromise = window.__shazSDKPromise ||
-    (window.shazamme ? Promise.resolve() : load(SDK));
+  // The SDK promise is shared with every other Shazamme stub on the page, and the
+  // older ones chain on it without a catch — so it must never reject. It settles
+  // either way; we check for the SDK itself below.
+  window.__shazSDKPromise = window.__shazSDKPromise || new Promise(function (res) {
+    if (window.shazamme) return res();
+    var s = document.createElement("script");
+    s.src = SDK;
+    s.onload = res;
+    s.onerror = res;
+    document.head.appendChild(s);
+  });
   function bundle() {
     return (window.ShazammeWidget && window.ShazammeWidget[NAME])
       ? Promise.resolve()
       : load(BUNDLE);
   }
   Promise.all([window.__shazSDKPromise, bundle()]).then(function () {
+    if (!window.shazamme) {
+      throw new Error("SDK failed to load");
+    }
+
     var controller = window.ShazammeWidget && window.ShazammeWidget[NAME];
     if (typeof controller !== "function") {
       throw new Error(NAME + " bundle loaded but registered no controller");

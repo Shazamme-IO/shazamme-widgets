@@ -655,10 +655,14 @@ let main = (w) => {
 
             seg.splice(-1, 1);
 
-            return ('/' + seg.join('/')).replace(/^\/+/, '/');
+            let joined = seg.join('/');
+
+            // An empty join must fall back to `d`, not to '/': '' was falsy so callers'
+            // `|| '/register'` fallbacks engaged, whereas '/' silently routes to home.
+            return joined ? ('/' + joined).replace(/^\/+/, '/') : d;
         }
 
-        return ('/' + ((p?.href) || d)).replace(/^\/+/, '/');
+        return p?.href ? ('/' + p.href).replace(/^\/+/, '/') : d;
     }
 
     data.config.pathHome          = toPath(data.config.pathHome,          '/');
