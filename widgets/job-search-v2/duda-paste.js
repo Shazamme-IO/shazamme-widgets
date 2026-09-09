@@ -28,8 +28,8 @@
   });
 
   window.__shazLoading = window.__shazLoading || {};
-  if (!(window.ShazammeWidget && window.ShazammeWidget[NAME]) && !window.__shazLoading[NAME]) {
-    window.__shazLoading[NAME] = true;
+  if (!(window.ShazammeWidget && window.ShazammeWidget[NAME]) && !window.__shazLoading[BUNDLE]) {
+    window.__shazLoading[BUNDLE] = true;
     load(BUNDLE);
   }
 
@@ -38,18 +38,36 @@
   // what took devdemo2 down. Poll for both halves, then reveal if they never arrive.
   var started = Date.now();
 
+  function reveal(why) {
+    var shell = element.querySelector("[data-shm-main], .job-search-root") || element;
+
+    shell.classList.add("shm-ready");
+    shell.style.setProperty("visibility", "visible", "important");
+    console.error("[" + NAME + "] " + why + " — revealed the unmounted shell");
+  }
+
   (function mount() {
     var controller = window.ShazammeWidget && window.ShazammeWidget[NAME];
 
     if (window.shazamme && typeof controller === "function") {
-      return controller({ element: element, data: data, $: window.jQuery || window.$, shazamme: window.shazamme });
+      try {
+        controller({ element: element, data: data, $: window.jQuery || window.$, shazamme: window.shazamme });
+      } catch (e) {
+        reveal("controller threw: " + e.message);
+      }
+
+      // The controller hides the shell, returns, and finishes in a floating async
+      // block; a rejection in there reaches no catch of ours and would leave the
+      // widget rendering invisibly. Check once, well after any normal mount.
+      return setTimeout(function () {
+        if (element.querySelector("[data-shm-main]:not(.shm-ready), .job-search-root:not(.shm-ready)")) {
+          reveal("still hidden 30s after mount");
+        }
+      }, 30000);
     }
 
-    if (Date.now() - started < 30000) return setTimeout(mount, 50);
+    if (Date.now() - started < 60000) return setTimeout(mount, 50);
 
-    var shell = element.querySelector("[data-shm-main], .job-search-root") || element;
-    shell.classList.add("shm-ready");
-    shell.style.setProperty("visibility", "visible", "important");
-    console.error("[" + NAME + "] SDK or bundle never arrived — revealed the unmounted shell");
+    reveal("SDK or bundle never arrived");
   })();
 })();
