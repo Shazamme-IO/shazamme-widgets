@@ -22,9 +22,14 @@ const WIDGETS = readdirSync(here)
   .filter((w) => readFileSync(join(here, w, 'legacy.js'), 'utf8').includes('this.buildHref ='));
 
 describe.each(WIDGETS)('%s normalizes hrefs', (widget) => {
-  it('normalizes the path in the built bundle', () => {
-    const bundle = join(here, '..', 'dist', widget, VERSION, 'widget.min.js');
-    expect(readFileSync(bundle, 'utf8')).toContain('replace(/^\\/+/,"/")');
+  it('normalizes the path inside buildHref in the built bundle', () => {
+    // Scoped to buildHref: site-config also normalizes in rootPath, so a bare
+    // whole-file match would pass on a bundle whose buildHref lost the guard.
+    const built = readFileSync(join(here, '..', 'dist', widget, VERSION, 'widget.min.js'), 'utf8');
+    const at = built.indexOf('buildHref=');
+
+    expect(at, `${widget}: buildHref not found in bundle`).toBeGreaterThan(-1);
+    expect(built.slice(at, at + 600)).toContain('replace(/^\\/+/,"/")');
   });
 });
 

@@ -91,13 +91,31 @@
   // the same nodes, so N tweaks make one facet click render N times. Restore the
   // pristine template first, discarding the old nodes and their listeners. (SDK channel
   // subscriptions still accumulate — that needs a teardown in the controller itself.)
+  // Snapshot the markup as Duda authored it: without our mount marker, and without the
+  // reveal artifacts a failed previous run may have left behind — snapshotting those
+  // would bake the anti-FOUC hide open for this element forever.
+  function snapshot() {
+    var clone = element.cloneNode(true);
+    var shell = clone.querySelector("[data-shm-main], .job-search-root") || clone;
+
+    shell.classList.remove("shm-ready");
+    shell.style.removeProperty("visibility");
+
+    var mark = clone.querySelector("[data-shaz-mounted]");
+    if (mark && mark.parentNode) mark.parentNode.removeChild(mark);
+
+    return clone.innerHTML;
+  }
+
   // The marker survives only as long as our rendered DOM: when the HTML tab is edited,
   // Duda replaces the element's markup and the marker goes with it, so the fresh
-  // template is snapshotted rather than overwritten with a stale one.
-  if (element.querySelector("[data-shaz-mounted]")) {
+  // template is snapshotted rather than overwritten with a stale one. The template
+  // itself lives on an expando, which an editor clone can drop — restore only when we
+  // actually hold one.
+  if (element.querySelector("[data-shaz-mounted]") && typeof element.__shazTemplate === "string") {
     element.innerHTML = element.__shazTemplate;
   } else {
-    element.__shazTemplate = element.innerHTML;
+    element.__shazTemplate = snapshot();
   }
 
   // Two re-runs can be in flight at once (settings changed twice while the bundle is
