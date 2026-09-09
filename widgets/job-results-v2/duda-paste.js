@@ -30,9 +30,9 @@
       document.head.appendChild(s);
     });
   }
-  // The SDK promise is shared with every other Shazamme stub on the page, and the
-  // older ones chain on it without a catch — so it must never reject. It settles
-  // either way; we check for the SDK itself below.
+  // The SDK promise is shared with every other Shazamme stub on the page. Ours never
+  // rejects, but core/script-loader's loadSdk() assigns the same global and does, and
+  // whichever runs first wins — so swallow it below and check for the SDK itself.
   window.__shazSDKPromise = window.__shazSDKPromise || new Promise(function (res) {
     if (window.shazamme) return res();
     var s = document.createElement("script");
@@ -41,12 +41,15 @@
     s.onerror = res;
     document.head.appendChild(s);
   });
+  // Memoized per URL: two instances of the same widget on one page would otherwise
+  // both inject the script before either had registered a controller.
   function bundle() {
-    return (window.ShazammeWidget && window.ShazammeWidget[NAME])
-      ? Promise.resolve()
-      : load(BUNDLE);
+    if (window.ShazammeWidget && window.ShazammeWidget[NAME]) return Promise.resolve();
+    window.__shazScriptCache = window.__shazScriptCache || {};
+    window.__shazScriptCache[BUNDLE] = window.__shazScriptCache[BUNDLE] || load(BUNDLE);
+    return window.__shazScriptCache[BUNDLE];
   }
-  Promise.all([window.__shazSDKPromise, bundle()]).then(function () {
+  Promise.all([window.__shazSDKPromise.catch(function () {}), bundle()]).then(function () {
     if (!window.shazamme) {
       throw new Error("SDK failed to load");
     }

@@ -3,12 +3,17 @@
 // rebuild shipped https://clientsite.comregister. These guards fail loudly if it
 // goes missing again — from the source or from the built bundle.
 
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
 
 const here = dirname(fileURLToPath(import.meta.url));
+// build.mjs writes to dist/<name>/<pkg.version>/ and never prunes old versions, so
+// pinning a literal version here would silently read a stale bundle after a bump.
+const VERSION = JSON.parse(
+  readFileSync(join(here, '..', 'package.json'), 'utf8'),
+).version as string;
 const WIDGETS = ['site-config', 'login-dialog', 'upload-dialog', 'job-results', 'job-search'];
 
 describe.each(WIDGETS)('%s normalizes hrefs', (widget) => {
@@ -18,8 +23,7 @@ describe.each(WIDGETS)('%s normalizes hrefs', (widget) => {
   });
 
   it('keeps it in the built bundle', () => {
-    const bundle = join(here, '..', 'dist', widget, '0.1.0', 'widget.min.js');
-    if (!existsSync(bundle)) return;
+    const bundle = join(here, '..', 'dist', widget, VERSION, 'widget.min.js');
     expect(readFileSync(bundle, 'utf8')).toContain('charAt(0)!=="/"');
   });
 });

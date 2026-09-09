@@ -47,8 +47,19 @@ function walk(dir) {
 
 const lineOf = (src, index) => src.slice(0, index).split('\n').length;
 
+// The duda-paste stubs are pasted straight into Duda's JS tab — never bundled, never
+// typechecked, never imported by a test. A syntax error in one passes `npm run check`
+// clean and then kills the widget on every page that hosts it, so parse them here too.
+function pasteStubs() {
+  const dir = join(ROOT, 'widgets');
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .map((w) => join(dir, w, 'duda-paste.js'))
+    .filter((f) => existsSync(f));
+}
+
 const args = process.argv.slice(2);
-const files = args.length ? args : walk(DIST_DIR);
+const files = args.length ? args : [...walk(DIST_DIR), ...pasteStubs()];
 
 if (!files.length) {
   console.log('✓ nothing to validate (dist is empty — core-only phase).');
