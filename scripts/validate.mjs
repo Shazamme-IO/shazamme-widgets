@@ -59,6 +59,9 @@ function pasteStubs() {
 }
 
 const args = process.argv.slice(2).filter((a) => a !== '--skip-url-checks');
+// Paste stubs reference the bundle they will load once deployed, so probing those
+// URLs would make a brand-new widget impossible to check in until it ships.
+const isPasteStub = (f) => f.endsWith('duda-paste.js');
 // A live-network dependency in CI turns an sdk.shazamme.io outage into a red build on
 // unrelated PRs. The syntax gate needs no network and always runs.
 const SKIP_URLS = process.argv.includes('--skip-url-checks');
@@ -94,7 +97,7 @@ for (const file of files) {
 
   // 2) Asset URL reachability — dedupe, then HEAD each once.
   const seen = new Set();
-  for (const m of SKIP_URLS ? [] : src.matchAll(URL_RE)) {
+  for (const m of SKIP_URLS || isPasteStub(file) ? [] : src.matchAll(URL_RE)) {
     const url = m[0];
     if (!ASSET_RE.test(url) || seen.has(url)) continue;
     seen.add(url);

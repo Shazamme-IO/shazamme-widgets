@@ -21,7 +21,7 @@ core/         shared layer — fetch/cache/pubsub, config, dom, hierarchy, maps
 widgets/      one folder per widget: index + template.hbs + styles.css + settings.json
 build/        esbuild: each widget -> dist/<name>/<ver>/widget[.min].js
 scripts/      validate.mjs (syntax + URL gate), deploy.mjs (S3 + CloudFront)
-loaders/      the paste-into-Duda loader snippet per widget
+widgets/<name>/duda-paste.js   the paste-into-Duda loader for that widget
 _reference/   the 3 production widgets, verbatim — reverse-engineering source + rollback
 ```
 

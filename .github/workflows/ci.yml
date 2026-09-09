@@ -6,6 +6,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    - cron: '17 19 * * *'
 
 jobs:
   check:
@@ -24,5 +26,28 @@ jobs:
       # someone edited a widget without rebuilding — the drift that shipped a widget
       # with no reveal and deleted the URL guard from three bundles.
       - name: dist matches source
-        run: git diff --exit-code dist || (echo "::error::dist is stale — run npm run build and commit" && exit 1)
+        # --porcelain also reports untracked files: a version bump or a new widget
+        # writes a new dist path, which `git diff` alone would not see.
+        run: |
+          changed="$(git status --porcelain dist)"
+          if [ -n "$changed" ]; then
+            echo "::error::dist is stale or uncommitted — run npm run build and commit"
+            echo "$changed"
+            exit 1
+          fi
       - run: npm run validate -- --skip-url-checks
+
+  # Asset URLs are external state, so they cannot gate a PR — but nothing checked
+  # them automatically once CI started skipping them. Nightly, and non-blocking.
+  assets:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run validate

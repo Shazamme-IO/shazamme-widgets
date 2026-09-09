@@ -11,9 +11,9 @@
 // instead silently drops every v2-only setting (hideLeftNav, job-type filter,
 // grid layout), because the legacy bundle never reads those keys.
 //
-// Owns the single SDK load, so the SDK is fetched at most once per page no
-// matter how many Shazamme widgets are present. Future widget updates ship
-// from git → CDN; this paste never changes.
+// Starts the SDK load only if no other stub has, and waits for the SDK global
+// itself rather than any shared promise. Future widget updates ship from
+// git → CDN; this paste never changes.
 // ===========================================================================
 (function () {
   var NAME = "job-search-v2";
@@ -30,22 +30,19 @@
       document.head.appendChild(s);
     });
   }
-  // The SDK promise is shared with every other Shazamme stub on the page. Ours never
-  // rejects, but core/script-loader's loadSdk() assigns the same global and does, and
-  // whichever runs first wins — so swallow it below and check for the SDK itself.
-  window.__shazSDKPromise = window.__shazSDKPromise || new Promise(function (res) {
-    if (window.shazamme) return res();
-    var s = document.createElement("script");
-    s.src = SDK;
-    s.onload = res;
-    s.onerror = res;
-    document.head.appendChild(s);
-  });
+  // Start the SDK load if nobody else has, but never publish our promise as
+  // window.__shazSDKPromise: core/script-loader hands that exact promise to the
+  // ported legacy widgets, which would then call shazamme.* on a failed load.
+  // Dedupe through the per-URL script cache instead.
+  if (!window.shazamme && !window.__shazSDKPromise) {
+    window.__shazScriptCache = window.__shazScriptCache || {};
+    window.__shazScriptCache[SDK] = window.__shazScriptCache[SDK] || load(SDK).catch(function () {});
+  }
 
-  // Never wait on that shared promise alone: it is first-writer-wins across three
-  // stubs with three different contracts (this one resolves on error, the older ones
-  // never settle on error, core/script-loader's loadSdk rejects). Poll for the SDK
-  // itself instead, so a stub we did not write cannot strand this widget unmounted.
+  // Wait on the SDK global, not on any promise: __shazSDKPromise is first-writer-wins
+  // across stubs with different settle contracts (older ones never settle on error,
+  // core/script-loader's loadSdk rejects), so a stub we did not write could otherwise
+  // strand this widget unmounted.
   function sdkReady() {
     return new Promise(function (res, rej) {
       var waited = 0;
