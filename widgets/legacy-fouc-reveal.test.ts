@@ -10,6 +10,11 @@ import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
 
 const here = dirname(fileURLToPath(import.meta.url));
+// build.mjs writes to dist/<name>/<pkg.version>/ and never prunes, so a literal
+// version here would silently validate a stale bundle after a bump.
+const VERSION = JSON.parse(
+  readFileSync(join(here, '..', 'package.json'), 'utf8'),
+).version as string;
 const read = (name: string): string =>
   readFileSync(join(here, name, 'legacy.js'), 'utf8');
 
@@ -45,7 +50,7 @@ describe.each([
 // The deployed artifact is the bundle, not the source: a stale dist ships the bug even
 // when the source is correct. Guard the built output too.
 describe.each(['job-results', 'job-search'])('%s bundle ships the reveal', (widget) => {
-  const bundle = join(here, '..', 'dist', widget, '0.1.0', 'widget.min.js');
+  const bundle = join(here, '..', 'dist', widget, VERSION, 'widget.min.js');
 
   it('contains the shm-ready reveal', () => {
     const built = readFileSync(bundle, 'utf8');

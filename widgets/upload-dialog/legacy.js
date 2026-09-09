@@ -18,7 +18,33 @@ function UX() {
     }
 
     this.buildHref = (path, query) => {
-        return data.inEditor ? `/site/${data.siteId}${path}?preview=true&insitepreview=true&dm_device=desktop${query ? '&' + query : ''}`:`https://${window.location.hostname}${path}${query ? '?' + query : ''}`;
+        // A query appended after a fragment lands inside it (…#form?jobID=1), losing the
+        // parameter — split the fragment off first.
+        const addQuery = (href, q) => {
+            let hash = href.indexOf('#');
+            let base = hash === -1 ? href : href.slice(0, hash);
+            let frag = hash === -1 ? '' : href.slice(hash);
+
+            return `${base}${base.includes('?') ? '&' : '?'}${q}${frag}`;
+        };
+
+        // Restored from the deployed bundle (PR #9): drive-by web edits deleted this
+        // from source, so a rebuild would ship https://clientsite.comregister.
+        // An http(s) href is already a destination — prefixing it would
+        // produce https://clientsite.com/https://careers.example.com/register. A
+        // protocol-relative "//x" is not passed through: from a page-path config it is
+        // almost always a doubled slash, and honouring it would navigate off-site.
+        if (/^https?:\/\//i.test(path || '')) {
+            return query ? addQuery(path, query) : path;
+        }
+
+        path = path ? ('/' + path).replace(/^\/+/, '/') : path;
+
+        // Same fragment/existing-query hazard on this branch: a configured path may
+        // carry '#' or '?' of its own.
+        return data.inEditor
+            ? addQuery(`/site/${data.siteId}${path}`, `preview=true&insitepreview=true&dm_device=desktop${query ? '&' + query : ''}`)
+            : (query ? addQuery(`https://${window.location.hostname}${path}`, query) : `https://${window.location.hostname}${path}`);
     }
 
     this.loadScript = (src) => new Promise( (res, rej) => {

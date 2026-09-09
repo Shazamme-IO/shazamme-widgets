@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-08-28T07:31:23.270Z. Registers window.ShazammeWidget["<name>"].
+ * Build b46eba89d821. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -94,8 +94,17 @@ var __shazWidgetExport = (() => {
         }
       };
       this.buildHref = (path, query) => {
-        if (path && path.charAt(0) !== "/") path = "/" + path;
-        return data.inEditor ? `/site/${data.siteId}${path}?preview=true&insitepreview=true&dm_device=desktop${query ? "&" + query : ""}` : `https://${window.location.hostname}${path}${query ? "?" + query : ""}`;
+        const addQuery = (href, q) => {
+          let hash = href.indexOf("#");
+          let base = hash === -1 ? href : href.slice(0, hash);
+          let frag = hash === -1 ? "" : href.slice(hash);
+          return `${base}${base.includes("?") ? "&" : "?"}${q}${frag}`;
+        };
+        if (/^https?:\/\//i.test(path || "")) {
+          return query ? addQuery(path, query) : path;
+        }
+        path = path ? ("/" + path).replace(/^\/+/, "/") : path;
+        return data.inEditor ? addQuery(`/site/${data.siteId}${path}`, `preview=true&insitepreview=true&dm_device=desktop${query ? "&" + query : ""}`) : query ? addQuery(`https://${window.location.hostname}${path}`, query) : `https://${window.location.hostname}${path}`;
       };
       this.loadScript = (src) => window.__shazLoadScript(src);
       ;
@@ -106,6 +115,12 @@ var __shazWidgetExport = (() => {
     let _alertDialogT = void 0;
     let _loadingDialogT = void 0;
     let _toastT = void 0;
+    let _userEngaged = false;
+    ["pointerdown", "keydown", "touchstart", "wheel"].forEach(
+      (ev) => window.addEventListener(ev, () => {
+        _userEngaged = true;
+      }, { capture: true, passive: true, once: true })
+    );
     const enableFileUploads = (w) => {
       if (this._fileUploads) {
         return;
@@ -400,6 +415,9 @@ var __shazWidgetExport = (() => {
     `).copyCSS(_loadingDialogT, null, ["display"]);
       el.find(".dialog-content .title").copyCSS(_loadingDialogT == null ? void 0 : _loadingDialogT.find(".dialog-content .title"));
       el.find(".dialog-content").copyCSS(_loadingDialogT == null ? void 0 : _loadingDialogT.find(".dialog-content"));
+      if (!_userEngaged && !data.inEditor) {
+        el.css("display", "none");
+      }
       return el;
     };
     const alertDialog = (o) => {
@@ -425,6 +443,12 @@ var __shazWidgetExport = (() => {
       el.find(".dialog-content .title").copyCSS(_alertDialogT == null ? void 0 : _alertDialogT.find(".dialog-content .title"));
       el.find(".dialog-content .message").copyCSS(_alertDialogT == null ? void 0 : _alertDialogT.find(".dialog-content .message"));
       el.find(".dialog-content .button-main").copyCSS(_alertDialogT == null ? void 0 : _alertDialogT.find(".dialog-content .button-main"));
+      const _box = el.find(".dialog-content")[0];
+      if (_box) {
+        _box.style.setProperty("border-radius", "12px", "important");
+        _box.style.setProperty("overflow", "hidden", "important");
+      }
+      el.find(".button-main").each((_, b) => b.style.setProperty("border-radius", "5px", "important"));
       return el;
     };
     const toast = (m, t = 2500) => new Promise((res, rej) => {
@@ -500,13 +524,15 @@ var __shazWidgetExport = (() => {
       _toastT = $(".shazamme-toast").css({
         opacity: 0
       }).clone().appendTo(ux.el).hide();
+      const rootPath = (v) => /^([a-z][a-z0-9+.-]*:)?\/\//i.test(v) ? v : ("/" + v).replace(/^\/+/, "/");
       const toPath = (p, d) => {
         if ((p == null ? void 0 : p.type) === "dynamic_page") {
           let seg = p.href.split("/");
           seg.splice(-1, 1);
-          return ("/" + seg.join("/")).replace(/^\/+/, "/");
+          let joined = seg.join("/");
+          return joined ? rootPath(joined) : d;
         }
-        return ("/" + ((p == null ? void 0 : p.href) || d)).replace(/^\/+/, "/");
+        return (p == null ? void 0 : p.href) ? rootPath(p.href) : d;
       };
       data.config.pathHome = toPath(data.config.pathHome, "/");
       data.config.pathLogin = toPath(data.config.pathLogin, "/login");
@@ -544,6 +570,9 @@ var __shazWidgetExport = (() => {
         ux.el.find(".site-configuration-toolbar [data-rel=external-tool]").append($(el).addClass("button-config"));
       });
       w.sub(Message.loadingShow, () => {
+        if (!_userEngaged && !data.inEditor) {
+          return;
+        }
         let dialog = ux.el.find("[data-rel=dialog][data-dialog=loading]:gt(0)");
         if (dialog.length > 0) {
           dialog.remove();

@@ -47,8 +47,22 @@ function walk(dir) {
 
 const lineOf = (src, index) => src.slice(0, index).split('\n').length;
 
-const args = process.argv.slice(2);
-const files = args.length ? args : walk(DIST_DIR);
+// The duda-paste stubs are pasted straight into Duda's JS tab — never bundled, never
+// typechecked, never imported by a test. A syntax error in one passes `npm run check`
+// clean and then kills the widget on every page that hosts it, so parse them here too.
+function pasteStubs() {
+  const dir = join(ROOT, 'widgets');
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .map((w) => join(dir, w, 'duda-paste.js'))
+    .filter((f) => existsSync(f));
+}
+
+const args = process.argv.slice(2).filter((a) => a !== '--skip-url-checks');
+// A live-network dependency in CI turns an sdk.shazamme.io outage into a red build on
+// unrelated PRs. The syntax gate needs no network and always runs.
+const SKIP_URLS = process.argv.includes('--skip-url-checks');
+const files = args.length ? args : [...walk(DIST_DIR), ...pasteStubs()];
 
 if (!files.length) {
   console.log('✓ nothing to validate (dist is empty — core-only phase).');
@@ -85,6 +99,29 @@ for (const file of files) {
     if (!ASSET_RE.test(url) || seen.has(url)) continue;
     seen.add(url);
     const line = lineOf(src, m.index);
+
+    // A URL built by interpolation is not a literal to validate — the unminified
+    // bundles keep their `${...}` placeholders.
+    if (url.includes('${')) continue;
+
+    // Well-formedness is a property of the file, not of the network: it must be
+    // enforced even when the reachability probe is skipped (CI, offline). Same
+    // first-party/third-party policy as the reachability check below.
+    const badSyntax =
+      (() => { try { new URL(url); return null; } catch { return 'MALFORMED'; } })() ||
+      (/[<>"'`\\{}|^]/.test(url) ? 'CHARS' : null);
+
+    if (badSyntax) {
+      if (FIRST_PARTY_RE.test(url)) {
+        report(`✗ URL ${badSyntax}  ${file}:${line}  ${url}`);
+      } else {
+        console.warn(`⚠ URL ${badSyntax}  ${file}:${line}  ${url}  (third-party, non-blocking)`);
+      }
+      continue;
+    }
+
+    if (SKIP_URLS) continue;
+
     try {
       let res = await fetch(url, { method: 'HEAD', redirect: 'follow' });
       if (res.status === 405 || res.status === 501) {
@@ -111,4 +148,4 @@ if (problems) {
   console.error(`\n✗ ${problems} problem(s) found — publish blocked.`);
   process.exit(1);
 }
-console.log(`✓ ${files.length} file(s) validated — all asset URLs reachable, all parse clean.`);
+console.log(`✓ ${files.length} file(s) validated — ${SKIP_URLS ? 'URL checks skipped' : 'all asset URLs reachable'}, all parse clean.`);

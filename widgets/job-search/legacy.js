@@ -133,13 +133,30 @@ function UX() {
     }
 
     this.buildHref = (path, query) => {
-        // Without this, a caller passing "job-results" builds https://site.comjob-results.
-        // The deployed bundle already had the guard — it was lost from source, so a
-        // rebuild would have shipped the regression. login-dialog, site-config and
-        // upload-dialog still have it only in their committed dist: see PR #12.
-        if (path && path.charAt(0) !== '/') path = '/' + path;
+        // A query appended after a fragment lands inside it (…#form?jobID=1), losing the
+        // parameter — split the fragment off first.
+        const addQuery = (href, q) => {
+            let hash = href.indexOf('#');
+            let base = hash === -1 ? href : href.slice(0, hash);
+            let frag = hash === -1 ? '' : href.slice(hash);
 
-        return data.inEditor ? `/site/${data.siteId}${path}?preview=true&insitepreview=true&dm_device=desktop${query ? '&' + query : ''}`:`https://${window.location.hostname}${path}${query ? '?' + query : ''}`;
+            return `${base}${base.includes('?') ? '&' : '?'}${q}${frag}`;
+        };
+
+        // Without this, a caller passing "job-results" builds https://site.comjob-results.
+        // An http(s) href is already a destination and passes through untouched. Only
+        // http(s): any other scheme (javascript:, data:) must stay neutralised.
+        if (/^https?:\/\//i.test(path || '')) {
+            return query ? addQuery(path, query) : path;
+        }
+
+        path = path ? ('/' + path).replace(/^\/+/, '/') : path;
+
+        // Same fragment/existing-query hazard on this branch: a configured path may
+        // carry '#' or '?' of its own.
+        return data.inEditor
+            ? addQuery(`/site/${data.siteId}${path}`, `preview=true&insitepreview=true&dm_device=desktop${query ? '&' + query : ''}`)
+            : (query ? addQuery(`https://${window.location.hostname}${path}`, query) : `https://${window.location.hostname}${path}`);
     }
 
     this.loadScript = (src) => {
@@ -668,7 +685,10 @@ const main = (w) => {
         }
 
         if (data.config.useRedirect) {
-            window.location = ux.buildHref('/' + Path.jobResults, params.join('&'));
+            // buildHref normalizes the leading slash itself; pre-prefixing one hid an
+            // absolute searchResultPage from its scheme check and produced
+            // https://site.com/https://careers.example.com/jobs.
+            window.location = ux.buildHref(Path.jobResults, params.join('&'));
         } else {
             w.pub('job-search-submit', params);
 

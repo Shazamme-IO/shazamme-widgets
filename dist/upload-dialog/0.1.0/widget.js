@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-08-28T07:31:23.270Z. Registers window.ShazammeWidget["<name>"].
+ * Build 1b898cce357a. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -85,8 +85,17 @@ var __shazWidgetExport = (() => {
         }
       };
       this.buildHref = (path, query) => {
-        if (path && path.charAt(0) !== "/") path = "/" + path;
-        return data.inEditor ? `/site/${data.siteId}${path}?preview=true&insitepreview=true&dm_device=desktop${query ? "&" + query : ""}` : `https://${window.location.hostname}${path}${query ? "?" + query : ""}`;
+        const addQuery = (href, q) => {
+          let hash = href.indexOf("#");
+          let base = hash === -1 ? href : href.slice(0, hash);
+          let frag = hash === -1 ? "" : href.slice(hash);
+          return `${base}${base.includes("?") ? "&" : "?"}${q}${frag}`;
+        };
+        if (/^https?:\/\//i.test(path || "")) {
+          return query ? addQuery(path, query) : path;
+        }
+        path = path ? ("/" + path).replace(/^\/+/, "/") : path;
+        return data.inEditor ? addQuery(`/site/${data.siteId}${path}`, `preview=true&insitepreview=true&dm_device=desktop${query ? "&" + query : ""}`) : query ? addQuery(`https://${window.location.hostname}${path}`, query) : `https://${window.location.hostname}${path}`;
       };
       this.loadScript = (src) => window.__shazLoadScript(src);
       ;

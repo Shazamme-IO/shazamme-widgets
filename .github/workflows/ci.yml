@@ -1,0 +1,58 @@
+# The URL-slash guard was deleted three times by GitHub web-UI edits, which never run
+# anything locally. Guards only guard if CI runs them on every push and PR.
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '17 19 * * *'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm run test
+      # The build banner is deterministic, so a dist that differs from source means
+      # someone edited a widget without rebuilding — the drift that shipped a widget
+      # with no reveal and deleted the URL guard from three bundles.
+      - name: dist matches source
+        # --porcelain also reports untracked files: a version bump or a new widget
+        # writes a new dist path, which `git diff` alone would not see.
+        run: |
+          changed="$(git status --porcelain dist)"
+          if [ -n "$changed" ]; then
+            echo "::error::dist is stale or uncommitted — run npm run build and commit"
+            echo "$changed"
+            exit 1
+          fi
+      - run: npm run validate -- --skip-url-checks
+      # Advisory: asset URLs are external state, so they report but never block.
+      - name: asset URLs (advisory)
+        continue-on-error: true
+        run: npm run validate
+
+  # Asset URLs are external state, so they cannot gate a PR — but nothing checked them
+  # automatically once CI started skipping them. Nightly, and blocking there: a red
+  # scheduled run is the notification. The PR-time step stays advisory.
+  assets:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run validate
