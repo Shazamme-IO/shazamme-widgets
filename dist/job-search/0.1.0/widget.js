@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-08-28T07:31:23.270Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-09-09T00:20:18.569Z. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -94,7 +94,7 @@ var __shazWidgetExport = (() => {
                 if (typeof v !== "string") {
                   return false;
                 }
-                return filters[f].map((i) => i == null ? void 0 : i.toLowerCase()).filter((i) => i.indexOf(v.toLowerCase())).length > 0;
+                return filters[f].map((i) => i == null ? void 0 : i.toLowerCase()).some((i) => i.includes(v.toLowerCase()));
               };
               for (f in filters) {
                 switch (f) {
@@ -128,24 +128,13 @@ var __shazWidgetExport = (() => {
           } else {
             filtered.push(...jobs);
           }
+          const sorted = pageSize > 0 ? filtered.sort((x, y) => {
+            if (x.data[sort.field] > y.data[sort.field]) return sort.direction === "asc" ? 1 : -1;
+            if (x.data[sort.field] < y.data[sort.field]) return sort.direction === "asc" ? -1 : 1;
+            return 0;
+          }).slice(pageNumber * pageSize, pageNumber * pageSize + pageSize) : filtered;
           resolve({
-            values: filtered.sort((x, y) => {
-              if (x.data[sort.field] > y.data[sort.field]) {
-                if (sort.direction === "asc") {
-                  return 1;
-                } else {
-                  return -1;
-                }
-              }
-              if (x.data[sort.field] < y.data[sort.field]) {
-                if (sort.direction === "asc") {
-                  return -1;
-                } else {
-                  return 1;
-                }
-              }
-              return 0;
-            }).slice(pageSize > 0 ? pageNumber * pageSize : 0, pageSize > 0 ? pageNumber * pageSize + pageSize : void 0),
+            values: sorted,
             page: {
               pageNumber,
               totalPages: parseInt(Math.ceil(filtered.length / pageSize)),
@@ -158,6 +147,12 @@ var __shazWidgetExport = (() => {
     function UX() {
       this.el = $(element);
       this.uri = new URL(window.location.href);
+      this.reveal = () => {
+        let root = this.el.find(".job-search-root");
+        let target = root.length > 0 ? root : this.el;
+        target.addClass("shm-ready");
+        target.each((i, node) => node.style.setProperty("visibility", "visible", "important"));
+      };
       this.showLoading = (showing = true) => {
         if (showing) {
           $(element).find(".client-answers-loading").show();
@@ -217,11 +212,18 @@ var __shazWidgetExport = (() => {
       ux.el.find("[data-filter]").on("change", function() {
         var _a;
         let field = $(this);
+        let filterKey = field.attr("data-filter");
         if (((_a = field.val()) == null ? void 0 : _a.length) > 0) {
-          activeFilter[field.attr("data-filter")] = [field.val()];
+          activeFilter[filterKey] = [field.val()];
         } else {
-          delete activeFilter[field.attr("data-filter")];
+          delete activeFilter[filterKey];
         }
+        if (filterKey === "professionID" || filterKey === "category") {
+          let subFilterKey = filterKey === "professionID" ? "roleID" : "subCategory";
+          delete activeFilter[subFilterKey];
+          ux.el.find(`[data-filter=${subFilterKey}]`).val("");
+        }
+        updateSubCategoryLock();
         fetchValues();
       });
       if (data.config.googleApiKey && data.config.showGeoSearch) {
@@ -350,7 +352,37 @@ var __shazWidgetExport = (() => {
             break;
         }
       });
+      let updateSubCategoryLock = () => {
+        let hasCategoryFilter = activeFilter["professionID"] && activeFilter["professionID"][0] || activeFilter["category"] && activeFilter["category"][0];
+        let subSelects = ux.el.find("[data-filter=roleID], [data-filter=subCategory]");
+        if (hasCategoryFilter) {
+          subSelects.removeClass("subcategory-disabled").prop("disabled", false);
+        } else {
+          subSelects.addClass("subcategory-disabled").prop("disabled", true);
+        }
+      };
+      let fetchDebounceTimer = null;
+      let debouncedCallers = [];
+      let pendingFetchResolvers = [];
+      let isFetching = false;
+      let allJobsCache = null;
       let fetchValues = () => new Promise((resolve, reject) => {
+        debouncedCallers.push({ resolve, reject });
+        if (fetchDebounceTimer) {
+          clearTimeout(fetchDebounceTimer);
+        }
+        fetchDebounceTimer = setTimeout(() => {
+          fetchDebounceTimer = null;
+          let waiting = debouncedCallers.splice(0);
+          _doFetch().then((v) => waiting.forEach((c) => c.resolve(v))).catch((e) => waiting.forEach((c) => c.reject(e)));
+        }, 80);
+      });
+      let _doFetch = () => new Promise((resolve, reject) => {
+        if (isFetching) {
+          pendingFetchResolvers.push(resolve);
+          return;
+        }
+        isFetching = true;
         let values = {
           professionID: {
             all: data.config.ClassificationPlaceholder || "All Categories",
@@ -409,76 +441,106 @@ var __shazWidgetExport = (() => {
           });
         };
         jobs = [];
-        let fetch = (pageNumber) => {
-          shApi.getJobs(pageNumber, 0, activeFilter).then((j) => {
-            push(values.professionID.list, j.values.map((i) => {
-              var _a;
-              return new Object({ id: i.data.professionID, text: (_a = i.data.category) != null ? _a : "" });
-            }));
-            push(values.roleID.list, j.values.map((i) => {
-              var _a;
-              return new Object({ id: i.data.roleID, text: (_a = i.data.subCategory) != null ? _a : "" });
-            }));
-            push(values.workTypeID.list, j.values.map((i) => {
-              var _a;
-              return new Object({ id: i.data.workTypeID, text: (_a = i.data.workType) != null ? _a : "" });
-            }));
-            push(values.workModelID.list, j.values.map((i) => {
-              var _a;
-              return new Object({ id: i.data.workModelID, text: (_a = i.data.workModel) != null ? _a : "" });
-            }));
-            push(values.state.list, j.values.map((i) => {
-              var _a;
-              return new Object({ id: i.data.state, text: (_a = i.data.state) != null ? _a : "" });
-            }));
-            push(values.city.list, j.values.map((i) => {
-              var _a;
-              return new Object({ id: i.data.city, text: (_a = i.data.city) != null ? _a : "" });
-            }));
-            push(values.country.list, j.values.map((i) => {
-              var _a;
-              return new Object({ id: i.data.country, text: (_a = i.data.country) != null ? _a : "" });
-            }));
-            if (data.config.legacyMode) {
-              push(values.category.list, j.values.map((i) => {
-                var _a;
-                return new Object({ id: i.data.category, text: (_a = i.data.category) != null ? _a : "" });
-              }));
-              push(values.subCategory.list, j.values.map((i) => {
-                var _a;
-                return new Object({ id: i.data.subCategory, text: (_a = i.data.subCategory) != null ? _a : "" });
-              }));
-              push(values.workType.list, j.values.map((i) => {
-                var _a;
-                return new Object({ id: i.data.workType, text: (_a = i.data.workType) != null ? _a : "" });
-              }));
-              push(values.workModel.list, j.values.map((i) => {
-                var _a;
-                return new Object({ id: i.data.workModel, text: (_a = i.data.workModel) != null ? _a : "" });
-              }));
-            }
-            jobs.push(...j.values);
-            for (let v in values) {
-              let l = values[v].list;
-              let opt = [];
-              for (let i in l) {
-                if (typeof l[i] === "object") {
-                  opt.push({
-                    id: i,
-                    text: l[i].text,
-                    count: l[i].count
-                  });
-                }
-              }
-              ux.el.find(`[data-filter=${v}]`).empty().append(`<option value="">${values[v].all}</option`).append(opt.sort(sort).map((o) => `<option value="${o.id}">${o.text} (${o.count})</option>`)).val(activeFilter[v] || "");
-            }
-            for (let i in fuseSettings.keys) {
-              jobs.forEach((j2) => fuseSettings.keys[i].forEach((k) => j2.data[k] = j2.data[k] || ""));
-            }
-            resolve();
-          });
+        let selectedProfessionID = (activeFilter["professionID"] || [])[0] || null;
+        let selectedCategory = (activeFilter["category"] || [])[0] || null;
+        let _flushResolvers = () => {
+          isFetching = false;
+          resolve();
+          let pending = pendingFetchResolvers.splice(0);
+          if (pending.length > 0) {
+            _doFetch().then(() => pending.forEach((r) => r()));
+          }
         };
-        fetch(0);
+        let processJobs = (j) => {
+          push(values.professionID.list, j.map((i) => {
+            var _a;
+            return new Object({ id: i.data.professionID, text: (_a = i.data.category) != null ? _a : "" });
+          }));
+          let subCategorySource = j;
+          if (selectedProfessionID) {
+            subCategorySource = subCategorySource.filter((i) => i.data.professionID === selectedProfessionID);
+          }
+          push(values.roleID.list, subCategorySource.map((i) => {
+            var _a;
+            return new Object({ id: i.data.roleID, text: (_a = i.data.subCategory) != null ? _a : "" });
+          }));
+          push(values.workTypeID.list, j.map((i) => {
+            var _a;
+            return new Object({ id: i.data.workTypeID, text: (_a = i.data.workType) != null ? _a : "" });
+          }));
+          push(values.workModelID.list, j.map((i) => {
+            var _a;
+            return new Object({ id: i.data.workModelID, text: (_a = i.data.workModel) != null ? _a : "" });
+          }));
+          push(values.state.list, j.map((i) => {
+            var _a;
+            return new Object({ id: i.data.state, text: (_a = i.data.state) != null ? _a : "" });
+          }));
+          push(values.city.list, j.map((i) => {
+            var _a;
+            return new Object({ id: i.data.city, text: (_a = i.data.city) != null ? _a : "" });
+          }));
+          push(values.country.list, j.map((i) => {
+            var _a;
+            return new Object({ id: i.data.country, text: (_a = i.data.country) != null ? _a : "" });
+          }));
+          if (data.config.legacyMode) {
+            push(values.category.list, j.map((i) => {
+              var _a;
+              return new Object({ id: i.data.category, text: (_a = i.data.category) != null ? _a : "" });
+            }));
+            let legacySubSource = j;
+            if (selectedCategory) {
+              legacySubSource = legacySubSource.filter((i) => i.data.category === selectedCategory);
+            }
+            push(values.subCategory.list, legacySubSource.map((i) => {
+              var _a;
+              return new Object({ id: i.data.subCategory, text: (_a = i.data.subCategory) != null ? _a : "" });
+            }));
+            push(values.workType.list, j.map((i) => {
+              var _a;
+              return new Object({ id: i.data.workType, text: (_a = i.data.workType) != null ? _a : "" });
+            }));
+            push(values.workModel.list, j.map((i) => {
+              var _a;
+              return new Object({ id: i.data.workModel, text: (_a = i.data.workModel) != null ? _a : "" });
+            }));
+          }
+          jobs.push(...j);
+          for (let v in values) {
+            let l = values[v].list;
+            let opt = [];
+            for (let i in l) {
+              if (typeof l[i] === "object") {
+                opt.push({
+                  id: i,
+                  text: l[i].text,
+                  count: l[i].count
+                });
+              }
+            }
+            ux.el.find(`[data-filter=${v}]`).empty().append(`<option value="">${values[v].all}</option`).append(opt.sort(sort).map((o) => `<option value="${o.id}">${o.text} (${o.count})</option>`)).val(activeFilter[v] || "");
+          }
+          for (let i in fuseSettings.keys) {
+            jobs.forEach((j2) => fuseSettings.keys[i].forEach((k) => j2.data[k] = j2.data[k] || ""));
+          }
+          _flushResolvers();
+        };
+        updateSubCategoryLock();
+        let _failFetch = (e) => {
+          isFetching = false;
+          debouncedCallers.splice(0);
+          pendingFetchResolvers.splice(0);
+          reject(e);
+        };
+        if (allJobsCache) {
+          shApi.getJobs(0, 0, activeFilter, { field: "changedOnUTC", direction: "desc" }).then((j) => processJobs(j.values)).catch(_failFetch);
+        } else {
+          shazamme.fetch(Collection.jobResults).then((rawJobs) => {
+            allJobsCache = rawJobs;
+            return shApi.getJobs(0, 0, activeFilter, { field: "changedOnUTC", direction: "desc" }).then((j) => processJobs(j.values));
+          }).catch(_failFetch);
+        }
       });
       let submitSearch = () => {
         let push = (p, n, v) => {
@@ -539,6 +601,7 @@ var __shazWidgetExport = (() => {
               lang: ((_a2 = site == null ? void 0 : site.configuration) == null ? void 0 : _a2.jobLocalization) && data.locale,
               fieldMap: (_b2 = site == null ? void 0 : site.configuration) == null ? void 0 : _b2.jobFieldMap
             };
+            allJobsCache = null;
             fetchValues();
           });
         }
@@ -552,11 +615,13 @@ var __shazWidgetExport = (() => {
         return Promise.resolve({ fetchValues });
       });
     };
+    setTimeout(() => ux.reveal(), 5e3);
     Promise.all([
       ux.loadScript("https://cdn.jsdelivr.net/npm/fuse.js@6.4.0").then(),
       ux.loadScript("https://sdk.shazamme.io/js/shazamme-1.0.3.min.js")
     ]).then(() => shazamme.ready(data.inEditor && data.config.debugSiteID || data.siteId, data.page)).then(() => data.config.googleApiKey && data.config.showGeoSearch && shazamme.gapi(data.config.googleApiKey).maps(["places"]) || Promise.resolve()).then(() => {
       main(shazamme.register("job-search", data)).then((w) => w.fetchValues()).then(() => {
+        ux.el.find("[data-filter=roleID], [data-filter=subCategory]").addClass("subcategory-disabled").prop("disabled", true);
         ux.el.find("#searchBox").val(ux.uri.searchParams.get("keyword"));
         ux.el.find("#jobCategories").val(ux.uri.searchParams.get("category"));
         ux.el.find("#location").val(ux.uri.searchParams.get("location"));
@@ -586,7 +651,13 @@ var __shazWidgetExport = (() => {
         ux.el.find("[data-autocomplete=workModelID]").val(ux.uri.searchParams.get("workModelID"));
         ux.el.find("[data-autocomplete=roleID]").val(ux.uri.searchParams.get("roleID"));
         ux.el.find("[data-filter], [data-autocomplete]").trigger("change");
+      }).then(() => ux.reveal()).catch((e) => {
+        console.warn("[job-search] boot failed", e);
+        ux.reveal();
       });
+    }).catch((e) => {
+      console.warn("[job-search] boot failed", e);
+      ux.reveal();
     });
   }
   return __toCommonJS(job_search_index_exports);

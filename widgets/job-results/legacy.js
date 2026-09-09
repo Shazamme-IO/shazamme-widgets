@@ -308,6 +308,19 @@ function UX() {
     this.el = $(element);
     this.uri = new URL(window.location.href);
 
+    // The widget's Duda CSS tab hides the shell until first paint
+    // (`[data-shm-main]:not(.shm-ready){visibility:hidden!important}`) to kill the
+    // template FOUC. Nothing else removes that hide, so the reveal must run on every
+    // exit path — including failures — or a fully rendered widget stays invisible.
+    // The inline `!important` survives Duda re-asserting the root's class attribute.
+    this.reveal = () => {
+        let main = this.el.find('[data-shm-main]');
+        let target = main.length > 0 ? main : this.el;
+
+        target.addClass('shm-ready');
+        target.each( (i, node) => node.style.setProperty('visibility', 'visible', 'important') );
+    };
+
     this.jobStandardEl = j => {
         let jobDate = new Date(j.changedOnUTC+'Z');
         let isNew = data.config.showNewIcon && jobDate && !isNaN(jobDate.getTime()) && (+new Date() - jobDate) / (1000 * 3600 *24) <= 1;
@@ -1331,6 +1344,7 @@ let showJobs = (pageNumber) => {
 
         if (showMap) {
             ux.showJobPins(col.values.map( j => j.data ));
+            ux.reveal();
             return;
         }
 
@@ -1397,7 +1411,9 @@ let showJobs = (pageNumber) => {
         } else {
             ux.el.find('[data-rel=label-results-message]').text(data.config.resultMessagePlural || data.config.resultMessage);
         }
-    });
+
+        ux.reveal();
+    }).catch( e => { console.warn('[job-results] showJobs failed', e); ux.reveal(); } );
 
     if (data.inEditor && Object.keys(activeFilter).length > 0) {
         ux.el.find('[data-rel=default-filter]').show();
@@ -2674,6 +2690,10 @@ if (data.device === 'mobile') {
             .show();
     }
 }
+
+// Fail-safe: if the SDK, the collection fetch or the first render never completes, the
+// FOUC hide must still lift — a blank widget is worse than a brief flash of the shell.
+setTimeout( () => ux.reveal(), 5000 );
 
 ux.loadScript('https://sdk.shazamme.io/js/shazamme-1.0.3.min.js')
     .then( () => shazamme.ready((data.inEditor && data.config.debugSiteID) || data.siteId, data.page) )

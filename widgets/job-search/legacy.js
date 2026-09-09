@@ -105,6 +105,19 @@ function UX() {
     this.el = $(element);
     this.uri = new URL(window.location.href);
 
+    // The widget's Duda CSS tab hides the search bar until it is populated
+    // (`.job-search-root:not(.shm-ready){visibility:hidden!important}`) to kill the
+    // template FOUC. Nothing else removes that hide, so the reveal must run on every
+    // exit path — including failures — or a fully rendered widget stays invisible.
+    // The inline `!important` survives Duda re-asserting the root's class attribute.
+    this.reveal = () => {
+        let root = this.el.find('.job-search-root');
+        let target = root.length > 0 ? root : this.el;
+
+        target.addClass('shm-ready');
+        target.each( (i, node) => node.style.setProperty('visibility', 'visible', 'important') );
+    };
+
     this.showLoading = (showing = true) => {
         if (showing) {
             $(element).find(".client-answers-loading").show();
@@ -114,6 +127,11 @@ function UX() {
     }
 
     this.buildHref = (path, query) => {
+        // Every other widget normalizes this; without it a caller passing "register"
+        // builds https://site.comregister. The deployed bundle already had the guard —
+        // it was lost from source, so a rebuild would have shipped the regression.
+        if (path && path.charAt(0) !== '/') path = '/' + path;
+
         return data.inEditor ? `/site/${data.siteId}${path}?preview=true&insitepreview=true&dm_device=desktop${query ? '&' + query : ''}`:`https://${window.location.hostname}${path}${query ? '?' + query : ''}`;
     }
 
@@ -394,19 +412,29 @@ const main = (w) => {
     };
 
     let fetchDebounceTimer = null;
+    let debouncedCallers = [];
     let pendingFetchResolvers = [];
     let isFetching = false;
     let allJobsCache = null;  // in-memory cache of the full unfiltered job list
 
     let fetchValues = () => new Promise( (resolve, reject) => {
-        // Debounce: cancel any pending fetch and wait 80ms before running
+        // Debounce: cancel any pending fetch and wait 80ms before running. A caller whose
+        // timer is cancelled still settles off the winning fetch — dropping it left the
+        // boot chain (and with it the reveal) pending forever on a same-tick second call.
+        debouncedCallers.push({ resolve, reject });
+
         if (fetchDebounceTimer) {
             clearTimeout(fetchDebounceTimer);
         }
 
         fetchDebounceTimer = setTimeout( () => {
             fetchDebounceTimer = null;
-            _doFetch().then(resolve).catch(reject);
+
+            let waiting = debouncedCallers.splice(0);
+
+            _doFetch()
+                .then( v => waiting.forEach( c => c.resolve(v) ) )
+                .catch( e => waiting.forEach( c => c.reject(e) ) );
         }, 80);
     });
 
@@ -573,19 +601,28 @@ const main = (w) => {
         updateSubCategoryLock();
 
         // Use the in-memory cache when only filters have changed — avoids a network round-trip
+        // A failed fetch must settle this promise and clear the in-flight flag, or every
+        // later filter change queues a resolver behind a fetch that already died.
+        let _failFetch = (e) => {
+            isFetching = false;
+            debouncedCallers.splice(0);
+            pendingFetchResolvers.splice(0);
+            reject(e);
+        };
+
         if (allJobsCache) {
             // Filter the cached full list locally, no fetch needed
-            shApi.getJobs(0, 0, activeFilter, { field: 'changedOnUTC', direction: 'desc' }).then( j => {
-                processJobs(j.values);
-            });
+            shApi.getJobs(0, 0, activeFilter, { field: 'changedOnUTC', direction: 'desc' })
+                .then( j => processJobs(j.values) )
+                .catch(_failFetch);
         } else {
             // First load: fetch from network, populate cache
             shazamme.fetch(Collection.jobResults).then( rawJobs => {
                 allJobsCache = rawJobs;
-                shApi.getJobs(0, 0, activeFilter, { field: 'changedOnUTC', direction: 'desc' }).then( j => {
-                    processJobs(j.values);
-                });
-            });
+
+                return shApi.getJobs(0, 0, activeFilter, { field: 'changedOnUTC', direction: 'desc' })
+                    .then( j => processJobs(j.values) );
+            }).catch(_failFetch);
         }
     });
 
@@ -677,6 +714,10 @@ const main = (w) => {
     });
 }
 
+// Fail-safe: if the SDK or the option fetch never completes, the FOUC hide must still
+// lift — a blank widget is worse than a brief flash of the unpopulated search bar.
+setTimeout( () => ux.reveal(), 5000 );
+
 Promise.all([
     ux.loadScript('https://cdn.jsdelivr.net/npm/fuse.js@6.4.0').then(),
     ux.loadScript('https://sdk.shazamme.io/js/shazamme-1.0.3.min.js'),
@@ -721,5 +762,8 @@ Promise.all([
                 ux.el.find("[data-autocomplete=roleID]").val(ux.uri.searchParams.get("roleID"));
 
                 ux.el.find("[data-filter], [data-autocomplete]").trigger('change');
-            });
-    });
+            })
+            .then( () => ux.reveal() )
+            .catch( e => { console.warn('[job-search] boot failed', e); ux.reveal(); } );
+    })
+    .catch( e => { console.warn('[job-search] boot failed', e); ux.reveal(); } );

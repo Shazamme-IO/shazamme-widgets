@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Built 2026-08-28T07:31:23.270Z. Registers window.ShazammeWidget["<name>"].
+ * Built 2026-09-09T00:20:18.569Z. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -69,6 +69,12 @@ var __shazWidgetExport = (() => {
     ensureScriptLoader();
     var data = ctx.data, element = ctx.element, $ = ctx.$ || window.jQuery || window.$, shazamme = ctx.shazamme || window.shazamme;
     const ActionUrl = "https://shazamme.io/Job-Listing/src/php/actions";
+    let _userEngaged = false;
+    ["pointerdown", "keydown", "touchstart", "wheel"].forEach(
+      (ev) => window.addEventListener(ev, () => {
+        _userEngaged = true;
+      }, { capture: true, passive: true, once: true })
+    );
     const Path = {
       login: "/login",
       alerts: "/job-alerts",
@@ -304,6 +310,12 @@ var __shazWidgetExport = (() => {
     function UX() {
       this.el = $(element);
       this.uri = new URL(window.location.href);
+      this.reveal = () => {
+        let main2 = this.el.find("[data-shm-main]");
+        let target = main2.length > 0 ? main2 : this.el;
+        target.addClass("shm-ready");
+        target.each((i, node) => node.style.setProperty("visibility", "visible", "important"));
+      };
       this.jobStandardEl = (j) => {
         var _a, _b, _c, _d;
         let jobDate = /* @__PURE__ */ new Date(j.changedOnUTC + "Z");
@@ -797,7 +809,7 @@ var __shazWidgetExport = (() => {
                     ${parentType && `data-filter-parent-type="${parentType}"` || ""}
                     ${f2.parent && `data-filter-parent-value="${f2.parent}"` || ""}>
                         <input type="checkbox" />
-                        ${f2.value} (${f2.count})
+                        <span class="text">${f2.value} (${f2.count})</span>
                 </div>`
           );
         }
@@ -902,6 +914,9 @@ var __shazWidgetExport = (() => {
         return new SalaryFilter(opts).renderTo(this.el.find("[data-rel=filter-salary]"));
       };
       this.showLoading = (showing = true) => {
+        if (showing && !_userEngaged) {
+          return;
+        }
         if (showing) {
           this.el.find("[data-rel=modal-loading]").css({
             "display": "flex"
@@ -1089,6 +1104,7 @@ var __shazWidgetExport = (() => {
       shApi.getJobs(pageNumber, showMap ? 999 : jobResultsPageSize, mergedFilters(), activeSort).then((col) => {
         if (showMap) {
           ux.showJobPins(col.values.map((j) => j.data));
+          ux.reveal();
           return;
         }
         let op = () => {
@@ -1141,6 +1157,10 @@ var __shazWidgetExport = (() => {
         } else {
           ux.el.find("[data-rel=label-results-message]").text(data.config.resultMessagePlural || data.config.resultMessage);
         }
+        ux.reveal();
+      }).catch((e) => {
+        console.warn("[job-results] showJobs failed", e);
+        ux.reveal();
       });
       if (data.inEditor && Object.keys(activeFilter).length > 0) {
         ux.el.find("[data-rel=default-filter]").show();
@@ -1747,6 +1767,12 @@ var __shazWidgetExport = (() => {
     if (data.config.apikey && data.config.apikey.length > 0) {
       ux.el.find("[data-toggle=results-view]").show();
     }
+    ux.el.find("[data-rel=action-filter-reset]").on("click", function() {
+      activeFilter = {};
+      showJobs(0);
+      showFilters();
+      shazamme.pub("job-results-filter-change", activeFilter);
+    });
     const main = (w) => {
       var _a, _b, _c;
       activeFilter = filtersFromParams();
@@ -2187,6 +2213,7 @@ var __shazWidgetExport = (() => {
         ux.el.find("[data-rel=modal] button .animation").first().show();
       }
     }
+    setTimeout(() => ux.reveal(), 5e3);
     ux.loadScript("https://sdk.shazamme.io/js/shazamme-1.0.3.min.js").then(() => shazamme.ready(data.inEditor && data.config.debugSiteID || data.siteId, data.page)).then(
       () => {
         var _a;
