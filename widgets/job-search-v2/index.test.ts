@@ -184,6 +184,43 @@ describe('jobSearch controller', () => {
     expect((last.payload as { state: Record<string, string[]> }).state.professionID.length).toBe(2);
   });
 
+  it('leaves multi-select option checkboxes unstyled — normalizeFields is for form fields', async () => {
+    // The multi-select wrapper carries .flex-items-js, so a bare `.flex-items-js input`
+    // sweep also hits each option's checkbox: sized as a 46px white field, every option
+    // renders as a giant empty box with its label squeezed to zero width.
+    const published: Published[] = [];
+    jobSearch({
+      element,
+      data: { config: { showJobCategories: 'true' } },
+      $: {},
+      shazamme: stubClient(makeJobs(), published),
+    });
+    await flush();
+    await flush();
+
+    const wrap = element.querySelector<HTMLElement>('[data-ms-field="professionID"]')!;
+    const optionBoxes = wrap.querySelectorAll<HTMLInputElement>('.multi-select-dropdown input[type="checkbox"]');
+
+    expect(optionBoxes.length).toBeGreaterThan(0);
+    for (const box of Array.from(optionBoxes)) {
+      expect(box.style.height).toBe('');
+      expect(box.style.border).toBe('');
+    }
+
+    // The inline sweep is only half of it — styles.css's base rule is !important and
+    // matches these checkboxes too, so the .ms-option rule has to out-!important it.
+    // jsdom does not implement author !important, so assert the stylesheet directly.
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'styles.css'), 'utf8');
+    const rule = css.slice(css.indexOf('.ms-option input[type="checkbox"]'));
+
+    expect(rule.slice(0, rule.indexOf('}'))).toMatch(/width:\s*13px\s*!important/);
+    expect(rule.slice(0, rule.indexOf('}'))).toMatch(/height:\s*13px\s*!important/);
+
+    // the real form fields still get normalized
+    const select = element.querySelector<HTMLSelectElement>('.flex-items-js select');
+    if (select) expect(select.style.height).toBe('46px');
+  });
+
   it('locks sub-classification until a classification is chosen, and resets it on change', async () => {
     jobSearch({
       element,

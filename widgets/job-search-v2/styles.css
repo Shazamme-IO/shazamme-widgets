@@ -44,7 +44,12 @@
 /* All native inputs + selects share one base style. The visual props use
  * !important so they beat the host site's own theme (Duda styles generic
  * input/select with high specificity, which otherwise forces its own
- * height/background/border and clashes with the multi-select boxes). */
+ * height/background/border and clashes with the multi-select boxes).
+ *
+ * This also matches a multi-select's option checkboxes — the dropdown lives inside
+ * .flex-items-js.multi-select-wrapper — so the .ms-option rule below re-asserts their
+ * real size with !important. Without it every option renders as a giant empty box
+ * with its label squeezed to zero width. */
 .job-search-root .flex-items-js input,
 .job-search-root .flex-items-js select {
   width: 100% !important;
@@ -323,23 +328,25 @@
   background: #f5f5f5;
 }
 
+/* !important throughout: the base .flex-items-js input rule above is !important and
+ * matches these too, so plain declarations lose and each option becomes a 46px box. */
 .ms-option input[type="checkbox"] {
   appearance: none;
   -webkit-appearance: none;
-  width: 13px;
-  height: 13px;
-  min-width: 13px;
-  min-height: 13px;
+  width: 13px !important;
+  height: 13px !important;
+  min-width: 13px !important;
+  min-height: 13px !important;
   flex-shrink: 0;
-  margin: 0 8px 0 0;
-  padding: 0;
+  margin: 0 8px 0 0 !important;
+  padding: 0 !important;
   cursor: pointer;
-  border: 1.5px solid #bbb;
+  border: 1.5px solid #bbb !important;
   border-radius: 3px;
-  background: #fff;
+  background: #fff !important;
   position: relative;
   transition: background 0.12s ease, border-color 0.12s ease;
-  box-sizing: border-box;
+  box-sizing: border-box !important;
 }
 
 .ms-option input[type="checkbox"]:checked {
