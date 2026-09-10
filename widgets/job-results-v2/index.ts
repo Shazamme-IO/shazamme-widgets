@@ -150,7 +150,10 @@ export default function jobResults(ctx: WidgetContext): void {
   // steps down to 3/2/1 as the container narrows. Must run AFTER every renderCards()
   // (the reconcile drops inline style); inline `!important` beats the site's
   // `.grid { grid-template-columns: 1fr !important }`.
-  const GRID_COLUMNS = 'repeat(auto-fill, minmax(max(190px, calc((100% - 60px) / 4)), 1fr))';
+  // The floor reads the card-min token, so a narrow viewport drops to one column
+  // instead of two 200px cards; the calc still gives 4 across on a desktop row.
+  const GRID_COLUMNS =
+    'repeat(auto-fill, minmax(min(100%, max(var(--sjr-card-min, 190px), calc((100% - 60px) / 4))), 1fr))';
   const fillRow = (el: HTMLElement | null | undefined): void => {
     if (!el) return;
     el.style.setProperty('flex', '1 1 100%', 'important');

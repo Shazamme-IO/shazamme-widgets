@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build ac8a0af0fffe. Registers window.ShazammeWidget["<name>"].
+ * Build 7be40f0fd4e4. Registers window.ShazammeWidget["<name>"].
  */
 (function(){
   if (typeof document === 'undefined') return;
@@ -1136,7 +1136,7 @@ var __shazWidgetExport = (() => {
     mainContainer.style.visibility = "hidden";
     let revealed = false;
     let hideNav = false;
-    const GRID_COLUMNS = "repeat(auto-fill, minmax(max(190px, calc((100% - 60px) / 4)), 1fr))";
+    const GRID_COLUMNS = "repeat(auto-fill, minmax(min(100%, max(var(--sjr-card-min, 190px), calc((100% - 60px) / 4))), 1fr))";
     const fillRow = (el2) => {
       if (!el2) return;
       el2.style.setProperty("flex", "1 1 100%", "important");
