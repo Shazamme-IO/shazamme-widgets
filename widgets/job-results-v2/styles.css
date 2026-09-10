@@ -11,9 +11,9 @@
   --sjr-ink: #333;
   --sjr-ink-strong: #000;
   --sjr-muted: #666;
-  --sjr-faint: var(--sjr-faint);
+  --sjr-faint: #a6a6a6;
   --sjr-line: #ccc;
-  --sjr-line-soft: var(--sjr-line-soft);
+  --sjr-line-soft: #ececec;
   --sjr-accent: #2aa3b5;
   --sjr-accent-ink: #fff;
   --sjr-header-bg: #12181f;

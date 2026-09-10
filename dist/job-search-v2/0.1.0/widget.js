@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 648eebbcb9c9. Registers window.ShazammeWidget["<name>"].
+ * Build 6bec6f2c2bc6. Registers window.ShazammeWidget["<name>"].
  */
 (function(){
   if (typeof document === 'undefined') return;
@@ -58,6 +58,15 @@ var __shazWidgetExport = (() => {
     }
     return fallback;
   }
+  function coerceLabel(value, fallback) {
+    const v = coerceStr(value).trim();
+    return v === "" ? fallback : v;
+  }
+  function coerceLength(value) {
+    const v = coerceStr(value).trim();
+    if (v === "") return "";
+    return /^-?\d*\.?\d+$/.test(v) ? `${v}px` : v;
+  }
   function coerceStr(value, fallback = "") {
     if (typeof value === "string") return value;
     if (value == null) return fallback;
@@ -71,8 +80,8 @@ var __shazWidgetExport = (() => {
   }
   function rootPath(value, fallback) {
     const raw = coerceStr(value).trim() || fallback;
-    if (/^https?:\/\//i.test(raw)) return raw;
-    return ("/" + raw).replace(/^\/+/, "/");
+    if (/^https?:\/\//i.test(raw)) return raw.replace(/\/+$/, "");
+    return ("/" + raw).replace(/^\/+/, "/").replace(/\/+$/, "");
   }
   function readConfig(data) {
     const c = data && data.config || {};
@@ -90,15 +99,15 @@ var __shazWidgetExport = (() => {
       pageSize: coerceInt(c.pageSize, DEFAULT_PAGE_SIZE),
       hideLeftNav: coerceBool(c.hideLeftNav),
       cardTemplate: coerceTemplate(c.cardTemplate),
-      applyNowLabel: coerceStr(c.applyNowLabel, "Apply Now"),
-      readMoreLabel: coerceStr(c.readMoreLabel, "Read More"),
-      saveJobText: coerceStr(c.saveJobText, "save job"),
-      unsaveJobText: coerceStr(c.unsaveJobText, "unsave job"),
-      postedText: coerceStr(c.postedText, "Posted"),
-      noResultsText: coerceStr(c.resultMessageNone || c.noResultsText, "No jobs match your search."),
+      applyNowLabel: coerceLabel(c.applyNowLabel, "Apply Now"),
+      readMoreLabel: coerceLabel(c.readMoreLabel, "Read More"),
+      saveJobText: coerceLabel(c.saveJobText, "save job"),
+      unsaveJobText: coerceLabel(c.unsaveJobText, "unsave job"),
+      postedText: coerceLabel(c.postedText, "Posted"),
+      noResultsText: coerceLabel(c.resultMessageNone || c.noResultsText, "No jobs match your search."),
       accentColour: coerceStr(c.accentColour || c.accentColor),
       headerBackground: coerceStr(c.headerBackground),
-      cardRadius: coerceStr(c.cardRadius)
+      cardRadius: coerceLength(c.cardRadius)
     };
   }
 

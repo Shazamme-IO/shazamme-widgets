@@ -77,6 +77,33 @@ describe('card labels', () => {
   });
 });
 
+describe('config coercion the panel actually hands us', () => {
+  it('falls back on Duda\'s empty-string settings rather than rendering blank buttons', () => {
+    const host = render({ applyNowLabel: '', readMoreLabel: '   ', saveJobText: '' });
+    const text = host.textContent ?? '';
+
+    expect(text).toContain('Apply Now');
+    expect(text).toContain('Read More');
+    expect(text).toContain('save job');
+  });
+
+  it('does not double the slash when a page setting has a trailing one', () => {
+    const hrefs = Array.from(render({ detailsPage: 'job-details/' }).querySelectorAll('a')).map((a) =>
+      a.getAttribute('href'),
+    );
+
+    expect(hrefs).toContain('/job-details/test-job-44');
+    for (const href of hrefs) expect(href).not.toContain('//');
+  });
+
+  it('joins the jobID with & when the application page already has a query', () => {
+    const host = render({ applicationPage: '/apply?src=web' });
+    const apply = Array.from(host.querySelectorAll('a')).map((a) => a.getAttribute('href'));
+
+    expect(apply.some((h) => h!.includes('/apply?src=web&jobID='))).toBe(true);
+  });
+});
+
 describe('templates', () => {
   it('renders semantic markup with per-field hooks by default', () => {
     const host = render();

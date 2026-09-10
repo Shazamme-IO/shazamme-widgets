@@ -74,6 +74,22 @@ export function coerceInt(value: unknown, fallback: number): number {
   return fallback;
 }
 
+/** Duda hands an unset text setting through as '', which coerceStr would return
+ *  verbatim — rendering, say, an Apply button with no text. Labels fall back. */
+function coerceLabel(value: unknown, fallback: string): string {
+  const v = coerceStr(value).trim();
+  return v === '' ? fallback : v;
+}
+
+/** A CSS length from a setting: pass a value that already carries a unit through
+ *  (1.5rem, 50%), and treat a bare number as px. parseInt alone turned '1.5rem'
+ *  into '1px'. */
+export function coerceLength(value: unknown): string {
+  const v = coerceStr(value).trim();
+  if (v === '') return '';
+  return /^-?\d*\.?\d+$/.test(v) ? `${v}px` : v;
+}
+
 function coerceStr(value: unknown, fallback = ''): string {
   if (typeof value === 'string') return value;
   if (value == null) return fallback;
@@ -93,8 +109,9 @@ function coerceTemplate(value: unknown): CardTemplate {
  *  `//job-details`, which a browser resolves as a host. Collapse to exactly one. */
 export function rootPath(value: string, fallback: string): string {
   const raw = coerceStr(value).trim() || fallback;
-  if (/^https?:\/\//i.test(raw)) return raw;
-  return ('/' + raw).replace(/^\/+/, '/');
+  if (/^https?:\/\//i.test(raw)) return raw.replace(/\/+$/, '');
+  // Trailing slashes matter too: 'job-details/' would build '/job-details//slug'.
+  return ('/' + raw).replace(/^\/+/, '/').replace(/\/+$/, '');
 }
 
 /** Read `data.config.*` into a typed, defaulted WidgetConfig. */
@@ -114,14 +131,14 @@ export function readConfig(data: DudaData | undefined): WidgetConfig {
     pageSize: coerceInt(c.pageSize, DEFAULT_PAGE_SIZE),
     hideLeftNav: coerceBool(c.hideLeftNav),
     cardTemplate: coerceTemplate(c.cardTemplate),
-    applyNowLabel: coerceStr(c.applyNowLabel, 'Apply Now'),
-    readMoreLabel: coerceStr(c.readMoreLabel, 'Read More'),
-    saveJobText: coerceStr(c.saveJobText, 'save job'),
-    unsaveJobText: coerceStr(c.unsaveJobText, 'unsave job'),
-    postedText: coerceStr(c.postedText, 'Posted'),
-    noResultsText: coerceStr(c.resultMessageNone || c.noResultsText, 'No jobs match your search.'),
+    applyNowLabel: coerceLabel(c.applyNowLabel, 'Apply Now'),
+    readMoreLabel: coerceLabel(c.readMoreLabel, 'Read More'),
+    saveJobText: coerceLabel(c.saveJobText, 'save job'),
+    unsaveJobText: coerceLabel(c.unsaveJobText, 'unsave job'),
+    postedText: coerceLabel(c.postedText, 'Posted'),
+    noResultsText: coerceLabel(c.resultMessageNone || c.noResultsText, 'No jobs match your search.'),
     accentColour: coerceStr(c.accentColour || c.accentColor),
     headerBackground: coerceStr(c.headerBackground),
-    cardRadius: coerceStr(c.cardRadius),
+    cardRadius: coerceLength(c.cardRadius),
   };
 }

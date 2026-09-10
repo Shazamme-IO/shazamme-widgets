@@ -221,7 +221,7 @@ export default function jobResults(ctx: WidgetContext): void {
     const tokens: Array<[string, string]> = [
       ['--sjr-accent', cfg.accentColour],
       ['--sjr-header-bg', cfg.headerBackground],
-      ['--sjr-radius', cfg.cardRadius && `${parseInt(cfg.cardRadius, 10) || 0}px`],
+      ['--sjr-radius', cfg.cardRadius],
     ];
 
     for (const [name, value] of tokens) {

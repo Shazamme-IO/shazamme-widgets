@@ -39,7 +39,9 @@ function detailsHref(job: Job, cfg: WidgetConfig): string {
 function applyHref(job: Job, cfg: WidgetConfig): string {
   const own = str(job, 'applicationURL');
   if (own) return own;
-  return `${cfg.applicationPage}?jobID=${encodeURIComponent(str(job, 'jobID'))}`;
+  // The page may already carry a query of its own, so pick the right joiner.
+  const joiner = cfg.applicationPage.includes('?') ? '&' : '?';
+  return `${cfg.applicationPage}${joiner}jobID=${encodeURIComponent(str(job, 'jobID'))}`;
 }
 
 /** ISO date for <time datetime>, empty when the source date is unusable. */
@@ -98,8 +100,8 @@ export function escapeHtml(value: string): string {
 }
 
 function classicCardHtml(job: Job, cfg: WidgetConfig): string {
-  const details = detailsHref(job, cfg);
-  const apply = applyHref(job, cfg);
+  const details = escapeHtml(detailsHref(job, cfg));
+  const apply = escapeHtml(applyHref(job, cfg));
   const name = escapeHtml(str(job, 'jobName') || str(job, 'title'));
   const posted = timeSince(job);
   return `
@@ -167,8 +169,10 @@ function metaRows(job: Job): string {
 }
 
 function modernCardHtml(job: Job, cfg: WidgetConfig): string {
-  const details = detailsHref(job, cfg);
-  const apply = applyHref(job, cfg);
+  // Escaped: these are interpolated into href="…", and a slug or applicationURL
+  // sourced from an ATS can contain a quote.
+  const details = escapeHtml(detailsHref(job, cfg));
+  const apply = escapeHtml(applyHref(job, cfg));
   const name = escapeHtml(str(job, 'jobName') || str(job, 'title'));
   const posted = timeSince(job);
   const iso = postedDate(job);
