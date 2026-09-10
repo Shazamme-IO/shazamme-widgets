@@ -13,15 +13,15 @@
       "key": "applicationPage",
       "label": "Application page",
       "type": "string",
-      "default": "",
-      "help": "Page slug the Apply Now button links to (?jobID=\u2026 is appended)."
+      "default": "/job-application",
+      "help": "Page the Apply Now button links to (?jobID=\u2026 is appended). Defaults to /job-application when left blank."
     },
     {
       "key": "detailsPage",
       "label": "Job details page",
       "type": "string",
-      "default": "",
-      "help": "Page slug for the job title / Read More links (/{detailsPage}/{slug})."
+      "default": "/job-details",
+      "help": "Page a job title and Read More link to. Defaults to /job-details when left blank."
     },
     {
       "key": "showJobTypeFilter",
@@ -94,8 +94,14 @@
       "label": "Card template",
       "type": "select",
       "options": [
-        "modern",
-        "classic"
+        {
+          "value": "modern",
+          "label": "Modern (token-styled card)"
+        },
+        {
+          "value": "classic",
+          "label": "Classic (legacy shm* markup)"
+        }
       ],
       "default": "modern",
       "help": "'modern' is the semantic card (article/header/meta rows, styled by tokens). 'classic' keeps the legacy shm* markup for a site whose own CSS targets it."

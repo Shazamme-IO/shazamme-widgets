@@ -36,8 +36,14 @@ function detailsHref(job: Job, cfg: WidgetConfig): string {
   return `${cfg.detailsPage}/${slugOf(job)}`;
 }
 
+/** An ATS-supplied URL is untrusted: escaping keeps it inside the attribute, but
+ *  only a scheme check keeps `javascript:` out of an href. */
+function safeExternal(url: string): string {
+  return /^(https?:\/\/|\/)/i.test(url.trim()) ? url : '';
+}
+
 function applyHref(job: Job, cfg: WidgetConfig): string {
-  const own = str(job, 'applicationURL');
+  const own = safeExternal(str(job, 'applicationURL'));
   if (own) return own;
   // The page may already carry a query of its own, so pick the right joiner.
   const joiner = cfg.applicationPage.includes('?') ? '&' : '?';
@@ -224,6 +230,10 @@ export function renderCards(
     setHtml(container, `<div class="shmNoResults sjr-empty">${escapeHtml(cfg.noResultsText)}</div>`);
     return;
   }
+
+  // renderList only removes keyed children, so an empty-state div left from a
+  // previous zero-result render would sit above the cards forever.
+  container.querySelectorAll('.sjr-empty').forEach((node) => node.remove());
   renderList(
     container,
     result.page,

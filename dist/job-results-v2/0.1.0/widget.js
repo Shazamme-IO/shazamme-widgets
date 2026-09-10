@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 4ed50a13bcdb. Registers window.ShazammeWidget["<name>"].
+ * Build ac8a0af0fffe. Registers window.ShazammeWidget["<name>"].
  */
 (function(){
   if (typeof document === 'undefined') return;
@@ -614,8 +614,11 @@ var __shazWidgetExport = (() => {
   function detailsHref(job, cfg) {
     return `${cfg.detailsPage}/${slugOf(job)}`;
   }
+  function safeExternal(url) {
+    return /^(https?:\/\/|\/)/i.test(url.trim()) ? url : "";
+  }
   function applyHref(job, cfg) {
-    const own = str(job, "applicationURL");
+    const own = safeExternal(str(job, "applicationURL"));
     if (own) return own;
     const joiner = cfg.applicationPage.includes("?") ? "&" : "?";
     return `${cfg.applicationPage}${joiner}jobID=${encodeURIComponent(str(job, "jobID"))}`;
@@ -753,6 +756,7 @@ var __shazWidgetExport = (() => {
       setHtml(container, `<div class="shmNoResults sjr-empty">${escapeHtml(cfg.noResultsText)}</div>`);
       return;
     }
+    container.querySelectorAll(".sjr-empty").forEach((node) => node.remove());
     renderList(
       container,
       result.page,
@@ -1163,6 +1167,7 @@ var __shazWidgetExport = (() => {
       applyGridLayout();
       renderCount(element, result.total);
       if (pagingEl) renderPaging(pagingEl, result.total, cfg.pageSize, state.page);
+      element.classList.add("shaz-job-results");
       if (facetHost) renderFacets(facetHost, tree, cfg, state.facets);
       if (mapView == null ? void 0 : mapView.isReady) mapView.setJobs(result.matching);
       writeHash(state);

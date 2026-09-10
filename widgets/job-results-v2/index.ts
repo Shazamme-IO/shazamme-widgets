@@ -193,6 +193,12 @@ export default function jobResults(ctx: WidgetContext): void {
     applyGridLayout();
     renderCount(element, result.total);
     if (pagingEl) renderPaging(pagingEl, result.total, cfg.pageSize, state.page);
+    // Same restamp hazard as `shm-ready` below: Duda re-asserts the root's class
+    // attribute and strips runtime-added classes. Every colour in this widget now
+    // reads a token scoped to .shaz-job-results, so losing it unstyles the filters,
+    // action bar, paging and cards — re-assert it on each render.
+    element.classList.add('shaz-job-results');
+
     if (facetHost) renderFacets(facetHost, tree, cfg, state.facets);
     if (mapView?.isReady) mapView.setJobs(result.matching);
     writeHash(state);

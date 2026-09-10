@@ -104,6 +104,34 @@ describe('config coercion the panel actually hands us', () => {
   });
 });
 
+describe('stale state and untrusted URLs', () => {
+  it('clears the empty-state message when results come back', () => {
+    const host = document.createElement('div');
+    const cfg = readConfig({ config: {} });
+
+    renderCards(host, { page: [], total: 0 } as unknown as QueryResult, cfg);
+    expect(host.textContent).toContain('No jobs match your search.');
+
+    renderCards(host, result(), cfg);
+    expect(host.textContent).not.toContain('No jobs match your search.');
+    expect(host.querySelector('[data-rel="article-job-result"]')).not.toBeNull();
+  });
+
+  it('refuses a javascript: applicationURL from the feed', () => {
+    const host = document.createElement('div');
+    const hostile = {
+      page: [{ ...(result().page[0] as object), applicationURL: 'javascript:alert(1)' }],
+      total: 1,
+    } as unknown as QueryResult;
+
+    renderCards(host, hostile, readConfig({ config: {} }));
+
+    for (const a of Array.from(host.querySelectorAll('a'))) {
+      expect(a.getAttribute('href')).not.toMatch(/^javascript:/i);
+    }
+  });
+});
+
 describe('templates', () => {
   it('renders semantic markup with per-field hooks by default', () => {
     const host = render();
