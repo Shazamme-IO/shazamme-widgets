@@ -1,12 +1,12 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build f2c53791d490. Registers window.ShazammeWidget["<name>"].
+ * Build ac8a0af0fffe. Registers window.ShazammeWidget["<name>"].
  */
 (function(){
   if (typeof document === 'undefined') return;
   if (document.getElementById("shm-css-job-results-v2")) return;
   var s = document.createElement('style');
   s.id = "shm-css-job-results-v2";
-  s.textContent = "/*\n * job-results — base / shared styles. Ported and cleaned from the 2026 +\n * proximity reference CSS. Google-map rules removed; the map container is styled\n * for a MapLibre GL canvas. Desktop-only and mobile-only rules live in\n * styles.desktop.css and styles.mobile.css.\n */\n\n.shmMainContainer {\n  display: flex;\n  align-items: flex-start;\n  gap: 15px;\n  color: #333;\n  padding-top: 20px;\n  width: 100%;\n  box-sizing: border-box;\n  min-height: 840px;\n}\n\n.shmMainContainer .stack {\n  display: flex;\n  white-space: nowrap;\n  align-items: center;\n}\n\n.hide,\n[hidden] {\n  display: none !important;\n}\n\n/* ===================== FILTER SIDEBAR ===================== */\n\n.section-job-result-filter {\n  flex-shrink: 0;\n  width: var(--shaz-filter-pct, 22%);\n  min-width: var(--shaz-filter-pct, 22%);\n  max-width: var(--shaz-filter-pct, 22%);\n  min-height: 840px;\n  box-sizing: border-box;\n}\n\n.shmFiltersContainer {\n  background: none;\n  padding: 10px;\n}\n\n.section-job-result-filter .filter-title {\n  font-size: 22px;\n  font-weight: bold;\n  text-align: left;\n  border-bottom: 1px solid #a6a6a6;\n  padding: 8px 5px;\n  margin: 0 3px 10px;\n}\n\n.section-job-result-filter .filter-label {\n  display: block;\n  padding: 0 10px;\n  text-align: left;\n}\n\n.section-job-result-filter .section-keyword-search {\n  position: relative;\n  margin-bottom: 10px;\n}\n\n.section-job-result-filter .filter-field {\n  padding: 10px;\n  width: 100%;\n  box-sizing: border-box;\n}\n\n.section-job-result-filter .filter-keyword-clear {\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  right: 8px;\n  margin: auto 0;\n  cursor: pointer;\n  z-index: 2;\n  display: none;\n  background: transparent;\n  border: none;\n  padding: 0;\n  width: 24px;\n  height: 24px;\n  border-radius: 50%;\n  align-items: center;\n  justify-content: center;\n  color: #888;\n}\n\n.section-job-result-filter .filter-field:not(:placeholder-shown) + .filter-keyword-clear {\n  display: flex;\n}\n\n.section-job-result-filter .filter-toggle {\n  display: block;\n  font-size: 16px;\n  border-bottom: 1px solid #a6a6a6;\n  padding: 5px;\n  margin: 0 5px;\n  text-align: left;\n  text-decoration: none;\n  color: inherit;\n  cursor: pointer;\n}\n\n.section-job-result-filter .filter-toggle.active {\n  font-weight: 500;\n  color: blue;\n}\n\n.section-job-result-filter .filter-toggle.filter-nested {\n  margin-left: 20px;\n  font-size: 0.95em;\n  border-bottom: 0;\n}\n\n.section-job-result-filter .filter-toggle input {\n  margin-right: 6px;\n}\n\n/* Radius slider */\n.section-job-result-filter .geo-range .field {\n  box-sizing: border-box;\n  appearance: none;\n  width: 100%;\n  height: 10px;\n  background-color: #b2b2b2;\n  border-radius: 50px;\n  margin: 10px 0;\n  border: 0;\n  outline: none;\n}\n\n.section-job-result-filter .geo-range .text {\n  margin-left: 10px;\n}\n\n/* Geo prediction dropdown */\n.prediction-result {\n  position: absolute;\n  width: 100%;\n  border: 1px solid #ccc;\n  display: none;\n  flex-direction: column;\n  overflow-y: auto;\n  box-shadow: rgba(0, 0, 0, 0.15) 0 2px 8px 0;\n  height: auto;\n  z-index: 99;\n  background: #fff;\n  padding: 10px 20px 20px;\n  text-align: left;\n  top: 100%;\n}\n\n.prediction-result .result-text {\n  display: block;\n  color: #000;\n  text-decoration: none;\n  padding: 4px 0;\n}\n\n.prediction-result .result-text.close {\n  text-align: right;\n  font-size: 0.7em;\n}\n\n/* ===================== RESULTS ===================== */\n\n.section-details {\n  flex: 1 1 0;\n  min-width: 0;\n  max-width: calc(100% - var(--shaz-filter-pct, 22%));\n  box-sizing: border-box;\n  min-height: 840px;\n}\n\n.shmResultCountContainer {\n  display: flex;\n  margin: 10px 0;\n}\n\n.shmResultCount {\n  font-weight: bold;\n  color: #333;\n}\n\n/* !important throughout so the host theme (Duda) can't override the toolbar\n * layout — it was forcing .action-item to `block`, which stacked the List/Map\n * toggle buttons vertically and misaligned the bar. */\n.action-bar {\n  display: flex !important;\n  justify-content: flex-end !important;\n  align-items: center;\n  gap: 5px;\n}\n\n.action-bar .action-item {\n  display: inline-block;\n  position: relative;\n  margin: 5px;\n}\n\n/* The List/Map toggle holds two buttons — keep them side by side (Duda's\n * generic .action-item = block otherwise stacks them). */\n.action-bar .action-item.solid {\n  display: flex !important;\n  flex-direction: row !important;\n}\n\n.action-bar .action-item button {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  min-width: 60px;\n  height: 40px;\n  padding: 5px 12px;\n  font-family: inherit;\n  background: #333;\n  color: white;\n  border: 0;\n}\n\n.action-bar .action-item.solid .toggle.active {\n  background: #000;\n}\n\n.menu {\n  display: none;\n  position: absolute;\n  top: 100%;\n  left: 0;\n  border: 1px solid #a6a6a6;\n  padding: 5px;\n  z-index: 3;\n  background: white;\n}\n\n.action-item:hover .menu {\n  display: block;\n}\n\n.menu-option {\n  display: block;\n  text-transform: uppercase;\n  text-align: left;\n  text-decoration: none;\n  color: #333;\n  margin: 5px 0;\n  white-space: nowrap;\n}\n\n.menu-option.active {\n  font-weight: 500;\n  color: blue;\n}\n\n.shmSearchResults.grid {\n  display: grid;\n  grid-template-columns: 1fr;\n  gap: 0 15px;\n}\n\n/* ===================== JOB CARD (standard) ===================== */\n\n.shmJobResultStd {\n  position: relative;\n  padding: 20px;\n  margin: 10px 0;\n  min-height: 100px;\n  width: 100%;\n  box-sizing: border-box;\n  background-color: #ececec;\n  transition: background 0.25s;\n}\n\n.shmJobResultStd .shmJobItemUpper {\n  display: flex;\n  align-items: flex-start;\n  justify-content: space-between;\n}\n\n.shmJobResultStd .shmJobtitle {\n  font-size: 25px;\n  color: #333;\n  text-align: left;\n  text-decoration: none;\n  font-weight: bold;\n}\n\n.shmJobResultStd .shmTimePostedText {\n  text-align: left;\n  font-size: 14px;\n  color: #666;\n}\n\n.shmJobResultStd .shmTag.job-new {\n  display: inline-block;\n  padding: 4px;\n  background-color: #00ffff;\n  font-size: 10px;\n  margin-bottom: 5px;\n}\n\n.shmJobResultStd .shmCTA {\n  display: flex;\n  align-items: center;\n  justify-content: flex-end;\n  gap: 6px;\n}\n\n.shmJobResultStd .shmSaveJob,\n.shmJobResultStd .shmSendEmail {\n  cursor: pointer;\n  text-decoration: none;\n  color: #333;\n  white-space: nowrap;\n}\n\n.shmJobResultStd .shmSaveJob:not(.active) .active {\n  display: none;\n}\n\n.shmJobResultStd .shmSaveJob.active .inactive {\n  display: none;\n}\n\n.shmJobResultStd .shmJobDetails {\n  display: block;\n  margin: 10px 0;\n}\n\n.shmJobResultStd .shmJobDetailsLeft {\n  display: flex;\n  flex-wrap: wrap;\n  align-items: center;\n  text-align: left;\n}\n\n.shmJobResultStd .shmDetailsDivider {\n  margin: 5px 10px;\n  color: inherit;\n}\n\n.shmJobResultStd .shmButtonLinks {\n  display: flex;\n  flex-wrap: nowrap;\n}\n\n.shmJobResultStd .shmButtonLinks a {\n  margin-right: 20px;\n  padding: 5px 15px;\n  border: 1px solid #000;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  text-decoration: none;\n}\n\n.shmJobResultStd .shmButtonLinks .shmGoReadMore {\n  background: #fff;\n  color: #000;\n}\n\n.shmJobResultStd .shmButtonLinks .shmGoApply {\n  background: #000;\n  color: #fff;\n  border: 0;\n}\n\n.shmNoResults {\n  padding: 40px 20px;\n  text-align: center;\n  color: #666;\n}\n\n/* ===================== PAGINATION ===================== */\n\n.section-job-results-paging {\n  display: flex;\n  justify-content: center;\n  width: 100%;\n  margin: 20px 0;\n}\n\n.section-job-results-paging .button-paging {\n  display: inline-block;\n  padding: 3px 8px;\n  margin: 0 5px;\n  border: 0;\n  text-decoration: none;\n  color: #666;\n  cursor: pointer;\n  background: none;\n}\n\n.section-job-results-paging .button-paging.active {\n  font-weight: 500;\n  background: #ececec;\n}\n\n.section-job-results-paging .button-paging.disabled {\n  color: #000;\n  cursor: default;\n}\n\n/* ===================== MAP (MapLibre GL) ===================== */\n\n.shmSearchMapResults {\n  width: 100%;\n  height: 700px;\n  min-height: 500px;\n  max-height: 80vh;\n  box-sizing: border-box;\n  margin-top: 20px;\n}\n\n.shmMainContainer #shmMap {\n  position: relative;\n  width: 100%;\n  height: 100%;\n  min-height: 500px;\n}\n\n.gmapInfoContainer {\n  min-width: 200px;\n}\n\n.gmapTitle {\n  font-size: 18px;\n  font-weight: bold;\n}\n\n@media (min-width: 768px) {\n/*\n * job-results — desktop-only overrides (applied above the Duda mobile breakpoint).\n * Mirrors the reference `.desktop` visibility split.\n */\n\n.mobile {\n  display: none !important;\n}\n\n.section-tool-bar {\n  display: flex;\n  justify-content: right;\n  padding: 20px 0 10px;\n}\n\n.toolbar-main.mobile {\n  display: none !important;\n}\n\n/* Two-up card grid on wide viewports when grid view is active. */\n.shmSearchResults.shmResultView.grid {\n  grid-template-columns: 1fr;\n}\n\n.shmResultCountContainer.desktop {\n  display: flex;\n}\n\n}\n@media (max-width: 767px) {\n/*\n * job-results — mobile-only overrides (applied below the Duda mobile breakpoint).\n * Ported and cleaned from the reference mobile CSS: single-column results, the\n * filter sidebar becomes a slide-in drawer, cards stack.\n */\n\n.desktop {\n  display: none !important;\n}\n\n.shmMainContainer {\n  display: block;\n  text-align: center;\n  padding-top: 20px;\n  width: 100% !important;\n}\n\n/* Filter sidebar → slide-in drawer */\n.section-job-result-filter {\n  position: fixed;\n  display: block;\n  background-color: #fff;\n  z-index: 1;\n  bottom: 0;\n  left: -100%;\n  max-height: 100%;\n  max-width: 100%;\n  overflow: auto;\n  padding: 50px 20px;\n  transition: all 0.35s;\n  width: 100% !important;\n  height: auto;\n}\n\n.section-job-result-filter.active {\n  left: 0;\n  top: 50px;\n  z-index: 201;\n}\n\n.section-details {\n  width: 100% !important;\n}\n\n.action-bar {\n  flex-direction: column;\n  align-items: center;\n}\n\n/* Single-column results */\n.shmSearchResults.grid {\n  grid-template-columns: 100% !important;\n  column-gap: 0 !important;\n}\n\n.shmJobResultStd {\n  width: 100%;\n}\n\n.shmJobResultStd .shmJobItemUpper {\n  flex-direction: column-reverse;\n  align-items: flex-start;\n}\n\n.shmJobResultStd .shmJobtitle {\n  font-size: 22px;\n  text-align: center !important;\n  width: 100%;\n}\n\n.shmJobResultStd .shmButtonLinks {\n  display: flex;\n  justify-content: space-between;\n}\n\n.shmJobResultStd .shmButtonLinks a {\n  margin-right: 8px;\n}\n\n.shmLocation,\n.shmSalary,\n.jobCategory,\n.work-type,\n.work-model {\n  text-align: left;\n}\n\n.shmResultCountContainer {\n  justify-content: center !important;\n}\n\n.shmSearchResults,\n.shmSearchMapResults {\n  margin-top: 40px;\n}\n\n}";
+  s.textContent = "/* ---------------------------------------------------------------------------\n * TOKENS — the entire public styling surface of this widget.\n *\n * Every rule below reads these and nothing else, so restyling a site means\n * setting values here (or from the settings panel, which writes them inline at\n * mount) instead of out-specifying our selectors. That is what the !important\n * sweeps used to be for.\n * ------------------------------------------------------------------------- */\n.shaz-job-results {\n  --sjr-surface: #fff;\n  --sjr-ink: #333;\n  --sjr-ink-strong: #000;\n  --sjr-muted: #666;\n  --sjr-faint: #a6a6a6;\n  --sjr-line: #ccc;\n  --sjr-line-soft: #ececec;\n  --sjr-accent: #2aa3b5;\n  --sjr-accent-ink: #fff;\n  --sjr-header-bg: #12181f;\n  --sjr-header-ink: #fff;\n  --sjr-radius: 10px;\n  --sjr-pad: 20px;\n  --sjr-gap: 14px;\n  --sjr-card-min: 280px;\n  --sjr-shadow: 0 1px 2px rgb(16 24 33 / 6%), 0 8px 24px rgb(16 24 33 / 9%);\n}\n\n/* ---------------------------------------------------------------------------\n * MODERN CARD — semantic markup (article > header + ul.sjr-meta + actions).\n * Rows carry data-field, so a site targets meaning, not a class name:\n *   .sjr-meta__item[data-field=\"salary\"] { … }\n * ------------------------------------------------------------------------- */\n.sjr-list {\n  display: grid;\n  gap: var(--sjr-gap);\n  grid-template-columns: repeat(auto-fill, minmax(var(--sjr-card-min), 1fr));\n}\n\n.sjr-card {\n  container-type: inline-size;\n  display: flex;\n  flex-direction: column;\n  overflow: hidden;\n  background: var(--sjr-surface);\n  border-radius: var(--sjr-radius);\n  box-shadow: var(--sjr-shadow);\n}\n\n.sjr-card__header {\n  position: relative;\n  padding: var(--sjr-pad);\n  background: var(--sjr-header-bg);\n  color: var(--sjr-header-ink);\n}\n\n.sjr-card__eyebrow {\n  display: block;\n  font-size: 11px;\n  letter-spacing: 0.1em;\n  text-transform: uppercase;\n  opacity: 0.7;\n}\n\n.sjr-card__title {\n  margin: 6px 0 0;\n  font-size: 21px;\n  font-weight: 700;\n  line-height: 1.2;\n  text-wrap: balance;\n}\n\n/* Scoped through the header so the host theme's own `a { color: … }` — which beats\n * a bare `color: inherit` — cannot render the title dark-on-dark. */\n.sjr-card__header .sjr-card__title,\n.sjr-card__header .sjr-card__title a {\n  color: var(--sjr-header-ink);\n  text-decoration: none;\n}\n\n.sjr-card__title a:hover,\n.sjr-card__title a:focus-visible {\n  text-decoration: underline;\n}\n\n.sjr-tag {\n  position: absolute;\n  top: var(--sjr-pad);\n  right: var(--sjr-pad);\n  padding: 2px 9px;\n  border-radius: 999px;\n  background: var(--sjr-accent);\n  color: var(--sjr-accent-ink);\n  font-size: 11px;\n  letter-spacing: 0.06em;\n  text-transform: uppercase;\n}\n\n.sjr-card__body {\n  display: flex;\n  flex: 1;\n  flex-direction: column;\n  gap: var(--sjr-gap);\n  padding: var(--sjr-pad);\n}\n\n.sjr-meta {\n  display: flex;\n  flex: 1;\n  flex-direction: column;\n  gap: 9px;\n  margin: 0;\n  padding: 0;\n  list-style: none;\n}\n\n.sjr-meta__item {\n  display: flex;\n  align-items: center;\n  gap: 11px;\n  color: var(--sjr-ink);\n  font-size: 15px;\n}\n\n.sjr-meta__item svg {\n  width: 18px;\n  height: 18px;\n  flex: none;\n  fill: none;\n  stroke: var(--sjr-accent);\n  stroke-width: 1.6;\n  stroke-linecap: round;\n  stroke-linejoin: round;\n}\n\n.sjr-card__actions {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: var(--sjr-gap);\n  flex-wrap: wrap;\n}\n\n.sjr-actions-group {\n  display: flex;\n  gap: 8px;\n}\n\n.sjr-btn {\n  padding: 8px 16px;\n  border: 1.5px solid var(--sjr-accent);\n  border-radius: 999px;\n  background: none;\n  color: var(--sjr-accent);\n  font: inherit;\n  font-size: 14px;\n  white-space: nowrap;\n  text-decoration: none;\n}\n\n.sjr-btn--primary {\n  background: var(--sjr-accent);\n  color: var(--sjr-accent-ink);\n}\n\n.sjr-save {\n  padding: 0;\n  border: 0;\n  background: none;\n  color: var(--sjr-muted);\n  font: inherit;\n  font-size: 14px;\n  cursor: pointer;\n}\n\n.sjr-save:not(.active) .active,\n.sjr-save.active .inactive {\n  display: none;\n}\n\n.sjr-empty {\n  padding: var(--sjr-pad);\n  color: var(--sjr-muted);\n}\n\n/* A card in a narrow column stacks its actions rather than squeezing them. */\n@container (max-width: 320px) {\n  .sjr-card__actions {\n    align-items: stretch;\n    flex-direction: column;\n  }\n\n  .sjr-actions-group {\n    flex-direction: column;\n  }\n\n  .sjr-btn {\n    text-align: center;\n  }\n}\n\n/*\n * job-results — base / shared styles. Ported and cleaned from the 2026 +\n * proximity reference CSS. Google-map rules removed; the map container is styled\n * for a MapLibre GL canvas. Desktop-only and mobile-only rules live in\n * styles.desktop.css and styles.mobile.css.\n */\n\n.shmMainContainer {\n  display: flex;\n  align-items: flex-start;\n  gap: 15px;\n  color: var(--sjr-ink);\n  padding-top: 20px;\n  width: 100%;\n  box-sizing: border-box;\n  min-height: 840px;\n}\n\n.shmMainContainer .stack {\n  display: flex;\n  white-space: nowrap;\n  align-items: center;\n}\n\n.hide,\n[hidden] {\n  display: none !important;\n}\n\n/* ===================== FILTER SIDEBAR ===================== */\n\n.section-job-result-filter {\n  flex-shrink: 0;\n  width: var(--shaz-filter-pct, 22%);\n  min-width: var(--shaz-filter-pct, 22%);\n  max-width: var(--shaz-filter-pct, 22%);\n  min-height: 840px;\n  box-sizing: border-box;\n}\n\n.shmFiltersContainer {\n  background: none;\n  padding: 10px;\n}\n\n.section-job-result-filter .filter-title {\n  font-size: 22px;\n  font-weight: bold;\n  text-align: left;\n  border-bottom: 1px solid var(--sjr-faint);\n  padding: 8px 5px;\n  margin: 0 3px 10px;\n}\n\n.section-job-result-filter .filter-label {\n  display: block;\n  padding: 0 10px;\n  text-align: left;\n}\n\n.section-job-result-filter .section-keyword-search {\n  position: relative;\n  margin-bottom: 10px;\n}\n\n.section-job-result-filter .filter-field {\n  padding: 10px;\n  width: 100%;\n  box-sizing: border-box;\n}\n\n.section-job-result-filter .filter-keyword-clear {\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  right: 8px;\n  margin: auto 0;\n  cursor: pointer;\n  z-index: 2;\n  display: none;\n  background: transparent;\n  border: none;\n  padding: 0;\n  width: 24px;\n  height: 24px;\n  border-radius: 50%;\n  align-items: center;\n  justify-content: center;\n  color: #888;\n}\n\n.section-job-result-filter .filter-field:not(:placeholder-shown) + .filter-keyword-clear {\n  display: flex;\n}\n\n.section-job-result-filter .filter-toggle {\n  display: block;\n  font-size: 16px;\n  border-bottom: 1px solid var(--sjr-faint);\n  padding: 5px;\n  margin: 0 5px;\n  text-align: left;\n  text-decoration: none;\n  color: inherit;\n  cursor: pointer;\n}\n\n.section-job-result-filter .filter-toggle.active {\n  font-weight: 500;\n  color: blue;\n}\n\n.section-job-result-filter .filter-toggle.filter-nested {\n  margin-left: 20px;\n  font-size: 0.95em;\n  border-bottom: 0;\n}\n\n.section-job-result-filter .filter-toggle input {\n  margin-right: 6px;\n}\n\n/* Radius slider */\n.section-job-result-filter .geo-range .field {\n  box-sizing: border-box;\n  appearance: none;\n  width: 100%;\n  height: 10px;\n  background-color: var(--sjr-faint);\n  border-radius: 50px;\n  margin: 10px 0;\n  border: 0;\n  outline: none;\n}\n\n.section-job-result-filter .geo-range .text {\n  margin-left: 10px;\n}\n\n/* Geo prediction dropdown */\n.prediction-result {\n  position: absolute;\n  width: 100%;\n  border: 1px solid var(--sjr-line);\n  display: none;\n  flex-direction: column;\n  overflow-y: auto;\n  box-shadow: rgba(0, 0, 0, 0.15) 0 2px 8px 0;\n  height: auto;\n  z-index: 99;\n  background: #fff;\n  padding: 10px 20px 20px;\n  text-align: left;\n  top: 100%;\n}\n\n.prediction-result .result-text {\n  display: block;\n  color: var(--sjr-ink-strong);\n  text-decoration: none;\n  padding: 4px 0;\n}\n\n.prediction-result .result-text.close {\n  text-align: right;\n  font-size: 0.7em;\n}\n\n/* ===================== RESULTS ===================== */\n\n.section-details {\n  flex: 1 1 0;\n  min-width: 0;\n  max-width: calc(100% - var(--shaz-filter-pct, 22%));\n  box-sizing: border-box;\n  min-height: 840px;\n}\n\n.shmResultCountContainer {\n  display: flex;\n  margin: 10px 0;\n}\n\n.shmResultCount {\n  font-weight: bold;\n  color: var(--sjr-ink);\n}\n\n/* !important throughout so the host theme (Duda) can't override the toolbar\n * layout — it was forcing .action-item to `block`, which stacked the List/Map\n * toggle buttons vertically and misaligned the bar. */\n.action-bar {\n  display: flex !important;\n  justify-content: flex-end !important;\n  align-items: center;\n  gap: 5px;\n}\n\n.action-bar .action-item {\n  display: inline-block;\n  position: relative;\n  margin: 5px;\n}\n\n/* The List/Map toggle holds two buttons — keep them side by side (Duda's\n * generic .action-item = block otherwise stacks them). */\n.action-bar .action-item.solid {\n  display: flex !important;\n  flex-direction: row !important;\n}\n\n.action-bar .action-item button {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  min-width: 60px;\n  height: 40px;\n  padding: 5px 12px;\n  font-family: inherit;\n  background: var(--sjr-ink);\n  color: white;\n  border: 0;\n}\n\n.action-bar .action-item.solid .toggle.active {\n  background: var(--sjr-ink-strong);\n}\n\n.menu {\n  display: none;\n  position: absolute;\n  top: 100%;\n  left: 0;\n  border: 1px solid var(--sjr-faint);\n  padding: 5px;\n  z-index: 3;\n  background: white;\n}\n\n.action-item:hover .menu {\n  display: block;\n}\n\n.menu-option {\n  display: block;\n  text-transform: uppercase;\n  text-align: left;\n  text-decoration: none;\n  color: var(--sjr-ink);\n  margin: 5px 0;\n  white-space: nowrap;\n}\n\n.menu-option.active {\n  font-weight: 500;\n  color: blue;\n}\n\n.shmSearchResults.grid {\n  display: grid;\n  grid-template-columns: 1fr;\n  gap: 0 15px;\n}\n\n/* ===================== JOB CARD (standard) ===================== */\n\n.shmJobResultStd {\n  position: relative;\n  padding: 20px;\n  margin: 10px 0;\n  min-height: 100px;\n  width: 100%;\n  box-sizing: border-box;\n  background-color: var(--sjr-line-soft);\n  transition: background 0.25s;\n}\n\n.shmJobResultStd .shmJobItemUpper {\n  display: flex;\n  align-items: flex-start;\n  justify-content: space-between;\n}\n\n.shmJobResultStd .shmJobtitle {\n  font-size: 25px;\n  color: var(--sjr-ink);\n  text-align: left;\n  text-decoration: none;\n  font-weight: bold;\n}\n\n.shmJobResultStd .shmTimePostedText {\n  text-align: left;\n  font-size: 14px;\n  color: var(--sjr-muted);\n}\n\n.shmJobResultStd .shmTag.job-new {\n  display: inline-block;\n  padding: 4px;\n  background-color: #00ffff;\n  font-size: 10px;\n  margin-bottom: 5px;\n}\n\n.shmJobResultStd .shmCTA {\n  display: flex;\n  align-items: center;\n  justify-content: flex-end;\n  gap: 6px;\n}\n\n.shmJobResultStd .shmSaveJob,\n.shmJobResultStd .shmSendEmail {\n  cursor: pointer;\n  text-decoration: none;\n  color: var(--sjr-ink);\n  white-space: nowrap;\n}\n\n.shmJobResultStd .shmSaveJob:not(.active) .active {\n  display: none;\n}\n\n.shmJobResultStd .shmSaveJob.active .inactive {\n  display: none;\n}\n\n.shmJobResultStd .shmJobDetails {\n  display: block;\n  margin: 10px 0;\n}\n\n.shmJobResultStd .shmJobDetailsLeft {\n  display: flex;\n  flex-wrap: wrap;\n  align-items: center;\n  text-align: left;\n}\n\n.shmJobResultStd .shmDetailsDivider {\n  margin: 5px 10px;\n  color: inherit;\n}\n\n.shmJobResultStd .shmButtonLinks {\n  display: flex;\n  flex-wrap: nowrap;\n}\n\n.shmJobResultStd .shmButtonLinks a {\n  margin-right: 20px;\n  padding: 5px 15px;\n  border: 1px solid var(--sjr-ink-strong);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  text-decoration: none;\n}\n\n.shmJobResultStd .shmButtonLinks .shmGoReadMore {\n  background: #fff;\n  color: var(--sjr-ink-strong);\n}\n\n.shmJobResultStd .shmButtonLinks .shmGoApply {\n  background: var(--sjr-ink-strong);\n  color: #fff;\n  border: 0;\n}\n\n.shmNoResults {\n  padding: 40px 20px;\n  text-align: center;\n  color: var(--sjr-muted);\n}\n\n/* ===================== PAGINATION ===================== */\n\n.section-job-results-paging {\n  display: flex;\n  justify-content: center;\n  width: 100%;\n  margin: 20px 0;\n}\n\n.section-job-results-paging .button-paging {\n  display: inline-block;\n  padding: 3px 8px;\n  margin: 0 5px;\n  border: 0;\n  text-decoration: none;\n  color: var(--sjr-muted);\n  cursor: pointer;\n  background: none;\n}\n\n.section-job-results-paging .button-paging.active {\n  font-weight: 500;\n  background: var(--sjr-line-soft);\n}\n\n.section-job-results-paging .button-paging.disabled {\n  color: var(--sjr-ink-strong);\n  cursor: default;\n}\n\n/* ===================== MAP (MapLibre GL) ===================== */\n\n.shmSearchMapResults {\n  width: 100%;\n  height: 700px;\n  min-height: 500px;\n  max-height: 80vh;\n  box-sizing: border-box;\n  margin-top: 20px;\n}\n\n.shmMainContainer #shmMap {\n  position: relative;\n  width: 100%;\n  height: 100%;\n  min-height: 500px;\n}\n\n.gmapInfoContainer {\n  min-width: 200px;\n}\n\n.gmapTitle {\n  font-size: 18px;\n  font-weight: bold;\n}\n\n@media (min-width: 768px) {\n/*\n * job-results — desktop-only overrides (applied above the Duda mobile breakpoint).\n * Mirrors the reference `.desktop` visibility split.\n */\n\n.mobile {\n  display: none !important;\n}\n\n.section-tool-bar {\n  display: flex;\n  justify-content: right;\n  padding: 20px 0 10px;\n}\n\n.toolbar-main.mobile {\n  display: none !important;\n}\n\n/* Two-up card grid on wide viewports when grid view is active. */\n.shmSearchResults.shmResultView.grid {\n  grid-template-columns: 1fr;\n}\n\n.shmResultCountContainer.desktop {\n  display: flex;\n}\n\n}\n@media (max-width: 767px) {\n/*\n * job-results — mobile-only overrides (applied below the Duda mobile breakpoint).\n * Ported and cleaned from the reference mobile CSS: single-column results, the\n * filter sidebar becomes a slide-in drawer, cards stack.\n */\n\n.desktop {\n  display: none !important;\n}\n\n.shmMainContainer {\n  display: block;\n  text-align: center;\n  padding-top: 20px;\n  width: 100% !important;\n}\n\n/* Filter sidebar → slide-in drawer */\n.section-job-result-filter {\n  position: fixed;\n  display: block;\n  background-color: #fff;\n  z-index: 1;\n  bottom: 0;\n  left: -100%;\n  max-height: 100%;\n  max-width: 100%;\n  overflow: auto;\n  padding: 50px 20px;\n  transition: all 0.35s;\n  width: 100% !important;\n  height: auto;\n}\n\n.section-job-result-filter.active {\n  left: 0;\n  top: 50px;\n  z-index: 201;\n}\n\n.section-details {\n  width: 100% !important;\n}\n\n.action-bar {\n  flex-direction: column;\n  align-items: center;\n}\n\n/* Single-column results */\n.shmSearchResults.grid {\n  grid-template-columns: 100% !important;\n  column-gap: 0 !important;\n}\n\n.shmJobResultStd {\n  width: 100%;\n}\n\n.shmJobResultStd .shmJobItemUpper {\n  flex-direction: column-reverse;\n  align-items: flex-start;\n}\n\n.shmJobResultStd .shmJobtitle {\n  font-size: 22px;\n  text-align: center !important;\n  width: 100%;\n}\n\n.shmJobResultStd .shmButtonLinks {\n  display: flex;\n  justify-content: space-between;\n}\n\n.shmJobResultStd .shmButtonLinks a {\n  margin-right: 8px;\n}\n\n.shmLocation,\n.shmSalary,\n.jobCategory,\n.work-type,\n.work-model {\n  text-align: left;\n}\n\n.shmResultCountContainer {\n  justify-content: center !important;\n}\n\n.shmSearchResults,\n.shmSearchMapResults {\n  margin-top: 40px;\n}\n\n}";
   (document.head || document.documentElement).appendChild(s);
 })();
 "use strict";
@@ -38,6 +38,8 @@ var __shazWidgetExport = (() => {
   // core/config.ts
   var DEFAULT_PAGE_SIZE = 20;
   var DEFAULT_PROXIMITY = "6371";
+  var DEFAULT_DETAILS_PAGE = "/job-details";
+  var DEFAULT_APPLICATION_PAGE = "/job-application";
   function coerceBool(value, fallback = false) {
     if (typeof value === "boolean") return value;
     if (typeof value === "string") {
@@ -56,6 +58,15 @@ var __shazWidgetExport = (() => {
     }
     return fallback;
   }
+  function coerceLabel(value, fallback) {
+    const v = coerceStr(value).trim();
+    return v === "" ? fallback : v;
+  }
+  function coerceLength(value) {
+    const v = coerceStr(value).trim();
+    if (v === "") return "";
+    return /^-?\d*\.?\d+$/.test(v) ? `${v}px` : v;
+  }
   function coerceStr(value, fallback = "") {
     if (typeof value === "string") return value;
     if (value == null) return fallback;
@@ -64,12 +75,20 @@ var __shazWidgetExport = (() => {
   function coerceProximity(value) {
     return coerceStr(value) === "12756" ? "12756" : DEFAULT_PROXIMITY;
   }
+  function coerceTemplate(value) {
+    return coerceStr(value).trim().toLowerCase() === "classic" ? "classic" : "modern";
+  }
+  function rootPath(value, fallback) {
+    const raw = coerceStr(value).trim() || fallback;
+    if (/^https?:\/\//i.test(raw)) return raw.replace(/\/+$/, "");
+    return ("/" + raw).replace(/^\/+/, "/").replace(/\/+$/, "");
+  }
   function readConfig(data) {
     const c = data && data.config || {};
     return {
       jobCollection: coerceStr(c.JobCollection || c.jobCollection),
-      applicationPage: coerceStr(c.applicationPage),
-      detailsPage: coerceStr(c.detailsPage),
+      applicationPage: rootPath(coerceStr(c.applicationPage), DEFAULT_APPLICATION_PAGE),
+      detailsPage: rootPath(coerceStr(c.detailsPage), DEFAULT_DETAILS_PAGE),
       showJobTypeFilter: coerceBool(c.showJobTypeFilter),
       showClassificationFilter: coerceBool(c.showClassificationFilter),
       showSubClassificationFilter: coerceBool(c.showSubClassificationFilter),
@@ -78,7 +97,17 @@ var __shazWidgetExport = (() => {
       proximityDiameter: coerceProximity(c.proximityDiameter),
       geocodeApiKey: coerceStr(c.geocodeApiKey),
       pageSize: coerceInt(c.pageSize, DEFAULT_PAGE_SIZE),
-      hideLeftNav: coerceBool(c.hideLeftNav)
+      hideLeftNav: coerceBool(c.hideLeftNav),
+      cardTemplate: coerceTemplate(c.cardTemplate),
+      applyNowLabel: coerceLabel(c.applyNowLabel, "Apply Now"),
+      readMoreLabel: coerceLabel(c.readMoreLabel, "Read More"),
+      saveJobText: coerceLabel(c.saveJobText, "save job"),
+      unsaveJobText: coerceLabel(c.unsaveJobText, "unsave job"),
+      postedText: coerceLabel(c.postedText, "Posted"),
+      noResultsText: coerceLabel(c.resultMessageNone || c.noResultsText, "No jobs match your search."),
+      accentColour: coerceStr(c.accentColour || c.accentColor),
+      headerBackground: coerceStr(c.headerBackground),
+      cardRadius: coerceLength(c.cardRadius)
     };
   }
 
@@ -583,14 +612,21 @@ var __shazWidgetExport = (() => {
     return str(job, "referenceNumber") || str(job, "jobID");
   }
   function detailsHref(job, cfg) {
-    if (!cfg.detailsPage) return "javascript:void(0)";
-    return `/${cfg.detailsPage}/${slugOf(job)}`;
+    return `${cfg.detailsPage}/${slugOf(job)}`;
+  }
+  function safeExternal(url) {
+    return /^(https?:\/\/|\/)/i.test(url.trim()) ? url : "";
   }
   function applyHref(job, cfg) {
-    const own = str(job, "applicationURL");
+    const own = safeExternal(str(job, "applicationURL"));
     if (own) return own;
-    if (!cfg.applicationPage) return detailsHref(job, cfg);
-    return `/${cfg.applicationPage}?jobID=${encodeURIComponent(str(job, "jobID"))}`;
+    const joiner = cfg.applicationPage.includes("?") ? "&" : "?";
+    return `${cfg.applicationPage}${joiner}jobID=${encodeURIComponent(str(job, "jobID"))}`;
+  }
+  function postedDate(job) {
+    const raw = str(job, "changedOnUTC");
+    const t = Date.parse(raw);
+    return Number.isNaN(t) ? "" : new Date(t).toISOString().slice(0, 10);
   }
   function timeSince(job) {
     const raw = str(job, "changedOnUTC");
@@ -630,22 +666,22 @@ var __shazWidgetExport = (() => {
   function escapeHtml(value) {
     return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
-  function cardHtml(job, cfg) {
-    const details = detailsHref(job, cfg);
-    const apply = applyHref(job, cfg);
+  function classicCardHtml(job, cfg) {
+    const details = escapeHtml(detailsHref(job, cfg));
+    const apply = escapeHtml(applyHref(job, cfg));
     const name = escapeHtml(str(job, "jobName") || str(job, "title"));
     const posted = timeSince(job);
     return `
     <div class="shmJobItemDetails">
       ${isNew(job) ? '<span class="shmTag job-new">New</span>' : ""}
-      ${posted ? `<div class="shmTimePostedText">Posted ${escapeHtml(posted)}</div>` : ""}
+      ${posted ? `<div class="shmTimePostedText">${escapeHtml(cfg.postedText)} ${escapeHtml(posted)}</div>` : ""}
       <div class="shmJobItemUpper">
         <div class="shmJobtitle"><a href="${details}" class="shmJobtitle" data-rel="link-job-name">${name}</a></div>
         <div class="shmUpperRight">
           <div class="shmCTA">
             <div class="shmSaveJob" data-rel="action-save-job" data-save-id="">
-              <span class="active">unsave job</span>
-              <span class="inactive">save job</span>
+              <span class="active">${escapeHtml(cfg.unsaveJobText)}</span>
+              <span class="inactive">${escapeHtml(cfg.saveJobText)}</span>
             </div>
           </div>
         </div>
@@ -655,22 +691,72 @@ var __shazWidgetExport = (() => {
       </div>
     </div>
     <div class="shmButtonLinks">
-      <a class="shmGoApply" href="${apply}"><span class="text">Apply Now</span></a>
-      <a class="shmGoReadMore" href="${details}"><span class="text">Read More</span></a>
+      <a class="shmGoApply" href="${apply}"><span class="text">${escapeHtml(cfg.applyNowLabel)}</span></a>
+      <a class="shmGoReadMore" href="${details}"><span class="text">${escapeHtml(cfg.readMoreLabel)}</span></a>
+    </div>`;
+  }
+  var ICONS = {
+    workType: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg>',
+    salary: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5M4 19h16M8 15l3-4 3 3 5-7"/></svg>',
+    location: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>',
+    category: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>'
+  };
+  function metaRows(job) {
+    const rows = [];
+    const workBits = [str(job, "workType"), str(job, "workModel")].filter(Boolean);
+    if (workBits.length > 0) rows.push(["workType", workBits.join(" \xB7 ")]);
+    const salary = str(job, "salaryText") || str(job, "salary");
+    if (salary) rows.push(["salary", salary]);
+    const loc = locationText(job);
+    if (loc) rows.push(["location", loc]);
+    const category = str(job, "category");
+    if (category) rows.push(["category", category]);
+    return rows.map(
+      ([field, value]) => `<li class="sjr-meta__item" data-field="${field}">${ICONS[field] || ""}<span>${escapeHtml(value)}</span></li>`
+    ).join("");
+  }
+  function modernCardHtml(job, cfg) {
+    const details = escapeHtml(detailsHref(job, cfg));
+    const apply = escapeHtml(applyHref(job, cfg));
+    const name = escapeHtml(str(job, "jobName") || str(job, "title"));
+    const posted = timeSince(job);
+    const iso = postedDate(job);
+    return `
+    <div class="sjr-card__header">
+      ${isNew(job) ? `<span class="sjr-tag" data-rel="tag-new">New</span>` : ""}
+      ${posted ? `<time class="sjr-card__eyebrow"${iso ? ` datetime="${iso}"` : ""}>${escapeHtml(cfg.postedText)} ${escapeHtml(posted)}</time>` : ""}
+      <h3 class="sjr-card__title"><a href="${details}" data-rel="link-job-name">${name}</a></h3>
+    </div>
+    <div class="sjr-card__body">
+      <ul class="sjr-meta">${metaRows(job)}</ul>
+      <div class="sjr-card__actions">
+        <button class="sjr-save" type="button" data-rel="action-save-job" data-save-id="">
+          <span class="active">${escapeHtml(cfg.unsaveJobText)}</span>
+          <span class="inactive">${escapeHtml(cfg.saveJobText)}</span>
+        </button>
+        <span class="sjr-actions-group">
+          <a class="sjr-btn sjr-btn--primary" href="${apply}">${escapeHtml(cfg.applyNowLabel)}</a>
+          <a class="sjr-btn" href="${details}">${escapeHtml(cfg.readMoreLabel)}</a>
+        </span>
+      </div>
     </div>`;
   }
   function buildCard(job, cfg) {
-    const card = el("div", { class: "shmJobResultStd shmJobResult" });
+    const modern = cfg.cardTemplate === "modern";
+    const card = el(modern ? "article" : "div", {
+      class: modern ? "sjr-card" : "shmJobResultStd shmJobResult"
+    });
     card.setAttribute("data-rel", "article-job-result");
     card.setAttribute("data-id", str(job, "jobID"));
-    setHtml(card, cardHtml(job, cfg));
+    setHtml(card, modern ? modernCardHtml(job, cfg) : classicCardHtml(job, cfg));
     return card;
   }
   function renderCards(container, result, cfg) {
     if (result.page.length === 0) {
-      setHtml(container, '<div class="shmNoResults">No jobs match your search.</div>');
+      setHtml(container, `<div class="shmNoResults sjr-empty">${escapeHtml(cfg.noResultsText)}</div>`);
       return;
     }
+    container.querySelectorAll(".sjr-empty").forEach((node) => node.remove());
     renderList(
       container,
       result.page,
@@ -1066,7 +1152,7 @@ var __shazWidgetExport = (() => {
       list.style.setProperty("display", "grid", "important");
       list.style.setProperty("grid-template-columns", GRID_COLUMNS, "important");
       list.style.setProperty("gap", "20px", "important");
-      list.querySelectorAll(".shmJobResultStd").forEach((card) => {
+      list.querySelectorAll('[data-rel="article-job-result"]').forEach((card) => {
         card.style.setProperty("grid-column", "auto", "important");
         card.style.setProperty("width", "auto", "important");
         card.style.setProperty("margin", "0", "important");
@@ -1081,6 +1167,7 @@ var __shazWidgetExport = (() => {
       applyGridLayout();
       renderCount(element, result.total);
       if (pagingEl) renderPaging(pagingEl, result.total, cfg.pageSize, state.page);
+      element.classList.add("shaz-job-results");
       if (facetHost) renderFacets(facetHost, tree, cfg, state.facets);
       if (mapView == null ? void 0 : mapView.isReady) mapView.setJobs(result.matching);
       writeHash(state);
@@ -1090,6 +1177,19 @@ var __shazWidgetExport = (() => {
         mainContainer.classList.add("shm-ready");
         mainContainer.style.setProperty("visibility", "visible", "important");
       }
+    }
+    function applyTokens() {
+      element.classList.add("shaz-job-results");
+      const tokens = [
+        ["--sjr-accent", cfg.accentColour],
+        ["--sjr-header-bg", cfg.headerBackground],
+        ["--sjr-radius", cfg.cardRadius]
+      ];
+      for (const [name, value] of tokens) {
+        if (value) element.style.setProperty(name, value);
+      }
+      element.setAttribute("data-card-template", cfg.cardTemplate);
+      if (cfg.cardTemplate === "modern" && listEl) listEl.classList.add("sjr-list");
     }
     function applyConfigVisibility() {
       const locationBlock = $one(element, '[data-rel="filter-location-block"]');
@@ -1246,6 +1346,7 @@ var __shazWidgetExport = (() => {
         model = buildModel(FAKE_JOBS, cfg, { levels: MASTER_LEVELS });
       }
       tree = buildFacetTree(model.all());
+      applyTokens();
       applyConfigVisibility();
       wireEvents();
       subscribe();

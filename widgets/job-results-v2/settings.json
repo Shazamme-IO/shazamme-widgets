@@ -13,15 +13,15 @@
       "key": "applicationPage",
       "label": "Application page",
       "type": "string",
-      "default": "",
-      "help": "Page slug the Apply Now button links to (?jobID=… is appended)."
+      "default": "/job-application",
+      "help": "Page the Apply Now button links to (?jobID=\u2026 is appended). Defaults to /job-application when left blank."
     },
     {
       "key": "detailsPage",
       "label": "Job details page",
       "type": "string",
-      "default": "",
-      "help": "Page slug for the job title / Read More links (/{detailsPage}/{slug})."
+      "default": "/job-details",
+      "help": "Page a job title and Read More link to. Defaults to /job-details when left blank."
     },
     {
       "key": "showJobTypeFilter",
@@ -56,7 +56,7 @@
       "label": "Show Location filter",
       "type": "boolean",
       "default": false,
-      "help": "Location facets (state → city) plus the location keyword / proximity input."
+      "help": "Location facets (state \u2192 city) plus the location keyword / proximity input."
     },
     {
       "key": "proximityDiameter",
@@ -64,8 +64,14 @@
       "type": "select",
       "default": "6371",
       "options": [
-        { "value": "6371", "label": "Miles" },
-        { "value": "12756", "label": "Kilometres" }
+        {
+          "value": "6371",
+          "label": "Miles"
+        },
+        {
+          "value": "12756",
+          "label": "Kilometres"
+        }
       ],
       "help": "Radius slider unit for proximity search."
     },
@@ -82,6 +88,86 @@
       "type": "number",
       "default": 20,
       "help": "Number of job cards shown per page."
+    },
+    {
+      "key": "cardTemplate",
+      "label": "Card template",
+      "type": "select",
+      "options": [
+        {
+          "value": "modern",
+          "label": "Modern (token-styled card)"
+        },
+        {
+          "value": "classic",
+          "label": "Classic (legacy shm* markup)"
+        }
+      ],
+      "default": "modern",
+      "help": "'modern' is the semantic card (article/header/meta rows, styled by tokens). 'classic' keeps the legacy shm* markup for a site whose own CSS targets it."
+    },
+    {
+      "key": "applyNowLabel",
+      "label": "Apply button label",
+      "type": "string",
+      "default": "Apply Now",
+      "help": "Text on the apply link."
+    },
+    {
+      "key": "readMoreLabel",
+      "label": "Read more label",
+      "type": "string",
+      "default": "Read More",
+      "help": "Text on the details link."
+    },
+    {
+      "key": "saveJobText",
+      "label": "Save job label",
+      "type": "string",
+      "default": "save job",
+      "help": "Shown before a job is saved."
+    },
+    {
+      "key": "unsaveJobText",
+      "label": "Unsave job label",
+      "type": "string",
+      "default": "unsave job",
+      "help": "Shown once a job is saved."
+    },
+    {
+      "key": "postedText",
+      "label": "Posted prefix",
+      "type": "string",
+      "default": "Posted",
+      "help": "Precedes the relative posted date, e.g. 'Posted 3 days ago'."
+    },
+    {
+      "key": "noResultsText",
+      "label": "Empty state message",
+      "type": "string",
+      "default": "No jobs match your search.",
+      "help": "Shown when a search returns nothing."
+    },
+    {
+      "key": "accentColour",
+      "label": "Accent colour",
+      "type": "string",
+      "default": "",
+      "help": "Sets --sjr-accent: buttons, icons, the New tag. Empty keeps the stylesheet default."
+    },
+    {
+      "key": "headerBackground",
+      "label": "Card header colour",
+      "type": "string",
+      "default": "",
+      "help": "Sets --sjr-header-bg. Empty keeps the stylesheet default."
+    },
+    {
+      "key": "cardRadius",
+      "label": "Card corner radius",
+      "type": "string",
+      "default": "",
+      "help": "Sets --sjr-radius. A bare number is treated as px; a value with a unit (1rem) passes through."
     }
   ]
 }

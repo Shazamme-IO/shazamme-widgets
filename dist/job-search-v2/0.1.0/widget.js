@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 596fb96ac364. Registers window.ShazammeWidget["<name>"].
+ * Build 6bec6f2c2bc6. Registers window.ShazammeWidget["<name>"].
  */
 (function(){
   if (typeof document === 'undefined') return;
@@ -38,6 +38,8 @@ var __shazWidgetExport = (() => {
   // core/config.ts
   var DEFAULT_PAGE_SIZE = 20;
   var DEFAULT_PROXIMITY = "6371";
+  var DEFAULT_DETAILS_PAGE = "/job-details";
+  var DEFAULT_APPLICATION_PAGE = "/job-application";
   function coerceBool(value, fallback = false) {
     if (typeof value === "boolean") return value;
     if (typeof value === "string") {
@@ -56,6 +58,15 @@ var __shazWidgetExport = (() => {
     }
     return fallback;
   }
+  function coerceLabel(value, fallback) {
+    const v = coerceStr(value).trim();
+    return v === "" ? fallback : v;
+  }
+  function coerceLength(value) {
+    const v = coerceStr(value).trim();
+    if (v === "") return "";
+    return /^-?\d*\.?\d+$/.test(v) ? `${v}px` : v;
+  }
   function coerceStr(value, fallback = "") {
     if (typeof value === "string") return value;
     if (value == null) return fallback;
@@ -64,12 +75,20 @@ var __shazWidgetExport = (() => {
   function coerceProximity(value) {
     return coerceStr(value) === "12756" ? "12756" : DEFAULT_PROXIMITY;
   }
+  function coerceTemplate(value) {
+    return coerceStr(value).trim().toLowerCase() === "classic" ? "classic" : "modern";
+  }
+  function rootPath(value, fallback) {
+    const raw = coerceStr(value).trim() || fallback;
+    if (/^https?:\/\//i.test(raw)) return raw.replace(/\/+$/, "");
+    return ("/" + raw).replace(/^\/+/, "/").replace(/\/+$/, "");
+  }
   function readConfig(data) {
     const c = data && data.config || {};
     return {
       jobCollection: coerceStr(c.JobCollection || c.jobCollection),
-      applicationPage: coerceStr(c.applicationPage),
-      detailsPage: coerceStr(c.detailsPage),
+      applicationPage: rootPath(coerceStr(c.applicationPage), DEFAULT_APPLICATION_PAGE),
+      detailsPage: rootPath(coerceStr(c.detailsPage), DEFAULT_DETAILS_PAGE),
       showJobTypeFilter: coerceBool(c.showJobTypeFilter),
       showClassificationFilter: coerceBool(c.showClassificationFilter),
       showSubClassificationFilter: coerceBool(c.showSubClassificationFilter),
@@ -78,7 +97,17 @@ var __shazWidgetExport = (() => {
       proximityDiameter: coerceProximity(c.proximityDiameter),
       geocodeApiKey: coerceStr(c.geocodeApiKey),
       pageSize: coerceInt(c.pageSize, DEFAULT_PAGE_SIZE),
-      hideLeftNav: coerceBool(c.hideLeftNav)
+      hideLeftNav: coerceBool(c.hideLeftNav),
+      cardTemplate: coerceTemplate(c.cardTemplate),
+      applyNowLabel: coerceLabel(c.applyNowLabel, "Apply Now"),
+      readMoreLabel: coerceLabel(c.readMoreLabel, "Read More"),
+      saveJobText: coerceLabel(c.saveJobText, "save job"),
+      unsaveJobText: coerceLabel(c.unsaveJobText, "unsave job"),
+      postedText: coerceLabel(c.postedText, "Posted"),
+      noResultsText: coerceLabel(c.resultMessageNone || c.noResultsText, "No jobs match your search."),
+      accentColour: coerceStr(c.accentColour || c.accentColor),
+      headerBackground: coerceStr(c.headerBackground),
+      cardRadius: coerceLength(c.cardRadius)
     };
   }
 

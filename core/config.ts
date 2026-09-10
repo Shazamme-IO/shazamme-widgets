@@ -12,6 +12,10 @@ export interface DudaData {
 /** Proximity radius unit: '6371' = miles slider, '12756' = km slider. */
 export type ProximityDiameter = '6371' | '12756';
 
+/** Card markup: 'classic' keeps the legacy shm* structure a site's own CSS may
+ *  target; 'modern' is the semantic card whose look is driven by tokens. */
+export type CardTemplate = 'classic' | 'modern';
+
 export interface WidgetConfig {
   jobCollection: string;
   applicationPage: string;
@@ -27,10 +31,26 @@ export interface WidgetConfig {
   /** Drop the left-nav filter sidebar and render results full-width (filters then
    *  live on the job-search bar — the paxus/talent reference layout). */
   hideLeftNav: boolean;
+  cardTemplate: CardTemplate;
+  /** Card labels. The settings panel has always exposed these; the renderer used
+   *  to hardcode the English, so editing them did nothing. */
+  applyNowLabel: string;
+  readMoreLabel: string;
+  saveJobText: string;
+  unsaveJobText: string;
+  postedText: string;
+  noResultsText: string;
+  /** Appearance, mapped onto CSS custom properties at mount. Empty means "leave
+   *  the stylesheet default alone". */
+  accentColour: string;
+  headerBackground: string;
+  cardRadius: string;
 }
 
 const DEFAULT_PAGE_SIZE = 20;
 const DEFAULT_PROXIMITY: ProximityDiameter = '6371';
+const DEFAULT_DETAILS_PAGE = '/job-details';
+const DEFAULT_APPLICATION_PAGE = '/job-application';
 
 /** Duda serialises booleans as 'true'/'false' (or leaves them as real bools). */
 export function coerceBool(value: unknown, fallback = false): boolean {
@@ -54,6 +74,22 @@ export function coerceInt(value: unknown, fallback: number): number {
   return fallback;
 }
 
+/** Duda hands an unset text setting through as '', which coerceStr would return
+ *  verbatim — rendering, say, an Apply button with no text. Labels fall back. */
+function coerceLabel(value: unknown, fallback: string): string {
+  const v = coerceStr(value).trim();
+  return v === '' ? fallback : v;
+}
+
+/** A CSS length from a setting: pass a value that already carries a unit through
+ *  (1.5rem, 50%), and treat a bare number as px. parseInt alone turned '1.5rem'
+ *  into '1px'. */
+export function coerceLength(value: unknown): string {
+  const v = coerceStr(value).trim();
+  if (v === '') return '';
+  return /^-?\d*\.?\d+$/.test(v) ? `${v}px` : v;
+}
+
 function coerceStr(value: unknown, fallback = ''): string {
   if (typeof value === 'string') return value;
   if (value == null) return fallback;
@@ -64,13 +100,27 @@ function coerceProximity(value: unknown): ProximityDiameter {
   return coerceStr(value) === '12756' ? '12756' : DEFAULT_PROXIMITY;
 }
 
+function coerceTemplate(value: unknown): CardTemplate {
+  return coerceStr(value).trim().toLowerCase() === 'classic' ? 'classic' : 'modern';
+}
+
+/** A page setting is a site-relative path. Duda hands it back with or without a
+ *  leading slash depending on how it was typed, and `'/' + '/job-details'` builds
+ *  `//job-details`, which a browser resolves as a host. Collapse to exactly one. */
+export function rootPath(value: string, fallback: string): string {
+  const raw = coerceStr(value).trim() || fallback;
+  if (/^https?:\/\//i.test(raw)) return raw.replace(/\/+$/, '');
+  // Trailing slashes matter too: 'job-details/' would build '/job-details//slug'.
+  return ('/' + raw).replace(/^\/+/, '/').replace(/\/+$/, '');
+}
+
 /** Read `data.config.*` into a typed, defaulted WidgetConfig. */
 export function readConfig(data: DudaData | undefined): WidgetConfig {
   const c = (data && data.config) || {};
   return {
     jobCollection: coerceStr(c.JobCollection || c.jobCollection),
-    applicationPage: coerceStr(c.applicationPage),
-    detailsPage: coerceStr(c.detailsPage),
+    applicationPage: rootPath(coerceStr(c.applicationPage), DEFAULT_APPLICATION_PAGE),
+    detailsPage: rootPath(coerceStr(c.detailsPage), DEFAULT_DETAILS_PAGE),
     showJobTypeFilter: coerceBool(c.showJobTypeFilter),
     showClassificationFilter: coerceBool(c.showClassificationFilter),
     showSubClassificationFilter: coerceBool(c.showSubClassificationFilter),
@@ -80,5 +130,15 @@ export function readConfig(data: DudaData | undefined): WidgetConfig {
     geocodeApiKey: coerceStr(c.geocodeApiKey),
     pageSize: coerceInt(c.pageSize, DEFAULT_PAGE_SIZE),
     hideLeftNav: coerceBool(c.hideLeftNav),
+    cardTemplate: coerceTemplate(c.cardTemplate),
+    applyNowLabel: coerceLabel(c.applyNowLabel, 'Apply Now'),
+    readMoreLabel: coerceLabel(c.readMoreLabel, 'Read More'),
+    saveJobText: coerceLabel(c.saveJobText, 'save job'),
+    unsaveJobText: coerceLabel(c.unsaveJobText, 'unsave job'),
+    postedText: coerceLabel(c.postedText, 'Posted'),
+    noResultsText: coerceLabel(c.resultMessageNone || c.noResultsText, 'No jobs match your search.'),
+    accentColour: coerceStr(c.accentColour || c.accentColor),
+    headerBackground: coerceStr(c.headerBackground),
+    cardRadius: coerceLength(c.cardRadius),
   };
 }
