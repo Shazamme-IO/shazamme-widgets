@@ -1,0 +1,98 @@
+// @vitest-environment jsdom
+// The card renderer has two templates and a set of label/href behaviours that were
+// silently broken in production: dead javascript:void(0) links, a //job-details/…
+// href a browser resolves as a host, and panel labels the renderer ignored.
+
+import { describe, it, expect } from 'vitest';
+import { renderCards } from './cards';
+import { readConfig } from '../../core/config';
+import type { QueryResult } from '../../core/types';
+
+function result(): QueryResult {
+  return {
+    page: [
+      {
+        jobID: 'j1',
+        jobName: 'Test Job 44',
+        city: 'Perth',
+        state: 'WA',
+        salaryText: '+Bonus and Car',
+        workType: 'Full Time',
+        workModel: 'Hybrid',
+        category: 'Accounting',
+        changedOnUTC: '2024-02-22T00:00:00',
+        jobURL: 'https://example.com/jobs/test-job-44',
+      },
+    ],
+    total: 1,
+  } as unknown as QueryResult;
+}
+
+function render(configOverrides: Record<string, unknown> = {}): HTMLElement {
+  const host = document.createElement('div');
+  renderCards(host, result(), readConfig({ config: configOverrides }));
+  return host;
+}
+
+describe('card links', () => {
+  it('never renders a dead link when the page settings are empty', () => {
+    const hrefs = Array.from(render().querySelectorAll('a')).map((a) => a.getAttribute('href'));
+
+    expect(hrefs.length).toBeGreaterThan(0);
+    for (const href of hrefs) {
+      expect(href).not.toBe('javascript:void(0)');
+      expect(href).toMatch(/^\/job-(details|application)/);
+    }
+  });
+
+  it('does not build a protocol-relative href from a slash-prefixed setting', () => {
+    const hrefs = Array.from(render({ detailsPage: '/job-details' }).querySelectorAll('a')).map((a) =>
+      a.getAttribute('href'),
+    );
+
+    for (const href of hrefs) expect(href!.startsWith('//')).toBe(false);
+    expect(hrefs).toContain('/job-details/test-job-44');
+  });
+});
+
+describe('card labels', () => {
+  it('uses the labels from the settings panel', () => {
+    const host = render({ applyNowLabel: 'Apply today', readMoreLabel: 'Details', saveJobText: 'shortlist' });
+    const text = host.textContent ?? '';
+
+    expect(text).toContain('Apply today');
+    expect(text).toContain('Details');
+    expect(text).toContain('shortlist');
+  });
+
+  it('uses the configured empty-state message', () => {
+    const host = document.createElement('div');
+    renderCards(
+      host,
+      { page: [], total: 0 } as unknown as QueryResult,
+      readConfig({ config: { noResultsText: 'Nothing open right now.' } }),
+    );
+
+    expect(host.textContent).toContain('Nothing open right now.');
+  });
+});
+
+describe('templates', () => {
+  it('renders semantic markup with per-field hooks by default', () => {
+    const host = render();
+
+    expect(host.querySelector('article.sjr-card')).not.toBeNull();
+    expect(host.querySelector('h3.sjr-card__title')).not.toBeNull();
+    expect(host.querySelector('.sjr-meta__item[data-field="salary"]')?.textContent).toContain('+Bonus and Car');
+    expect(host.querySelector('.sjr-meta__item[data-field="location"]')?.textContent).toContain('Perth, WA');
+    // the pipe divider is gone — separators belong in CSS
+    expect(host.textContent).not.toContain('|');
+  });
+
+  it('keeps the legacy shm* structure when a site asks for classic', () => {
+    const host = render({ cardTemplate: 'classic' });
+
+    expect(host.querySelector('.shmJobResultStd')).not.toBeNull();
+    expect(host.querySelector('article.sjr-card')).toBeNull();
+  });
+});

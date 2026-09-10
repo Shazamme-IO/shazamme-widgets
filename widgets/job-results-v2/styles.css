@@ -1,3 +1,203 @@
+/* ---------------------------------------------------------------------------
+ * TOKENS — the entire public styling surface of this widget.
+ *
+ * Every rule below reads these and nothing else, so restyling a site means
+ * setting values here (or from the settings panel, which writes them inline at
+ * mount) instead of out-specifying our selectors. That is what the !important
+ * sweeps used to be for.
+ * ------------------------------------------------------------------------- */
+.shaz-job-results {
+  --sjr-surface: #fff;
+  --sjr-ink: #333;
+  --sjr-ink-strong: #000;
+  --sjr-muted: #666;
+  --sjr-faint: var(--sjr-faint);
+  --sjr-line: #ccc;
+  --sjr-line-soft: var(--sjr-line-soft);
+  --sjr-accent: #2aa3b5;
+  --sjr-accent-ink: #fff;
+  --sjr-header-bg: #12181f;
+  --sjr-header-ink: #fff;
+  --sjr-radius: 10px;
+  --sjr-pad: 20px;
+  --sjr-gap: 14px;
+  --sjr-card-min: 280px;
+  --sjr-shadow: 0 1px 2px rgb(16 24 33 / 6%), 0 8px 24px rgb(16 24 33 / 9%);
+}
+
+/* ---------------------------------------------------------------------------
+ * MODERN CARD — semantic markup (article > header + ul.sjr-meta + actions).
+ * Rows carry data-field, so a site targets meaning, not a class name:
+ *   .sjr-meta__item[data-field="salary"] { … }
+ * ------------------------------------------------------------------------- */
+.sjr-list {
+  display: grid;
+  gap: var(--sjr-gap);
+  grid-template-columns: repeat(auto-fill, minmax(var(--sjr-card-min), 1fr));
+}
+
+.sjr-card {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--sjr-surface);
+  border-radius: var(--sjr-radius);
+  box-shadow: var(--sjr-shadow);
+}
+
+.sjr-card__header {
+  position: relative;
+  padding: var(--sjr-pad);
+  background: var(--sjr-header-bg);
+  color: var(--sjr-header-ink);
+}
+
+.sjr-card__eyebrow {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.sjr-card__title {
+  margin: 6px 0 0;
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+/* Scoped through the header so the host theme's own `a { color: … }` — which beats
+ * a bare `color: inherit` — cannot render the title dark-on-dark. */
+.sjr-card__header .sjr-card__title,
+.sjr-card__header .sjr-card__title a {
+  color: var(--sjr-header-ink);
+  text-decoration: none;
+}
+
+.sjr-card__title a:hover,
+.sjr-card__title a:focus-visible {
+  text-decoration: underline;
+}
+
+.sjr-tag {
+  position: absolute;
+  top: var(--sjr-pad);
+  right: var(--sjr-pad);
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--sjr-accent);
+  color: var(--sjr-accent-ink);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sjr-card__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--sjr-gap);
+  padding: var(--sjr-pad);
+}
+
+.sjr-meta {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sjr-meta__item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  color: var(--sjr-ink);
+  font-size: 15px;
+}
+
+.sjr-meta__item svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  fill: none;
+  stroke: var(--sjr-accent);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sjr-card__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sjr-gap);
+  flex-wrap: wrap;
+}
+
+.sjr-actions-group {
+  display: flex;
+  gap: 8px;
+}
+
+.sjr-btn {
+  padding: 8px 16px;
+  border: 1.5px solid var(--sjr-accent);
+  border-radius: 999px;
+  background: none;
+  color: var(--sjr-accent);
+  font: inherit;
+  font-size: 14px;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.sjr-btn--primary {
+  background: var(--sjr-accent);
+  color: var(--sjr-accent-ink);
+}
+
+.sjr-save {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--sjr-muted);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.sjr-save:not(.active) .active,
+.sjr-save.active .inactive {
+  display: none;
+}
+
+.sjr-empty {
+  padding: var(--sjr-pad);
+  color: var(--sjr-muted);
+}
+
+/* A card in a narrow column stacks its actions rather than squeezing them. */
+@container (max-width: 320px) {
+  .sjr-card__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .sjr-actions-group {
+    flex-direction: column;
+  }
+
+  .sjr-btn {
+    text-align: center;
+  }
+}
+
 /*
  * job-results — base / shared styles. Ported and cleaned from the 2026 +
  * proximity reference CSS. Google-map rules removed; the map container is styled
@@ -9,7 +209,7 @@
   display: flex;
   align-items: flex-start;
   gap: 15px;
-  color: #333;
+  color: var(--sjr-ink);
   padding-top: 20px;
   width: 100%;
   box-sizing: border-box;
@@ -47,7 +247,7 @@
   font-size: 22px;
   font-weight: bold;
   text-align: left;
-  border-bottom: 1px solid #a6a6a6;
+  border-bottom: 1px solid var(--sjr-faint);
   padding: 8px 5px;
   margin: 0 3px 10px;
 }
@@ -96,7 +296,7 @@
 .section-job-result-filter .filter-toggle {
   display: block;
   font-size: 16px;
-  border-bottom: 1px solid #a6a6a6;
+  border-bottom: 1px solid var(--sjr-faint);
   padding: 5px;
   margin: 0 5px;
   text-align: left;
@@ -126,7 +326,7 @@
   appearance: none;
   width: 100%;
   height: 10px;
-  background-color: #b2b2b2;
+  background-color: var(--sjr-faint);
   border-radius: 50px;
   margin: 10px 0;
   border: 0;
@@ -141,7 +341,7 @@
 .prediction-result {
   position: absolute;
   width: 100%;
-  border: 1px solid #ccc;
+  border: 1px solid var(--sjr-line);
   display: none;
   flex-direction: column;
   overflow-y: auto;
@@ -156,7 +356,7 @@
 
 .prediction-result .result-text {
   display: block;
-  color: #000;
+  color: var(--sjr-ink-strong);
   text-decoration: none;
   padding: 4px 0;
 }
@@ -183,7 +383,7 @@
 
 .shmResultCount {
   font-weight: bold;
-  color: #333;
+  color: var(--sjr-ink);
 }
 
 /* !important throughout so the host theme (Duda) can't override the toolbar
@@ -218,13 +418,13 @@
   height: 40px;
   padding: 5px 12px;
   font-family: inherit;
-  background: #333;
+  background: var(--sjr-ink);
   color: white;
   border: 0;
 }
 
 .action-bar .action-item.solid .toggle.active {
-  background: #000;
+  background: var(--sjr-ink-strong);
 }
 
 .menu {
@@ -232,7 +432,7 @@
   position: absolute;
   top: 100%;
   left: 0;
-  border: 1px solid #a6a6a6;
+  border: 1px solid var(--sjr-faint);
   padding: 5px;
   z-index: 3;
   background: white;
@@ -247,7 +447,7 @@
   text-transform: uppercase;
   text-align: left;
   text-decoration: none;
-  color: #333;
+  color: var(--sjr-ink);
   margin: 5px 0;
   white-space: nowrap;
 }
@@ -272,7 +472,7 @@
   min-height: 100px;
   width: 100%;
   box-sizing: border-box;
-  background-color: #ececec;
+  background-color: var(--sjr-line-soft);
   transition: background 0.25s;
 }
 
@@ -284,7 +484,7 @@
 
 .shmJobResultStd .shmJobtitle {
   font-size: 25px;
-  color: #333;
+  color: var(--sjr-ink);
   text-align: left;
   text-decoration: none;
   font-weight: bold;
@@ -293,7 +493,7 @@
 .shmJobResultStd .shmTimePostedText {
   text-align: left;
   font-size: 14px;
-  color: #666;
+  color: var(--sjr-muted);
 }
 
 .shmJobResultStd .shmTag.job-new {
@@ -315,7 +515,7 @@
 .shmJobResultStd .shmSendEmail {
   cursor: pointer;
   text-decoration: none;
-  color: #333;
+  color: var(--sjr-ink);
   white-space: nowrap;
 }
 
@@ -352,7 +552,7 @@
 .shmJobResultStd .shmButtonLinks a {
   margin-right: 20px;
   padding: 5px 15px;
-  border: 1px solid #000;
+  border: 1px solid var(--sjr-ink-strong);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -361,11 +561,11 @@
 
 .shmJobResultStd .shmButtonLinks .shmGoReadMore {
   background: #fff;
-  color: #000;
+  color: var(--sjr-ink-strong);
 }
 
 .shmJobResultStd .shmButtonLinks .shmGoApply {
-  background: #000;
+  background: var(--sjr-ink-strong);
   color: #fff;
   border: 0;
 }
@@ -373,7 +573,7 @@
 .shmNoResults {
   padding: 40px 20px;
   text-align: center;
-  color: #666;
+  color: var(--sjr-muted);
 }
 
 /* ===================== PAGINATION ===================== */
@@ -391,18 +591,18 @@
   margin: 0 5px;
   border: 0;
   text-decoration: none;
-  color: #666;
+  color: var(--sjr-muted);
   cursor: pointer;
   background: none;
 }
 
 .section-job-results-paging .button-paging.active {
   font-weight: 500;
-  background: #ececec;
+  background: var(--sjr-line-soft);
 }
 
 .section-job-results-paging .button-paging.disabled {
-  color: #000;
+  color: var(--sjr-ink-strong);
   cursor: default;
 }
 

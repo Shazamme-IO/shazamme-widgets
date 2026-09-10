@@ -175,7 +175,9 @@ export default function jobResults(ctx: WidgetContext): void {
     // even though the grid had 4 tracks). Force every card back into a single
     // cell; inline `!important` beats Duda's stylesheet rule. Re-run on every
     // render() so re-inserted cards get reset too.
-    list.querySelectorAll<HTMLElement>('.shmJobResultStd').forEach((card) => {
+    // Match on data-rel, not a template class: the modern card is an <article
+    // class="sjr-card"> and would otherwise keep Duda's grid-column stamp.
+    list.querySelectorAll<HTMLElement>('[data-rel="article-job-result"]').forEach((card) => {
       card.style.setProperty('grid-column', 'auto', 'important');
       card.style.setProperty('width', 'auto', 'important');
       card.style.setProperty('margin', '0', 'important');
@@ -204,6 +206,34 @@ export default function jobResults(ctx: WidgetContext): void {
       mainContainer.classList.add('shm-ready');
       mainContainer.style.setProperty('visibility', 'visible', 'important');
     }
+  }
+
+  // Appearance settings are written onto the widget root as CSS custom properties.
+  // Every rule in styles.css reads tokens, so a site restyles by setting values
+  // rather than out-specifying our selectors — which is what the !important sweeps
+  // were compensating for. An empty setting leaves the stylesheet default alone.
+  function applyTokens(): void {
+    // The token block is scoped to .shaz-job-results, which the legacy bundle used to
+    // add to the widget root. Without it every var(--sjr-*) resolves to nothing and
+    // the card renders as unstyled markup — no surface, no header, no radius.
+    element.classList.add('shaz-job-results');
+
+    const tokens: Array<[string, string]> = [
+      ['--sjr-accent', cfg.accentColour],
+      ['--sjr-header-bg', cfg.headerBackground],
+      ['--sjr-radius', cfg.cardRadius && `${parseInt(cfg.cardRadius, 10) || 0}px`],
+    ];
+
+    for (const [name, value] of tokens) {
+      if (value) element.style.setProperty(name, value);
+    }
+
+    element.setAttribute('data-card-template', cfg.cardTemplate);
+
+    // The modern template grids from CSS alone (auto-fill + minmax on --sjr-card-min),
+    // so it reflows into whatever column it was dropped into without measuring
+    // anything. The no-left-nav path below still stamps its own inline grid.
+    if (cfg.cardTemplate === 'modern' && listEl) (listEl as HTMLElement).classList.add('sjr-list');
   }
 
   function applyConfigVisibility(): void {
@@ -399,6 +429,7 @@ export default function jobResults(ctx: WidgetContext): void {
       model = buildModel(FAKE_JOBS, cfg, { levels: MASTER_LEVELS });
     }
     tree = buildFacetTree(model.all());
+    applyTokens();
     applyConfigVisibility();
     wireEvents();
     subscribe();

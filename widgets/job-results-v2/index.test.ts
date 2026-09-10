@@ -52,7 +52,7 @@ describe('jobResults controller', () => {
     await flush();
 
     const list = element.querySelector('[data-rel="job-results-list"]');
-    expect(list?.querySelectorAll('.shmJobResultStd').length).toBe(2);
+    expect(list?.querySelectorAll('[data-rel="article-job-result"]').length).toBe(2);
     expect(element.querySelector('[data-rel="label-results-count"]')?.textContent).toBe('2');
   });
 
@@ -67,7 +67,7 @@ describe('jobResults controller', () => {
     toggle?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const list = element.querySelector('[data-rel="job-results-list"]');
-    expect(list?.querySelectorAll('.shmJobResultStd').length).toBe(1);
+    expect(list?.querySelectorAll('[data-rel="article-job-result"]').length).toBe(1);
     expect(element.querySelector('[data-rel="label-results-count"]')?.textContent).toBe('1');
   });
 
@@ -80,7 +80,7 @@ describe('jobResults controller', () => {
     await flush();
 
     expect(fetched).toBe(true);
-    expect(element.querySelector('[data-rel="job-results-list"]')?.querySelectorAll('.shmJobResultStd').length)
+    expect(element.querySelector('[data-rel="job-results-list"]')?.querySelectorAll('[data-rel="article-job-result"]').length)
       .toBe(makeJobs().values.length);
   });
 
@@ -91,7 +91,7 @@ describe('jobResults controller', () => {
     await flush();
     await flush();
 
-    expect(element.querySelector('[data-rel="job-results-list"]')?.querySelectorAll('.shmJobResultStd').length)
+    expect(element.querySelector('[data-rel="job-results-list"]')?.querySelectorAll('[data-rel="article-job-result"]').length)
       .toBe(2);
   });
 
@@ -112,7 +112,16 @@ describe('jobResults controller', () => {
     const sidebar = element.querySelector<HTMLElement>('[data-rel="filter-sidebar"]');
     expect(sidebar?.style.display).toBe('none');
     // results still render full-width
-    expect(element.querySelector('[data-rel="job-results-list"]')?.querySelectorAll('.shmJobResultStd').length).toBe(2);
+    expect(element.querySelector('[data-rel="job-results-list"]')?.querySelectorAll('[data-rel="article-job-result"]').length).toBe(2);
+  });
+
+  it('carries the token-scope class, without which every var(--sjr-*) is empty', async () => {
+    jobResults({ element, data: { config: {} }, $: {}, shazamme: stubClient(makeJobs()) });
+    await flush();
+    await flush();
+
+    expect(element.classList.contains('shaz-job-results')).toBe(true);
+    expect(element.getAttribute('data-card-template')).toBe('modern');
   });
 
   it('still renders + goes full-width grid when the template has NO sidebar', async () => {
@@ -124,14 +133,14 @@ describe('jobResults controller', () => {
     await flush();
 
     const list = element.querySelector<HTMLElement>('[data-rel="job-results-list"]');
-    expect(list?.querySelectorAll('.shmJobResultStd').length).toBe(2);
+    expect(list?.querySelectorAll('[data-rel="article-job-result"]').length).toBe(2);
     expect(list?.style.display).toBe('grid');
     expect(list?.style.getPropertyValue('grid-template-columns')).toContain('repeat(');
 
     // Duda's flex runtime stamps `grid-column: 1 / 4` on cards, collapsing the
     // grid to one card per row. Every card must be reset to a single cell so the
     // 4-across layout actually renders. Regression guard.
-    const cards = list!.querySelectorAll<HTMLElement>('.shmJobResultStd');
+    const cards = list!.querySelectorAll<HTMLElement>('[data-rel="article-job-result"]');
     expect(cards.length).toBeGreaterThan(0);
     cards.forEach((card) => {
       expect(card.style.getPropertyValue('grid-column')).toBe('auto');
