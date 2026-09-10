@@ -207,6 +207,15 @@ describe('jobSearch controller', () => {
       expect(box.style.border).toBe('');
     }
 
+    // The inline sweep is only half of it — styles.css's base rule is !important and
+    // matches these checkboxes too, so the .ms-option rule has to out-!important it.
+    // jsdom does not implement author !important, so assert the stylesheet directly.
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'styles.css'), 'utf8');
+    const rule = css.slice(css.indexOf('.ms-option input[type="checkbox"]'));
+
+    expect(rule.slice(0, rule.indexOf('}'))).toMatch(/width:\s*13px\s*!important/);
+    expect(rule.slice(0, rule.indexOf('}'))).toMatch(/height:\s*13px\s*!important/);
+
     // the real form fields still get normalized
     const select = element.querySelector<HTMLSelectElement>('.flex-items-js select');
     if (select) expect(select.style.height).toBe('46px');
