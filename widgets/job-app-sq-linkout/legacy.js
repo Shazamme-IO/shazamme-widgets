@@ -501,6 +501,50 @@ function getJobID(){
     return resolvedJobID || jobKey();
 }
 
+// The slug as it appears in the form URL (?jobId=head-of-...-jobs-1441026), which
+// is also the last segment of the job's dynamic-page path. Null for a GUID link.
+function jobSlug(){
+    let key = jobKey();
+
+    return (key?.length > 0 && !JOB_GUID_RE.test(key))
+        ? String(key).trim().replace(/\/+$/, '').split('/').pop()
+        : null;
+}
+
+// Destination after a successful submit: this job's dynamic brochure page.
+function brochurePageUrl(){
+    let slug = jobSlug();
+
+    if (!slug) {
+        return null;
+    }
+
+    let base = String(data.config.BrochurePagePath || '/dynamic-brochure').replace(/^\/+|\/+$/g, '');
+
+    return data.inEditor
+        ? `/site/${data.siteId}/${base}/${slug}?preview=true&insitepreview=true&dm_device=desktop`
+        : `https://${window.location.hostname}/${base}/${slug}`;
+}
+
+// "Show Brochure Link" on the panel: the brochure is reachable from the form
+// itself, so a candidate can open it without submitting. With it on, submit goes
+// to the normal thank-you page instead of the brochure.
+function showBrochureLink(){
+    return data.config.showBrochureLink === true || data.config.showBrochureLink === 'true';
+}
+
+// Which screening form to use. The stock widget only ever read the template off
+// the job (screeningTemplateID), which is empty on every job on some sites — so no
+// questions could render at all. A template set on the widget wins, matching the
+// candidate form's screeningTemplateId setting; the job's own is the fallback.
+function configuredScreeningTemplate(){
+    let id = data.config.screeningTemplateId
+        || data.config.screeningTemplateID
+        || new URL(window.location.href).searchParams.get('screeningTemplateId');
+
+    return (typeof id === 'string' && id.trim().length > 0) ? id.trim() : null;
+}
+
 // One fetch per page, shared by the screening questions, the page-load wiring and
 // the redirect destination.
 function jobRow(){
@@ -577,10 +621,12 @@ function showScreeningQuestions() {
 
         jobRow()
             .then( j => {
-                if (j?.data?.screeningTemplateID) {
+                let templateID = configuredScreeningTemplate() || j?.data?.screeningTemplateID;
+
+                if (templateID) {
                     shazamme.submit({
                         action: "Get Screening Questions",
-                        templateID: j.data.screeningTemplateID,
+                        templateID,
                     }).then( res => {
                         if (!res.status) {
                             return;
@@ -783,6 +829,25 @@ function screeningQuestions(w, edit) {
                 }
 
                 dmAPI.loadCollectionsAPI().then( collections => {
+                    let configured = configuredScreeningTemplate();
+
+                    // A configured template needs no job at all — skip the Jobs
+                    // lookup, which on a slug link would be querying jobID EQ slug
+                    // and finding nothing.
+                    if (configured) {
+                        sender._screeningTemplateID = configured;
+
+                        collections
+                            .data('Screening Questions')
+                            .where('screeningTemplateID', 'EQ', configured)
+                            .get()
+                            .then( q => resolve({
+                                response: { items: q.values.map( i => i.data ) },
+                            }), err => reject(err) );
+
+                        return;
+                    }
+
                     collections
                         .data('Jobs')
                         .where('jobID', 'EQ', jobID)
@@ -1888,13 +1953,19 @@ const main = (w) => {
                     referralSource: uri.searchParams.get("utm_source") || shazamme.session('referralSource'),
                     referralMedium: uri.searchParams.get("utm_medium") || shazamme.session('referralMedium'),
                     referralTerm: uri.searchParams.get("utm_term") || shazamme.session('referralTerm'),
-                    referralCampaign: uri.searchParams.get("utm_campaign") || shazamme.session('referralCampaign'),
+                    // The candidate form files the job slug as the campaign, so a
+                    // brochure submission is attributable to its job. UTM only when
+                    // there is no slug (a GUID link).
+                    referralCampaign: jobSlug() || uri.searchParams.get("utm_campaign") || shazamme.session('referralCampaign'),
                     referralContent: uri.searchParams.get("utm_content") || shazamme.session('referralContent'),
                 };
 
                 let a = {
                     jobID: getJobID(),
                     screeningAnswers: answers,
+                    // The candidate form sends the template alongside the answers,
+                    // so the record says WHICH screening form was answered.
+                    screeningTemplateID: configuredScreeningTemplate() || screening?._screeningTemplateID || undefined,
                     ...referralSource,
                 };
 
@@ -1970,8 +2041,19 @@ const main = (w) => {
 
                 let jobData = jobViewed?.data || {};
                 let dest;
+                // The per-job brochure page, built from the slug in the form URL
+                // exactly as the candidate form does it:
+                // https://<host>/<BrochurePagePath>/<slug> — the branded page
+                // carrying the brochure button, not the raw document. A GUID link
+                // (from the dynamic apply button) has no slug to build it from, so
+                // fall back to the brochure held on the job. When the brochure is
+                // already linked ON the form, submit goes to the thank-you page.
+                let brochureDest = showBrochureLink()
+                    ? null
+                    : (brochurePageUrl() || jobData[data.config.brochureField || 'customField2']);
+
                 let linkoutUrl = [
-                    jobData[data.config.brochureField || 'customField2'],
+                    brochureDest,
                     jobData.applicationURL,
                 ].find( v => typeof v === 'string' && v.length > 0 );
 
@@ -2121,6 +2203,8 @@ const main = (w) => {
 
     jobRow()
         .then( j => {
+            renderBrochureLink(j);
+
             if (j?.data) {
                 // jobRow() has already stored the resolved jobID and the row.
 
@@ -2137,6 +2221,29 @@ const main = (w) => {
                 $('.section-no-job-message').show();
             }
         });
+
+    function renderBrochureLink(j) {
+        let url = brochurePageUrl() || j?.data?.[data.config.brochureField || 'customField2'];
+
+        if (!showBrochureLink() || !(typeof url === 'string' && url.length > 0)) {
+            return;
+        }
+
+        let host = $(element).find('[data-rel=brochure-link]');
+
+        if (host.length === 0) {
+            host = $('<div class="brochure-link" data-rel="brochure-link"></div>')
+                .appendTo($(element).find('.shmApplicationMainContainer').first());
+        }
+
+        host
+            .empty()
+            .append(
+                $('<a target="_blank" rel="noopener noreferrer"></a>')
+                    .attr('href', url)
+                    .text(data.config.brochureLinkText || 'View the candidate brochure')
+            );
+    }
 
     const handleUser = (u) => {
         if (u?.isNew) {
