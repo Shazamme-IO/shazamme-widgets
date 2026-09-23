@@ -58,7 +58,7 @@ function loadResolver(href: string, config: Record<string, unknown> = {}, store:
 
   const make = new Function(
     'data', 'window', 'shazamme', 'URL',
-    `${src.slice(start, end)}; return { jobKey, getJobID, jobRow, jobSlug, brochurePageUrl, configuredScreeningTemplate, showBrochureLink };`,
+    `${src.slice(start, end)}; return { jobKey, getJobID, jobRow, jobSlug, brochurePageUrl, configuredScreeningTemplate, showBrochureLink, screeningEnabled };`,
   );
 
   const host = new URL(href).hostname;
@@ -244,5 +244,24 @@ describe('application record', () => {
     expect(a.submissionTypeID).toBe(2);
     expect(a.jobID).toBe(GUID);
     expect(a.referralCampaign).toBe(SLUG);
+  });
+});
+
+describe('screening gate', () => {
+  const on = (cfg: Record<string, unknown>, href = 'https://site/form') => loadResolver(href, cfg).screeningEnabled();
+
+  it('runs when the panel toggle is on', () => {
+    expect(on({ showScreeningQuestions: true })).toBe(true);
+    expect(on({ showScreeningQuestions: 'true' })).toBe(true);
+  });
+
+  it('runs when a template is chosen, even on a panel with no toggle field', () => {
+    expect(on({ screeningTemplateId: 'tpl-1' })).toBe(true);
+    expect(on({}, 'https://site/form?screeningTemplateId=tpl-1')).toBe(true);
+  });
+
+  it('stays off when neither is set', () => {
+    expect(on({})).toBe(false);
+    expect(on({ showScreeningQuestions: false })).toBe(false);
   });
 });
