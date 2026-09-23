@@ -34,3 +34,35 @@ describe.each(stubs)('%s duda-paste.js', (widget, src) => {
     expect(() => new Function('element', 'data', 'api', src)).not.toThrow();
   });
 });
+
+// The jsDelivr stubs serve a widget straight from this repo's dist/ at a pinned
+// tag — the delivery path for widgets that never reached CloudFront. Same failure
+// class as above: a wrong path or a mutable ref is invisible to a URL probe.
+const cdnStubs = readdirSync(here)
+  .filter((w) => existsSync(join(here, w, 'duda-paste-jsdelivr.js')))
+  .map((w) => [w, readFileSync(join(here, w, 'duda-paste-jsdelivr.js'), 'utf8')] as const);
+
+describe.each(cdnStubs)('%s duda-paste-jsdelivr.js', (widget, src) => {
+  it('names the widget it lives next to', () => {
+    expect(src).toContain(`var NAME = "${widget}"`);
+  });
+
+  it('builds the bundle URL from NAME and TAG, so it cannot drift from the dist path', () => {
+    expect(src).toContain(
+      '"https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" + TAG + "/dist/" + NAME + "/0.1.0/widget.min.js"',
+    );
+  });
+
+  it('pins an immutable tag, never a branch', () => {
+    const tag = src.match(/var TAG = "([^"]+)"/)?.[1];
+    expect(tag).toMatch(/^v\d+\.\d+\.\d+$/);
+  });
+
+  it('serves a bundle this repo actually built', () => {
+    expect(existsSync(join(here, '..', 'dist', widget, '0.1.0', 'widget.min.js'))).toBe(true);
+  });
+
+  it("parses inside Duda's function(element, data, api) wrapper", () => {
+    expect(() => new Function('element', 'data', 'api', src)).not.toThrow();
+  });
+});
