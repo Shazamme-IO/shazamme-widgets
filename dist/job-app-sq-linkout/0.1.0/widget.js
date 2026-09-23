@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build ba7fa562f0fe. Registers window.ShazammeWidget["<name>"].
+ * Build e47681d3af76. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -454,6 +454,25 @@ var __shazWidgetExport = (() => {
     function getJobID() {
       return resolvedJobID || jobKey();
     }
+    function jobSlug() {
+      let key = jobKey();
+      return (key == null ? void 0 : key.length) > 0 && !JOB_GUID_RE.test(key) ? String(key).trim().replace(/\/+$/, "").split("/").pop() : null;
+    }
+    function brochurePageUrl() {
+      let slug = jobSlug();
+      if (!slug) {
+        return null;
+      }
+      let base = String(data.config.BrochurePagePath || "/dynamic-brochure").replace(/^\/+|\/+$/g, "");
+      return data.inEditor ? `/site/${data.siteId}/${base}/${slug}?preview=true&insitepreview=true&dm_device=desktop` : `https://${window.location.hostname}/${base}/${slug}`;
+    }
+    function showBrochureLink() {
+      return data.config.showBrochureLink === true || data.config.showBrochureLink === "true";
+    }
+    function configuredScreeningTemplate() {
+      let id = data.config.screeningTemplateId || data.config.screeningTemplateID || new URL(window.location.href).searchParams.get("screeningTemplateId");
+      return typeof id === "string" && id.trim().length > 0 ? id.trim() : null;
+    }
     function jobRow() {
       if (jobRowPromise) {
         return jobRowPromise;
@@ -512,10 +531,11 @@ var __shazWidgetExport = (() => {
       let jobID = getJobID();
       jobRow().then((j) => {
         var _a;
-        if ((_a = j == null ? void 0 : j.data) == null ? void 0 : _a.screeningTemplateID) {
+        let templateID = configuredScreeningTemplate() || ((_a = j == null ? void 0 : j.data) == null ? void 0 : _a.screeningTemplateID);
+        if (templateID) {
           shazamme.submit({
             action: "Get Screening Questions",
-            templateID: j.data.screeningTemplateID
+            templateID
           }).then((res) => {
             if (!res.status) {
               return;
@@ -673,6 +693,14 @@ var __shazWidgetExport = (() => {
               return;
             }
             dmAPI.loadCollectionsAPI().then((collections) => {
+              let configured = configuredScreeningTemplate();
+              if (configured) {
+                sender._screeningTemplateID = configured;
+                collections.data("Screening Questions").where("screeningTemplateID", "EQ", configured).get().then((q) => resolve2({
+                  response: { items: q.values.map((i) => i.data) }
+                }), (err) => reject(err));
+                return;
+              }
               collections.data("Jobs").where("jobID", "EQ", jobID).get().then((j) => {
                 let screeningTemplateID = j.values.length > 0 && j.values[0].data.screeningTemplateID;
                 if (screeningTemplateID) {
@@ -1532,12 +1560,18 @@ ${invalid.join("\n")}`);
               referralSource: uri.searchParams.get("utm_source") || shazamme.session("referralSource"),
               referralMedium: uri.searchParams.get("utm_medium") || shazamme.session("referralMedium"),
               referralTerm: uri.searchParams.get("utm_term") || shazamme.session("referralTerm"),
-              referralCampaign: uri.searchParams.get("utm_campaign") || shazamme.session("referralCampaign"),
+              // The candidate form files the job slug as the campaign, so a
+              // brochure submission is attributable to its job. UTM only when
+              // there is no slug (a GUID link).
+              referralCampaign: jobSlug() || uri.searchParams.get("utm_campaign") || shazamme.session("referralCampaign"),
               referralContent: uri.searchParams.get("utm_content") || shazamme.session("referralContent")
             };
             let a = {
               jobID: getJobID(),
               screeningAnswers: answers,
+              // The candidate form sends the template alongside the answers,
+              // so the record says WHICH screening form was answered.
+              screeningTemplateID: configuredScreeningTemplate() || (screening == null ? void 0 : screening._screeningTemplateID) || void 0,
               ...referralSource
             };
             if (hasItemsTobeUploaded) {
@@ -1592,8 +1626,9 @@ ${invalid.join("\n")}`);
             }
             let jobData = (jobViewed == null ? void 0 : jobViewed.data) || {};
             let dest;
+            let brochureDest = showBrochureLink() ? null : brochurePageUrl() || jobData[data.config.brochureField || "customField2"];
             let linkoutUrl = [
-              jobData[data.config.brochureField || "customField2"],
+              brochureDest,
               jobData.applicationURL
             ].find((v) => typeof v === "string" && v.length > 0);
             if ((linkoutUrl == null ? void 0 : linkoutUrl.length) > 0) {
@@ -1689,6 +1724,7 @@ ${invalid.join("\n")}`);
       }
       shazamme.store("applicationURL", window.location.href);
       jobRow().then((j) => {
+        renderBrochureLink(j);
         if (j == null ? void 0 : j.data) {
           if (j.data.jobID === data.config.jobID) {
             w.pub("job-application-fixed-job", j.data.jobID, true);
@@ -1698,6 +1734,20 @@ ${invalid.join("\n")}`);
           $(".section-no-job-message").show();
         }
       });
+      function renderBrochureLink(j) {
+        var _a;
+        let url = brochurePageUrl() || ((_a = j == null ? void 0 : j.data) == null ? void 0 : _a[data.config.brochureField || "customField2"]);
+        if (!showBrochureLink() || !(typeof url === "string" && url.length > 0)) {
+          return;
+        }
+        let host = $(element).find("[data-rel=brochure-link]");
+        if (host.length === 0) {
+          host = $('<div class="brochure-link" data-rel="brochure-link"></div>').appendTo($(element).find(".shmApplicationMainContainer").first());
+        }
+        host.empty().append(
+          $('<a target="_blank" rel="noopener noreferrer"></a>').attr("href", url).text(data.config.brochureLinkText || "View the candidate brochure")
+        );
+      }
       const handleUser = (u) => {
         if (u == null ? void 0 : u.isNew) {
           showOrHideForms({

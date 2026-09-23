@@ -1,0 +1,63 @@
+<div class="main-content">
+    <div class="section-form" data-rel="collection-fields">
+        <div class="field">
+            <label class="text required">{{FirstName}}</label>
+            <input type="text" required title="{{FirstName}} {{FirstNamePlaceHolder}}" placeholder="{{FirstNamePlaceHolder}}" data-field="firstName" />
+        </div>
+
+        <div class="field">
+            <label class="text required">{{LastName}}</label>
+            <input type="text" required title="{{LastName}} {{LastNamePlaceHolder}}" placeholder="{{LastNamePlaceHolder}}" data-field="lastName" />
+        </div>
+
+        <div class="field">
+            <label class="text required">{{EmailAddress}}</label>
+            <input type="text" required title="{{EmailAddress}} {{EmailAddressPlaceHolder}}" placeholder="{{EmailAddressPlaceHolder}}" data-field="email" />
+        </div>
+
+        {{#if ShowPhone}}
+        <div class="field">
+            {{#if RequirePhone}}
+            <label class="text required">{{Phone}}</label>
+            <input type="text" required title="{{Phone}} {{PhonePlaceHolder}}" placeholder="{{PhonePlaceHolder}}" data-field="phone" />
+            {{else}}
+            <label class="text">{{Phone}}</label>
+            <input type="text" title="{{Phone}} {{PhonePlaceHolder}}" placeholder="{{PhonePlaceHolder}}" data-field="phone" />
+            {{/if}}
+        </div>
+        {{/if}}
+
+        {{#if ShowCV}}
+        <div class="field file row">
+            {{#if RequireCV}}
+            <label class="text required">
+            <input type="file" data-field="cv" data-file-id="cv" data-file-resume="1" required />
+            {{else}}
+            <label class="text">
+            <input type="file" data-field="cv" data-file-id="cv" data-file-resume="1" />
+            {{/if}}
+            {{CV}}
+            </label>
+            <button class="button-remove hidden" data-rel="file-remove"><span class="text">X</span></button>
+        </div>
+        {{/if}}
+
+        <div class="field row">
+            <section class="screening-questions" data-rel="data-screening-questions" data-screening-questions="default"></section>
+        </div>
+        
+        {{#if ShowAgreement}}
+        <div class="field row">
+            <label class="text agreement-label">
+                <input type="checkbox" required data-field="--agreement" />
+                <span class="agreement-text required">{{{Agreement}}}</span>
+            </label>
+        </div>
+        {{/if}}
+    </div>
+
+    <div class="section-generic" style="--shaz-item-align: {{ApplyButtonAlign}}">
+        <button class="button-submit" data-rel="action-apply"><span class="text">{{ApplyButton}}</span></button>
+    </div>
+</div>
+

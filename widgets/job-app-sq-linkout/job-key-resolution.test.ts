@@ -58,10 +58,17 @@ function loadResolver(href: string, config: Record<string, unknown> = {}, store:
 
   const make = new Function(
     'data', 'window', 'shazamme', 'URL',
-    `${src.slice(start, end)}; return { jobKey, getJobID, jobRow };`,
+    `${src.slice(start, end)}; return { jobKey, getJobID, jobRow, jobSlug, brochurePageUrl, configuredScreeningTemplate, showBrochureLink };`,
   );
 
-  return { ...make({ config, inEditor: false }, { location: { href } }, shazamme, URL), fetches, store, shazamme };
+  const host = new URL(href).hostname;
+
+  return {
+    ...make({ config, inEditor: false, siteId: 'site-alias' }, { location: { href, hostname: host } }, shazamme, URL),
+    fetches,
+    store,
+    shazamme,
+  };
 }
 
 describe('job key resolution', () => {
@@ -124,14 +131,32 @@ describe('job key resolution', () => {
 describe('redirect destination', () => {
   // The real expression from apply(), so a reordering of the fallback chain fails here.
   const END = "].find( v => typeof v === 'string' && v.length > 0 );";
-  const expr = src.slice(src.indexOf('let linkoutUrl = ['), src.indexOf(END) + END.length);
-  const pick = new Function('data', 'jobData', `${expr}; return linkoutUrl;`) as
-    (d: unknown, j: Record<string, unknown>) => string | undefined;
+  const expr = src.slice(src.indexOf('let brochureDest = '), src.indexOf(END) + END.length);
+  const run = new Function('data', 'jobData', 'brochurePageUrl', 'showBrochureLink',
+    `${expr}; return linkoutUrl;`) as
+    (d: unknown, j: Record<string, unknown>, b: () => string | null, t: () => boolean) => string | undefined;
 
   const cfg = (o = {}) => ({ config: o });
+  const PAGE = `https://careers.example.com/dynamic-brochure/${SLUG}`;
+  // no slug on the URL (a GUID link) unless a test says otherwise
+  const pick = (d: unknown, j: Record<string, unknown>, page: string | null = null, linked = false) =>
+    run(d, j, () => page, () => linked);
 
-  it('sends the candidate to the job brochure', () => {
+  it('sends the candidate to this job\'s brochure page', () => {
+    expect(pick(cfg(), ROW.data, PAGE)).toBe(PAGE);
+  });
+
+  it('falls back to the brochure on the job when the link carried no slug', () => {
     expect(pick(cfg(), ROW.data)).toBe(ROW.data.customField2);
+  });
+
+  it('stays on the thank-you page when the brochure is linked on the form instead', () => {
+    expect(pick(cfg({ showBrochureLink: true }), { ...ROW.data }, PAGE, true)).toBeUndefined();
+  });
+
+  it('still honours an external apply URL when the brochure is on the form', () => {
+    expect(pick(cfg({ showBrochureLink: true }), { ...ROW.data, applicationURL: 'https://ats/apply' }, PAGE, true))
+      .toBe('https://ats/apply');
   });
 
   it('prefers the brochure over an external apply URL', () => {
@@ -150,5 +175,56 @@ describe('redirect destination', () => {
   it('takes the brochure field name from settings when a site uses a different one', () => {
     expect(pick(cfg({ brochureField: 'customField4' }), { ...ROW.data, customField4: 'https://b/roch' }))
       .toBe('https://b/roch');
+  });
+});
+
+
+describe('brochure destination', () => {
+  const SLUG_URL = `https://careers.example.com/candidate-brochure-form?jobId=${SLUG}`;
+
+  it('builds this job\'s dynamic brochure page from the slug', () => {
+    expect(loadResolver(SLUG_URL).brochurePageUrl())
+      .toBe(`https://careers.example.com/dynamic-brochure/${SLUG}`);
+  });
+
+  it('honours a site that renamed the brochure page', () => {
+    expect(loadResolver(SLUG_URL, { BrochurePagePath: '/campaign-brochure/' }).brochurePageUrl())
+      .toBe(`https://careers.example.com/campaign-brochure/${SLUG}`);
+  });
+
+  it('has no brochure page for a GUID link — there is no slug to build one from', () => {
+    expect(loadResolver(`https://careers.example.com/form?jobID=${GUID}`).brochurePageUrl()).toBeNull();
+    expect(loadResolver('https://careers.example.com/form').brochurePageUrl()).toBeNull();
+  });
+
+  it('reads the Show Brochure Link toggle as Duda sends it', () => {
+    expect(loadResolver(SLUG_URL).showBrochureLink()).toBe(false);
+    expect(loadResolver(SLUG_URL, { showBrochureLink: true }).showBrochureLink()).toBe(true);
+    expect(loadResolver(SLUG_URL, { showBrochureLink: 'true' }).showBrochureLink()).toBe(true);
+    expect(loadResolver(SLUG_URL, { showBrochureLink: 'false' }).showBrochureLink()).toBe(false);
+  });
+
+  it('files the job slug as the referral campaign', () => {
+    expect(loadResolver(SLUG_URL).jobSlug()).toBe(SLUG);
+    expect(loadResolver(`https://careers.example.com/form?jobID=${GUID}`).jobSlug()).toBeNull();
+  });
+});
+
+describe('screening template selection', () => {
+  const at = (cfg: Record<string, unknown>, href = 'https://site/form') =>
+    loadResolver(href, cfg).configuredScreeningTemplate();
+
+  it('takes the template chosen on the widget', () => {
+    expect(at({ screeningTemplateId: 'tpl-1' })).toBe('tpl-1');
+    expect(at({ screeningTemplateID: 'tpl-2' })).toBe('tpl-2');
+  });
+
+  it('accepts one on the URL for testing before the panel field exists', () => {
+    expect(at({}, 'https://site/form?screeningTemplateId=tpl-3')).toBe('tpl-3');
+  });
+
+  it('is null when nothing is set, so the job\'s own template still applies', () => {
+    expect(at({})).toBeNull();
+    expect(at({ screeningTemplateId: '   ' })).toBeNull();
   });
 });
