@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 61b98f91a932. Registers window.ShazammeWidget["<name>"].
+ * Build ba7fa562f0fe. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -439,9 +439,57 @@ var __shazWidgetExport = (() => {
     function hasLoggedInUser() {
       return window.localStorage.vinylResponse;
     }
-    function getJobID() {
+    const JOB_GUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    let resolvedJobID = null;
+    let jobRowPromise = null;
+    function jobKey() {
       let getURL = new URL(window.location.href);
-      return getURL.searchParams.get("jobID") || data.config.useSingleJob && data.config.jobID || shazamme.store("jobID");
+      for (const [k, v] of getURL.searchParams.entries()) {
+        if (k.toLowerCase() === "jobid" && (v == null ? void 0 : v.length) > 0) {
+          return v;
+        }
+      }
+      return data.config.useSingleJob && data.config.jobID || shazamme.store("jobID");
+    }
+    function getJobID() {
+      return resolvedJobID || jobKey();
+    }
+    function jobRow() {
+      if (jobRowPromise) {
+        return jobRowPromise;
+      }
+      let key = jobKey();
+      jobRowPromise = shazamme.site().then((s) => {
+        if (!((key == null ? void 0 : key.length) > 0)) {
+          return null;
+        }
+        if (JOB_GUID_RE.test(key)) {
+          return shazamme.fetch({
+            path: `/job-results/${s.siteID}/${key}`,
+            isExternal: true,
+            useCache: true
+          });
+        }
+        let slug = String(key).toLowerCase().replace(/\/+$/, "").split("/").pop();
+        return shazamme.fetch({
+          path: `/job-results/${s.siteID}`,
+          isExternal: true,
+          useCache: true
+        }).then((rows) => (rows || []).find((r) => {
+          var _a;
+          let u = (_a = r == null ? void 0 : r.data) == null ? void 0 : _a.jobURL;
+          return (u == null ? void 0 : u.length) > 0 && u.toLowerCase().replace(/\/+$/, "").endsWith(`/${slug}`);
+        }) || null);
+      }).then((j) => {
+        var _a;
+        if ((_a = j == null ? void 0 : j.data) == null ? void 0 : _a.jobID) {
+          resolvedJobID = j.data.jobID;
+          shazamme.store("jobID", resolvedJobID);
+          shazamme.store("currentJobViewed", JSON.stringify(j));
+        }
+        return j;
+      }).catch(() => null);
+      return jobRowPromise;
     }
     function isObjectComplete(object) {
       if (typeof object !== "object") console.warn("not object by objectChecker");
@@ -462,11 +510,7 @@ var __shazWidgetExport = (() => {
     }
     function showScreeningQuestions() {
       let jobID = getJobID();
-      shazamme.site().then((s) => shazamme.fetch({
-        path: `/job-results/${s.siteID}/${getJobID()}`,
-        isExternal: true,
-        useCache: true
-      })).then((j) => {
+      jobRow().then((j) => {
         var _a;
         if ((_a = j == null ? void 0 : j.data) == null ? void 0 : _a.screeningTemplateID) {
           shazamme.submit({
@@ -1483,7 +1527,7 @@ ${invalid.join("\n")}`);
             }).then((r) => r.status && shazamme.user(true) || Promise.reject());
           };
           let apply = (u) => {
-            var _a, _b, _c, _d, _e;
+            var _a, _b, _c, _d;
             let referralSource = {
               referralSource: uri.searchParams.get("utm_source") || shazamme.session("referralSource"),
               referralMedium: uri.searchParams.get("utm_medium") || shazamme.session("referralMedium"),
@@ -1546,8 +1590,12 @@ ${invalid.join("\n")}`);
               jobViewed = JSON.parse(shazamme.store("currentJobViewed"));
             } catch (e) {
             }
+            let jobData = (jobViewed == null ? void 0 : jobViewed.data) || {};
             let dest;
-            let linkoutUrl = (_d = jobViewed == null ? void 0 : jobViewed.data) == null ? void 0 : _d.applicationURL;
+            let linkoutUrl = [
+              jobData[data.config.brochureField || "customField2"],
+              jobData.applicationURL
+            ].find((v) => typeof v === "string" && v.length > 0);
             if ((linkoutUrl == null ? void 0 : linkoutUrl.length) > 0) {
               dest = linkoutUrl;
             } else {
@@ -1583,7 +1631,7 @@ ${invalid.join("\n")}`);
               });
               return;
             }
-            let actionUrl = ((_e = shazamme._site) == null ? void 0 : _e.RegionalUrl) || "https://shazamme.io/Job-Listing/src/php/regional/actions";
+            let actionUrl = ((_d = shazamme._site) == null ? void 0 : _d.RegionalUrl) || "https://shazamme.io/Job-Listing/src/php/regional/actions";
             try {
               fetch(actionUrl, {
                 method: "POST",
@@ -1640,14 +1688,8 @@ ${invalid.join("\n")}`);
         });
       }
       shazamme.store("applicationURL", window.location.href);
-      shazamme.store("jobID", getJobID());
-      shazamme.site().then((s) => shazamme.fetch({
-        path: `/job-results/${s.siteID}/${getJobID()}`,
-        isExternal: true,
-        useCache: true
-      })).then((j) => {
+      jobRow().then((j) => {
         if (j == null ? void 0 : j.data) {
-          shazamme.store("currentJobViewed", JSON.stringify(j));
           if (j.data.jobID === data.config.jobID) {
             w.pub("job-application-fixed-job", j.data.jobID, true);
           }
