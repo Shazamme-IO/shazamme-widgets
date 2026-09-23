@@ -15,14 +15,23 @@ the real application form.
 | `applicationsq-mobcsss.rtf` / `applicationsq-mobcss.txt` | live mobile CSS box, verbatim — **unchanged by this port** |
 | `applicationsq-linkout.js` | **paste this into the duplicated widget's JS box** (2121 lines) |
 
-Desktop CSS was not exported — the duplicate needs the same desktop CSS box as
-the original, pasted across unchanged.
+Desktop CSS was not exported — moot when the widget is duplicated in Duda, since
+every CSS box comes across with the copy.
 
 ## Wiring
 
 1. Duplicate the Job Application widget in Duda (name it for the link-out use).
-2. Replace the JS box with `applicationsq-linkout.js`. HTML + both CSS boxes are
-   pasted across unchanged.
+2. Replace the JS box — **only the JS box**; HTML and both CSS boxes came across
+   with the duplicate unchanged. Either:
+   - `widgets/job-app-sq-linkout/duda-paste-jsdelivr.js` (**preferred**, 33
+     lines) — loads the bundle from this repo's `dist/` via jsDelivr at a pinned
+     tag, so fixes ship git → CDN with no re-paste on any site; or
+   - `applicationsq-linkout.js` (2121 lines) — the inline fallback, if a site
+     must not depend on an external bundle.
+
+   `widgets/job-app-sq-linkout/duda-paste.js` is the CloudFront variant, for
+   whenever the bundle is deployed to `sdk.shazamme.io` (needs the `sdk-deployer`
+   AWS profile; unused until then).
 3. Point the **dynamic apply button** at this widget's page. The button stores
    `jobID` + `currentJobViewed` in localStorage on click; this form reads
    `currentJobViewed` on submit to find the link-out URL — no extra fetch.
