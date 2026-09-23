@@ -16,7 +16,7 @@
 // ===========================================================================
 (function () {
   var NAME = "job-app-sq-linkout";
-  var TAG = "v0.1.22";
+  var TAG = "v0.1.23";
   var BUNDLE = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" + TAG + "/dist/" + NAME + "/0.1.0/widget.min.js";
   var SDK = "https://sdk.shazamme.io/js/shazamme-1.0.3.min.js";
   window.__shazSDKPromise = window.__shazSDKPromise || new Promise(function (res) {

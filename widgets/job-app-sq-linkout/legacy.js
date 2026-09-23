@@ -472,10 +472,83 @@ function hasLoggedInUser(){
     return window.localStorage.vinylResponse;
 }
 
-function getJobID(){
+// The key on the URL is not always the jobID. A brochure/landing page links with
+// the jobURL slug (?jobId=team-leader-...-1443119) and the param's case varies,
+// while /job-results/<siteID>/<key> only answers to the jobID GUID — a slug there
+// 500s, which is what put the "no longer available" message on a live job. So read
+// the param case-insensitively, and resolve a non-GUID key against the cached
+// collection by jobURL slug.
+const JOB_GUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+let resolvedJobID = null;
+let jobRowPromise = null;
+
+function jobKey(){
     let getURL = new URL(window.location.href);
 
-    return getURL.searchParams.get("jobID") || (data.config.useSingleJob && data.config.jobID) || shazamme.store('jobID');
+    for (const [k, v] of getURL.searchParams.entries()) {
+        if (k.toLowerCase() === 'jobid' && v?.length > 0) {
+            return v;
+        }
+    }
+
+    return (data.config.useSingleJob && data.config.jobID) || shazamme.store('jobID');
+}
+
+function getJobID(){
+    // Once resolved this is the REAL jobID, so the application is recorded against
+    // the job rather than against whatever slug the link happened to carry.
+    return resolvedJobID || jobKey();
+}
+
+// One fetch per page, shared by the screening questions, the page-load wiring and
+// the redirect destination.
+function jobRow(){
+    if (jobRowPromise) {
+        return jobRowPromise;
+    }
+
+    let key = jobKey();
+
+    jobRowPromise = shazamme.site()
+        .then( s => {
+            if (!(key?.length > 0)) {
+                return null;
+            }
+
+            if (JOB_GUID_RE.test(key)) {
+                return shazamme.fetch({
+                    path: `/job-results/${s.siteID}/${key}`,
+                    isExternal: true,
+                    useCache: true,
+                });
+            }
+
+            let slug = String(key).toLowerCase().replace(/\/+$/, '').split('/').pop();
+
+            return shazamme.fetch({
+                path: `/job-results/${s.siteID}`,
+                isExternal: true,
+                useCache: true,
+            }).then( rows => (rows || []).find( r => {
+                let u = r?.data?.jobURL;
+
+                return u?.length > 0 && u.toLowerCase().replace(/\/+$/, '').endsWith(`/${slug}`);
+            }) || null );
+        })
+        .then( j => {
+            if (j?.data?.jobID) {
+                resolvedJobID = j.data.jobID;
+
+                shazamme.store('jobID', resolvedJobID);
+                shazamme.store('currentJobViewed', JSON.stringify(j));
+            }
+
+            return j;
+        })
+        .catch( () => null );
+
+    return jobRowPromise;
 }
 
 function isObjectComplete(object) {
@@ -502,12 +575,7 @@ function buttonAction(action){
 function showScreeningQuestions() {
         let jobID = getJobID();
 
-        shazamme.site()
-            .then( s => shazamme.fetch({
-                path: `/job-results/${s.siteID}/${getJobID()}`,
-                isExternal: true,
-                useCache: true,
-            }) )
+        jobRow()
             .then( j => {
                 if (j?.data?.screeningTemplateID) {
                     shazamme.submit({
@@ -1887,17 +1955,25 @@ const main = (w) => {
                     });
                 }
 
-                // Destination after the (soft) application: the job's external
-                // link-out URL, read from the job row the dynamic apply button
-                // cached on the way in — no extra fetch. Empty field => the stock
-                // thank-you page (with the optional job-field query), so a job
-                // without a link-out still behaves exactly like the stock widget.
+                // Destination after the (soft) application, from the job row
+                // cached on the way in — no extra fetch:
+                //   1. the job's candidate brochure, held in a custom field
+                //      (customField2 on the sites running this today, e.g.
+                //      flowpaper.com/<Client><Role>CandidateBrochure/);
+                //   2. applicationURL, for a plain external apply link-out;
+                //   3. the stock thank-you page (with the optional job-field
+                //      query), so a job with neither behaves like stock.
+                // brochureField makes 1. settable per site without a code change.
                 let jobViewed;
 
                 try { jobViewed = JSON.parse(shazamme.store('currentJobViewed')); } catch (e) {}
 
+                let jobData = jobViewed?.data || {};
                 let dest;
-                let linkoutUrl = jobViewed?.data?.applicationURL;
+                let linkoutUrl = [
+                    jobData[data.config.brochureField || 'customField2'],
+                    jobData.applicationURL,
+                ].find( v => typeof v === 'string' && v.length > 0 );
 
                 if (linkoutUrl?.length > 0) {
                     dest = linkoutUrl;
@@ -2042,17 +2118,11 @@ const main = (w) => {
     }
 
     shazamme.store('applicationURL', window.location.href);
-    shazamme.store("jobID", getJobID());
 
-    shazamme.site()
-        .then( s => shazamme.fetch({
-            path: `/job-results/${s.siteID}/${getJobID()}`,
-            isExternal: true,
-            useCache: true,
-        }))
+    jobRow()
         .then( j => {
             if (j?.data) {
-                shazamme.store('currentJobViewed', JSON.stringify(j));
+                // jobRow() has already stored the resolved jobID and the row.
 
                 // Link-out variant: do NOT bounce to j.data.applicationURL here.
                 // The stock widget redirected on page load, so the candidate left
