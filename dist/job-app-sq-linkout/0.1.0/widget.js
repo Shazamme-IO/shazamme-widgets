@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build e47681d3af76. Registers window.ShazammeWidget["<name>"].
+ * Build fd154e89f947. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -91,7 +91,7 @@ var __shazWidgetExport = (() => {
       submit: "application-screening-form-submit"
     };
     const maxUploadSize = (parseInt(data.config.maxUploadSize) || 10) * 1024 * 1024;
-    if (data.config.showScreeningQuestions) {
+    if (screeningEnabled()) {
       showScreeningQuestions();
     }
     $("#passwordInput").focus(function() {
@@ -432,7 +432,7 @@ var __shazWidgetExport = (() => {
       if (!(s == null ? void 0 : s.cVFileContent)) {
         $(element).find(".uploadExisting").css("display", "none");
       }
-      if (data.config.showScreeningQuestions) {
+      if (screeningEnabled()) {
         showScreeningQuestions();
       }
     }
@@ -468,6 +468,9 @@ var __shazWidgetExport = (() => {
     }
     function showBrochureLink() {
       return data.config.showBrochureLink === true || data.config.showBrochureLink === "true";
+    }
+    function screeningEnabled() {
+      return data.config.showScreeningQuestions === true || data.config.showScreeningQuestions === "true" || configuredScreeningTemplate() !== null;
     }
     function configuredScreeningTemplate() {
       let id = data.config.screeningTemplateId || data.config.screeningTemplateID || new URL(window.location.href).searchParams.get("screeningTemplateId");
@@ -703,6 +706,21 @@ var __shazWidgetExport = (() => {
               }
               collections.data("Jobs").where("jobID", "EQ", jobID).get().then((j) => {
                 let screeningTemplateID = j.values.length > 0 && j.values[0].data.screeningTemplateID;
+                if (!screeningTemplateID) {
+                  collections.data(data.config.collectionQuestions || "Screening Questions").get().then((q) => {
+                    let rows = q.values.map((i) => i.data);
+                    let ids = rows.map((i) => i.screeningTemplateID).filter((v, n, a) => (v == null ? void 0 : v.length) > 0 && a.indexOf(v) === n);
+                    if (ids.length !== 1) {
+                      resolve2({});
+                      return;
+                    }
+                    sender._screeningTemplateID = ids[0];
+                    resolve2({
+                      response: { items: rows.filter((i) => i.screeningTemplateID === ids[0]) }
+                    });
+                  }, () => resolve2({}));
+                  return;
+                }
                 if (screeningTemplateID) {
                   sender._screeningTemplateID = screeningTemplateID;
                   collections.data("Screening Questions").where("screeningTemplateID", "EQ", screeningTemplateID).get().then((q) => {

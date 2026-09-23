@@ -31,7 +31,7 @@ const Message = {
 
 const maxUploadSize = (parseInt(data.config.maxUploadSize) || 10) * 1024 * 1024;
 
-if (data.config.showScreeningQuestions) {
+if (screeningEnabled()) {
     showScreeningQuestions();
 }
 
@@ -463,7 +463,7 @@ function showOrHideForms(s) {
         $(element).find('.uploadExisting').css('display',"none");
     }
 
-    if (data.config.showScreeningQuestions) {
+    if (screeningEnabled()) {
         showScreeningQuestions();
     }
 }
@@ -531,6 +531,15 @@ function brochurePageUrl(){
 // to the normal thank-you page instead of the brochure.
 function showBrochureLink(){
     return data.config.showBrochureLink === true || data.config.showBrochureLink === 'true';
+}
+
+// A duplicated widget can reach a site without the showScreeningQuestions field
+// on its panel at all, and then the questions are silently off no matter what
+// else is set. Choosing a template IS the intent to show them.
+function screeningEnabled(){
+    return data.config.showScreeningQuestions === true
+        || data.config.showScreeningQuestions === 'true'
+        || configuredScreeningTemplate() !== null;
 }
 
 // Which screening form to use. The stock widget only ever read the template off
@@ -854,6 +863,34 @@ function screeningQuestions(w, edit) {
                         .get()
                         .then( j => {
                             let screeningTemplateID = j.values.length > 0 && j.values[0].data.screeningTemplateID;
+
+                            // Nothing on the widget and nothing on the job: if the
+                            // site has exactly one screening template, that is the
+                            // one — no ID to look up and paste anywhere.
+                            if (!screeningTemplateID) {
+                                collections
+                                    .data(data.config.collectionQuestions || 'Screening Questions')
+                                    .get()
+                                    .then( q => {
+                                        let rows = q.values.map( i => i.data );
+                                        let ids = rows
+                                            .map( i => i.screeningTemplateID )
+                                            .filter( (v, n, a) => v?.length > 0 && a.indexOf(v) === n );
+
+                                        if (ids.length !== 1) {
+                                            resolve({});
+                                            return;
+                                        }
+
+                                        sender._screeningTemplateID = ids[0];
+
+                                        resolve({
+                                            response: { items: rows.filter( i => i.screeningTemplateID === ids[0] ) },
+                                        });
+                                    }, () => resolve({}) );
+
+                                return;
+                            }
 
                             if (screeningTemplateID) {
                                 sender._screeningTemplateID = screeningTemplateID;
