@@ -49,7 +49,7 @@
 {{/equals}}
 
 <div class="toolbar-main mobile">
-    <span class="shmResultCount">
+    <span class="shmResultCount" style="display: none;">
         <span data-rel="label-results-count">0</span>
         <span data-rel="label-results-message">{{resultMessage}}</span>
     </span>

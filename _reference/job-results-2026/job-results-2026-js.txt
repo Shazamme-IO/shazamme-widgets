@@ -2949,17 +2949,28 @@ if (data.device === 'mobile') {
     }
 }
 
+// Fail-safe: the shell now ships hidden (class="hidden" + inline visibility/opacity),
+// so any rejection in the boot chain below would leave a permanently blank 900px block.
+// A brief flash of the un-initialised shell is strictly better than a blank widget.
+const revealShell = () => ux.el
+    .find('.shmMainContainer')
+    .removeClass('hidden')
+    .css({ visibility: 'visible', opacity: '1' });
+
+setTimeout(revealShell, 5000);
+
 ux.loadScript('https://sdk.shazamme.io/js/shazamme-1.0.3.min.js')
     .then( () => shazamme.ready((data.inEditor && data.config.debugSiteID) || data.siteId, data.page) )
     .then( () => Promise.all([
-            shazamme.style('https://sdk.shazamme.io/css/fontawesome/css/fontawesome.min.css>'),
+            shazamme.style('https://sdk.shazamme.io/css/fontawesome/css/fontawesome.min.css'),
             shazamme.style('https://sdk.shazamme.io/css/fontawesome/css/regular.min.css'),
             data.config.apikey?.length > 0
                 && shazamme.gapi(data.config.apikey).maps(['maps', data.config.enableProximitySearch && 'places' ])
                 || Promise.resolve(),
         ])
     )
-    .then( () => main(shazamme.register('job-results', data)) );
+    .then( () => main(shazamme.register('job-results', data)) )
+    .catch( e => { console.warn('[job-results-2026] boot failed', e); revealShell(); } );
 
 ux.loadScript('https://sdk.shazamme.io/plugin/lottie-files/lottie-player-2.0.8.js')
     .then();
