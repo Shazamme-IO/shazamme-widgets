@@ -1876,6 +1876,13 @@ input {
 .hidden {
     display: none;
 }
+
+/* The mobile tab carries `div.shmMainContainer { display: block }` (0,1,1), which
+   outranks bare .hidden (0,1,0) - without this the class half of the FOUC gate is
+   dead on mobile and the reveal depends entirely on the inline-style half. */
+.shmMainContainer.hidden {
+    display: none;
+}
 /* Fix for clear search icon */
 
 .section-job-result-filter .filter-keyword-clear svg {
