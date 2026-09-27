@@ -2700,7 +2700,12 @@ const main = (w) => {
     ux.el
         .addClass('shaz-job-results')
         .find('.shmMainContainer')
-        .removeClass('hidden');
+        .removeClass('hidden')
+        .css({ visibility: 'visible', opacity: '0', transition: 'opacity 0.3s ease' });
+
+    requestAnimationFrame(() => {
+        ux.el.find('.shmMainContainer').css('opacity', '1');
+    });
 
     if (data.config.dialogWaitAnimation?.indexOf('lottie.host') >= 0) {
         data.config.dialogWaitAnimation = 'https://assets2.lottiefiles.com/packages/lf20_szlepvdh.json';

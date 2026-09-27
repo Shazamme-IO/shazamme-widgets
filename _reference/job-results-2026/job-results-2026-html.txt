@@ -73,7 +73,7 @@
     </div>
 </div>
 
-<div class="shmMainContainer" style="--shaz-filter-pct: {{filterWidth}}%;" data-shm-main>
+<div class="shmMainContainer hidden" style="--shaz-filter-pct: {{filterWidth}}%; visibility: hidden; opacity: 0;" data-shm-main>
     <div class="section-job-result-filter">
         <div class="shade mobile"></div>
         
