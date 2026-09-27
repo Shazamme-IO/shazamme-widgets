@@ -1380,6 +1380,22 @@ function SalaryFilter(opts) {
 }
 
 const ux = new UX();
+
+// Single reveal path for the shell, which ships hidden (class="hidden" + inline
+// visibility/opacity). Anything that leaves it hidden leaves a blank 900px block, so
+// this must also run on failure. It re-adds shaz-job-results because .editor-only,
+// .section-editor and every colour token are scoped to it — revealing without that
+// class puts the editor-only Save/Remove Default Filter buttons on a public page.
+// Registered here rather than next to the boot chain: ~1500 lines of top-level init
+// follow, and a synchronous throw in any of it would skip a timer declared after them.
+const revealShell = () => ux.el
+    .addClass('shaz-job-results')
+    .find('.shmMainContainer')
+    .removeClass('hidden')
+    .css({ visibility: 'visible', opacity: '1', transition: 'opacity 0.3s ease' });
+
+setTimeout(revealShell, 5000);
+
 const shApi = new ShApi();
 const jobResultsPageSize = parseInt(data.config.pageSize) || 20;
 
@@ -2697,15 +2713,7 @@ const main = (w) => {
         });
     }
 
-    ux.el
-        .addClass('shaz-job-results')
-        .find('.shmMainContainer')
-        .removeClass('hidden')
-        .css({ visibility: 'visible', opacity: '0', transition: 'opacity 0.3s ease' });
-
-    requestAnimationFrame(() => {
-        ux.el.find('.shmMainContainer').css('opacity', '1');
-    });
+    revealShell();
 
     if (data.config.dialogWaitAnimation?.indexOf('lottie.host') >= 0) {
         data.config.dialogWaitAnimation = 'https://assets2.lottiefiles.com/packages/lf20_szlepvdh.json';
@@ -2948,16 +2956,6 @@ if (data.device === 'mobile') {
             .show();
     }
 }
-
-// Fail-safe: the shell now ships hidden (class="hidden" + inline visibility/opacity),
-// so any rejection in the boot chain below would leave a permanently blank 900px block.
-// A brief flash of the un-initialised shell is strictly better than a blank widget.
-const revealShell = () => ux.el
-    .find('.shmMainContainer')
-    .removeClass('hidden')
-    .css({ visibility: 'visible', opacity: '1' });
-
-setTimeout(revealShell, 5000);
 
 ux.loadScript('https://sdk.shazamme.io/js/shazamme-1.0.3.min.js')
     .then( () => shazamme.ready((data.inEditor && data.config.debugSiteID) || data.siteId, data.page) )
