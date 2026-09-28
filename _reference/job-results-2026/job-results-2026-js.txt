@@ -1,3 +1,17 @@
+// Fail-safe, first statement in the tab: the shell ships hidden, so ANY throw below
+// would leave a blank 900px block where the widget used to paint. Deliberately uses
+// only `element` - no ux, no jQuery, no data.config - so nothing below it can stop it
+// being armed. Re-adds shaz-job-results because .editor-only and the colour tokens are
+// scoped to it. Only a parse error in the tab itself can now skip this.
+setTimeout(function () {
+    var shell = element.querySelector('.shmMainContainer');
+    if (!shell || !shell.classList.contains('hidden')) return;
+    element.classList.add('shaz-job-results');
+    shell.classList.remove('hidden');
+    shell.style.setProperty('visibility', 'visible');
+    shell.style.setProperty('opacity', '1');
+}, 5000);
+
 const ActionUrl = 'https://shazamme.io/Job-Listing/src/php/actions';
 
 const Path = {
@@ -1380,6 +1394,27 @@ function SalaryFilter(opts) {
 }
 
 const ux = new UX();
+
+// Single reveal path for the shell, which ships hidden (class="hidden" + inline
+// visibility/opacity). Anything that leaves it hidden leaves a blank 900px block, so
+// this must also run on failure. It re-adds shaz-job-results because .editor-only,
+// .section-editor and every colour token are scoped to it — revealing without that
+// class puts the editor-only Save/Remove Default Filter buttons on a public page.
+// Registered here rather than next to the boot chain: ~1500 lines of top-level init
+// follow, and a synchronous throw in any of it would skip a timer declared after them.
+const revealShell = () => {
+    // A tap on the mobile toolbar's Filter button before the reveal toggles .active on a
+    // shell nobody can see, so the widget would appear with the drawer already open.
+    ux.el.find('.section-job-result-filter').removeClass('active');
+    ux.el.find('.section-details').removeClass('blur');
+
+    ux.el
+        .addClass('shaz-job-results')
+        .find('.shmMainContainer')
+        .removeClass('hidden')
+        .css({ visibility: 'visible', opacity: '1', transition: 'opacity 0.3s ease' });
+};
+
 const shApi = new ShApi();
 const jobResultsPageSize = parseInt(data.config.pageSize) || 20;
 
@@ -2697,10 +2732,7 @@ const main = (w) => {
         });
     }
 
-    ux.el
-        .addClass('shaz-job-results')
-        .find('.shmMainContainer')
-        .removeClass('hidden');
+    revealShell();
 
     if (data.config.dialogWaitAnimation?.indexOf('lottie.host') >= 0) {
         data.config.dialogWaitAnimation = 'https://assets2.lottiefiles.com/packages/lf20_szlepvdh.json';
@@ -2947,14 +2979,15 @@ if (data.device === 'mobile') {
 ux.loadScript('https://sdk.shazamme.io/js/shazamme-1.0.3.min.js')
     .then( () => shazamme.ready((data.inEditor && data.config.debugSiteID) || data.siteId, data.page) )
     .then( () => Promise.all([
-            shazamme.style('https://sdk.shazamme.io/css/fontawesome/css/fontawesome.min.css>'),
+            shazamme.style('https://sdk.shazamme.io/css/fontawesome/css/fontawesome.min.css'),
             shazamme.style('https://sdk.shazamme.io/css/fontawesome/css/regular.min.css'),
             data.config.apikey?.length > 0
                 && shazamme.gapi(data.config.apikey).maps(['maps', data.config.enableProximitySearch && 'places' ])
                 || Promise.resolve(),
         ])
     )
-    .then( () => main(shazamme.register('job-results', data)) );
+    .then( () => main(shazamme.register('job-results', data)) )
+    .catch( e => { console.warn('[job-results-2026] boot failed', e); revealShell(); } );
 
 ux.loadScript('https://sdk.shazamme.io/plugin/lottie-files/lottie-player-2.0.8.js')
     .then();
