@@ -53,14 +53,20 @@ async function mount(useDefaults: boolean, page = PAGE) {
   if (!win.jQuery) win.eval(JQUERY);
   // Live sites load jQuery UI, whose $.fn.autocomplete throws when called with a method
   // name before init. jQuery routes a matching key in $(html, props) to that plugin.
+  // Any attribute key that also names a $.fn plugin is routed to the plugin when passed
+  // in a $(html, props) bag. Stub one for every key the builders set, so a regression
+  // back to a props bag fails here, not on a live site.
   const jqueryUiCalls: unknown[] = [];
-  (win as Record<string, any>).jQuery.fn.autocomplete = function (this: unknown, opt: unknown) {
-    jqueryUiCalls.push(opt);
-    if (typeof opt === 'string') {
-      throw new Error(`cannot call methods on autocomplete prior to initialization; attempted to call method '${opt}'`);
-    }
-    return this;
-  };
+  const fn = (win as Record<string, any>).jQuery.fn;
+  for (const key of ['autocomplete', 'type', 'title', 'placeholder', 'class']) {
+    fn[key] = function (this: unknown, opt: unknown) {
+      jqueryUiCalls.push([key, opt]);
+      if (key === 'autocomplete' && typeof opt === 'string') {
+        throw new Error(`cannot call methods on autocomplete prior to initialization; attempted to call method '${opt}'`);
+      }
+      return this;
+    };
+  }
 
   const auth = vi.fn(() => Promise.resolve({}));
   const w = {
@@ -104,7 +110,7 @@ describe.each([
   let ctx: Awaited<ReturnType<typeof mount>>;
   beforeEach(async () => { ctx = await mount(useDefaults); });
 
-  it('never invokes the jQuery UI autocomplete plugin the live sites load', () => {
+  it('never routes a field attribute to a same-named jQuery plugin (jQuery UI autocomplete)', () => {
     expect(ctx.jqueryUiCalls).toEqual([]);
   });
 
