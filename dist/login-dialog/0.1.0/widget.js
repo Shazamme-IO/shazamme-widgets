@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 1fb76c2630d4. Registers window.ShazammeWidget["<name>"].
+ * Build 9792fbfb561c. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -83,6 +83,10 @@ var __shazWidgetExport = (() => {
       iconChanged: "site-icon-changed",
       iconPicker: "site-icon-picker"
     };
+    const AUTOCOMPLETE = Object.assign(/* @__PURE__ */ Object.create(null), {
+      uid: "username",
+      secret: "current-password"
+    });
     function UX() {
       this.el = $(element);
       this.uri = new URL(window.location.href);
@@ -112,7 +116,7 @@ var __shazWidgetExport = (() => {
         } else {
           field = $("<input />", {
             "type": f.fieldName === "secret" ? "password" : "email",
-            "autocomplete": { uid: "username", secret: "current-password" }[f.fieldName],
+            "autocomplete": AUTOCOMPLETE[f.fieldName],
             "data-field": f.fieldName,
             "title": f.fieldPlaceholder || f.fieldName,
             "placeholder": f.fieldPlaceholder

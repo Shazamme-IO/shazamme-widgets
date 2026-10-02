@@ -43,6 +43,7 @@ const FIELDS = [
   { fieldName: 'uid', fieldPlaceholder: 'Email' },
   { fieldName: 'secret', fieldPlaceholder: 'Password' },
   { fieldName: 'code', fieldPlaceholder: 'Access code' },
+  { fieldName: 'toString', fieldPlaceholder: 'Inherited key' },
   { fieldName: 'button', fieldLabel: 'Forgot password?', buttonLink: '/forgot-password' },
 ];
 
@@ -116,6 +117,7 @@ describe.each([
 
   it('labels only the uid field as the username', () => {
     expect(ctx.q<HTMLInputElement>('[data-field=code]').hasAttribute('autocomplete')).toBe(false);
+    expect(ctx.q<HTMLInputElement>('[data-field=toString]').hasAttribute('autocomplete')).toBe(false);
   });
 
   it('does not change the layout box the fields sit in', () => {

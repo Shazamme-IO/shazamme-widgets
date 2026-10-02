@@ -15,6 +15,11 @@ const Subscribe = {
     iconPicker    : 'site-icon-picker',
 }
 
+const AUTOCOMPLETE = Object.assign(Object.create(null), {
+    uid    : 'username',
+    secret : 'current-password',
+});
+
 function UX() {
     this.el = $(element);
     this.uri = new URL(window.location.href);
@@ -47,7 +52,7 @@ function UX() {
         } else {
             field = $('<input />', {
                 'type': f.fieldName === 'secret' ? 'password' : 'email',
-                'autocomplete': { uid: 'username', secret: 'current-password' }[f.fieldName],
+                'autocomplete': AUTOCOMPLETE[f.fieldName],
                 'data-field': f.fieldName,
                 'title': f.fieldPlaceholder || f.fieldName,
                 'placeholder': f.fieldPlaceholder,
