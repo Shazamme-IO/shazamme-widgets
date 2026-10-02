@@ -12,7 +12,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const VERSION = JSON.parse(readFileSync(join(here, '..', '..', 'package.json'), 'utf8')).version as string;
-const BUNDLE = readFileSync(join(here, '..', '..', 'dist', 'login-dialog', VERSION, 'widget.js'), 'utf8');
+const BUNDLE = readFileSync(join(here, '..', '..', 'dist', 'login-dialog', VERSION, 'widget.min.js'), 'utf8');
 const JQUERY = readFileSync(createRequire(import.meta.url).resolve('jquery/dist/jquery.js'), 'utf8');
 
 // Trimmed from the live login-dialog template on shk.com.au/jobs, with the job-results
@@ -53,7 +53,9 @@ async function mount(useDefaults: boolean, page = PAGE) {
   if (!win.jQuery) win.eval(JQUERY);
   // Live sites load jQuery UI, whose $.fn.autocomplete throws when called with a method
   // name before init. jQuery routes a matching key in $(html, props) to that plugin.
+  const jqueryUiCalls: unknown[] = [];
   (win as Record<string, any>).jQuery.fn.autocomplete = function (this: unknown, opt: unknown) {
+    jqueryUiCalls.push(opt);
     if (typeof opt === 'string') {
       throw new Error(`cannot call methods on autocomplete prior to initialization; attempted to call method '${opt}'`);
     }
@@ -92,7 +94,7 @@ async function mount(useDefaults: boolean, page = PAGE) {
   await vi.waitFor(() => expect(win.document.querySelector('[data-field=secret]')).not.toBeNull());
 
   const q = <T extends Element>(s: string) => win.document.querySelector(s) as unknown as T;
-  return { win, auth, q, run };
+  return { win, auth, q, run, jqueryUiCalls };
 }
 
 describe.each([
@@ -101,6 +103,10 @@ describe.each([
 ])('login-dialog form scope (%s)', (_, useDefaults) => {
   let ctx: Awaited<ReturnType<typeof mount>>;
   beforeEach(async () => { ctx = await mount(useDefaults); });
+
+  it('never invokes the jQuery UI autocomplete plugin the live sites load', () => {
+    expect(ctx.jqueryUiCalls).toEqual([]);
+  });
 
   it('puts the password field in a form of its own', () => {
     const secret = ctx.q<HTMLInputElement>('[data-field=secret]');

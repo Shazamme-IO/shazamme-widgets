@@ -41,7 +41,10 @@ function UX() {
         }
 
         if (f.fieldName === 'button') {
-            field = $('<button />', {
+            // .attr() rather than a $(html, props) bag: jQuery calls $.fn[key] for any
+            // prop key that names a plugin, and live sites load jQuery UI, whose
+            // $.fn.autocomplete throws when given 'username' — no fields render.
+            field = $('<button />').attr({
                 'type': 'button',
                 'class': 'field-button',
                 'data-button-link': f.buttonLink?.href || f.buttonLink,
@@ -50,18 +53,13 @@ function UX() {
 
             field.append(`<span class='text'>${f.fieldLabel}</span>`);
         } else {
-            field = $('<input />', {
+            field = $('<input />').attr({
                 'type': f.fieldName === 'secret' ? 'password' : 'email',
+                'autocomplete': AUTOCOMPLETE[f.fieldName],
                 'data-field': f.fieldName,
                 'title': f.fieldPlaceholder || f.fieldName,
                 'placeholder': f.fieldPlaceholder,
             });
-
-            // Not in the props bag: jQuery calls $.fn[key] for any key that is a plugin,
-            // and jQuery UI's $.fn.autocomplete throws on 'username' — no fields render.
-            if (AUTOCOMPLETE[f.fieldName]) {
-                field.attr('autocomplete', AUTOCOMPLETE[f.fieldName]);
-            }
 
             if (f.fieldLabel?.length > 0) {
                 el.append($(`<label class='text'>${f.fieldLabel}</label>`));
