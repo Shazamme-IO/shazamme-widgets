@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const VERSION = JSON.parse(readFileSync(join(here, '..', '..', 'package.json'), 'utf8')).version as string;
@@ -47,25 +47,38 @@ const FIELDS = [
   { fieldName: 'button', fieldLabel: 'Forgot password?', buttonLink: '/forgot-password' },
 ];
 
+// $(html, { attr: value }) calls $.fn[attr](value) whenever a plugin of that name is
+// loaded. Live sites load jQuery UI, whose $.fn.autocomplete threw on 'username' and left
+// the dialog with no fields. Record every element built that way, from every mount path,
+// and keep a jQuery UI-style autocomplete on the page as the live sites have it.
+const propsBagCalls: string[] = [];
+
+function installPropsBagGuard($: any) {
+  const init = $.fn.init;
+  const guarded = function (this: unknown, selector: unknown, context: unknown, root: unknown) {
+    if (typeof selector === 'string' && selector.trim().startsWith('<')
+      && context && Object.getPrototypeOf(context) === Object.prototype) {
+      propsBagCalls.push(selector);
+    }
+    return new init(selector, context, root);
+  };
+  guarded.prototype = $.fn;
+  $.fn.init = guarded;
+
+  $.fn.autocomplete = function (this: unknown, opt: unknown) {
+    if (typeof opt === 'string') {
+      throw new Error(`cannot call methods on autocomplete prior to initialization; attempted to call method '${opt}'`);
+    }
+    return this;
+  };
+}
+
 async function mount(useDefaults: boolean, page = PAGE) {
   const win = window as unknown as Window & typeof globalThis & Record<string, any>;
   win.document.body.innerHTML = page;
-  if (!win.jQuery) win.eval(JQUERY);
-  // Live sites load jQuery UI, whose $.fn.autocomplete throws when called with a method
-  // name before init. jQuery routes a matching key in $(html, props) to that plugin.
-  // Any attribute key that also names a $.fn plugin is routed to the plugin when passed
-  // in a $(html, props) bag. Stub one for every key the builders set, so a regression
-  // back to a props bag fails here, not on a live site.
-  const jqueryUiCalls: unknown[] = [];
-  const fn = (win as Record<string, any>).jQuery.fn;
-  for (const key of ['autocomplete', 'type', 'title', 'placeholder', 'class']) {
-    fn[key] = function (this: unknown, opt: unknown) {
-      jqueryUiCalls.push([key, opt]);
-      if (key === 'autocomplete' && typeof opt === 'string') {
-        throw new Error(`cannot call methods on autocomplete prior to initialization; attempted to call method '${opt}'`);
-      }
-      return this;
-    };
+  if (!win.jQuery) {
+    win.eval(JQUERY);
+    installPropsBagGuard((win as Record<string, any>).jQuery);
   }
 
   const auth = vi.fn(() => Promise.resolve({}));
@@ -100,7 +113,7 @@ async function mount(useDefaults: boolean, page = PAGE) {
   await vi.waitFor(() => expect(win.document.querySelector('[data-field=secret]')).not.toBeNull());
 
   const q = <T extends Element>(s: string) => win.document.querySelector(s) as unknown as T;
-  return { win, auth, q, run, jqueryUiCalls };
+  return { win, auth, q, run };
 }
 
 describe.each([
@@ -108,10 +121,12 @@ describe.each([
   ['default fields', true],
 ])('login-dialog form scope (%s)', (_, useDefaults) => {
   let ctx: Awaited<ReturnType<typeof mount>>;
-  beforeEach(async () => { ctx = await mount(useDefaults); });
-
-  it('never routes a field attribute to a same-named jQuery plugin (jQuery UI autocomplete)', () => {
-    expect(ctx.jqueryUiCalls).toEqual([]);
+  beforeEach(async () => {
+    propsBagCalls.length = 0;
+    ctx = await mount(useDefaults);
+  });
+  afterEach(() => {
+    expect(propsBagCalls, 'built with a $(html, props) bag').toEqual([]);
   });
 
   it('puts the password field in a form of its own', () => {

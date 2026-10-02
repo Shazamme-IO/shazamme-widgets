@@ -40,9 +40,9 @@ function UX() {
             return el;
         }
 
-        // Both builders use .attr() rather than a $(html, props) bag: jQuery calls
-        // $.fn[key] for any prop key that names a plugin, and live sites load jQuery UI,
-        // whose $.fn.autocomplete throws when given 'username' — no fields render.
+        // Never build these with a $(html, props) bag: jQuery calls $.fn[key] for any
+        // prop key that names a loaded plugin, and sites load arbitrary plugins. jQuery
+        // UI's $.fn.autocomplete threw on 'username' and the dialog rendered no fields.
         if (f.fieldName === 'button') {
             field = $('<button />').attr({
                 'type': 'button',
