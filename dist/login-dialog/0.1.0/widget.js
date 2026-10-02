@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 9792fbfb561c. Registers window.ShazammeWidget["<name>"].
+ * Build 0f9d2513de15. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -106,7 +106,7 @@ var __shazWidgetExport = (() => {
           return el;
         }
         if (f.fieldName === "button") {
-          field = $("<button />", {
+          field = $("<button />").attr({
             "type": "button",
             "class": "field-button",
             "data-button-link": ((_a = f.buttonLink) == null ? void 0 : _a.href) || f.buttonLink,
@@ -114,7 +114,7 @@ var __shazWidgetExport = (() => {
           });
           field.append(`<span class='text'>${f.fieldLabel}</span>`);
         } else {
-          field = $("<input />", {
+          field = $("<input />").attr({
             "type": f.fieldName === "secret" ? "password" : "email",
             "autocomplete": AUTOCOMPLETE[f.fieldName],
             "data-field": f.fieldName,

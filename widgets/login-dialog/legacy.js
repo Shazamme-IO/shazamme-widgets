@@ -40,8 +40,11 @@ function UX() {
             return el;
         }
 
+        // Never build these with a $(html, props) bag: jQuery calls $.fn[key] for any
+        // prop key that names a loaded plugin, and sites load arbitrary plugins. jQuery
+        // UI's $.fn.autocomplete threw on 'username' and the dialog rendered no fields.
         if (f.fieldName === 'button') {
-            field = $('<button />', {
+            field = $('<button />').attr({
                 'type': 'button',
                 'class': 'field-button',
                 'data-button-link': f.buttonLink?.href || f.buttonLink,
@@ -50,7 +53,7 @@ function UX() {
 
             field.append(`<span class='text'>${f.fieldLabel}</span>`);
         } else {
-            field = $('<input />', {
+            field = $('<input />').attr({
                 'type': f.fieldName === 'secret' ? 'password' : 'email',
                 'autocomplete': AUTOCOMPLETE[f.fieldName],
                 'data-field': f.fieldName,
