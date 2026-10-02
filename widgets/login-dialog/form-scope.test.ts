@@ -51,6 +51,14 @@ async function mount(useDefaults: boolean, page = PAGE) {
   const win = window as unknown as Window & typeof globalThis & Record<string, any>;
   win.document.body.innerHTML = page;
   if (!win.jQuery) win.eval(JQUERY);
+  // Live sites load jQuery UI, whose $.fn.autocomplete throws when called with a method
+  // name before init. jQuery routes a matching key in $(html, props) to that plugin.
+  (win as Record<string, any>).jQuery.fn.autocomplete = function (this: unknown, opt: unknown) {
+    if (typeof opt === 'string') {
+      throw new Error(`cannot call methods on autocomplete prior to initialization; attempted to call method '${opt}'`);
+    }
+    return this;
+  };
 
   const auth = vi.fn(() => Promise.resolve({}));
   const w = {

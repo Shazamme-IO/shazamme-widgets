@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 9792fbfb561c. Registers window.ShazammeWidget["<name>"].
+ * Build 83a3b84b2407. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -116,11 +116,13 @@ var __shazWidgetExport = (() => {
         } else {
           field = $("<input />", {
             "type": f.fieldName === "secret" ? "password" : "email",
-            "autocomplete": AUTOCOMPLETE[f.fieldName],
             "data-field": f.fieldName,
             "title": f.fieldPlaceholder || f.fieldName,
             "placeholder": f.fieldPlaceholder
           });
+          if (AUTOCOMPLETE[f.fieldName]) {
+            field.attr("autocomplete", AUTOCOMPLETE[f.fieldName]);
+          }
           if (((_b = f.fieldLabel) == null ? void 0 : _b.length) > 0) {
             el.append($(`<label class='text'>${f.fieldLabel}</label>`));
           }

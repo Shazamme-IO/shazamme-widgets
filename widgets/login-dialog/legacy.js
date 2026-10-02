@@ -52,11 +52,16 @@ function UX() {
         } else {
             field = $('<input />', {
                 'type': f.fieldName === 'secret' ? 'password' : 'email',
-                'autocomplete': AUTOCOMPLETE[f.fieldName],
                 'data-field': f.fieldName,
                 'title': f.fieldPlaceholder || f.fieldName,
                 'placeholder': f.fieldPlaceholder,
             });
+
+            // Not in the props bag: jQuery calls $.fn[key] for any key that is a plugin,
+            // and jQuery UI's $.fn.autocomplete throws on 'username' — no fields render.
+            if (AUTOCOMPLETE[f.fieldName]) {
+                field.attr('autocomplete', AUTOCOMPLETE[f.fieldName]);
+            }
 
             if (f.fieldLabel?.length > 0) {
                 el.append($(`<label class='text'>${f.fieldLabel}</label>`));
