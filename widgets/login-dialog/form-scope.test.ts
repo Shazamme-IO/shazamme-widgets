@@ -42,13 +42,14 @@ const PAGE = `
 const FIELDS = [
   { fieldName: 'uid', fieldPlaceholder: 'Email' },
   { fieldName: 'secret', fieldPlaceholder: 'Password' },
+  { fieldName: 'code', fieldPlaceholder: 'Access code' },
   { fieldName: 'button', fieldLabel: 'Forgot password?', buttonLink: '/forgot-password' },
 ];
 
-async function mount(useDefaults: boolean) {
+async function mount(useDefaults: boolean, page = PAGE) {
   const win = window as unknown as Window & typeof globalThis & Record<string, any>;
-  win.document.body.innerHTML = PAGE;
-  win.eval(JQUERY);
+  win.document.body.innerHTML = page;
+  if (!win.jQuery) win.eval(JQUERY);
 
   const auth = vi.fn(() => Promise.resolve({}));
   const w = {
@@ -71,9 +72,8 @@ async function mount(useDefaults: boolean) {
   };
 
   win.eval(BUNDLE);
-  const element = win.document.getElementById('widget')!;
   const run = () => win.ShazammeWidget['login-dialog']({
-    element,
+    element: win.document.getElementById('widget')!,
     // Most sites run on the defaults, whose fields render after an async lookup.
     data: { config: { fieldList: useDefaults ? [] : FIELDS, useDefaults }, inEditor: false, siteId: 's1' },
     $: win.jQuery,
@@ -114,6 +114,10 @@ describe.each([
     expect(ctx.q<HTMLInputElement>('[data-field=secret]').getAttribute('autocomplete')).toBe('current-password');
   });
 
+  it('labels only the uid field as the username', () => {
+    expect(ctx.q<HTMLInputElement>('[data-field=code]').hasAttribute('autocomplete')).toBe(false);
+  });
+
   it('does not change the layout box the fields sit in', () => {
     const form = ctx.q<HTMLFormElement>('form.login-form');
     expect(form.style.display).toBe('contents');
@@ -140,6 +144,29 @@ describe.each([
     ctx.q<HTMLButtonElement>('[data-rel=button-submit]').click();
     await vi.waitFor(() => expect(ctx.auth).toHaveBeenCalledWith('a@b.co', 'pw'));
     expect(ctx.auth).toHaveBeenCalledTimes(1);
+  });
+
+  it('logs in once on Enter', async () => {
+    ctx.q<HTMLInputElement>('[data-field=uid]').value = 'a@b.co';
+    const secret = ctx.q<HTMLInputElement>('[data-field=secret]');
+    secret.value = 'pw';
+    secret.dispatchEvent(new ctx.win.KeyboardEvent('keyup', { key: 'Enter', keyCode: 13, which: 13, bubbles: true }));
+    await vi.waitFor(() => expect(ctx.auth).toHaveBeenCalledWith('a@b.co', 'pw'));
+    expect(ctx.auth).toHaveBeenCalledTimes(1);
+  });
+
+  it('demotes a template button that is explicitly type=submit', async () => {
+    ctx = await mount(useDefaults, PAGE.replace('class="button-submit"', 'type="submit" class="button-submit"'));
+    expect(ctx.q<HTMLButtonElement>('[data-rel=button-submit]').type).toBe('button');
+  });
+
+  it('still blocks submit when the markup already carries the form', async () => {
+    const serialized = ctx.win.document.body.innerHTML;
+    ctx = await mount(useDefaults, serialized);
+    const form = ctx.q<HTMLFormElement>('form.login-form');
+    const ev = new ctx.win.Event('submit', { bubbles: true, cancelable: true });
+    form.dispatchEvent(ev);
+    expect(ev.defaultPrevented).toBe(true);
   });
 
   it('does not nest a second form when mounted again on the same element', () => {

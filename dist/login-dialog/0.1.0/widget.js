@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 4fbb2d5858fa. Registers window.ShazammeWidget["<name>"].
+ * Build c635cc0331df. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -112,7 +112,7 @@ var __shazWidgetExport = (() => {
         } else {
           field = $("<input />", {
             "type": f.fieldName === "secret" ? "password" : "email",
-            "autocomplete": f.fieldName === "secret" ? "current-password" : "username",
+            "autocomplete": f.fieldName === "secret" ? "current-password" : f.fieldName === "uid" ? "username" : void 0,
             "data-field": f.fieldName,
             "title": f.fieldPlaceholder || f.fieldName,
             "placeholder": f.fieldPlaceholder
@@ -553,8 +553,9 @@ var __shazWidgetExport = (() => {
     ux.el.addClass("login-dialog");
     const fieldSet = ux.el.find("[data-rel=collection-fields]");
     if (!fieldSet.parent().is("form.login-form")) {
-      fieldSet.wrap('<form class="login-form" novalidate></form>').parent().css("display", "contents").on("submit", () => false).find("button:not([type])").attr("type", "button");
+      fieldSet.wrap('<form class="login-form" novalidate></form>');
     }
+    fieldSet.parent().css("display", "contents").off("submit.login-dialog").on("submit.login-dialog", () => false).find("button:not([type=button])").attr("type", "button");
     ux.loadScript("https://sdk.shazamme.io/js/shazamme-1.0.3.min.js").then(() => shazamme.ready(data.siteId, data.page)).then(() => {
       main(shazamme.register("login-dialog", data));
     });

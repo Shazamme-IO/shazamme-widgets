@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Shazamme Duda widgets — one shared core, version-pinned bundles on CloudFront.",
+  "description": "Shazamme Duda widgets \u2014 one shared core, version-pinned bundles on CloudFront.",
   "scripts": {
     "build": "node build/build.mjs",
     "validate": "node scripts/validate.mjs",
