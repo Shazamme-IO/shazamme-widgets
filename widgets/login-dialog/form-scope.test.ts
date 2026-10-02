@@ -121,6 +121,7 @@ describe.each([
   it('does not change the layout box the fields sit in', () => {
     const form = ctx.q<HTMLFormElement>('form.login-form');
     expect(form.style.display).toBe('contents');
+    expect(form.style.getPropertyPriority('display')).toBe('important');
     expect(form.parentElement!.matches('.dialog')).toBe(true);
     expect(form.firstElementChild!.matches('.field-set')).toBe(true);
   });
@@ -146,7 +147,9 @@ describe.each([
     expect(ctx.auth).toHaveBeenCalledTimes(1);
   });
 
-  it('logs in once on Enter', async () => {
+  // jsdom has no implicit submission, so this covers the keyup path only; the
+  // type=button tests above are what keep Enter from also clicking Login.
+  it('logs in once on Enter via the keyup handler', async () => {
     ctx.q<HTMLInputElement>('[data-field=uid]').value = 'a@b.co';
     const secret = ctx.q<HTMLInputElement>('[data-field=secret]');
     secret.value = 'pw';

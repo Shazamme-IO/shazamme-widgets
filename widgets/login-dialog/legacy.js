@@ -47,7 +47,7 @@ function UX() {
         } else {
             field = $('<input />', {
                 'type': f.fieldName === 'secret' ? 'password' : 'email',
-                'autocomplete': f.fieldName === 'secret' ? 'current-password' : f.fieldName === 'uid' ? 'username' : undefined,
+                'autocomplete': { uid: 'username', secret: 'current-password' }[f.fieldName],
                 'data-field': f.fieldName,
                 'title': f.fieldPlaceholder || f.fieldName,
                 'placeholder': f.fieldPlaceholder,
@@ -666,7 +666,7 @@ if (!fieldSet.parent().is('form.login-form')) {
 }
 
 fieldSet.parent()
-    .css('display', 'contents')
+    .each((_, form) => form.style.setProperty('display', 'contents', 'important'))
     .off('submit.login-dialog')
     .on('submit.login-dialog', () => false)
     .find('button:not([type=button])')
