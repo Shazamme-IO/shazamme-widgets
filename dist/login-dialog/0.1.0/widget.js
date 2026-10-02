@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build a2c63e54e26e. Registers window.ShazammeWidget["<name>"].
+ * Build 9792fbfb561c. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -83,6 +83,10 @@ var __shazWidgetExport = (() => {
       iconChanged: "site-icon-changed",
       iconPicker: "site-icon-picker"
     };
+    const AUTOCOMPLETE = Object.assign(/* @__PURE__ */ Object.create(null), {
+      uid: "username",
+      secret: "current-password"
+    });
     function UX() {
       this.el = $(element);
       this.uri = new URL(window.location.href);
@@ -103,6 +107,7 @@ var __shazWidgetExport = (() => {
         }
         if (f.fieldName === "button") {
           field = $("<button />", {
+            "type": "button",
             "class": "field-button",
             "data-button-link": ((_a = f.buttonLink) == null ? void 0 : _a.href) || f.buttonLink,
             "data-button-target": f.buttonTarget || "_self"
@@ -111,6 +116,7 @@ var __shazWidgetExport = (() => {
         } else {
           field = $("<input />", {
             "type": f.fieldName === "secret" ? "password" : "email",
+            "autocomplete": AUTOCOMPLETE[f.fieldName],
             "data-field": f.fieldName,
             "title": f.fieldPlaceholder || f.fieldName,
             "placeholder": f.fieldPlaceholder
@@ -549,6 +555,11 @@ var __shazWidgetExport = (() => {
     };
     dialog.addClass("hidden");
     ux.el.addClass("login-dialog");
+    const fieldSet = ux.el.find("[data-rel=collection-fields]");
+    if (!fieldSet.parent().is("form.login-form")) {
+      fieldSet.wrap('<form class="login-form" novalidate></form>');
+    }
+    fieldSet.parent().each((_, form) => form.style.setProperty("display", "contents", "important")).off("submit.login-dialog").on("submit.login-dialog", () => false).find("button:not([type=button])").attr("type", "button");
     ux.loadScript("https://sdk.shazamme.io/js/shazamme-1.0.3.min.js").then(() => shazamme.ready(data.siteId, data.page)).then(() => {
       main(shazamme.register("login-dialog", data));
     });

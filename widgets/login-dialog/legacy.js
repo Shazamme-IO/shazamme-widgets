@@ -15,6 +15,11 @@ const Subscribe = {
     iconPicker    : 'site-icon-picker',
 }
 
+const AUTOCOMPLETE = Object.assign(Object.create(null), {
+    uid    : 'username',
+    secret : 'current-password',
+});
+
 function UX() {
     this.el = $(element);
     this.uri = new URL(window.location.href);
@@ -37,6 +42,7 @@ function UX() {
 
         if (f.fieldName === 'button') {
             field = $('<button />', {
+                'type': 'button',
                 'class': 'field-button',
                 'data-button-link': f.buttonLink?.href || f.buttonLink,
                 'data-button-target': f.buttonTarget || '_self',
@@ -46,6 +52,7 @@ function UX() {
         } else {
             field = $('<input />', {
                 'type': f.fieldName === 'secret' ? 'password' : 'email',
+                'autocomplete': AUTOCOMPLETE[f.fieldName],
                 'data-field': f.fieldName,
                 'title': f.fieldPlaceholder || f.fieldName,
                 'placeholder': f.fieldPlaceholder,
@@ -651,6 +658,24 @@ let main = (w) => {
 dialog.addClass('hidden');
 
 ux.el.addClass('login-dialog');
+
+// This dialog sits hidden on every page. Left formless, password managers pair its
+// password field with any other formless text input on the page and autofill the saved
+// email into it (the job-results keyword filter). A form of its own scopes that pairing
+// to this dialog; display:contents keeps the layout. Buttons are type=button so Enter
+// does not click Login on top of the keyup handler.
+const fieldSet = ux.el.find('[data-rel=collection-fields]');
+
+if (!fieldSet.parent().is('form.login-form')) {
+    fieldSet.wrap('<form class="login-form" novalidate></form>');
+}
+
+fieldSet.parent()
+    .each((_, form) => form.style.setProperty('display', 'contents', 'important'))
+    .off('submit.login-dialog')
+    .on('submit.login-dialog', () => false)
+    .find('button:not([type=button])')
+    .attr('type', 'button');
 
 ux.loadScript('https://sdk.shazamme.io/js/shazamme-1.0.3.min.js')
     .then( () => shazamme.ready(data.siteId, data.page) )
