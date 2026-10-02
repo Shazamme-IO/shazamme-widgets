@@ -45,7 +45,7 @@ const FIELDS = [
   { fieldName: 'button', fieldLabel: 'Forgot password?', buttonLink: '/forgot-password' },
 ];
 
-async function mount() {
+async function mount(useDefaults: boolean) {
   const win = window as unknown as Window & typeof globalThis & Record<string, any>;
   win.document.body.innerHTML = PAGE;
   win.eval(JQUERY);
@@ -72,21 +72,26 @@ async function mount() {
 
   win.eval(BUNDLE);
   const element = win.document.getElementById('widget')!;
-  win.ShazammeWidget['login-dialog']({
+  const run = () => win.ShazammeWidget['login-dialog']({
     element,
-    data: { config: { fieldList: FIELDS, useDefaults: false }, inEditor: false, siteId: 's1' },
+    // Most sites run on the defaults, whose fields render after an async lookup.
+    data: { config: { fieldList: useDefaults ? [] : FIELDS, useDefaults }, inEditor: false, siteId: 's1' },
     $: win.jQuery,
     shazamme: win.shazamme,
   });
+  run();
   await vi.waitFor(() => expect(win.document.querySelector('[data-field=secret]')).not.toBeNull());
 
   const q = <T extends Element>(s: string) => win.document.querySelector(s) as unknown as T;
-  return { win, auth, q };
+  return { win, auth, q, run };
 }
 
-describe('login-dialog form scope', () => {
+describe.each([
+  ['configured fields', false],
+  ['default fields', true],
+])('login-dialog form scope (%s)', (_, useDefaults) => {
   let ctx: Awaited<ReturnType<typeof mount>>;
-  beforeEach(async () => { ctx = await mount(); });
+  beforeEach(async () => { ctx = await mount(useDefaults); });
 
   it('puts the password field in a form of its own', () => {
     const secret = ctx.q<HTMLInputElement>('[data-field=secret]');
@@ -135,5 +140,10 @@ describe('login-dialog form scope', () => {
     ctx.q<HTMLButtonElement>('[data-rel=button-submit]').click();
     await vi.waitFor(() => expect(ctx.auth).toHaveBeenCalledWith('a@b.co', 'pw'));
     expect(ctx.auth).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not nest a second form when mounted again on the same element', () => {
+    ctx.run();
+    expect(ctx.win.document.querySelectorAll('form.login-form')).toHaveLength(1);
   });
 });

@@ -659,12 +659,17 @@ ux.el.addClass('login-dialog');
 // email into it (the job-results keyword filter). A form of its own scopes that pairing
 // to this dialog; display:contents keeps the layout. Buttons are type=button so Enter
 // does not click Login on top of the keyup handler.
-ux.el.find('[data-rel=collection-fields]')
-    .wrap('<form class="login-form" novalidate style="display:contents"></form>')
-    .parent()
-    .on('submit', () => false)
-    .find('button:not([type])')
-    .attr('type', 'button');
+const fieldSet = ux.el.find('[data-rel=collection-fields]');
+
+if (!fieldSet.parent().is('form.login-form')) {
+    fieldSet
+        .wrap('<form class="login-form" novalidate></form>')
+        .parent()
+        .css('display', 'contents')
+        .on('submit', () => false)
+        .find('button:not([type])')
+        .attr('type', 'button');
+}
 
 ux.loadScript('https://sdk.shazamme.io/js/shazamme-1.0.3.min.js')
     .then( () => shazamme.ready(data.siteId, data.page) )

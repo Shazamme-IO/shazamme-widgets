@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build a42bf15550cc. Registers window.ShazammeWidget["<name>"].
+ * Build 4fbb2d5858fa. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -551,7 +551,10 @@ var __shazWidgetExport = (() => {
     };
     dialog.addClass("hidden");
     ux.el.addClass("login-dialog");
-    ux.el.find("[data-rel=collection-fields]").wrap('<form class="login-form" novalidate style="display:contents"></form>').parent().on("submit", () => false).find("button:not([type])").attr("type", "button");
+    const fieldSet = ux.el.find("[data-rel=collection-fields]");
+    if (!fieldSet.parent().is("form.login-form")) {
+      fieldSet.wrap('<form class="login-form" novalidate></form>').parent().css("display", "contents").on("submit", () => false).find("button:not([type])").attr("type", "button");
+    }
     ux.loadScript("https://sdk.shazamme.io/js/shazamme-1.0.3.min.js").then(() => shazamme.ready(data.siteId, data.page)).then(() => {
       main(shazamme.register("login-dialog", data));
     });
