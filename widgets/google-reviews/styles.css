@@ -1,0 +1,369 @@
+/* google-reviews — Elfsight-equivalent Google Reviews widget.
+   Every colour/size comes from a custom property set on .es-embed-root from the
+   widget's theme settings (index.ts themeVars); the fallbacks here are the
+   Elfsight light-theme defaults. Class names mirror Elfsight's es-* hooks. */
+
+.es-embed-root {
+  --es-font: inherit;
+  --es-review-bg: rgba(248, 248, 248, 1);
+  --es-review-outline: rgba(17, 17, 17, 0.1);
+  --es-review-text: rgba(17, 17, 17, 1);
+  --es-read-more: rgba(0, 109, 255, 1);
+  --es-verified: rgba(0, 109, 255, 1);
+  --es-source-name: rgba(0, 109, 255, 1);
+  --es-review-radius: 8px;
+  --es-review-font-size: 16px;
+  --es-star-size: 20px;
+  --es-rating: rgba(252, 191, 2, 1);
+  --es-header-bg: transparent;
+  --es-header-text: rgba(17, 17, 17, 1);
+  --es-header-radius: 8px;
+  --es-btn-bg: rgba(0, 109, 255, 1);
+  --es-btn-text: #fff;
+  --es-btn-radius: 24px;
+  --es-arrow-bg: rgba(17, 17, 17, 0.5);
+  --es-arrow-color: #fff;
+  --es-arrow-bg-hover: rgba(17, 17, 17, 0.7);
+  --es-arrow-color-hover: #fff;
+  --es-arrow-size: 32px;
+  --es-dot: rgba(17, 17, 17, 1);
+  --es-popup-bg: #fff;
+  --es-popup-text: rgba(17, 17, 17, 1);
+  --es-popup-rating: rgba(252, 191, 2, 1);
+  --es-popup-read-more: rgba(0, 109, 255, 1);
+  --es-badge-bg: #fff;
+  --es-badge-text: rgba(17, 17, 17, 1);
+  --es-badge-rating: rgba(252, 191, 2, 1);
+  --es-badge-radius: 12px;
+  --es-more-bg: rgba(248, 248, 248, 1);
+  --es-more-text: rgb(17, 17, 17);
+  --es-more-radius: 4px;
+  --es-max-width: none;
+  --es-ease: cubic-bezier(0.25, 0.8, 0.25, 1);
+
+  font-family: var(--es-font);
+  color: var(--es-review-text);
+  line-height: 1.4;
+  box-sizing: border-box;
+}
+.es-embed-root *, .es-embed-root *::before, .es-embed-root *::after { box-sizing: border-box; }
+.es-embed-root [hidden] { display: none !important; }
+.es-embed-root button { font: inherit; }
+
+.es-main-container { max-width: var(--es-max-width); margin: 0 auto; }
+.es-widget-background-container {
+  background: var(--es-widget-bg, transparent);
+  border-radius: var(--es-widget-radius, 0);
+  padding: var(--es-widget-pad-y, 0) var(--es-widget-pad-x, 0);
+}
+
+/* ---------- title ---------- */
+.es-widget-title-container { text-align: var(--es-title-align, center); margin-bottom: 24px; }
+.es-widget-title {
+  margin: 0;
+  font-family: var(--es-font);
+  font-size: var(--es-title-size, 24px);
+  font-weight: var(--es-title-weight, 700);
+  line-height: 1.3;
+  color: var(--es-title-color, rgba(17, 17, 17, 1));
+}
+.es-widget-title-caption { margin: 8px 0 0; font-size: 16px; color: var(--es-title-caption-color, rgba(17, 17, 17, 0.7)); }
+
+/* ---------- stars ---------- */
+.es-rating-container { display: inline-flex; gap: 1.5px; vertical-align: middle; }
+.es-rating-item { position: relative; display: inline-block; width: var(--es-star-size); height: var(--es-star-size); }
+.es-rating-item svg { display: block; width: var(--es-star-size); height: var(--es-star-size); }
+.es-rating-item-unfilled path { fill: color-mix(in srgb, var(--es-review-text) 25%, transparent); }
+.es-rating-item-filled { position: absolute; inset: 0 auto 0 0; overflow: hidden; }
+.es-rating-item-filled path { fill: var(--es-rating); }
+
+/* ---------- Google marks ---------- */
+.es-google-g { display: inline-block; width: 1em; height: 1em; vertical-align: -0.125em; }
+.es-google-logo { font-family: 'Product Sans', 'Google Sans', Arial, sans-serif; font-weight: 500; letter-spacing: -0.01em; white-space: nowrap; }
+.es-verified-badge { display: inline-flex; margin-left: 4px; vertical-align: -2px; }
+.es-verified-badge-icon { width: 16px; height: 16px; fill: var(--es-verified); }
+
+/* ---------- header ---------- */
+.es-header-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  margin-bottom: 24px;
+  color: var(--es-header-text);
+  background: var(--es-header-bg);
+  border-radius: var(--es-header-radius);
+}
+.es-header-has-bg .es-header-container { padding: 32px 40px; }
+.es-header-heading-container { display: flex; align-items: baseline; gap: 6px; font-size: 24px; font-weight: 700; line-height: 1.2; }
+.es-header-heading-text { font-size: 24px; font-weight: 700; }
+.es-header-rating-container { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.es-header-rating-container .es-rating-value { font-size: 24px; font-weight: 700; }
+.es-header-rating { --es-star-size: 20px; }
+.es-header-rating-reviews-count { font-size: 13px; opacity: 0.6; }
+.es-header-icon { font-size: 48px; line-height: 1; display: inline-flex; }
+
+.es-header-header2 .es-header-info { display: flex; align-items: center; gap: 16px; }
+.es-header-header2 .es-header-heading-text { font-size: 24px; }
+.es-header-header2 .es-header-icon { font-size: 40px; }
+
+.es-header-header4 { justify-content: flex-start; }
+
+.es-header-header7 { justify-content: center; }
+.es-header-header7 .es-header-info { display: flex; align-items: center; gap: 12px; }
+.es-header-header7 .es-header-heading-logo { font-size: 32px; line-height: 1; }
+.es-header-header7 .es-header-rating-container { margin: 0; }
+.es-header-header7 .es-rating-value { font-size: 28px; }
+.es-header-header7 .es-header-rating { --es-star-size: 24px; }
+
+.es-header-header9 { flex-direction: column; justify-content: center; gap: 8px; }
+.es-header-header9 .es-header-icon { font-size: 34px; }
+.es-header-header9 .es-header-rating-container { margin: 0; }
+.es-header-header9 .es-rating-value { font-size: 28px; }
+.es-header-header9 .es-header-rating { --es-star-size: 21px; }
+.es-header-reviews-total { font-size: 14px; font-weight: 600; opacity: 0.55; }
+
+.es-header-write-review-button,
+.es-load-more-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--es-btn-pad-y, 9px) var(--es-btn-pad-x, 21px);
+  border: 0;
+  border-radius: var(--es-btn-radius);
+  background: var(--es-btn-bg);
+  color: var(--es-btn-text);
+  font-size: var(--es-btn-font-size, 14px);
+  font-weight: 700;
+  line-height: 1.4;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: filter 150ms var(--es-ease), transform 150ms var(--es-ease);
+}
+.es-header-write-review-button:hover, .es-load-more-button:hover { filter: brightness(1.08); }
+.es-header-write-review-button:active, .es-load-more-button:active { transform: translateY(1px); }
+.es-header-write-review-button:focus-visible, .es-load-more-button:focus-visible { outline: 2px solid var(--es-btn-bg); outline-offset: 2px; }
+
+/* ---------- review card ---------- */
+.es-review-container { container-type: inline-size; }
+.es-review-background-container {
+  height: 100%;
+  padding: 24px;
+  background: var(--es-review-bg);
+  border: 1px solid var(--es-review-outline);
+  border-radius: var(--es-review-radius);
+  color: var(--es-review-text);
+  font-size: var(--es-review-font-size);
+}
+.es-review-author-block-container { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.es-review-avatar-container { position: relative; flex: 0 0 40px; width: 40px; height: 40px; }
+.es-avatar-container { display: block; width: 40px; height: 40px; border-radius: 50%; overflow: hidden; }
+.es-avatar-image { display: block; width: 100%; height: 100%; object-fit: cover; }
+.es-avatar-initial { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; color: #fff; font-size: 20px; }
+.es-review-source-sticker {
+  position: absolute; right: -4px; bottom: -4px;
+  display: flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 50%; background: #fff; font-size: 14px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+.es-review-info-container { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.es-review-author-name-container { display: flex; align-items: center; min-width: 0; }
+.es-review-author-name { font-size: 15px; font-weight: 600; line-height: 18px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.es-review-info-caption { font-size: 12px; line-height: 16px; color: color-mix(in srgb, var(--es-review-text) 55%, transparent); white-space: nowrap; }
+.es-review-info-caption .es-google-logo { font-size: 15px; }
+.es-review-info-source-link { text-decoration: none; }
+.es-review-info-source-text { color: var(--es-source-name); }
+
+.es-review-content-container { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+.es-review-content-rating { line-height: 0; }
+.es-review-content-text-container { display: flex; flex-direction: column; align-items: flex-start; }
+.es-text-shortener { white-space: pre-line; line-height: 1.45; overflow-wrap: anywhere; }
+.es-text-shortener.es-is-clamped { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
+.es-text-shortener-control {
+  padding: 0; margin: 0; border: 0; background: none; cursor: pointer;
+  color: var(--es-read-more); font-size: inherit; line-height: 1.45;
+}
+.es-text-shortener-control:hover { text-decoration: underline; }
+.es-text-shortener-control:focus-visible { outline: 2px solid var(--es-read-more); outline-offset: 2px; }
+
+/* Wide classic cards align the body under the name, as Elfsight does. */
+@container (min-width: 320px) {
+  .es-review-layout-classic .es-review-author-block-container:has(.es-review-avatar-container) + .es-review-content-container { padding-left: 52px; }
+}
+
+.es-review-source-bottom { margin-top: 4px; }
+.es-source-logo .es-google-logo { font-size: 24px; }
+.es-source-posted { display: flex; align-items: center; gap: 12px; }
+.es-source-posted .es-google-g { width: 32px; height: 32px; }
+.es-source-posted-text { display: flex; flex-direction: column; line-height: 1.25; }
+.es-posted-on { font-size: 13px; color: color-mix(in srgb, var(--es-review-text) 55%, transparent); }
+.es-source-posted .es-review-info-source { color: var(--es-source-name); text-decoration: none; }
+
+.es-review-reply { margin-top: 8px; padding: 16px 20px; border-radius: 12px; background: color-mix(in srgb, var(--es-review-text) 4%, transparent); }
+.es-review-reply-head { display: flex; align-items: center; gap: 8px; }
+.es-review-reply-label {
+  padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em;
+  background: color-mix(in srgb, var(--es-review-text) 8%, transparent);
+}
+.es-review-reply .es-review-info-date { font-size: 12px; margin: 2px 0 8px; opacity: 0.55; }
+
+/* balloon */
+.es-review-layout-balloon .es-review-background-container { padding: 0; background: none; border: 0; }
+.es-review-balloon {
+  position: relative;
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 24px;
+  background: var(--es-review-bg);
+  border: 1px solid var(--es-review-outline);
+  border-radius: var(--es-review-radius);
+}
+.es-review-balloon::after {
+  content: ''; position: absolute; left: 24px; bottom: -10px;
+  width: 20px; height: 20px; transform: rotate(45deg);
+  background: inherit; border-right: inherit; border-bottom: inherit; border-radius: 0 0 4px 0;
+}
+.es-review-layout-balloon .es-review-author-block-container { margin-top: 24px; padding-left: 8px; }
+
+/* spotlight */
+.es-review-layout-spotlight .es-review-background-container {
+  display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 24px 32px; text-align: center;
+}
+.es-review-layout-spotlight .es-text-shortener { font-size: calc(var(--es-review-font-size) + 2px); }
+.es-review-layout-spotlight .es-review-content-text-container { align-items: center; }
+.es-review-layout-spotlight .es-review-author-block-container { flex-direction: column; gap: 6px; }
+.es-review-layout-spotlight .es-review-info-container { align-items: center; }
+
+/* equal-height cards: carousels always (as Elfsight's do); the grid only when
+   reviewHeightNormalization is on. */
+.es-carousel-layout-item,
+.es-carousel-layout-item > .es-review-container,
+.es-normalize-height .es-grid-layout > .es-review-container { height: 100%; }
+.es-carousel-layout-item .es-review-layout-balloon .es-review-background-container,
+.es-normalize-height .es-grid-layout .es-review-layout-balloon .es-review-background-container { display: flex; flex-direction: column; }
+.es-carousel-layout-item .es-review-balloon,
+.es-normalize-height .es-grid-layout .es-review-balloon { flex: 1; }
+
+/* ---------- carousel / slider ---------- */
+.es-carousel-layout { position: relative; }
+.es-carousel-viewport { overflow: hidden; touch-action: pan-y; transition: height 300ms var(--es-ease); }
+.es-layout-slider .es-carousel-track { align-items: flex-start; }
+.es-layout-slider .es-carousel-layout-item,
+.es-layout-slider .es-carousel-layout-item > .es-review-container { height: auto; }
+.es-carousel-track { display: flex; align-items: stretch; transition-property: transform; transition-timing-function: var(--es-ease); will-change: transform; }
+.es-carousel-slide { flex: 0 0 auto; }
+.es-carousel-arrow {
+  position: absolute; top: 50%; z-index: 2;
+  display: flex; align-items: center; justify-content: center;
+  width: var(--es-arrow-size); height: var(--es-arrow-size); margin-top: calc(var(--es-arrow-size) / -2);
+  padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+  background: var(--es-arrow-bg); color: var(--es-arrow-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: background-color 150ms var(--es-ease), color 150ms var(--es-ease), transform 150ms var(--es-ease);
+}
+.es-carousel-arrow svg { width: 60%; height: 60%; fill: currentColor; }
+.es-carousel-arrow:hover { background: var(--es-arrow-bg-hover); color: var(--es-arrow-color-hover); }
+.es-carousel-arrow:active { transform: scale(0.94); }
+.es-carousel-arrow:focus-visible { outline: 2px solid var(--es-dot); outline-offset: 2px; }
+.es-carousel-arrow-prev { left: var(--es-arrow-offset, 0px); }
+.es-carousel-arrow-prev svg { transform: rotate(180deg); }
+.es-carousel-arrow-next { right: var(--es-arrow-offset, 0px); }
+.es-carousel-pagination { display: flex; justify-content: center; align-items: center; gap: 6px; min-height: 8px; margin-top: 24px; }
+.es-carousel-dot {
+  padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+  background: var(--es-dot); opacity: 0.4;
+  transition: width 200ms var(--es-ease), height 200ms var(--es-ease), opacity 200ms var(--es-ease);
+}
+.es-carousel-dot.es-dot-main { width: 8px; height: 8px; }
+.es-carousel-dot.es-dot-near { width: 6px; height: 6px; }
+.es-carousel-dot.es-dot-far { width: 4px; height: 4px; }
+.es-carousel-dot.is-active { opacity: 1; }
+
+/* ---------- grid / list / masonry ---------- */
+.es-grid-layout { display: grid; grid-template-columns: repeat(var(--es-cols, 3), minmax(0, 1fr)); gap: var(--es-gap, 20px); }
+.es-embed-root:not(.es-normalize-height) .es-grid-layout { align-items: start; }
+.es-list-layout { display: flex; flex-direction: column; gap: var(--es-gap, 20px); }
+.es-masonry-layout { columns: var(--es-cols, 3); column-gap: var(--es-gap, 20px); }
+.es-masonry-layout > .es-review-container { break-inside: avoid; margin-bottom: var(--es-gap, 20px); }
+.es-load-more-button-container { display: flex; justify-content: center; margin-top: 24px; }
+.es-load-more-button { padding: 9px 52px; border-radius: var(--es-more-radius); background: var(--es-more-bg); color: var(--es-more-text); font-size: 13px; }
+
+/* ---------- badge ---------- */
+.es-badge-wrapper { position: relative; display: flex; }
+.es-badge-inline.es-badge-align-left { justify-content: flex-start; }
+.es-badge-inline.es-badge-align-center { justify-content: center; }
+.es-badge-inline.es-badge-align-right { justify-content: flex-end; }
+.es-badge-floating { position: fixed; z-index: 9999; }
+.es-badge {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 16px 22px;
+  border-radius: var(--es-badge-radius);
+  background: var(--es-badge-bg); color: var(--es-badge-text);
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.12);
+  font-size: 15px; text-align: center;
+}
+.es-badge[role='button'] { cursor: pointer; transition: transform 150ms var(--es-ease), box-shadow 150ms var(--es-ease); }
+.es-badge[role='button']:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16); }
+.es-badge[role='button']:focus-visible { outline: 2px solid var(--es-verified); outline-offset: 2px; }
+.es-badge-icon { font-size: 26px; line-height: 1; }
+.es-badge-label { display: flex; align-items: center; font-weight: 600; }
+.es-badge-rating { display: flex; align-items: center; gap: 6px; --es-rating: var(--es-badge-rating); --es-star-size: 15px; }
+.es-badge-rating .es-rating-value { font-size: 20px; font-weight: 700; }
+.es-badge-count { font-size: 13px; font-weight: 600; opacity: 0.5; }
+.es-badge-size-small .es-badge { padding: 12px 16px; font-size: 13px; }
+.es-badge-size-large .es-badge { padding: 20px 28px; font-size: 17px; }
+.es-badge-close {
+  position: absolute; top: -8px; right: -8px;
+  display: flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+  background: #fff; color: #666; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+.es-badge-close svg { width: 14px; height: 14px; fill: currentColor; }
+
+/* ---------- popup ---------- */
+.es-popup-root { position: fixed; inset: 0; z-index: 2147483000; display: flex; align-items: center; justify-content: center; padding: 32px 16px; }
+.es-popup-overlay { position: absolute; inset: 0; background: rgba(17, 17, 17, 0.85); animation: es-fade 200ms var(--es-ease); }
+.es-popup-content-container {
+  position: relative;
+  width: 100%; max-width: 720px; max-height: 100%;
+  overflow-y: auto; overscroll-behavior: contain;
+  padding: 40px;
+  border-radius: 24px;
+  background: var(--es-popup-bg); color: var(--es-popup-text);
+  animation: es-pop 220ms var(--es-ease);
+}
+.es-popup-close {
+  position: absolute; top: 16px; right: 16px;
+  display: flex; padding: 4px; border: 0; background: none; cursor: pointer; color: var(--es-popup-text);
+}
+.es-popup-close svg { width: 24px; height: 24px; fill: currentColor; }
+.es-popup-content {
+  --es-review-bg: transparent; --es-review-outline: transparent; --es-review-text: var(--es-popup-text);
+  --es-header-text: var(--es-popup-text);
+  --es-rating: var(--es-popup-rating); --es-read-more: var(--es-popup-read-more);
+}
+.es-popup-content .es-header-container { padding: 0 0 24px; margin: 0; background: none; border-bottom: 1px solid color-mix(in srgb, var(--es-popup-text) 12%, transparent); border-radius: 0; }
+.es-popup-content > .es-review-container .es-review-background-container { padding: 0; }
+.es-popup-list > .es-review-container + .es-review-container { border-top: 1px solid color-mix(in srgb, var(--es-popup-text) 12%, transparent); }
+.es-popup-list .es-review-background-container { padding: 32px 0; border: 0; }
+@keyframes es-fade { from { opacity: 0; } }
+@keyframes es-pop { from { opacity: 0; transform: translateY(12px) scale(0.98); } }
+
+@media (max-width: 600px) {
+  .es-header-has-bg .es-header-container { padding: 24px; }
+  .es-popup-content-container { padding: 32px 20px; border-radius: 16px; }
+  .es-header-header7 .es-header-info { flex-wrap: wrap; justify-content: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .es-carousel-track { transition-duration: 0ms !important; }
+  .es-popup-overlay, .es-popup-content-container { animation: none; }
+}
+
+.es-editor-message { padding: 16px; border: 1px dashed #c0c0c0; border-radius: 8px; color: #666; font: 14px/1.4 sans-serif; }
+
+/* The popup runs text full-width under the avatar, as Elfsight's does. */
+.es-popup-content .es-review-layout-classic .es-review-content-container { padding-left: 0; }
+.es-popup-close:focus:not(:focus-visible) { outline: none; }
+.es-popup-close:focus-visible { outline: 2px solid var(--es-popup-read-more); outline-offset: 2px; }
