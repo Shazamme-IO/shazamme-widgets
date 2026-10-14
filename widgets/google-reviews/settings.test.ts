@@ -38,3 +38,34 @@ describe('readSettings', () => {
     expect(s.layout).toBe(DEFAULTS.layout);
   });
 });
+
+describe('readSettings normalisation (hand-pasted JSON)', () => {
+  it('coerces numeric strings and rejects junk numbers', () => {
+    const s = readSettings({ settingsJson: '{"carouselItemSpacing":"20","reviewPreviewLinesNumber":"abc","filterMinRating":9}' });
+    expect(s.carouselItemSpacing).toBe(20);
+    expect(s.reviewPreviewLinesNumber).toBe(DEFAULTS.reviewPreviewLinesNumber);
+    expect(s.filterMinRating).toBe(5);
+  });
+
+  it('drops enum values that are not on the allowlist, so they never reach markup', () => {
+    const s = readSettings({ settingsJson: JSON.stringify({ reviewLayout: 'x"><img src=x onerror=alert(1)>', layout: 'grid list' }) });
+    expect(s.reviewLayout).toBe(DEFAULTS.reviewLayout);
+    expect(s.layout).toBe(DEFAULTS.layout);
+  });
+
+  it('keeps only well-formed keywords, sources and header elements', () => {
+    const s = readSettings({ settingsJson: JSON.stringify({
+      filterIncludeKeywords: [{ keyword: 'Emma' }, null, { keyword: 3 }, 'Barry'],
+      sources: [{ url: ' ChIJ1 ' }, 'bad'],
+      headerElements: ['rating', 'evil'],
+    }) });
+    expect(s.filterIncludeKeywords).toEqual([{ keyword: 'Emma' }, { keyword: 'Barry' }]);
+    expect(s.sources).toEqual([{ url: 'ChIJ1' }, { url: '' }]);
+    expect(s.headerElements).toEqual(['rating']);
+  });
+
+  it('the panel autoplay toggle drives the slider too', () => {
+    const s = readSettings({ layout: 'slider', carouselAutoplay: 'true' });
+    expect(s.sliderAutoplay).toBe(true);
+  });
+});

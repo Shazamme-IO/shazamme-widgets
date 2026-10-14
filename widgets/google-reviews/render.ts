@@ -134,7 +134,7 @@ export function reviewCard(r: Review, ctx: RenderCtx): string {
       `<div class="es-review-content-container">${rating(r, s)}${text(r.text, ctx)}${reply(r, ctx)}${bottomSource(r, s)}</div>`;
   }
   return (
-    `<div class="es-review-container es-review-layout-${s.reviewLayout}" data-review-id="${esc(r.id)}">` +
+    `<div class="es-review-container es-review-layout-${esc(s.reviewLayout)}" data-review-id="${esc(r.id)}">` +
     `<div class="es-review-background-container">${body}</div></div>`
   );
 }
@@ -191,7 +191,7 @@ export function header(ctx: RenderCtx, force = false): string {
       (title ? `<div class="es-header-heading-container"><span class="es-header-heading-logo">${GOOGLE_WORDMARK}</span><span class="es-header-heading-text">Reviews</span></div>` : '') +
       `${headerRating(ctx)}</div>${writeButton(ctx)}`;
   }
-  return `<div class="es-header-container es-header-${layout}">${inner}</div>`;
+  return `<div class="es-header-container es-header-${esc(layout)}">${inner}</div>`;
 }
 
 export function widgetTitle(s: Settings): string {

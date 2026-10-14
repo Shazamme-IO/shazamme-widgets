@@ -54,27 +54,30 @@ function toEpochSeconds(v: unknown): number | null {
 
 type Raw = Record<string, any>;
 
+const text = (v: unknown): string => (typeof v === 'string' ? v : '');
+const list = (v: unknown): Raw[] => (Array.isArray(v) ? v.filter((x): x is Raw => Boolean(x) && typeof x === 'object') : []);
+
 /** Places API (New) place-details response → ReviewData. */
 export function fromPlaces(place: Raw, placeId: string): ReviewData {
-  const reviews: Review[] = (place.reviews ?? []).map((r: Raw, i: number) => ({
-    id: r.name ?? `${placeId}-${i}`,
-    authorName: r.authorAttribution?.displayName ?? '',
-    authorPhoto: r.authorAttribution?.photoUri ?? '',
-    authorUrl: r.authorAttribution?.uri ?? '',
+  const reviews: Review[] = list(place?.reviews).map((r, i) => ({
+    id: text(r.name) || `${placeId}-${i}`,
+    authorName: text(r.authorAttribution?.displayName),
+    authorPhoto: text(r.authorAttribution?.photoUri),
+    authorUrl: text(r.authorAttribution?.uri),
     rating: Number(r.rating) || 0,
-    text: r.text?.text ?? r.originalText?.text ?? '',
+    text: text(r.text?.text) || text(r.originalText?.text),
     publishedAt: toEpochSeconds(r.publishTime),
-    relativeTime: r.relativePublishTimeDescription ?? '',
-    url: r.googleMapsUri ?? r.authorAttribution?.uri ?? '',
+    relativeTime: text(r.relativePublishTimeDescription),
+    url: text(r.googleMapsUri) || text(r.authorAttribution?.uri),
     images: [],
     reply: null,
   }));
   return {
     business: {
-      name: place.displayName?.text ?? '',
-      rating: Number(place.rating) || 0,
-      reviewCount: Number(place.userRatingCount) || reviews.length,
-      reviewsUrl: place.googleMapsUri ?? '',
+      name: text(place?.displayName?.text),
+      rating: Number(place?.rating) || 0,
+      reviewCount: Number(place?.userRatingCount) || reviews.length,
+      reviewsUrl: text(place?.googleMapsUri),
       writeReviewUrl: writeReviewUrl(placeId),
     },
     reviews,
@@ -87,33 +90,35 @@ export function fromPlaces(place: Raw, placeId: string): ReviewData {
  * shape (the one Elfsight's widget consumes), so either can back the widget.
  */
 export function fromFeed(feed: Raw, placeId: string): ReviewData {
-  const root = feed?.result ?? feed;
-  const list: Raw[] = root?.reviews ?? root?.data ?? [];
-  const reviews: Review[] = list.map((r, i) => ({
-    id: String(r.id ?? `${placeId}-${i}`),
-    authorName: r.authorName ?? r.reviewer_name ?? '',
-    authorPhoto: r.authorPhoto ?? r.reviewer_picture_url ?? '',
-    authorUrl: r.authorUrl ?? '',
-    rating: Number(r.rating) || 0,
-    text: r.text ?? '',
-    publishedAt: toEpochSeconds(r.publishedAt ?? r.published_at),
-    relativeTime: r.relativeTime ?? '',
-    url: r.url ?? '',
-    images: Array.isArray(r.images) ? r.images.map((x: Raw | string) => (typeof x === 'string' ? x : x.url)).filter(Boolean) : [],
-    reply: r.reply
-      ? { text: r.reply.text ?? '', publishedAt: toEpochSeconds(r.reply.publishedAt) }
-      : r.response?.text
-        ? { text: r.response.text, publishedAt: toEpochSeconds(r.response.published_at) }
+  const root: Raw = feed?.result ?? feed ?? {};
+  const reviews: Review[] = list(root.reviews ?? root.data).map((r, i) => {
+    const reply: Raw | null = r.reply && typeof r.reply === 'object' ? r.reply : r.response && typeof r.response === 'object' ? r.response : null;
+    return {
+      id: String(r.id ?? `${placeId}-${i}`),
+      authorName: text(r.authorName) || text(r.reviewer_name),
+      authorPhoto: text(r.authorPhoto) || text(r.reviewer_picture_url),
+      authorUrl: text(r.authorUrl),
+      rating: Number(r.rating) || 0,
+      text: text(r.text),
+      publishedAt: toEpochSeconds(r.publishedAt ?? r.published_at),
+      relativeTime: text(r.relativeTime),
+      url: text(r.url),
+      images: (Array.isArray(r.images) ? r.images : [])
+        .map((x: unknown) => (typeof x === 'string' ? x : x && typeof x === 'object' ? text((x as Raw).url) : ''))
+        .filter(Boolean),
+      reply: reply && text(reply.text)
+        ? { text: text(reply.text), publishedAt: toEpochSeconds(reply.publishedAt ?? reply.published_at) }
         : null,
-  }));
-  const b: Raw = root?.business ?? {};
+    };
+  });
+  const b: Raw = root.business && typeof root.business === 'object' ? root.business : {};
   return {
     business: {
-      name: b.name ?? '',
+      name: text(b.name),
       rating: Number(b.rating) || average(reviews),
       reviewCount: Number(b.reviewCount ?? b.reviews_number) || reviews.length,
-      reviewsUrl: b.reviewsUrl ?? '',
-      writeReviewUrl: b.writeReviewUrl ?? writeReviewUrl(placeId),
+      reviewsUrl: text(b.reviewsUrl),
+      writeReviewUrl: text(b.writeReviewUrl) || writeReviewUrl(placeId),
     },
     reviews,
   };
@@ -129,7 +134,8 @@ function readCache(key: string): ReviewData | null {
     const raw = localStorage.getItem(CACHE_PREFIX + key);
     if (!raw) return null;
     const { at, data } = JSON.parse(raw);
-    return Date.now() - at < CACHE_TTL_MS ? (data as ReviewData) : null;
+    const fresh = typeof at === 'number' && Date.now() - at < CACHE_TTL_MS;
+    return fresh && data?.business && Array.isArray(data.reviews) ? (data as ReviewData) : null;
   } catch {
     return null;
   }

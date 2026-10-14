@@ -310,7 +310,8 @@ function parseJson(raw: unknown): Partial<Settings> {
   try {
     const parsed = JSON.parse(raw);
     // Accept either a bare settings object or the full Elfsight widget export.
-    return (parsed?.publishedWidgetRevision?.settings ?? parsed?.settings ?? parsed) as Partial<Settings>;
+    const settings = parsed?.publishedWidgetRevision?.settings ?? parsed?.settings ?? parsed;
+    return settings && typeof settings === 'object' && !Array.isArray(settings) ? (settings as Partial<Settings>) : {};
   } catch (e) {
     console.error('[google-reviews] settingsJson is not valid JSON — using defaults', e);
     return {};
@@ -325,24 +326,90 @@ function keywords(v: unknown): Keyword[] {
   return str(v).split(',').map((k) => k.trim()).filter(Boolean).map((keyword) => ({ keyword }));
 }
 
-/** The Duda panel fields that override the JSON. Empty means "keep the JSON value". */
-function panelOverrides(c: Record<string, unknown>): Partial<Settings> {
-  const o: Partial<Settings> = {};
-  const enumField = <K extends keyof Settings>(key: K, allowed: readonly string[]): void => {
-    const v = str(c[key]);
-    if (allowed.includes(v)) (o as Record<string, unknown>)[key] = v;
+const ENUMS: Partial<Record<keyof Settings, readonly string[]>> = {
+  layout: ['carousel', 'slider', 'grid', 'list', 'masonry', 'cardBadge'],
+  reviewLayout: ['classic', 'balloon', 'spotlight'],
+  reviewSourceStyle: ['text', 'logo', 'icon', 'logoBottom', 'iconBottom'],
+  headerLayout: ['header1', 'header2', 'header4', 'header7', 'header9'],
+  carouselColumnsMode: ['auto', 'custom'],
+  gridColumnsMode: ['auto', 'custom'],
+  masonryColumnsMode: ['auto', 'custom'],
+  reviewTextDisplayMode: ['short', 'full'],
+  reviewAuthorNameFormat: ['fullName', 'firstName', 'firstNameLastInitial'],
+  badgeDisplayMode: ['singleInline', 'singleFloating'],
+  badgeInlinePosition: ['left', 'center', 'right'],
+  badgeSize: ['small', 'medium', 'large'],
+  badgeLabelType: ['custom', 'none'],
+  badgeClickAction: ['openPopup', 'openLink', 'none'],
+  sorting: ['date', 'rating', 'relevance', 'random'],
+};
+const HEADER_ELEMENTS = ['title', 'rating', 'reviewsNumber'] as const;
+
+function finite(v: unknown, fallback: number): number {
+  const n = typeof v === 'number' ? v : typeof v === 'string' && v.trim() ? Number(v) : NaN;
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function keywordList(v: unknown): Keyword[] {
+  if (!Array.isArray(v)) return [];
+  return v
+    .map((k) => (typeof k === 'string' ? k : k && typeof k === 'object' ? (k as Keyword).keyword : ''))
+    .filter((k): k is string => typeof k === 'string' && k.trim() !== '')
+    .map((keyword) => ({ keyword }));
+}
+
+/**
+ * Coerce every setting to the type and range DEFAULTS declares. The JSON blob is
+ * hand-pasted, so a string "20" spacing or a stray enum value must not reach the
+ * maths or the markup — anything off-type falls back to the default.
+ */
+function normalise(raw: Record<string, unknown>): Settings {
+  const out: Record<string, unknown> = {};
+  for (const [key, def] of Object.entries(DEFAULTS) as [keyof Settings, unknown][]) {
+    const v = raw[key];
+    const allowed = ENUMS[key];
+    if (allowed) out[key] = typeof v === 'string' && allowed.includes(v) ? v : def;
+    else if (typeof def === 'number') out[key] = finite(v, def);
+    else if (typeof def === 'boolean') out[key] = v === undefined || v === '' ? def : coerceBool(v, def);
+    else if (typeof def === 'string') out[key] = typeof v === 'string' ? v : def;
+    else out[key] = def;
+  }
+  out.filterMinRating = Math.min(5, Math.max(1, out.filterMinRating as number));
+  out.reviewPreviewLinesNumber = Math.max(1, Math.round(out.reviewPreviewLinesNumber as number));
+  out.sources = Array.isArray(raw.sources)
+    ? raw.sources.map((x) => ({ url: x && typeof x === 'object' && typeof (x as { url?: unknown }).url === 'string' ? (x as { url: string }).url.trim() : '' }))
+    : [];
+  out.filterIncludeKeywords = keywordList(raw.filterIncludeKeywords);
+  out.filterExcludeKeywords = keywordList(raw.filterExcludeKeywords);
+  out.headerElements = Array.isArray(raw.headerElements)
+    ? raw.headerElements.filter((e): e is Settings['headerElements'][number] => (HEADER_ELEMENTS as readonly unknown[]).includes(e))
+    : DEFAULTS.headerElements;
+  const ww = (raw.widgetWidth ?? {}) as Record<string, unknown>;
+  out.widgetWidth = { auto: coerceBool(ww.auto, DEFAULTS.widgetWidth.auto), customValue: finite(ww.customValue, DEFAULTS.widgetWidth.customValue) };
+  const fp = (raw.badgeFloatingPosition ?? {}) as Record<string, unknown>;
+  out.badgeFloatingPosition = {
+    position: ['top-left', 'top-right', 'bottom-left', 'bottom-right'].includes(fp.position as string) ? fp.position : DEFAULTS.badgeFloatingPosition.position,
+    horizontalOffset: finite(fp.horizontalOffset, DEFAULTS.badgeFloatingPosition.horizontalOffset),
+    verticalOffset: finite(fp.verticalOffset, DEFAULTS.badgeFloatingPosition.verticalOffset),
   };
-  enumField('layout', ['carousel', 'slider', 'grid', 'list', 'masonry', 'cardBadge']);
-  enumField('reviewLayout', ['classic', 'balloon', 'spotlight']);
-  enumField('headerLayout', ['header1', 'header2', 'header4', 'header7', 'header9']);
-  enumField('reviewSourceStyle', ['text', 'logo', 'icon', 'logoBottom', 'iconBottom']);
-  enumField('badgeDisplayMode', ['singleInline', 'singleFloating']);
-  for (const key of ['showOverallRating', 'showWriteReviewButton', 'widgetTitle', 'carouselAutoplay'] as const) {
+  return out as unknown as Settings;
+}
+
+/** The Duda panel fields that override the JSON. Empty means "keep the JSON value". */
+function panelOverrides(c: Record<string, unknown>): Record<string, unknown> {
+  const o: Record<string, unknown> = {};
+  for (const key of ['layout', 'reviewLayout', 'headerLayout', 'reviewSourceStyle', 'badgeDisplayMode'] as const) {
+    if (str(c[key])) o[key] = str(c[key]);
+  }
+  for (const key of ['showOverallRating', 'showWriteReviewButton', 'widgetTitle'] as const) {
     if (c[key] !== undefined && c[key] !== '') o[key] = coerceBool(c[key]);
   }
+  // One autoplay toggle in the panel drives both the carousel and the slider.
+  if (c.carouselAutoplay !== undefined && c.carouselAutoplay !== '') {
+    o.carouselAutoplay = o.sliderAutoplay = coerceBool(c.carouselAutoplay);
+  }
   if (str(c.widgetTitleTitle)) o.widgetTitleTitle = str(c.widgetTitleTitle);
-  const min = Number(str(c.filterMinRating));
-  if (min >= 1 && min <= 5) o.filterMinRating = min;
+  if (str(c.filterMinRating)) o.filterMinRating = str(c.filterMinRating);
   if (str(c.includeKeywords)) o.filterIncludeKeywords = keywords(c.includeKeywords);
   if (str(c.excludeKeywords)) o.filterExcludeKeywords = keywords(c.excludeKeywords);
   if (str(c.placeId)) o.sources = [{ url: str(c.placeId) }];
@@ -385,11 +452,16 @@ function mergeTheme(...layers: (ThemeSettings | undefined)[]): ThemeSettings {
 
 export function readSettings(config: Record<string, unknown> = {}): Settings {
   const json = parseJson(config.settingsJson);
-  const merged = { ...DEFAULTS, ...json, ...panelOverrides(config) } as Settings;
+  const merged = normalise({ ...(json as Record<string, unknown>), ...panelOverrides(config) });
+  const jsonTheme = json.theme?.themeSettings;
   return {
     ...merged,
     theme: {
-      themeSettings: mergeTheme(DEFAULTS.theme.themeSettings, json.theme?.themeSettings, panelTheme(config)),
+      themeSettings: mergeTheme(
+        DEFAULTS.theme.themeSettings,
+        jsonTheme && typeof jsonTheme === 'object' ? jsonTheme : undefined,
+        panelTheme(config),
+      ),
     },
   };
 }

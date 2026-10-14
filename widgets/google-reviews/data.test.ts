@@ -34,6 +34,19 @@ describe('fromFeed', () => {
   });
 });
 
+describe('malformed feeds', () => {
+  it('coerces wrong types instead of throwing, so one bad review cannot blank the widget', () => {
+    const d = fromFeed({ reviews: [null, { reviewer_name: 42, text: { x: 1 }, images: [null, 'https://i/1', { url: 'https://i/2' }] }], business: 'nope' }, 'ChIJ');
+    expect(d.reviews).toHaveLength(1);
+    expect(d.reviews[0]).toMatchObject({ authorName: '', text: '', images: ['https://i/1', 'https://i/2'] });
+    expect(() => selectReviews(d.reviews, readSettings({ filterMinRating: '1' }))).not.toThrow();
+  });
+
+  it('tolerates a non-array data payload', () => {
+    expect(fromFeed({ result: { data: 'oops' } }, 'ChIJ').reviews).toEqual([]);
+  });
+});
+
 describe('selectReviews', () => {
   const s = readSettings({});
   const list = [

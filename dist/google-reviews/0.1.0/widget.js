@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 80cfe08ad679. Registers window.ShazammeWidget["<name>"].
+ * Build 6aa1d43b7d64. Registers window.ShazammeWidget["<name>"].
  */
 (function(){
   if (typeof document === 'undefined') return;
@@ -55,63 +55,65 @@ var __shazWidgetExport = (() => {
     }
     return null;
   }
+  var text = (v) => typeof v === "string" ? v : "";
+  var list = (v) => Array.isArray(v) ? v.filter((x) => Boolean(x) && typeof x === "object") : [];
   function fromPlaces(place, placeId) {
-    var _a, _b, _c, _d;
-    const reviews = ((_a = place.reviews) != null ? _a : []).map((r, i) => {
-      var _a2, _b2, _c2, _d2, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o;
+    var _a;
+    const reviews = list(place == null ? void 0 : place.reviews).map((r, i) => {
+      var _a2, _b, _c, _d, _e, _f;
       return {
-        id: (_a2 = r.name) != null ? _a2 : `${placeId}-${i}`,
-        authorName: (_c2 = (_b2 = r.authorAttribution) == null ? void 0 : _b2.displayName) != null ? _c2 : "",
-        authorPhoto: (_e = (_d2 = r.authorAttribution) == null ? void 0 : _d2.photoUri) != null ? _e : "",
-        authorUrl: (_g = (_f = r.authorAttribution) == null ? void 0 : _f.uri) != null ? _g : "",
+        id: text(r.name) || `${placeId}-${i}`,
+        authorName: text((_a2 = r.authorAttribution) == null ? void 0 : _a2.displayName),
+        authorPhoto: text((_b = r.authorAttribution) == null ? void 0 : _b.photoUri),
+        authorUrl: text((_c = r.authorAttribution) == null ? void 0 : _c.uri),
         rating: Number(r.rating) || 0,
-        text: (_k = (_j = (_h = r.text) == null ? void 0 : _h.text) != null ? _j : (_i = r.originalText) == null ? void 0 : _i.text) != null ? _k : "",
+        text: text((_d = r.text) == null ? void 0 : _d.text) || text((_e = r.originalText) == null ? void 0 : _e.text),
         publishedAt: toEpochSeconds(r.publishTime),
-        relativeTime: (_l = r.relativePublishTimeDescription) != null ? _l : "",
-        url: (_o = (_n = r.googleMapsUri) != null ? _n : (_m = r.authorAttribution) == null ? void 0 : _m.uri) != null ? _o : "",
+        relativeTime: text(r.relativePublishTimeDescription),
+        url: text(r.googleMapsUri) || text((_f = r.authorAttribution) == null ? void 0 : _f.uri),
         images: [],
         reply: null
       };
     });
     return {
       business: {
-        name: (_c = (_b = place.displayName) == null ? void 0 : _b.text) != null ? _c : "",
-        rating: Number(place.rating) || 0,
-        reviewCount: Number(place.userRatingCount) || reviews.length,
-        reviewsUrl: (_d = place.googleMapsUri) != null ? _d : "",
+        name: text((_a = place == null ? void 0 : place.displayName) == null ? void 0 : _a.text),
+        rating: Number(place == null ? void 0 : place.rating) || 0,
+        reviewCount: Number(place == null ? void 0 : place.userRatingCount) || reviews.length,
+        reviewsUrl: text(place == null ? void 0 : place.googleMapsUri),
         writeReviewUrl: writeReviewUrl(placeId)
       },
       reviews
     };
   }
   function fromFeed(feed, placeId) {
-    var _a, _b, _c, _d, _e, _f, _g, _h;
-    const root = (_a = feed == null ? void 0 : feed.result) != null ? _a : feed;
-    const list = (_c = (_b = root == null ? void 0 : root.reviews) != null ? _b : root == null ? void 0 : root.data) != null ? _c : [];
-    const reviews = list.map((r, i) => {
-      var _a2, _b2, _c2, _d2, _e2, _f2, _g2, _h2, _i, _j, _k, _l;
+    var _a, _b, _c, _d;
+    const root = (_b = (_a = feed == null ? void 0 : feed.result) != null ? _a : feed) != null ? _b : {};
+    const reviews = list((_c = root.reviews) != null ? _c : root.data).map((r, i) => {
+      var _a2, _b2, _c2;
+      const reply2 = r.reply && typeof r.reply === "object" ? r.reply : r.response && typeof r.response === "object" ? r.response : null;
       return {
         id: String((_a2 = r.id) != null ? _a2 : `${placeId}-${i}`),
-        authorName: (_c2 = (_b2 = r.authorName) != null ? _b2 : r.reviewer_name) != null ? _c2 : "",
-        authorPhoto: (_e2 = (_d2 = r.authorPhoto) != null ? _d2 : r.reviewer_picture_url) != null ? _e2 : "",
-        authorUrl: (_f2 = r.authorUrl) != null ? _f2 : "",
+        authorName: text(r.authorName) || text(r.reviewer_name),
+        authorPhoto: text(r.authorPhoto) || text(r.reviewer_picture_url),
+        authorUrl: text(r.authorUrl),
         rating: Number(r.rating) || 0,
-        text: (_g2 = r.text) != null ? _g2 : "",
-        publishedAt: toEpochSeconds((_h2 = r.publishedAt) != null ? _h2 : r.published_at),
-        relativeTime: (_i = r.relativeTime) != null ? _i : "",
-        url: (_j = r.url) != null ? _j : "",
-        images: Array.isArray(r.images) ? r.images.map((x) => typeof x === "string" ? x : x.url).filter(Boolean) : [],
-        reply: r.reply ? { text: (_k = r.reply.text) != null ? _k : "", publishedAt: toEpochSeconds(r.reply.publishedAt) } : ((_l = r.response) == null ? void 0 : _l.text) ? { text: r.response.text, publishedAt: toEpochSeconds(r.response.published_at) } : null
+        text: text(r.text),
+        publishedAt: toEpochSeconds((_b2 = r.publishedAt) != null ? _b2 : r.published_at),
+        relativeTime: text(r.relativeTime),
+        url: text(r.url),
+        images: (Array.isArray(r.images) ? r.images : []).map((x) => typeof x === "string" ? x : x && typeof x === "object" ? text(x.url) : "").filter(Boolean),
+        reply: reply2 && text(reply2.text) ? { text: text(reply2.text), publishedAt: toEpochSeconds((_c2 = reply2.publishedAt) != null ? _c2 : reply2.published_at) } : null
       };
     });
-    const b = (_d = root == null ? void 0 : root.business) != null ? _d : {};
+    const b = root.business && typeof root.business === "object" ? root.business : {};
     return {
       business: {
-        name: (_e = b.name) != null ? _e : "",
+        name: text(b.name),
         rating: Number(b.rating) || average(reviews),
-        reviewCount: Number((_f = b.reviewCount) != null ? _f : b.reviews_number) || reviews.length,
-        reviewsUrl: (_g = b.reviewsUrl) != null ? _g : "",
-        writeReviewUrl: (_h = b.writeReviewUrl) != null ? _h : writeReviewUrl(placeId)
+        reviewCount: Number((_d = b.reviewCount) != null ? _d : b.reviews_number) || reviews.length,
+        reviewsUrl: text(b.reviewsUrl),
+        writeReviewUrl: text(b.writeReviewUrl) || writeReviewUrl(placeId)
       },
       reviews
     };
@@ -125,7 +127,8 @@ var __shazWidgetExport = (() => {
       const raw = localStorage.getItem(CACHE_PREFIX + key);
       if (!raw) return null;
       const { at, data } = JSON.parse(raw);
-      return Date.now() - at < CACHE_TTL_MS ? data : null;
+      const fresh = typeof at === "number" && Date.now() - at < CACHE_TTL_MS;
+      return fresh && (data == null ? void 0 : data.business) && Array.isArray(data.reviews) ? data : null;
     } catch (e) {
       return null;
     }
@@ -157,8 +160,8 @@ var __shazWidgetExport = (() => {
     writeCache(cacheKey, data);
     return data;
   }
-  function matches(text2, keyword) {
-    return text2.toLowerCase().includes(keyword.toLowerCase());
+  function matches(text3, keyword) {
+    return text3.toLowerCase().includes(keyword.toLowerCase());
   }
   function selectReviews(reviews, s, random = Math.random) {
     const include = s.filterIncludeKeywords.map((k) => k.keyword.trim()).filter(Boolean);
@@ -339,7 +342,8 @@ var __shazWidgetExport = (() => {
     if (typeof raw !== "string" || !raw.trim()) return {};
     try {
       const parsed = JSON.parse(raw);
-      return (_c = (_b = (_a = parsed == null ? void 0 : parsed.publishedWidgetRevision) == null ? void 0 : _a.settings) != null ? _b : parsed == null ? void 0 : parsed.settings) != null ? _c : parsed;
+      const settings = (_c = (_b = (_a = parsed == null ? void 0 : parsed.publishedWidgetRevision) == null ? void 0 : _a.settings) != null ? _b : parsed == null ? void 0 : parsed.settings) != null ? _c : parsed;
+      return settings && typeof settings === "object" && !Array.isArray(settings) ? settings : {};
     } catch (e) {
       console.error("[google-reviews] settingsJson is not valid JSON \u2014 using defaults", e);
       return {};
@@ -351,23 +355,73 @@ var __shazWidgetExport = (() => {
   function keywords(v) {
     return str(v).split(",").map((k) => k.trim()).filter(Boolean).map((keyword) => ({ keyword }));
   }
+  var ENUMS = {
+    layout: ["carousel", "slider", "grid", "list", "masonry", "cardBadge"],
+    reviewLayout: ["classic", "balloon", "spotlight"],
+    reviewSourceStyle: ["text", "logo", "icon", "logoBottom", "iconBottom"],
+    headerLayout: ["header1", "header2", "header4", "header7", "header9"],
+    carouselColumnsMode: ["auto", "custom"],
+    gridColumnsMode: ["auto", "custom"],
+    masonryColumnsMode: ["auto", "custom"],
+    reviewTextDisplayMode: ["short", "full"],
+    reviewAuthorNameFormat: ["fullName", "firstName", "firstNameLastInitial"],
+    badgeDisplayMode: ["singleInline", "singleFloating"],
+    badgeInlinePosition: ["left", "center", "right"],
+    badgeSize: ["small", "medium", "large"],
+    badgeLabelType: ["custom", "none"],
+    badgeClickAction: ["openPopup", "openLink", "none"],
+    sorting: ["date", "rating", "relevance", "random"]
+  };
+  var HEADER_ELEMENTS = ["title", "rating", "reviewsNumber"];
+  function finite(v, fallback) {
+    const n = typeof v === "number" ? v : typeof v === "string" && v.trim() ? Number(v) : NaN;
+    return Number.isFinite(n) ? n : fallback;
+  }
+  function keywordList(v) {
+    if (!Array.isArray(v)) return [];
+    return v.map((k) => typeof k === "string" ? k : k && typeof k === "object" ? k.keyword : "").filter((k) => typeof k === "string" && k.trim() !== "").map((keyword) => ({ keyword }));
+  }
+  function normalise(raw) {
+    var _a, _b;
+    const out = {};
+    for (const [key, def] of Object.entries(DEFAULTS)) {
+      const v = raw[key];
+      const allowed = ENUMS[key];
+      if (allowed) out[key] = typeof v === "string" && allowed.includes(v) ? v : def;
+      else if (typeof def === "number") out[key] = finite(v, def);
+      else if (typeof def === "boolean") out[key] = v === void 0 || v === "" ? def : coerceBool(v, def);
+      else if (typeof def === "string") out[key] = typeof v === "string" ? v : def;
+      else out[key] = def;
+    }
+    out.filterMinRating = Math.min(5, Math.max(1, out.filterMinRating));
+    out.reviewPreviewLinesNumber = Math.max(1, Math.round(out.reviewPreviewLinesNumber));
+    out.sources = Array.isArray(raw.sources) ? raw.sources.map((x) => ({ url: x && typeof x === "object" && typeof x.url === "string" ? x.url.trim() : "" })) : [];
+    out.filterIncludeKeywords = keywordList(raw.filterIncludeKeywords);
+    out.filterExcludeKeywords = keywordList(raw.filterExcludeKeywords);
+    out.headerElements = Array.isArray(raw.headerElements) ? raw.headerElements.filter((e) => HEADER_ELEMENTS.includes(e)) : DEFAULTS.headerElements;
+    const ww = (_a = raw.widgetWidth) != null ? _a : {};
+    out.widgetWidth = { auto: coerceBool(ww.auto, DEFAULTS.widgetWidth.auto), customValue: finite(ww.customValue, DEFAULTS.widgetWidth.customValue) };
+    const fp = (_b = raw.badgeFloatingPosition) != null ? _b : {};
+    out.badgeFloatingPosition = {
+      position: ["top-left", "top-right", "bottom-left", "bottom-right"].includes(fp.position) ? fp.position : DEFAULTS.badgeFloatingPosition.position,
+      horizontalOffset: finite(fp.horizontalOffset, DEFAULTS.badgeFloatingPosition.horizontalOffset),
+      verticalOffset: finite(fp.verticalOffset, DEFAULTS.badgeFloatingPosition.verticalOffset)
+    };
+    return out;
+  }
   function panelOverrides(c) {
     const o = {};
-    const enumField = (key, allowed) => {
-      const v = str(c[key]);
-      if (allowed.includes(v)) o[key] = v;
-    };
-    enumField("layout", ["carousel", "slider", "grid", "list", "masonry", "cardBadge"]);
-    enumField("reviewLayout", ["classic", "balloon", "spotlight"]);
-    enumField("headerLayout", ["header1", "header2", "header4", "header7", "header9"]);
-    enumField("reviewSourceStyle", ["text", "logo", "icon", "logoBottom", "iconBottom"]);
-    enumField("badgeDisplayMode", ["singleInline", "singleFloating"]);
-    for (const key of ["showOverallRating", "showWriteReviewButton", "widgetTitle", "carouselAutoplay"]) {
+    for (const key of ["layout", "reviewLayout", "headerLayout", "reviewSourceStyle", "badgeDisplayMode"]) {
+      if (str(c[key])) o[key] = str(c[key]);
+    }
+    for (const key of ["showOverallRating", "showWriteReviewButton", "widgetTitle"]) {
       if (c[key] !== void 0 && c[key] !== "") o[key] = coerceBool(c[key]);
     }
+    if (c.carouselAutoplay !== void 0 && c.carouselAutoplay !== "") {
+      o.carouselAutoplay = o.sliderAutoplay = coerceBool(c.carouselAutoplay);
+    }
     if (str(c.widgetTitleTitle)) o.widgetTitleTitle = str(c.widgetTitleTitle);
-    const min = Number(str(c.filterMinRating));
-    if (min >= 1 && min <= 5) o.filterMinRating = min;
+    if (str(c.filterMinRating)) o.filterMinRating = str(c.filterMinRating);
     if (str(c.includeKeywords)) o.filterIncludeKeywords = keywords(c.includeKeywords);
     if (str(c.excludeKeywords)) o.filterExcludeKeywords = keywords(c.excludeKeywords);
     if (str(c.placeId)) o.sources = [{ url: str(c.placeId) }];
@@ -415,11 +469,16 @@ var __shazWidgetExport = (() => {
   function readSettings(config = {}) {
     var _a;
     const json = parseJson(config.settingsJson);
-    const merged = { ...DEFAULTS, ...json, ...panelOverrides(config) };
+    const merged = normalise({ ...json, ...panelOverrides(config) });
+    const jsonTheme = (_a = json.theme) == null ? void 0 : _a.themeSettings;
     return {
       ...merged,
       theme: {
-        themeSettings: mergeTheme(DEFAULTS.theme.themeSettings, (_a = json.theme) == null ? void 0 : _a.themeSettings, panelTheme(config))
+        themeSettings: mergeTheme(
+          DEFAULTS.theme.themeSettings,
+          jsonTheme && typeof jsonTheme === "object" ? jsonTheme : void 0,
+          panelTheme(config)
+        )
       }
     };
   }
@@ -523,7 +582,7 @@ var __shazWidgetExport = (() => {
     if (!date && !source) return "";
     return `<span class="es-review-info-caption"><span class="es-review-info-date">${date}</span>${source}</span>`;
   }
-  function text(body, ctx) {
+  function text2(body, ctx) {
     const { s } = ctx;
     const clamp = !ctx.full && s.reviewTextDisplayMode === "short";
     const style = clamp ? ` style="-webkit-line-clamp:${s.reviewPreviewLinesNumber}"` : "";
@@ -534,7 +593,7 @@ var __shazWidgetExport = (() => {
     const { s, business } = ctx;
     if (!ctx.inPopup || !s.reviewDisplayOwnerReply || !((_a = r.reply) == null ? void 0 : _a.text)) return "";
     const date = relativeTime(r.reply.publishedAt, "", ctx.now);
-    return `<div class="es-review-reply"><div class="es-review-reply-head"><span class="es-review-author-name">${esc(business.name || "Owner")}</span><span class="es-review-reply-label">Owner reply</span></div>` + (date ? `<div class="es-review-info-date">${esc(date)}</div>` : "") + text(r.reply.text, ctx) + `</div>`;
+    return `<div class="es-review-reply"><div class="es-review-reply-head"><span class="es-review-author-name">${esc(business.name || "Owner")}</span><span class="es-review-reply-label">Owner reply</span></div>` + (date ? `<div class="es-review-info-date">${esc(date)}</div>` : "") + text2(r.reply.text, ctx) + `</div>`;
   }
   function rating(r, s) {
     return s.reviewDisplayRating ? `<div class="es-review-content-rating">${stars(r.rating)}</div>` : "";
@@ -562,13 +621,13 @@ var __shazWidgetExport = (() => {
     const { s } = ctx;
     let body;
     if (s.reviewLayout === "balloon") {
-      body = `<div class="es-review-balloon">${rating(r, s)}${text(r.text, ctx)}${bottomSource(r, s)}</div>${author(r, ctx, false)}${reply(r, ctx)}`;
+      body = `<div class="es-review-balloon">${rating(r, s)}${text2(r.text, ctx)}${bottomSource(r, s)}</div>${author(r, ctx, false)}${reply(r, ctx)}`;
     } else if (s.reviewLayout === "spotlight") {
-      body = `${rating(r, s)}${text(r.text, ctx)}${author(r, ctx, false)}${bottomSource(r, s)}${reply(r, ctx)}`;
+      body = `${rating(r, s)}${text2(r.text, ctx)}${author(r, ctx, false)}${bottomSource(r, s)}${reply(r, ctx)}`;
     } else {
-      body = `${author(r, ctx, s.reviewSourceStyle === "text" || s.reviewSourceStyle === "logo")}<div class="es-review-content-container">${rating(r, s)}${text(r.text, ctx)}${reply(r, ctx)}${bottomSource(r, s)}</div>`;
+      body = `${author(r, ctx, s.reviewSourceStyle === "text" || s.reviewSourceStyle === "logo")}<div class="es-review-content-container">${rating(r, s)}${text2(r.text, ctx)}${reply(r, ctx)}${bottomSource(r, s)}</div>`;
     }
-    return `<div class="es-review-container es-review-layout-${s.reviewLayout}" data-review-id="${esc(r.id)}"><div class="es-review-background-container">${body}</div></div>`;
+    return `<div class="es-review-container es-review-layout-${esc(s.reviewLayout)}" data-review-id="${esc(r.id)}"><div class="es-review-background-container">${body}</div></div>`;
   }
   function writeButton(ctx, label = "Review us on Google") {
     const href = safeUrl(ctx.business.writeReviewUrl);
@@ -601,7 +660,7 @@ var __shazWidgetExport = (() => {
     } else {
       inner = `<div class="es-header-info">` + (title ? `<div class="es-header-heading-container"><span class="es-header-heading-logo">${GOOGLE_WORDMARK}</span><span class="es-header-heading-text">Reviews</span></div>` : "") + `${headerRating(ctx)}</div>${writeButton(ctx)}`;
     }
-    return `<div class="es-header-container es-header-${layout}">${inner}</div>`;
+    return `<div class="es-header-container es-header-${esc(layout)}">${inner}</div>`;
   }
   function widgetTitle(s) {
     if (!s.widgetTitle || !s.widgetTitleTitle.trim()) return "";
@@ -669,7 +728,8 @@ var __shazWidgetExport = (() => {
       pagination: slider ? s.sliderPagination : s.carouselPagination,
       arrows: slider ? s.sliderArrowsEnable : s.carouselArrowsEnable,
       arrowsOnMobile: slider ? s.sliderArrowsOnMobileEnable : s.carouselArrowsOnMobileEnable,
-      swipe: s.carouselSwipeDesktopEnable || s.carouselSwipeMobileEnable
+      swipeDesktop: s.carouselSwipeDesktopEnable,
+      swipeMobile: s.carouselSwipeMobileEnable
     };
   }
   function carouselHtml(cards) {
@@ -685,38 +745,50 @@ var __shazWidgetExport = (() => {
       return { index, size: d === 0 ? "main" : d === 1 ? "near" : "far" };
     });
   }
-  function mountCarousel(root, o) {
+  function mountCarousel(root, o, signal) {
+    var _a;
     const viewport = root.querySelector(".es-carousel-viewport");
     const track = root.querySelector(".es-carousel-track");
     const slides = Array.from(track.children);
     const prev = root.querySelector(".es-carousel-arrow-prev");
     const next = root.querySelector(".es-carousel-arrow-next");
     const dots = root.querySelector(".es-carousel-pagination");
+    const on = { signal };
+    const reducedMotion = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const autoplay = o.autoplay && !reducedMotion;
     let index = 0;
     let cols = 1;
     let step = 0;
     let timer = null;
     let hovering = false;
+    let focused = false;
+    let frame = 0;
     const maxIndex = () => Math.max(0, slides.length - cols);
     function paint(animate = true) {
-      var _a, _b;
+      var _a2, _b, _c;
+      const focusedDot = dots.contains(document.activeElement);
+      const focusedArrow = document.activeElement === prev ? prev : document.activeElement === next ? next : null;
       track.style.transitionDuration = animate ? `${o.speed}ms` : "0ms";
       track.style.transform = `translate3d(${-index * step}px,0,0)`;
       const mobile = root.clientWidth < MOBILE_MAX;
       const showArrows = o.arrows && (!mobile || o.arrowsOnMobile) && slides.length > cols;
-      prev.hidden = !showArrows || !o.autoplay && index === 0;
-      next.hidden = !showArrows || !o.autoplay && index >= maxIndex();
+      prev.hidden = !showArrows || !autoplay && index === 0;
+      next.hidden = !showArrows || !autoplay && index >= maxIndex();
       dots.hidden = !o.pagination || slides.length <= cols;
-      dots.innerHTML = dotWindow(maxIndex() + 1, index).map((d) => `<button type="button" class="es-carousel-dot es-dot-${d.size}${d.index === index ? " is-active" : ""}" data-index="${d.index}" aria-label="Go to review ${d.index + 1}"></button>`).join("");
+      dots.innerHTML = dotWindow(maxIndex() + 1, index).map((d) => `<button type="button" class="es-carousel-dot es-dot-${d.size}${d.index === index ? " is-active" : ""}" data-index="${d.index}" aria-label="Go to review ${d.index + 1}"${d.index === index ? ' aria-current="true"' : ""}></button>`).join("");
+      if (focusedDot) (_a2 = dots.querySelector(".is-active")) == null ? void 0 : _a2.focus();
+      if (focusedArrow == null ? void 0 : focusedArrow.hidden) (focusedArrow === prev ? next : prev).focus();
       slides.forEach((sl, i) => {
         sl.inert = i < index || i >= index + cols;
       });
-      if (cols === 1) viewport.style.height = `${(_b = (_a = slides[index]) == null ? void 0 : _a.offsetHeight) != null ? _b : 0}px`;
+      if (cols === 1) viewport.style.height = `${(_c = (_b = slides[index]) == null ? void 0 : _b.offsetHeight) != null ? _c : 0}px`;
       else viewport.style.removeProperty("height");
     }
     function layout() {
+      var _a2;
       const width = viewport.clientWidth;
       if (!width) return;
+      (_a2 = o.onLayout) == null ? void 0 : _a2.call(o);
       cols = Math.max(1, Math.min(o.columns(root.clientWidth), slides.length || 1));
       const slideW = (width - o.gap * (cols - 1)) / cols;
       step = slideW + o.gap;
@@ -725,9 +797,16 @@ var __shazWidgetExport = (() => {
       index = Math.min(index, maxIndex());
       paint(false);
     }
+    function scheduleLayout() {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        layout();
+      });
+    }
     function go(to) {
       const max = maxIndex();
-      index = to > max ? o.autoplay ? 0 : max : to < 0 ? o.autoplay ? max : 0 : to;
+      index = to > max ? autoplay ? 0 : max : to < 0 ? autoplay ? max : 0 : to;
       paint();
     }
     function stopAutoplay() {
@@ -736,91 +815,124 @@ var __shazWidgetExport = (() => {
     }
     function startAutoplay() {
       stopAutoplay();
-      if (o.autoplay && slides.length > cols) {
-        timer = setInterval(() => {
-          if (!(o.pauseOnHover && hovering)) go(index + 1);
-        }, o.interval);
-      }
+      if (!autoplay || slides.length <= cols) return;
+      timer = setInterval(() => {
+        if (o.pauseOnHover && hovering || focused || document.hidden) return;
+        go(index + 1);
+      }, o.interval);
     }
     prev.addEventListener("click", () => {
       go(index - 1);
       startAutoplay();
-    });
+    }, on);
     next.addEventListener("click", () => {
       go(index + 1);
       startAutoplay();
-    });
+    }, on);
     dots.addEventListener("click", (e) => {
       const dot = e.target.closest("[data-index]");
       if (dot) {
         go(Number(dot.dataset.index));
         startAutoplay();
       }
-    });
+    }, on);
     root.addEventListener("mouseenter", () => {
       hovering = true;
-    });
+    }, on);
     root.addEventListener("mouseleave", () => {
       hovering = false;
-    });
-    if (o.swipe) {
-      let startX = 0;
-      let startY = 0;
-      let dragging = false;
-      viewport.addEventListener("pointerdown", (e) => {
-        if (e.target.closest("a,button")) return;
-        dragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
-      });
-      viewport.addEventListener("pointerup", (e) => {
-        if (!dragging) return;
-        dragging = false;
-        const dx = e.clientX - startX;
-        if (Math.abs(dx) > SWIPE_MIN_PX && Math.abs(dx) > Math.abs(e.clientY - startY)) {
-          go(index + (dx < 0 ? 1 : -1));
-          startAutoplay();
-        }
-      });
-      viewport.addEventListener("pointercancel", () => {
-        dragging = false;
-      });
-    }
-    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => layout()) : null;
+    }, on);
+    root.addEventListener("focusin", () => {
+      focused = true;
+    }, on);
+    root.addEventListener("focusout", (e) => {
+      focused = root.contains(e.relatedTarget);
+    }, on);
+    track.addEventListener("load", scheduleLayout, { capture: true, signal });
+    let startX = 0;
+    let startY = 0;
+    let dragging = false;
+    viewport.addEventListener("pointerdown", (e) => {
+      const mobile = root.clientWidth < MOBILE_MAX;
+      if (!(mobile ? o.swipeMobile : o.swipeDesktop) || e.target.closest("a,button")) return;
+      dragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+    }, on);
+    viewport.addEventListener("pointerup", (e) => {
+      if (!dragging) return;
+      dragging = false;
+      const dx = e.clientX - startX;
+      if (Math.abs(dx) > SWIPE_MIN_PX && Math.abs(dx) > Math.abs(e.clientY - startY)) {
+        go(index + (dx < 0 ? 1 : -1));
+        startAutoplay();
+      }
+    }, on);
+    viewport.addEventListener("pointercancel", () => {
+      dragging = false;
+    }, on);
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(scheduleLayout) : null;
     ro == null ? void 0 : ro.observe(root);
+    ro == null ? void 0 : ro.observe(track);
+    (_a = document.fonts) == null ? void 0 : _a.ready.then(scheduleLayout).catch(() => void 0);
     layout();
     startAutoplay();
-    return () => {
+    const cleanup = () => {
       stopAutoplay();
       ro == null ? void 0 : ro.disconnect();
+      if (frame) cancelAnimationFrame(frame);
     };
+    signal == null ? void 0 : signal.addEventListener("abort", cleanup, { once: true });
+    return cleanup;
   }
 
   // widgets/google-reviews/popup.ts
+  var FOCUSABLE = 'a[href],button:not([disabled]),[tabindex]:not([tabindex="-1"])';
+  var closeCurrent = null;
   function openPopup(themeSource, contentHtml, onMount) {
     var _a, _b;
+    closeCurrent == null ? void 0 : closeCurrent();
     const previousFocus = document.activeElement;
     const root = document.createElement("div");
     root.className = "es-embed-root es-popup-root";
     root.setAttribute("style", (_a = themeSource.getAttribute("style")) != null ? _a : "");
-    root.innerHTML = `<div class="es-popup-overlay" data-action="close-popup"></div><div class="es-popup-content-container" role="dialog" aria-modal="true" aria-label="Google reviews"><button type="button" class="es-popup-close" data-action="close-popup" aria-label="Close">${CLOSE}</button><div class="es-popup-content">${contentHtml}</div></div>`;
+    root.innerHTML = `<div class="es-popup-overlay" data-action="close-popup"></div><div class="es-popup-content-container" role="dialog" aria-modal="true" aria-label="Google reviews" tabindex="-1"><button type="button" class="es-popup-close" data-action="close-popup" aria-label="Close">${CLOSE}</button><div class="es-popup-content">${contentHtml}</div></div>`;
     document.body.appendChild(root);
+    const dialog = root.querySelector(".es-popup-content-container");
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     function onKey(e) {
-      if (e.key === "Escape") close();
+      if (e.key === "Escape") {
+        close();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const items = Array.from(dialog.querySelectorAll(FOCUSABLE)).filter((el) => !el.hidden);
+      if (!items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     }
     function close() {
       var _a2;
       document.removeEventListener("keydown", onKey);
       root.remove();
       document.body.style.overflow = prevOverflow;
-      (_a2 = previousFocus == null ? void 0 : previousFocus.focus) == null ? void 0 : _a2.call(previousFocus);
+      if (closeCurrent === close) closeCurrent = null;
+      const target = (previousFocus == null ? void 0 : previousFocus.isConnected) ? previousFocus : themeSource;
+      (_a2 = target.focus) == null ? void 0 : _a2.call(target, { preventScroll: true });
     }
     root.addEventListener("click", (e) => {
       if (e.target.closest('[data-action="close-popup"]')) close();
     });
     document.addEventListener("keydown", onKey);
+    closeCurrent = close;
     (_b = root.querySelector(".es-popup-close")) == null ? void 0 : _b.focus();
     onMount == null ? void 0 : onMount(root.querySelector(".es-popup-content"));
     return close;
@@ -940,32 +1052,46 @@ var __shazWidgetExport = (() => {
       btn.hidden = true;
     });
   }
-  function renderPaged(body, s, cards, width) {
+  function renderPaged(body, s, cards, width, signal) {
     var _a;
     const size = Math.max(1, pageSize(s, width));
     let shown = Math.min(size, cards.length);
     const cls = s.layout === "list" ? "es-list-layout" : s.layout === "masonry" ? "es-masonry-layout" : "es-grid-layout";
     const gap = s.layout === "list" ? s.listItemSpacing : s.layout === "masonry" ? s.masonryItemSpacing : s.gridItemSpacing;
     const label = esc(((_a = s.theme.themeSettings.loadMoreButton) == null ? void 0 : _a.text) || "Load More");
-    body.innerHTML = `<div class="${cls}" style="--es-cols:${columnsFor(s, width)};--es-gap:${Number(gap) || 0}px">${cards.slice(0, shown).join("")}</div>` + (s.showLoadMoreButton && cards.length > shown ? `<div class="es-load-more-button-container"><button type="button" class="es-load-more-button">${label}</button></div>` : "");
+    body.innerHTML = `<div class="${cls}" style="--es-cols:${columnsFor(s, width)};--es-gap:${gap}px">${cards.slice(0, shown).join("")}</div>` + (s.showLoadMoreButton && cards.length > shown ? `<div class="es-load-more-button-container"><button type="button" class="es-load-more-button">${label}</button></div>` : "");
     const more = body.querySelector(".es-load-more-button");
     more == null ? void 0 : more.addEventListener("click", () => {
       var _a2;
-      const list = body.querySelector(`.${cls}`);
-      list.insertAdjacentHTML("beforeend", cards.slice(shown, shown + size).join(""));
+      const list2 = body.querySelector(`.${cls}`);
+      list2.insertAdjacentHTML("beforeend", cards.slice(shown, shown + size).join(""));
       shown += size;
-      revealReadMore(list);
+      revealReadMore(list2);
       if (shown >= cards.length) (_a2 = more.parentElement) == null ? void 0 : _a2.remove();
-    });
+    }, { signal });
   }
+  function openableUrl(v) {
+    return /^https?:\/\//i.test(v.trim()) ? v.trim() : "";
+  }
+  var teardowns = /* @__PURE__ */ new WeakMap();
   function render(root, s, data) {
+    var _a;
+    (_a = teardowns.get(root)) == null ? void 0 : _a.abort();
+    const controller = new AbortController();
+    teardowns.set(root, controller);
+    const { signal } = controller;
     const reviews = selectReviews(data.reviews, s);
     const ctx = { s, business: data.business };
     const cards = reviews.map((r) => reviewCard(r, ctx));
     const byId = new Map(reviews.map((r) => [r.id, r]));
     const popupCtx = { ...ctx, inPopup: true, s: { ...s, reviewLayout: "classic", reviewSourceStyle: "icon", reviewTextDisplayMode: "short" } };
     const fullList = () => header(ctx, true) + `<div class="es-popup-list">${reviews.map((r) => reviewCard(r, popupCtx)).join("")}</div>`;
-    root.innerHTML = (s.customCSS.trim() ? `<style>${s.customCSS.replace(/<\/style/gi, "")}</style>` : "") + `<div class="es-main-container"><div class="es-widget-background-container">${widgetTitle(s)}${s.layout === "cardBadge" ? "" : header(ctx)}<div class="es-main-content"></div></div></div>` + (s.enableSchemaOrg ? schemaJsonLd(data.business, reviews) : "");
+    root.innerHTML = `<div class="es-main-container"><div class="es-widget-background-container">${widgetTitle(s)}${s.layout === "cardBadge" ? "" : header(ctx)}<div class="es-main-content"></div></div></div>` + (s.enableSchemaOrg ? schemaJsonLd(data.business, reviews) : "");
+    if (s.customCSS.trim()) {
+      const style = document.createElement("style");
+      style.textContent = s.customCSS;
+      root.prepend(style);
+    }
     const body = root.querySelector(".es-main-content");
     const width = root.clientWidth || window.innerWidth;
     if (s.layout === "cardBadge") {
@@ -973,19 +1099,24 @@ var __shazWidgetExport = (() => {
     } else if (s.layout === "carousel" || s.layout === "slider") {
       if (cards.length) {
         body.innerHTML = carouselHtml(cards);
-        mountCarousel(body, carouselOpts(s));
+        mountCarousel(body, { ...carouselOpts(s), onLayout: () => revealReadMore(body) }, signal);
       }
     } else {
-      renderPaged(body, s, cards, width);
+      renderPaged(body, s, cards, width, signal);
+      if (typeof ResizeObserver !== "undefined") {
+        const ro = new ResizeObserver(() => revealReadMore(body));
+        ro.observe(root);
+        signal.addEventListener("abort", () => ro.disconnect(), { once: true });
+      }
     }
     root.classList.toggle("es-normalize-height", s.reviewHeightNormalization);
     requestAnimationFrame(() => revealReadMore(root));
     root.addEventListener("click", (e) => {
-      var _a, _b, _c;
+      var _a2, _b, _c;
       const target = e.target;
       const readMore = target.closest('[data-action="read-more"]');
       if (readMore) {
-        const review = byId.get((_b = (_a = readMore.closest("[data-review-id]")) == null ? void 0 : _a.dataset.reviewId) != null ? _b : "");
+        const review = byId.get((_b = (_a2 = readMore.closest("[data-review-id]")) == null ? void 0 : _a2.dataset.reviewId) != null ? _b : "");
         if (review) openPopup(root, reviewCard(review, { ...ctx, full: true, inPopup: true }));
         return;
       }
@@ -994,16 +1125,17 @@ var __shazWidgetExport = (() => {
         return;
       }
       if (target.closest('[data-action="badge-click"]')) {
-        if (s.badgeClickAction === "openLink" && data.business.reviewsUrl) window.open(data.business.reviewsUrl, "_blank", "noopener");
+        const link = s.enableExternalLinks ? openableUrl(data.business.reviewsUrl) : "";
+        if (s.badgeClickAction === "openLink" && link) window.open(link, "_blank", "noopener");
         else openPopup(root, fullList(), bindPopupReadMore);
       }
-    });
+    }, { signal });
     root.addEventListener("keydown", (e) => {
       if ((e.key === "Enter" || e.key === " ") && e.target.closest('[data-action="badge-click"]')) {
         e.preventDefault();
         e.target.click();
       }
-    });
+    }, { signal });
   }
   function showMessage(root, inEditor, message) {
     root.innerHTML = inEditor ? `<div class="es-editor-message">Google Reviews: ${esc(message)}</div>` : "";
@@ -1014,6 +1146,7 @@ var __shazWidgetExport = (() => {
     const s = readSettings(config);
     const src = readSource(config, s);
     const root = (_b = element.querySelector("[data-shm-main]")) != null ? _b : element;
+    root.classList.remove(...Array.from(root.classList).filter((c) => c.startsWith("es-layout-")));
     root.classList.add("es-embed-root", `es-layout-${s.layout}`);
     const headerBg = (_c = s.theme.themeSettings.headerBackgroundColor) != null ? _c : "transparent";
     root.classList.toggle("es-header-has-bg", !/^(transparent|rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*0\s*\))$/i.test(headerBg.trim()));

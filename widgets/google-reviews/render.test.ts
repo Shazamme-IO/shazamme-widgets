@@ -122,11 +122,32 @@ describe('render', () => {
     expect(document.querySelector('.es-popup-root')).toBeNull();
   });
 
-  it('injects the site custom CSS without letting it close the style tag', () => {
+  it('injects the site custom CSS as text, so it can never close the style tag', () => {
     const root = document.createElement('div');
-    render(root, { ...readSettings({}), customCSS: '.es-review-container{color:red}</style><script>x</script>' }, data(1));
-    expect(root.querySelector('style')!.textContent).toContain('.es-review-container{color:red}');
-    expect(root.querySelector('script:not([type])')).toBeNull();
+    render(root, { ...readSettings({}), customCSS: '.a{color:red}</sty</stylele><img src=x onerror=alert(1)>' }, data(1));
+    expect(root.querySelector('style')!.textContent).toContain('.a{color:red}');
+    expect(root.querySelector('img[onerror]')).toBeNull();
+  });
+
+  it('re-rendering the same root binds handlers once (Duda editor re-runs)', () => {
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    const s = { ...readSettings({}), layout: 'cardBadge' as const };
+    render(root, s, data(2));
+    render(root, s, data(2));
+    root.querySelector<HTMLElement>('[data-action="badge-click"]')!.click();
+    expect(document.querySelectorAll('.es-popup-root')).toHaveLength(1);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(document.body.style.overflow).toBe('');
+  });
+
+  it('never opens a non-http reviews link', () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const root = document.createElement('div');
+    render(root, { ...readSettings({}), layout: 'cardBadge', badgeClickAction: 'openLink' }, { ...data(1), business: { ...business, reviewsUrl: 'javascript:alert(1)' } });
+    root.querySelector<HTMLElement>('[data-action="badge-click"]')!.click();
+    expect(open).not.toHaveBeenCalled();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
   });
 });
 

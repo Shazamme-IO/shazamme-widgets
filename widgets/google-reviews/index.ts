@@ -139,14 +139,14 @@ function bindPopupReadMore(content: HTMLElement): void {
   });
 }
 
-function renderPaged(body: HTMLElement, s: Settings, cards: string[], width: number): void {
+function renderPaged(body: HTMLElement, s: Settings, cards: string[], width: number, signal: AbortSignal): void {
   const size = Math.max(1, pageSize(s, width));
   let shown = Math.min(size, cards.length);
   const cls = s.layout === 'list' ? 'es-list-layout' : s.layout === 'masonry' ? 'es-masonry-layout' : 'es-grid-layout';
   const gap = s.layout === 'list' ? s.listItemSpacing : s.layout === 'masonry' ? s.masonryItemSpacing : s.gridItemSpacing;
   const label = esc(s.theme.themeSettings.loadMoreButton?.text || 'Load More');
   body.innerHTML =
-    `<div class="${cls}" style="--es-cols:${columnsFor(s, width)};--es-gap:${Number(gap) || 0}px">${cards.slice(0, shown).join('')}</div>` +
+    `<div class="${cls}" style="--es-cols:${columnsFor(s, width)};--es-gap:${gap}px">${cards.slice(0, shown).join('')}</div>` +
     (s.showLoadMoreButton && cards.length > shown
       ? `<div class="es-load-more-button-container"><button type="button" class="es-load-more-button">${label}</button></div>`
       : '');
@@ -157,10 +157,23 @@ function renderPaged(body: HTMLElement, s: Settings, cards: string[], width: num
     shown += size;
     revealReadMore(list);
     if (shown >= cards.length) more.parentElement?.remove();
-  });
+  }, { signal });
 }
 
+/** http(s) only, unescaped — for window.open rather than markup. */
+function openableUrl(v: string): string {
+  return /^https?:\/\//i.test(v.trim()) ? v.trim() : '';
+}
+
+/** One teardown per widget root: Duda re-runs the widget on every editor change. */
+const teardowns = new WeakMap<HTMLElement, AbortController>();
+
 export function render(root: HTMLElement, s: Settings, data: ReviewData): void {
+  teardowns.get(root)?.abort();
+  const controller = new AbortController();
+  teardowns.set(root, controller);
+  const { signal } = controller;
+
   const reviews = selectReviews(data.reviews, s);
   const ctx: RenderCtx = { s, business: data.business };
   const cards = reviews.map((r) => reviewCard(r, ctx));
@@ -170,10 +183,15 @@ export function render(root: HTMLElement, s: Settings, data: ReviewData): void {
     header(ctx, true) + `<div class="es-popup-list">${reviews.map((r) => reviewCard(r, popupCtx)).join('')}</div>`;
 
   root.innerHTML =
-    (s.customCSS.trim() ? `<style>${s.customCSS.replace(/<\/style/gi, '')}</style>` : '') +
     `<div class="es-main-container"><div class="es-widget-background-container">` +
     `${widgetTitle(s)}${s.layout === 'cardBadge' ? '' : header(ctx)}<div class="es-main-content"></div></div></div>` +
     (s.enableSchemaOrg ? schemaJsonLd(data.business, reviews) : '');
+  if (s.customCSS.trim()) {
+    // textContent, never markup: the site's CSS cannot close the tag and inject HTML.
+    const style = document.createElement('style');
+    style.textContent = s.customCSS;
+    root.prepend(style);
+  }
   const body = root.querySelector<HTMLElement>('.es-main-content')!;
   const width = root.clientWidth || window.innerWidth;
 
@@ -182,10 +200,16 @@ export function render(root: HTMLElement, s: Settings, data: ReviewData): void {
   } else if (s.layout === 'carousel' || s.layout === 'slider') {
     if (cards.length) {
       body.innerHTML = carouselHtml(cards);
-      mountCarousel(body, carouselOpts(s));
+      mountCarousel(body, { ...carouselOpts(s), onLayout: () => revealReadMore(body) }, signal);
     }
   } else {
-    renderPaged(body, s, cards, width);
+    renderPaged(body, s, cards, width, signal);
+    // Re-check clamps when the widget first becomes visible (Duda tabs/accordions) or resizes.
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(() => revealReadMore(body));
+      ro.observe(root);
+      signal.addEventListener('abort', () => ro.disconnect(), { once: true });
+    }
   }
   root.classList.toggle('es-normalize-height', s.reviewHeightNormalization);
   requestAnimationFrame(() => revealReadMore(root));
@@ -203,16 +227,17 @@ export function render(root: HTMLElement, s: Settings, data: ReviewData): void {
       return;
     }
     if (target.closest('[data-action="badge-click"]')) {
-      if (s.badgeClickAction === 'openLink' && data.business.reviewsUrl) window.open(data.business.reviewsUrl, '_blank', 'noopener');
+      const link = s.enableExternalLinks ? openableUrl(data.business.reviewsUrl) : '';
+      if (s.badgeClickAction === 'openLink' && link) window.open(link, '_blank', 'noopener');
       else openPopup(root, fullList(), bindPopupReadMore);
     }
-  });
+  }, { signal });
   root.addEventListener('keydown', (e) => {
     if ((e.key === 'Enter' || e.key === ' ') && (e.target as Element).closest('[data-action="badge-click"]')) {
       e.preventDefault();
       (e.target as HTMLElement).click();
     }
-  });
+  }, { signal });
 }
 
 function showMessage(root: HTMLElement, inEditor: boolean, message: string): void {
@@ -225,6 +250,7 @@ export default async function googleReviews({ element, data }: WidgetContext): P
   const s = readSettings(config);
   const src = readSource(config, s);
   const root = element.querySelector<HTMLElement>('[data-shm-main]') ?? element;
+  root.classList.remove(...Array.from(root.classList).filter((c) => c.startsWith('es-layout-')));
   root.classList.add('es-embed-root', `es-layout-${s.layout}`);
   const headerBg = s.theme.themeSettings.headerBackgroundColor ?? 'transparent';
   root.classList.toggle('es-header-has-bg', !/^(transparent|rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*0\s*\))$/i.test(headerBg.trim()));
