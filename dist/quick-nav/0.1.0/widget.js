@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 1379eb176c40. Registers window.ShazammeWidget["<name>"].
+ * Build 2e49140960ab. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -97,10 +97,7 @@ var __shazWidgetExport = (() => {
             ux.el.find(".uqlItem,.uqlDivider").addClass("uqlHideLink");
             ux.el.find(".uqlControlLinks").removeClass("uqlHideLink");
             ux.el.find(".uqprofilePic").attr("src", user.photo);
-            ux.el.find(".uqlCandidateInfo").html(`
-                    ${$(`<div>${user.greeting}</div>`).text()}
-                    <b class="boardy-caret"></b>
-                `);
+            ux.el.find(".uqlCandidateInfo").empty().append(document.createTextNode(user.greeting), ' <b class="boardy-caret"></b>');
             ux.el.find("[data-user-role]").hide();
             (_c = user.is) == null ? void 0 : _c.forEach((r) => {
               ux.el.find(`[data-user-role]`).each((_, i) => {
@@ -170,10 +167,7 @@ var __shazWidgetExport = (() => {
         ux.el.find(".uqlItem,.uqlDivider").addClass("uqlHideLink");
         ux.el.find(".uqlControlLinks").removeClass("uqlHideLink");
         ux.el.find(".uqprofilePic").attr("src", user.photo);
-        ux.el.find(".uqlCandidateInfo").html(`
-            ${$(`<div>${user.greeting}</div>`).text()}
-            <b class="boardy-caret"></b>
-        `);
+        ux.el.find(".uqlCandidateInfo").empty().append(document.createTextNode(user.greeting), ' <b class="boardy-caret"></b>');
         ux.el.find("[data-user-role]").hide();
         (_b = user.is) == null ? void 0 : _b.forEach((r) => {
           ux.el.find(`[data-user-role]`).each((_, i) => {

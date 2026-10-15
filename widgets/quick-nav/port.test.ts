@@ -114,6 +114,39 @@ describe('quick-nav port', () => {
     expect($('[data-user-role=client]').css('display')).toBe('none');
   });
 
+  it.each([
+    ['raw markup', '<img src=x onerror="window.__xss=1">'],
+    ['entity-encoded markup', '&lt;img src=x onerror="window.__xss=1"&gt;'],
+  ])('renders a %s first name as text, never as HTML', async (_, firstName) => {
+    const { win, $ } = await mount({ isVerified: true, firstName, is: [] });
+
+    expect($('.uqlCandidateInfo img')).toHaveLength(0);
+    expect($('.uqlCandidateInfo').text()).toContain(firstName);
+    expect($('.uqlCandidateInfo .boardy-caret')).toHaveLength(1);
+    expect(win.__xss).toBeUndefined();
+  });
+
+  it('renders a cached first name as text on the fast path before the SDK answers', async () => {
+    const win = window as unknown as Win;
+    const firstName = '&lt;img src=x onerror="window.__xss=1"&gt;';
+    const cached = { greeting: firstName, is: [], ttl: new Date(Date.now() + 60_000), photo: '' };
+    win.document.body.innerHTML = PAGE;
+    win.localStorage.setItem('qn1', btoa(unescape(encodeURIComponent(JSON.stringify(cached)))));
+    win.__shazLoadScript = vi.fn(() => new Promise<void>(() => {}));
+    delete win.ShazammeWidget;
+    win.eval(BUNDLE);
+    win.ShazammeWidget['quick-nav']({
+      element: win.document.getElementById('widget')!,
+      data: { config: {}, inEditor: false, siteId: 's1', page: 'home', elementId: 'qn1' },
+      $: win.jQuery,
+      shazamme: {},
+    });
+
+    expect(win.jQuery('.uqlCandidateInfo img')).toHaveLength(0);
+    expect(win.jQuery('.uqlCandidateInfo').text()).toContain(firstName);
+    expect(win.__xss).toBeUndefined();
+  });
+
   it('wires the configured links onto the template', async () => {
     const { $ } = await mount(null);
 

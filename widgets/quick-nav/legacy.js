@@ -39,10 +39,9 @@ let main = (w) => {
                 ux.el.find('.uqlControlLinks').removeClass('uqlHideLink');
 
                 ux.el.find('.uqprofilePic').attr('src',user.photo);
-                ux.el.find('.uqlCandidateInfo').html(`
-                    ${$(`<div>${user.greeting}</div>`).text()}
-                    <b class="boardy-caret"></b>
-                `);
+                ux.el.find('.uqlCandidateInfo')
+                    .empty()
+                    .append(document.createTextNode(user.greeting), ' <b class="boardy-caret"></b>');
 
                 ux.el.find('[data-user-role]').hide();
 
@@ -134,10 +133,9 @@ try {
         ux.el.find('.uqlControlLinks').removeClass('uqlHideLink');
 
         ux.el.find('.uqprofilePic').attr('src', user.photo);
-        ux.el.find('.uqlCandidateInfo').html(`
-            ${$(`<div>${user.greeting}</div>`).text()}
-            <b class="boardy-caret"></b>
-        `);
+        ux.el.find('.uqlCandidateInfo')
+            .empty()
+            .append(document.createTextNode(user.greeting), ' <b class="boardy-caret"></b>');
 
         ux.el.find('[data-user-role]').hide();
 
