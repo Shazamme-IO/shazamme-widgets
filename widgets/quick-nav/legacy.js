@@ -14,6 +14,16 @@ function UX() {
                 function() { rej() }
             );
         });
+
+    this.greet = (name) => {
+        let decoder = document.createElement('textarea');
+
+        decoder.innerHTML = name ?? '';
+
+        this.el.find('.uqlCandidateInfo')
+            .text(` ${decoder.value} `)
+            .append('<b class="boardy-caret"></b>');
+    };
 }
 
 const ux = new UX();
@@ -39,9 +49,7 @@ let main = (w) => {
                 ux.el.find('.uqlControlLinks').removeClass('uqlHideLink');
 
                 ux.el.find('.uqprofilePic').attr('src',user.photo);
-                ux.el.find('.uqlCandidateInfo')
-                    .empty()
-                    .append(document.createTextNode(user.greeting), ' <b class="boardy-caret"></b>');
+                ux.greet(user.greeting);
 
                 ux.el.find('[data-user-role]').hide();
 
@@ -133,9 +141,7 @@ try {
         ux.el.find('.uqlControlLinks').removeClass('uqlHideLink');
 
         ux.el.find('.uqprofilePic').attr('src', user.photo);
-        ux.el.find('.uqlCandidateInfo')
-            .empty()
-            .append(document.createTextNode(user.greeting), ' <b class="boardy-caret"></b>');
+        ux.greet(user.greeting);
 
         ux.el.find('[data-user-role]').hide();
 

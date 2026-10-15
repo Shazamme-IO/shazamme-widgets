@@ -114,23 +114,33 @@ describe('quick-nav port', () => {
     expect($('[data-user-role=client]').css('display')).toBe('none');
   });
 
+  // jsdom never loads images, so an onerror handler cannot fire here: the guard is that
+  // no element is created and the name comes through as text.
   it.each([
-    ['raw markup', '<img src=x onerror="window.__xss=1">'],
-    ['entity-encoded markup', '&lt;img src=x onerror="window.__xss=1"&gt;'],
-  ])('renders a %s first name as text, never as HTML', async (_, firstName) => {
-    const { win, $ } = await mount({ isVerified: true, firstName, is: [] });
+    ['raw markup', '<img src=x onerror="alert(1)">', '<img src=x onerror="alert(1)">'],
+    ['entity-encoded markup', '&lt;img src=x onerror="alert(1)"&gt;', '<img src=x onerror="alert(1)">'],
+  ])('renders a %s first name as text, never as HTML', async (_, firstName, shown) => {
+    const { $ } = await mount({ isVerified: true, firstName, is: [] });
 
     expect($('.uqlCandidateInfo img')).toHaveLength(0);
-    expect($('.uqlCandidateInfo').text()).toContain(firstName);
+    expect($('.uqlCandidateInfo').text()).toContain(shown);
     expect($('.uqlCandidateInfo .boardy-caret')).toHaveLength(1);
-    expect(win.__xss).toBeUndefined();
   });
 
-  it('renders a cached first name as text on the fast path before the SDK answers', async () => {
+  it.each([
+    ['O&#39;Brien', "O'Brien"],
+    ['Fran&ccedil;ois', 'François'],
+  ])('decodes an ATS entity-encoded name %s', async (firstName, shown) => {
+    const { $ } = await mount({ isVerified: true, firstName, is: [] });
+
+    expect($('.uqlCandidateInfo').text().trim()).toBe(shown);
+  });
+
+  it('renders a cached first name as text on the fast path before the SDK answers', () => {
     const win = window as unknown as Win;
-    const firstName = '&lt;img src=x onerror="window.__xss=1"&gt;';
-    const cached = { greeting: firstName, is: [], ttl: new Date(Date.now() + 60_000), photo: '' };
+    const cached = { greeting: '&lt;img src=x&gt; O&#39;Brien', is: [], ttl: new Date(Date.now() + 60_000), photo: '' };
     win.document.body.innerHTML = PAGE;
+    if (!win.jQuery) win.eval(JQUERY);
     win.localStorage.setItem('qn1', btoa(unescape(encodeURIComponent(JSON.stringify(cached)))));
     win.__shazLoadScript = vi.fn(() => new Promise<void>(() => {}));
     delete win.ShazammeWidget;
@@ -143,8 +153,8 @@ describe('quick-nav port', () => {
     });
 
     expect(win.jQuery('.uqlCandidateInfo img')).toHaveLength(0);
-    expect(win.jQuery('.uqlCandidateInfo').text()).toContain(firstName);
-    expect(win.__xss).toBeUndefined();
+    expect(win.jQuery('.uqlCandidateInfo').text().trim()).toBe("<img src=x> O'Brien");
+    expect(win.jQuery('.uqlControlLinks').hasClass('uqlHideLink')).toBe(false);
   });
 
   it('wires the configured links onto the template', async () => {

@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 2e49140960ab. Registers window.ShazammeWidget["<name>"].
+ * Build c3be4bb3cc89. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -78,6 +78,11 @@ var __shazWidgetExport = (() => {
       this.uri = new URL(window.location.href);
       this.loadScript = (src) => window.__shazLoadScript(src);
       ;
+      this.greet = (name) => {
+        let decoder = document.createElement("textarea");
+        decoder.innerHTML = name != null ? name : "";
+        this.el.find(".uqlCandidateInfo").text(` ${decoder.value} `).append('<b class="boardy-caret"></b>');
+      };
     }
     const ux = new UX();
     let main = (w) => {
@@ -97,7 +102,7 @@ var __shazWidgetExport = (() => {
             ux.el.find(".uqlItem,.uqlDivider").addClass("uqlHideLink");
             ux.el.find(".uqlControlLinks").removeClass("uqlHideLink");
             ux.el.find(".uqprofilePic").attr("src", user.photo);
-            ux.el.find(".uqlCandidateInfo").empty().append(document.createTextNode(user.greeting), ' <b class="boardy-caret"></b>');
+            ux.greet(user.greeting);
             ux.el.find("[data-user-role]").hide();
             (_c = user.is) == null ? void 0 : _c.forEach((r) => {
               ux.el.find(`[data-user-role]`).each((_, i) => {
@@ -167,7 +172,7 @@ var __shazWidgetExport = (() => {
         ux.el.find(".uqlItem,.uqlDivider").addClass("uqlHideLink");
         ux.el.find(".uqlControlLinks").removeClass("uqlHideLink");
         ux.el.find(".uqprofilePic").attr("src", user.photo);
-        ux.el.find(".uqlCandidateInfo").empty().append(document.createTextNode(user.greeting), ' <b class="boardy-caret"></b>');
+        ux.greet(user.greeting);
         ux.el.find("[data-user-role]").hide();
         (_b = user.is) == null ? void 0 : _b.forEach((r) => {
           ux.el.find(`[data-user-role]`).each((_, i) => {
