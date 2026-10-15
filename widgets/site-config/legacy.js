@@ -802,12 +802,14 @@ ux.loadScript('https://sdk.shazamme.io/js/shazamme-1.0.2.min.js')
         main(shazamme.register('site-config', data));
     });
 
-let handle = ux.el.find('.draggable');
+if (data.inEditor) {
+    let handle = ux.el.find('.draggable');
 
-if (handle.draggable) {
-    handle.draggable({handle: '.drag-handle'});
-} else {
-    ux.loadScript('https://code.jquery.com/ui/1.13.2/jquery-ui.js').then( () => {
-        ux.el.find('.draggable').draggable({handle: '.drag-handle'});
-    });
+    if (handle.draggable) {
+        handle.draggable({handle: '.drag-handle'});
+    } else {
+        ux.loadScript('https://code.jquery.com/ui/1.13.2/jquery-ui.js').then( () => {
+            ux.el.find('.draggable').draggable({handle: '.drag-handle'});
+        });
+    }
 }
