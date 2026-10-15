@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build b46eba89d821. Registers window.ShazammeWidget["<name>"].
+ * Build 409d5d78c2b8. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -613,13 +613,15 @@ var __shazWidgetExport = (() => {
     ux.loadScript("https://sdk.shazamme.io/js/shazamme-1.0.2.min.js").then(() => shazamme.ready(data.siteId, data.page)).then(() => shazamme.script("https://sdk.shazamme.io/js/plugin/jquery-copycss/jquery.copycss.min.js")).then(() => {
       main(shazamme.register("site-config", data));
     });
-    let handle = ux.el.find(".draggable");
-    if (handle.draggable) {
-      handle.draggable({ handle: ".drag-handle" });
-    } else {
-      ux.loadScript("https://code.jquery.com/ui/1.13.2/jquery-ui.js").then(() => {
-        ux.el.find(".draggable").draggable({ handle: ".drag-handle" });
-      });
+    if (data.inEditor) {
+      let handle = ux.el.find(".draggable");
+      if (handle.draggable) {
+        handle.draggable({ handle: ".drag-handle" });
+      } else {
+        ux.loadScript("https://code.jquery.com/ui/1.13.2/jquery-ui.js").then(() => {
+          ux.el.find(".draggable").draggable({ handle: ".drag-handle" });
+        });
+      }
     }
   }
   return __toCommonJS(site_config_index_exports);
