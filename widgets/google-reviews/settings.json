@@ -1,0 +1,29 @@
+{
+  "_comment": "Self-documenting manifest of the Duda content-editor fields for google-reviews (create these in Widget Builder with these exact keys). Duda passes every value as a string. Everything Elfsight's editor exposes is reachable through settingsJson, which takes Elfsight's own settings shape; the other fields override it so a new site can be set up from the panel alone.",
+  "widget": "google-reviews",
+  "fields": [
+    { "key": "placeId", "label": "Google Place ID", "type": "text", "default": "", "help": "The business's Google Place ID (starts ChIJ…). Overrides sources[0].url in settingsJson." },
+    { "key": "googleApiKey", "label": "Google Places API key", "type": "text", "default": "", "help": "Places API (New) key, restricted by HTTP referrer to the site's domains. Google returns the rating, review count and up to 5 reviews." },
+    { "key": "feedUrl", "label": "Reviews feed URL (optional)", "type": "text", "default": "", "help": "A JSON feed of the full review history. When set it is used instead of the Places API." },
+    { "key": "language", "label": "Review language", "type": "text", "default": "en", "help": "languageCode sent to Google, e.g. en, en-GB." },
+    { "key": "settingsJson", "label": "Settings JSON", "type": "textarea", "default": "", "help": "Elfsight Google Reviews settings (or a full Elfsight widget export). Every look-and-feel option lives here." },
+    { "key": "layout", "label": "Layout", "type": "select", "options": ["", "carousel", "slider", "grid", "list", "masonry", "cardBadge"], "default": "", "help": "Blank = use settingsJson." },
+    { "key": "reviewLayout", "label": "Review card style", "type": "select", "options": ["", "classic", "balloon", "spotlight"], "default": "" },
+    { "key": "reviewSourceStyle", "label": "Google source style", "type": "select", "options": ["", "text", "logo", "icon", "logoBottom", "iconBottom"], "default": "" },
+    { "key": "headerLayout", "label": "Header style", "type": "select", "options": ["", "header1", "header2", "header4", "header7", "header9"], "default": "" },
+    { "key": "badgeDisplayMode", "label": "Badge position", "type": "select", "options": ["", "singleInline", "singleFloating"], "default": "", "help": "Only for the cardBadge layout." },
+    { "key": "showOverallRating", "label": "Show header (overall rating)", "type": "boolean", "default": "" },
+    { "key": "showWriteReviewButton", "label": "Show 'Review us on Google' button", "type": "boolean", "default": "" },
+    { "key": "widgetTitle", "label": "Show title", "type": "boolean", "default": "" },
+    { "key": "widgetTitleTitle", "label": "Title text", "type": "text", "default": "" },
+    { "key": "carouselAutoplay", "label": "Carousel autoplay", "type": "boolean", "default": "" },
+    { "key": "filterMinRating", "label": "Minimum star rating", "type": "select", "options": ["", "1", "2", "3", "4", "5"], "default": "" },
+    { "key": "includeKeywords", "label": "Only reviews mentioning (comma separated)", "type": "text", "default": "", "help": "e.g. a consultant's name — the Collins per-consultant widgets." },
+    { "key": "excludeKeywords", "label": "Hide reviews mentioning (comma separated)", "type": "text", "default": "" },
+    { "key": "cardBackground", "label": "Card background colour", "type": "color", "default": "" },
+    { "key": "cardTextColour", "label": "Card text colour", "type": "color", "default": "" },
+    { "key": "starColour", "label": "Star colour", "type": "color", "default": "" },
+    { "key": "accentColour", "label": "Accent colour (links, button, badge)", "type": "color", "default": "" },
+    { "key": "fontFamily", "label": "Google Font family", "type": "text", "default": "", "help": "e.g. Roboto, Open Sans. Blank inherits the site font." }
+  ]
+}
