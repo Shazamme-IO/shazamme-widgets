@@ -155,22 +155,57 @@ async function getJson(url: string): Promise<Raw> {
   return res.json();
 }
 
-export async function loadReviews(src: SourceConfig, fetchJson = getJson): Promise<ReviewData> {
-  const cacheKey = `${src.feedUrl || src.placeId}|${src.language}`;
+/** Find the Place ID for "Business name, suburb" with Places Text Search. */
+const PLACE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+/** Find the Place ID for "Business name, suburb" with Places Text Search (cached a day). */
+export async function findPlaceId(query: string, apiKey: string, doFetch: typeof fetch = fetch): Promise<string> {
+  const cacheKey = CACHE_PREFIX + 'place|' + query.trim().replace(/\s+/g, ' ').toLowerCase();
+  try {
+    const hit = JSON.parse(localStorage.getItem(cacheKey) ?? 'null');
+    if (hit && typeof hit.id === 'string' && Date.now() - hit.at < PLACE_CACHE_TTL_MS) return hit.id;
+  } catch {
+    // storage blocked or old format — look it up again
+  }
+  const res = await doFetch('https://places.googleapis.com/v1/places:searchText', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': apiKey, 'X-Goog-FieldMask': 'places.id' },
+    body: JSON.stringify({ textQuery: query }),
+  });
+  let body: Raw = {};
+  try {
+    body = await res.json();
+  } catch {
+    // non-JSON error page
+  }
+  if (!res.ok) throw new Error(`Google could not search for "${query}" (${res.status}${text(body?.error?.message) ? `: ${text(body.error.message)}` : ''})`);
+  const id = text(body?.places?.[0]?.id);
+  if (!id) throw new Error(`Google found no business matching "${query}". Add the suburb, or paste the Place ID`);
+  try {
+    localStorage.setItem(cacheKey, JSON.stringify({ id, at: Date.now() }));
+  } catch {
+    // not cached, still works
+  }
+  return id;
+}
+
+export async function loadReviews(src: SourceConfig, fetchJson = getJson, doFetch: typeof fetch = fetch): Promise<ReviewData> {
+  if (!src.feedUrl && !src.googleApiKey) throw new Error('Add the Google API key');
+  if (!src.feedUrl && !src.placeId && !src.businessSearch) throw new Error('Type the business name and suburb (or paste its Google Place ID)');
+  const placeId = src.placeId || (src.feedUrl ? '' : await findPlaceId(src.businessSearch, src.googleApiKey, doFetch));
+  const cacheKey = `${src.feedUrl || placeId}|${src.language}`;
   const cached = readCache(cacheKey);
   if (cached) return cached;
 
-  let data: ReviewData;
-  if (src.feedUrl) {
-    data = fromFeed(await fetchJson(src.feedUrl), src.placeId);
-  } else if (src.placeId && src.googleApiKey) {
-    const url =
-      `https://places.googleapis.com/v1/places/${encodeURIComponent(src.placeId)}` +
-      `?fields=${PLACES_FIELDS}&languageCode=${encodeURIComponent(src.language)}&key=${encodeURIComponent(src.googleApiKey)}`;
-    data = fromPlaces(await fetchJson(url), src.placeId);
-  } else {
-    throw new Error('No review source: set a Google Place ID + API key, or a feed URL');
-  }
+  const data = src.feedUrl
+    ? fromFeed(await fetchJson(src.feedUrl), placeId)
+    : fromPlaces(
+        await fetchJson(
+          `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}` +
+            `?fields=${PLACES_FIELDS}&languageCode=${encodeURIComponent(src.language)}&key=${encodeURIComponent(src.googleApiKey)}`,
+        ),
+        placeId,
+      );
   writeCache(cacheKey, data);
   return data;
 }

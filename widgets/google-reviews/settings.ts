@@ -299,6 +299,8 @@ export const DEFAULTS: Settings = {
 /** Data-source config — where the reviews come from, separate from how they look. */
 export interface SourceConfig {
   placeId: string;
+  /** "Business name, suburb" — looked up on Google when no Place ID is set. */
+  businessSearch: string;
   googleApiKey: string;
   feedUrl: string;
   language: string;
@@ -320,6 +322,17 @@ function parseJson(raw: unknown): Partial<Settings> {
 
 function str(v: unknown): string {
   return typeof v === 'string' ? v.trim() : '';
+}
+
+/** Any scalar Duda hands over (string, number or boolean) as a trimmed string. */
+function raw(v: unknown): string {
+  return typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean' ? String(v).trim() : '';
+}
+
+/** Colours go into CSS variables: accept only values the browser parses as a colour. */
+function isColour(v: string): boolean {
+  if (typeof CSS !== 'undefined' && typeof CSS.supports === 'function') return CSS.supports('color', v);
+  return /^(#[0-9a-f]{3,8}|(rgb|hsl)a?\([\d\s.,%/]+\)|[a-z]+)$/i.test(v);
 }
 
 function keywords(v: unknown): Keyword[] {
@@ -395,44 +408,84 @@ function normalise(raw: Record<string, unknown>): Settings {
   return out as unknown as Settings;
 }
 
-/** The Duda panel fields that override the JSON. Empty means "keep the JSON value". */
-function panelOverrides(c: Record<string, unknown>): Record<string, unknown> {
+/** Panel fields with a different key from the setting they feed. */
+const PANEL_ALIASES: Record<string, string> = { includeKeywords: 'filterIncludeKeywords', excludeKeywords: 'filterExcludeKeywords' };
+
+/**
+ * Every Duda Content Editor field is named after the setting it controls
+ * (`layout`, `carouselAutoplay`, `ratingColor`…), so the panel can expose any
+ * option without a code change. Empty fields keep the default.
+ */
+function panelOverrides(c: Record<string, unknown>, json: Partial<Settings>): Record<string, unknown> {
   const o: Record<string, unknown> = {};
-  for (const key of ['layout', 'reviewLayout', 'headerLayout', 'reviewSourceStyle', 'badgeDisplayMode'] as const) {
-    if (str(c[key])) o[key] = str(c[key]);
+  for (const [key, def] of Object.entries(DEFAULTS)) {
+    const v = raw(c[key]);
+    if (v && (typeof def === 'number' || typeof def === 'boolean' || typeof def === 'string')) o[key] = v;
   }
-  for (const key of ['showOverallRating', 'showWriteReviewButton', 'widgetTitle'] as const) {
-    if (c[key] !== undefined && c[key] !== '') o[key] = coerceBool(c[key]);
+  for (const [field, key] of Object.entries(PANEL_ALIASES)) if (raw(c[field])) o[key] = keywords(raw(c[field]));
+  if (raw(c.headerElements)) {
+    const els = raw(c.headerElements).split(',').map((x) => x.trim()).filter(Boolean)
+      .map((x) => ({ title: 'title', rating: 'rating', reviewsnumber: 'reviewsNumber' })[x.toLowerCase()]).filter(Boolean);
+    if (els.length) o.headerElements = els;
   }
+  if (raw(c.badgeFloatingPosition)) {
+    o.badgeFloatingPosition = { ...DEFAULTS.badgeFloatingPosition, ...(json.badgeFloatingPosition ?? {}), position: raw(c.badgeFloatingPosition) };
+  }
+  const maxWidth = parseFloat(raw(c.widgetMaxWidth));
+  if (Number.isFinite(maxWidth) && maxWidth > 0) o.widgetWidth = { ...(json.widgetWidth ?? {}), auto: false, customValue: maxWidth };
   // One autoplay toggle in the panel drives both the carousel and the slider.
-  if (c.carouselAutoplay !== undefined && c.carouselAutoplay !== '') {
-    o.carouselAutoplay = o.sliderAutoplay = coerceBool(c.carouselAutoplay);
-  }
-  if (str(c.widgetTitleTitle)) o.widgetTitleTitle = str(c.widgetTitleTitle);
-  if (str(c.filterMinRating)) o.filterMinRating = str(c.filterMinRating);
-  if (str(c.includeKeywords)) o.filterIncludeKeywords = keywords(c.includeKeywords);
-  if (str(c.excludeKeywords)) o.filterExcludeKeywords = keywords(c.excludeKeywords);
-  if (str(c.placeId)) o.sources = [{ url: str(c.placeId) }];
+  if (raw(c.carouselAutoplay) && !raw(c.sliderAutoplay)) o.sliderAutoplay = coerceBool(c.carouselAutoplay);
+  if (raw(c.placeId)) o.sources = [{ url: raw(c.placeId) }];
   return o;
 }
 
+const THEME_NUMBER_KEYS = new Set(['widgetHorizontalPadding', 'widgetVerticalPadding', 'reviewCornerRadius', 'headerCornerRadius', 'carouselArrowSize', 'badgeCornerRadius']);
+
 function panelTheme(c: Record<string, unknown>): ThemeSettings {
-  const t: ThemeSettings = {};
-  const colour = (key: string, set: (v: string) => void): void => {
-    const v = str(c[key]);
-    if (v) set(v);
+  const t: Record<string, unknown> = {};
+  const n = (key: string): number | undefined => {
+    const v = parseFloat(raw(c[key]));
+    return Number.isFinite(v) ? v : undefined;
   };
-  colour('cardBackground', (v) => { t.reviewBackgroundColor = v; });
-  colour('cardTextColour', (v) => { t.reviewTextColor = v; });
-  colour('starColour', (v) => { t.ratingColor = v; t.popupRatingColor = v; t.badgeRatingColor = v; });
-  colour('accentColour', (v) => {
-    t.reviewReadMoreColor = v;
-    t.reviewVerifiedBadgeColor = v;
-    t.reviewSourceNameColor = v;
-    t.writeReviewButton = { color: v };
-  });
-  colour('fontFamily', (v) => { t.font = { value: v, googleFont: true }; });
-  return t;
+  const colour = (key: string): string | undefined => {
+    const v = raw(c[key]);
+    return v && isColour(v) ? v : undefined;
+  };
+  // Flat theme fields, same names as the theme settings (ratingColor, reviewBackgroundColor…).
+  for (const [key, def] of Object.entries(DEFAULTS.theme.themeSettings)) {
+    if (!raw(c[key])) continue;
+    if (THEME_NUMBER_KEYS.has(key) || typeof def === 'number') {
+      if (n(key) !== undefined) t[key] = n(key);
+    } else if (typeof def === 'string') {
+      const v = key.endsWith('Color') ? colour(key) : raw(c[key]);
+      if (v) t[key] = v;
+    }
+  }
+  if (n('reviewTextFontSize') !== undefined) t.reviewTextFontSize = { fontSize: n('reviewTextFontSize') };
+  if (n('widgetTitleFontSize') !== undefined) t.widgetTitleTitleTextStyle = { fontSize: n('widgetTitleFontSize') };
+  if (colour('widgetBackgroundColor')) t.widgetBackground = { color: colour('widgetBackgroundColor') };
+  const button = (prefix: string, target: 'writeReviewButton' | 'loadMoreButton'): void => {
+    const b: Record<string, unknown> = {};
+    if (colour(`${prefix}Color`)) b.color = colour(`${prefix}Color`);
+    if (colour(`${prefix}TextColor`)) b.fontColor = colour(`${prefix}TextColor`);
+    if (n(`${prefix}Radius`) !== undefined) b.borderRadius = n(`${prefix}Radius`);
+    if (raw(c[`${prefix}Text`])) b.text = raw(c[`${prefix}Text`]);
+    if (Object.keys(b).length) t[target] = b;
+  };
+  button('writeReviewButton', 'writeReviewButton');
+  button('loadMoreButton', 'loadMoreButton');
+  if (raw(c.fontFamily)) t.font = { value: raw(c.fontFamily).replace(/[^\w\s-]/g, ''), googleFont: true };
+  // Short-hand colour fields kept for widgets set up before the full panel.
+  if (colour('cardBackground')) t.reviewBackgroundColor = colour('cardBackground');
+  if (colour('cardTextColour')) t.reviewTextColor = colour('cardTextColour');
+  const star = colour('starColour');
+  if (star) t.ratingColor = t.popupRatingColor = t.badgeRatingColor = star;
+  const accent = colour('accentColour');
+  if (accent) {
+    t.reviewReadMoreColor = t.reviewVerifiedBadgeColor = t.reviewSourceNameColor = accent;
+    t.writeReviewButton = { ...(t.writeReviewButton as object), color: accent };
+  }
+  return t as ThemeSettings;
 }
 
 function mergeTheme(...layers: (ThemeSettings | undefined)[]): ThemeSettings {
@@ -452,7 +505,7 @@ function mergeTheme(...layers: (ThemeSettings | undefined)[]): ThemeSettings {
 
 export function readSettings(config: Record<string, unknown> = {}): Settings {
   const json = parseJson(config.settingsJson);
-  const merged = normalise({ ...(json as Record<string, unknown>), ...panelOverrides(config) });
+  const merged = normalise({ ...(json as Record<string, unknown>), ...panelOverrides(config, json) });
   const jsonTheme = json.theme?.themeSettings;
   return {
     ...merged,
@@ -469,6 +522,7 @@ export function readSettings(config: Record<string, unknown> = {}): Settings {
 export function readSource(config: Record<string, unknown>, settings: Settings): SourceConfig {
   return {
     placeId: settings.sources.find((s) => s.url)?.url ?? '',
+    businessSearch: raw(config.businessSearch).replace(/\s+/g, ' '),
     googleApiKey: str(config.googleApiKey),
     feedUrl: str(config.feedUrl),
     language: str(config.language) || 'en',

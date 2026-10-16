@@ -69,3 +69,56 @@ describe('readSettings normalisation (hand-pasted JSON)', () => {
     expect(s.sliderAutoplay).toBe(true);
   });
 });
+
+describe('Duda panel parity', () => {
+  it('every key in the Duda AI prompt is one the widget reads', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { join, dirname } = await import('node:path');
+    const { fileURLToPath } = await import('node:url');
+    const prompt = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'duda-ai-prompt.md'), 'utf8');
+    const keys = [...prompt.matchAll(/key: (\w+)/g)].map((m) => m[1]);
+    const known = new Set([
+      ...Object.keys(DEFAULTS), ...Object.keys(DEFAULTS.theme.themeSettings),
+      'placeId', 'businessSearch', 'googleApiKey', 'language', 'feedUrl', 'includeKeywords', 'excludeKeywords',
+      'widgetMaxWidth', 'reviewTextFontSize', 'widgetTitleFontSize', 'widgetBackgroundColor', 'fontFamily',
+      'writeReviewButtonColor', 'writeReviewButtonTextColor', 'writeReviewButtonRadius',
+    ]);
+    expect(keys.length).toBeGreaterThan(70);
+    expect(keys.filter((k) => !known.has(k))).toEqual([]);
+  });
+
+  it('plain panel fields set layout, behaviour and design with no JSON', () => {
+    const s = readSettings({
+      layout: 'grid', carouselAutoplay: 'true', carouselColumnsDesktopLarge: '3', reviewDisplayDate: 'false',
+      ratingColor: '#ff0000', reviewCornerRadius: '16', writeReviewButtonColor: '#123456', badgeFloatingPosition: 'top-right', widgetMaxWidth: '900',
+    });
+    expect(s.layout).toBe('grid');
+    expect(s.carouselAutoplay).toBe(true);
+    expect(s.sliderAutoplay).toBe(true);
+    expect(s.carouselColumnsDesktopLarge).toBe(3);
+    expect(s.reviewDisplayDate).toBe(false);
+    expect(s.theme.themeSettings.ratingColor).toBe('#ff0000');
+    expect(s.theme.themeSettings.reviewCornerRadius).toBe(16);
+    expect(s.theme.themeSettings.writeReviewButton?.color).toBe('#123456');
+    expect(s.badgeFloatingPosition.position).toBe('top-right');
+    expect(s.widgetWidth).toEqual({ auto: false, customValue: 900 });
+  });
+
+  it('accepts real booleans/numbers from Duda, odd casing and units', () => {
+    const s = readSettings({
+      layout: 'slider', carouselAutoplay: true, reviewCornerRadius: 12, headerElements: 'Title, Rating',
+      widgetMaxWidth: '1200px', ratingColor: 'red) , url(//x)',
+    });
+    expect(s.sliderAutoplay).toBe(true);
+    expect(s.theme.themeSettings.reviewCornerRadius).toBe(12);
+    expect(s.headerElements).toEqual(['title', 'rating']);
+    expect(s.widgetWidth.customValue).toBe(1200);
+    expect(s.theme.themeSettings.ratingColor).toBe(DEFAULTS.theme.themeSettings.ratingColor);
+  });
+
+  it('a bad max width or header list keeps the defaults', () => {
+    const s = readSettings({ widgetMaxWidth: 'wide', headerElements: 'nonsense' });
+    expect(s.widgetWidth).toEqual(DEFAULTS.widgetWidth);
+    expect(s.headerElements).toEqual(DEFAULTS.headerElements);
+  });
+});

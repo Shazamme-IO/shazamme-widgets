@@ -10,13 +10,13 @@
 // pinned tag — no CloudFront deploy needed. Rendering, styling and data loading
 // all live in the bundle: the HTML tab is one empty <div data-shm-main>, the CSS
 // tab stays empty, and each site's look comes from the widget's settings
-// (paste the site's Elfsight settings JSON into "Settings JSON").
+// (the Content Editor panel built from duda-ai-prompt.md).
 //
 // The tag is immutable: shipping a change = build, commit, tag, bump TAG here.
 // ===========================================================================
 (function () {
   var NAME = "google-reviews";
-  var TAG = "v0.1.28";
+  var TAG = "v0.1.29";
   var BUNDLE = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" + TAG + "/dist/" + NAME + "/0.1.0/widget.min.js";
   var SDK = "https://sdk.shazamme.io/js/shazamme-1.0.3.min.js";
   window.__shazSDKPromise = window.__shazSDKPromise || new Promise(function (res) {

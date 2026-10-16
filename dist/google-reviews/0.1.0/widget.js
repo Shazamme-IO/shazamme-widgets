@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 6aa1d43b7d64. Registers window.ShazammeWidget["<name>"].
+ * Build 4d26d1f8a7e6. Registers window.ShazammeWidget["<name>"].
  */
 (function(){
   if (typeof document === 'undefined') return;
@@ -124,9 +124,9 @@ var __shazWidgetExport = (() => {
   }
   function readCache(key) {
     try {
-      const raw = localStorage.getItem(CACHE_PREFIX + key);
-      if (!raw) return null;
-      const { at, data } = JSON.parse(raw);
+      const raw2 = localStorage.getItem(CACHE_PREFIX + key);
+      if (!raw2) return null;
+      const { at, data } = JSON.parse(raw2);
       const fresh = typeof at === "number" && Date.now() - at < CACHE_TTL_MS;
       return fresh && (data == null ? void 0 : data.business) && Array.isArray(data.reviews) ? data : null;
     } catch (e) {
@@ -144,19 +144,47 @@ var __shazWidgetExport = (() => {
     if (!res.ok) throw new Error(`${res.status} ${res.statusText} from ${url.split("?")[0]}`);
     return res.json();
   }
-  async function loadReviews(src, fetchJson = getJson) {
-    const cacheKey = `${src.feedUrl || src.placeId}|${src.language}`;
+  var PLACE_CACHE_TTL_MS = 24 * 60 * 60 * 1e3;
+  async function findPlaceId(query, apiKey, doFetch = fetch) {
+    var _a, _b, _c, _d;
+    const cacheKey = CACHE_PREFIX + "place|" + query.trim().replace(/\s+/g, " ").toLowerCase();
+    try {
+      const hit = JSON.parse((_a = localStorage.getItem(cacheKey)) != null ? _a : "null");
+      if (hit && typeof hit.id === "string" && Date.now() - hit.at < PLACE_CACHE_TTL_MS) return hit.id;
+    } catch (e) {
+    }
+    const res = await doFetch("https://places.googleapis.com/v1/places:searchText", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": "places.id" },
+      body: JSON.stringify({ textQuery: query })
+    });
+    let body = {};
+    try {
+      body = await res.json();
+    } catch (e) {
+    }
+    if (!res.ok) throw new Error(`Google could not search for "${query}" (${res.status}${text((_b = body == null ? void 0 : body.error) == null ? void 0 : _b.message) ? `: ${text(body.error.message)}` : ""})`);
+    const id = text((_d = (_c = body == null ? void 0 : body.places) == null ? void 0 : _c[0]) == null ? void 0 : _d.id);
+    if (!id) throw new Error(`Google found no business matching "${query}". Add the suburb, or paste the Place ID`);
+    try {
+      localStorage.setItem(cacheKey, JSON.stringify({ id, at: Date.now() }));
+    } catch (e) {
+    }
+    return id;
+  }
+  async function loadReviews(src, fetchJson = getJson, doFetch = fetch) {
+    if (!src.feedUrl && !src.googleApiKey) throw new Error("Add the Google API key");
+    if (!src.feedUrl && !src.placeId && !src.businessSearch) throw new Error("Type the business name and suburb (or paste its Google Place ID)");
+    const placeId = src.placeId || (src.feedUrl ? "" : await findPlaceId(src.businessSearch, src.googleApiKey, doFetch));
+    const cacheKey = `${src.feedUrl || placeId}|${src.language}`;
     const cached = readCache(cacheKey);
     if (cached) return cached;
-    let data;
-    if (src.feedUrl) {
-      data = fromFeed(await fetchJson(src.feedUrl), src.placeId);
-    } else if (src.placeId && src.googleApiKey) {
-      const url = `https://places.googleapis.com/v1/places/${encodeURIComponent(src.placeId)}?fields=${PLACES_FIELDS}&languageCode=${encodeURIComponent(src.language)}&key=${encodeURIComponent(src.googleApiKey)}`;
-      data = fromPlaces(await fetchJson(url), src.placeId);
-    } else {
-      throw new Error("No review source: set a Google Place ID + API key, or a feed URL");
-    }
+    const data = src.feedUrl ? fromFeed(await fetchJson(src.feedUrl), placeId) : fromPlaces(
+      await fetchJson(
+        `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}?fields=${PLACES_FIELDS}&languageCode=${encodeURIComponent(src.language)}&key=${encodeURIComponent(src.googleApiKey)}`
+      ),
+      placeId
+    );
     writeCache(cacheKey, data);
     return data;
   }
@@ -336,12 +364,12 @@ var __shazWidgetExport = (() => {
       }
     }
   };
-  function parseJson(raw) {
+  function parseJson(raw2) {
     var _a, _b, _c;
-    if (raw && typeof raw === "object") return raw;
-    if (typeof raw !== "string" || !raw.trim()) return {};
+    if (raw2 && typeof raw2 === "object") return raw2;
+    if (typeof raw2 !== "string" || !raw2.trim()) return {};
     try {
-      const parsed = JSON.parse(raw);
+      const parsed = JSON.parse(raw2);
       const settings = (_c = (_b = (_a = parsed == null ? void 0 : parsed.publishedWidgetRevision) == null ? void 0 : _a.settings) != null ? _b : parsed == null ? void 0 : parsed.settings) != null ? _c : parsed;
       return settings && typeof settings === "object" && !Array.isArray(settings) ? settings : {};
     } catch (e) {
@@ -351,6 +379,13 @@ var __shazWidgetExport = (() => {
   }
   function str(v) {
     return typeof v === "string" ? v.trim() : "";
+  }
+  function raw(v) {
+    return typeof v === "string" || typeof v === "number" || typeof v === "boolean" ? String(v).trim() : "";
+  }
+  function isColour(v) {
+    if (typeof CSS !== "undefined" && typeof CSS.supports === "function") return CSS.supports("color", v);
+    return /^(#[0-9a-f]{3,8}|(rgb|hsl)a?\([\d\s.,%/]+\)|[a-z]+)$/i.test(v);
   }
   function keywords(v) {
     return str(v).split(",").map((k) => k.trim()).filter(Boolean).map((keyword) => ({ keyword }));
@@ -381,11 +416,11 @@ var __shazWidgetExport = (() => {
     if (!Array.isArray(v)) return [];
     return v.map((k) => typeof k === "string" ? k : k && typeof k === "object" ? k.keyword : "").filter((k) => typeof k === "string" && k.trim() !== "").map((keyword) => ({ keyword }));
   }
-  function normalise(raw) {
+  function normalise(raw2) {
     var _a, _b;
     const out = {};
     for (const [key, def] of Object.entries(DEFAULTS)) {
-      const v = raw[key];
+      const v = raw2[key];
       const allowed = ENUMS[key];
       if (allowed) out[key] = typeof v === "string" && allowed.includes(v) ? v : def;
       else if (typeof def === "number") out[key] = finite(v, def);
@@ -395,13 +430,13 @@ var __shazWidgetExport = (() => {
     }
     out.filterMinRating = Math.min(5, Math.max(1, out.filterMinRating));
     out.reviewPreviewLinesNumber = Math.max(1, Math.round(out.reviewPreviewLinesNumber));
-    out.sources = Array.isArray(raw.sources) ? raw.sources.map((x) => ({ url: x && typeof x === "object" && typeof x.url === "string" ? x.url.trim() : "" })) : [];
-    out.filterIncludeKeywords = keywordList(raw.filterIncludeKeywords);
-    out.filterExcludeKeywords = keywordList(raw.filterExcludeKeywords);
-    out.headerElements = Array.isArray(raw.headerElements) ? raw.headerElements.filter((e) => HEADER_ELEMENTS.includes(e)) : DEFAULTS.headerElements;
-    const ww = (_a = raw.widgetWidth) != null ? _a : {};
+    out.sources = Array.isArray(raw2.sources) ? raw2.sources.map((x) => ({ url: x && typeof x === "object" && typeof x.url === "string" ? x.url.trim() : "" })) : [];
+    out.filterIncludeKeywords = keywordList(raw2.filterIncludeKeywords);
+    out.filterExcludeKeywords = keywordList(raw2.filterExcludeKeywords);
+    out.headerElements = Array.isArray(raw2.headerElements) ? raw2.headerElements.filter((e) => HEADER_ELEMENTS.includes(e)) : DEFAULTS.headerElements;
+    const ww = (_a = raw2.widgetWidth) != null ? _a : {};
     out.widgetWidth = { auto: coerceBool(ww.auto, DEFAULTS.widgetWidth.auto), customValue: finite(ww.customValue, DEFAULTS.widgetWidth.customValue) };
-    const fp = (_b = raw.badgeFloatingPosition) != null ? _b : {};
+    const fp = (_b = raw2.badgeFloatingPosition) != null ? _b : {};
     out.badgeFloatingPosition = {
       position: ["top-left", "top-right", "bottom-left", "bottom-right"].includes(fp.position) ? fp.position : DEFAULTS.badgeFloatingPosition.position,
       horizontalOffset: finite(fp.horizontalOffset, DEFAULTS.badgeFloatingPosition.horizontalOffset),
@@ -409,50 +444,71 @@ var __shazWidgetExport = (() => {
     };
     return out;
   }
-  function panelOverrides(c) {
+  var PANEL_ALIASES = { includeKeywords: "filterIncludeKeywords", excludeKeywords: "filterExcludeKeywords" };
+  function panelOverrides(c, json) {
+    var _a, _b;
     const o = {};
-    for (const key of ["layout", "reviewLayout", "headerLayout", "reviewSourceStyle", "badgeDisplayMode"]) {
-      if (str(c[key])) o[key] = str(c[key]);
+    for (const [key, def] of Object.entries(DEFAULTS)) {
+      const v = raw(c[key]);
+      if (v && (typeof def === "number" || typeof def === "boolean" || typeof def === "string")) o[key] = v;
     }
-    for (const key of ["showOverallRating", "showWriteReviewButton", "widgetTitle"]) {
-      if (c[key] !== void 0 && c[key] !== "") o[key] = coerceBool(c[key]);
+    for (const [field, key] of Object.entries(PANEL_ALIASES)) if (raw(c[field])) o[key] = keywords(raw(c[field]));
+    if (raw(c.headerElements)) {
+      const els = raw(c.headerElements).split(",").map((x) => x.trim()).filter(Boolean).map((x) => ({ title: "title", rating: "rating", reviewsnumber: "reviewsNumber" })[x.toLowerCase()]).filter(Boolean);
+      if (els.length) o.headerElements = els;
     }
-    if (c.carouselAutoplay !== void 0 && c.carouselAutoplay !== "") {
-      o.carouselAutoplay = o.sliderAutoplay = coerceBool(c.carouselAutoplay);
+    if (raw(c.badgeFloatingPosition)) {
+      o.badgeFloatingPosition = { ...DEFAULTS.badgeFloatingPosition, ...(_a = json.badgeFloatingPosition) != null ? _a : {}, position: raw(c.badgeFloatingPosition) };
     }
-    if (str(c.widgetTitleTitle)) o.widgetTitleTitle = str(c.widgetTitleTitle);
-    if (str(c.filterMinRating)) o.filterMinRating = str(c.filterMinRating);
-    if (str(c.includeKeywords)) o.filterIncludeKeywords = keywords(c.includeKeywords);
-    if (str(c.excludeKeywords)) o.filterExcludeKeywords = keywords(c.excludeKeywords);
-    if (str(c.placeId)) o.sources = [{ url: str(c.placeId) }];
+    const maxWidth = parseFloat(raw(c.widgetMaxWidth));
+    if (Number.isFinite(maxWidth) && maxWidth > 0) o.widgetWidth = { ...(_b = json.widgetWidth) != null ? _b : {}, auto: false, customValue: maxWidth };
+    if (raw(c.carouselAutoplay) && !raw(c.sliderAutoplay)) o.sliderAutoplay = coerceBool(c.carouselAutoplay);
+    if (raw(c.placeId)) o.sources = [{ url: raw(c.placeId) }];
     return o;
   }
+  var THEME_NUMBER_KEYS = /* @__PURE__ */ new Set(["widgetHorizontalPadding", "widgetVerticalPadding", "reviewCornerRadius", "headerCornerRadius", "carouselArrowSize", "badgeCornerRadius"]);
   function panelTheme(c) {
     const t = {};
-    const colour = (key, set) => {
-      const v = str(c[key]);
-      if (v) set(v);
+    const n = (key) => {
+      const v = parseFloat(raw(c[key]));
+      return Number.isFinite(v) ? v : void 0;
     };
-    colour("cardBackground", (v) => {
-      t.reviewBackgroundColor = v;
-    });
-    colour("cardTextColour", (v) => {
-      t.reviewTextColor = v;
-    });
-    colour("starColour", (v) => {
-      t.ratingColor = v;
-      t.popupRatingColor = v;
-      t.badgeRatingColor = v;
-    });
-    colour("accentColour", (v) => {
-      t.reviewReadMoreColor = v;
-      t.reviewVerifiedBadgeColor = v;
-      t.reviewSourceNameColor = v;
-      t.writeReviewButton = { color: v };
-    });
-    colour("fontFamily", (v) => {
-      t.font = { value: v, googleFont: true };
-    });
+    const colour = (key) => {
+      const v = raw(c[key]);
+      return v && isColour(v) ? v : void 0;
+    };
+    for (const [key, def] of Object.entries(DEFAULTS.theme.themeSettings)) {
+      if (!raw(c[key])) continue;
+      if (THEME_NUMBER_KEYS.has(key) || typeof def === "number") {
+        if (n(key) !== void 0) t[key] = n(key);
+      } else if (typeof def === "string") {
+        const v = key.endsWith("Color") ? colour(key) : raw(c[key]);
+        if (v) t[key] = v;
+      }
+    }
+    if (n("reviewTextFontSize") !== void 0) t.reviewTextFontSize = { fontSize: n("reviewTextFontSize") };
+    if (n("widgetTitleFontSize") !== void 0) t.widgetTitleTitleTextStyle = { fontSize: n("widgetTitleFontSize") };
+    if (colour("widgetBackgroundColor")) t.widgetBackground = { color: colour("widgetBackgroundColor") };
+    const button = (prefix, target) => {
+      const b = {};
+      if (colour(`${prefix}Color`)) b.color = colour(`${prefix}Color`);
+      if (colour(`${prefix}TextColor`)) b.fontColor = colour(`${prefix}TextColor`);
+      if (n(`${prefix}Radius`) !== void 0) b.borderRadius = n(`${prefix}Radius`);
+      if (raw(c[`${prefix}Text`])) b.text = raw(c[`${prefix}Text`]);
+      if (Object.keys(b).length) t[target] = b;
+    };
+    button("writeReviewButton", "writeReviewButton");
+    button("loadMoreButton", "loadMoreButton");
+    if (raw(c.fontFamily)) t.font = { value: raw(c.fontFamily).replace(/[^\w\s-]/g, ""), googleFont: true };
+    if (colour("cardBackground")) t.reviewBackgroundColor = colour("cardBackground");
+    if (colour("cardTextColour")) t.reviewTextColor = colour("cardTextColour");
+    const star = colour("starColour");
+    if (star) t.ratingColor = t.popupRatingColor = t.badgeRatingColor = star;
+    const accent = colour("accentColour");
+    if (accent) {
+      t.reviewReadMoreColor = t.reviewVerifiedBadgeColor = t.reviewSourceNameColor = accent;
+      t.writeReviewButton = { ...t.writeReviewButton, color: accent };
+    }
     return t;
   }
   function mergeTheme(...layers) {
@@ -469,7 +525,7 @@ var __shazWidgetExport = (() => {
   function readSettings(config = {}) {
     var _a;
     const json = parseJson(config.settingsJson);
-    const merged = normalise({ ...json, ...panelOverrides(config) });
+    const merged = normalise({ ...json, ...panelOverrides(config, json) });
     const jsonTheme = (_a = json.theme) == null ? void 0 : _a.themeSettings;
     return {
       ...merged,
@@ -486,6 +542,7 @@ var __shazWidgetExport = (() => {
     var _a, _b;
     return {
       placeId: (_b = (_a = settings.sources.find((s) => s.url)) == null ? void 0 : _a.url) != null ? _b : "",
+      businessSearch: raw(config.businessSearch).replace(/\s+/g, " "),
       googleApiKey: str(config.googleApiKey),
       feedUrl: str(config.feedUrl),
       language: str(config.language) || "en"
