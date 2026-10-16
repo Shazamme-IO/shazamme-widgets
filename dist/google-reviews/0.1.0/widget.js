@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 6aa1d43b7d64. Registers window.ShazammeWidget["<name>"].
+ * Build e6a06e61f9b8. Registers window.ShazammeWidget["<name>"].
  */
 (function(){
   if (typeof document === 'undefined') return;
@@ -144,19 +144,41 @@ var __shazWidgetExport = (() => {
     if (!res.ok) throw new Error(`${res.status} ${res.statusText} from ${url.split("?")[0]}`);
     return res.json();
   }
-  async function loadReviews(src, fetchJson = getJson) {
-    const cacheKey = `${src.feedUrl || src.placeId}|${src.language}`;
+  async function findPlaceId(query, apiKey, doFetch = fetch) {
+    var _a, _b, _c;
+    const cacheKey = `place|${query.toLowerCase()}`;
+    try {
+      const hit = localStorage.getItem(CACHE_PREFIX + cacheKey);
+      if (hit) return hit;
+    } catch (e) {
+    }
+    const res = await doFetch("https://places.googleapis.com/v1/places:searchText", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": "places.id" },
+      body: JSON.stringify({ textQuery: query })
+    });
+    if (!res.ok) throw new Error(`Google could not search for "${query}" (${res.status})`);
+    const id = text((_c = (_b = (_a = await res.json()) == null ? void 0 : _a.places) == null ? void 0 : _b[0]) == null ? void 0 : _c.id);
+    if (!id) throw new Error(`Google found no business matching "${query}"`);
+    try {
+      localStorage.setItem(CACHE_PREFIX + cacheKey, id);
+    } catch (e) {
+    }
+    return id;
+  }
+  async function loadReviews(src, fetchJson = getJson, doFetch = fetch) {
+    if (!src.feedUrl && !src.googleApiKey) throw new Error("Add the Google API key");
+    if (!src.feedUrl && !src.placeId && !src.businessSearch) throw new Error("Type the business name and suburb (or paste its Google Place ID)");
+    const placeId = src.placeId || (src.feedUrl ? "" : await findPlaceId(src.businessSearch, src.googleApiKey, doFetch));
+    const cacheKey = `${src.feedUrl || placeId}|${src.language}`;
     const cached = readCache(cacheKey);
     if (cached) return cached;
-    let data;
-    if (src.feedUrl) {
-      data = fromFeed(await fetchJson(src.feedUrl), src.placeId);
-    } else if (src.placeId && src.googleApiKey) {
-      const url = `https://places.googleapis.com/v1/places/${encodeURIComponent(src.placeId)}?fields=${PLACES_FIELDS}&languageCode=${encodeURIComponent(src.language)}&key=${encodeURIComponent(src.googleApiKey)}`;
-      data = fromPlaces(await fetchJson(url), src.placeId);
-    } else {
-      throw new Error("No review source: set a Google Place ID + API key, or a feed URL");
-    }
+    const data = src.feedUrl ? fromFeed(await fetchJson(src.feedUrl), placeId) : fromPlaces(
+      await fetchJson(
+        `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}?fields=${PLACES_FIELDS}&languageCode=${encodeURIComponent(src.language)}&key=${encodeURIComponent(src.googleApiKey)}`
+      ),
+      placeId
+    );
     writeCache(cacheKey, data);
     return data;
   }
@@ -409,50 +431,55 @@ var __shazWidgetExport = (() => {
     };
     return out;
   }
+  var PANEL_ALIASES = { includeKeywords: "filterIncludeKeywords", excludeKeywords: "filterExcludeKeywords" };
   function panelOverrides(c) {
     const o = {};
-    for (const key of ["layout", "reviewLayout", "headerLayout", "reviewSourceStyle", "badgeDisplayMode"]) {
-      if (str(c[key])) o[key] = str(c[key]);
+    for (const [key, def] of Object.entries(DEFAULTS)) {
+      const v = c[key];
+      if (v === void 0 || v === null || v === "") continue;
+      if (typeof def === "number" || typeof def === "boolean" || typeof def === "string") o[key] = typeof v === "string" ? v.trim() : v;
     }
-    for (const key of ["showOverallRating", "showWriteReviewButton", "widgetTitle"]) {
-      if (c[key] !== void 0 && c[key] !== "") o[key] = coerceBool(c[key]);
-    }
-    if (c.carouselAutoplay !== void 0 && c.carouselAutoplay !== "") {
-      o.carouselAutoplay = o.sliderAutoplay = coerceBool(c.carouselAutoplay);
-    }
-    if (str(c.widgetTitleTitle)) o.widgetTitleTitle = str(c.widgetTitleTitle);
-    if (str(c.filterMinRating)) o.filterMinRating = str(c.filterMinRating);
-    if (str(c.includeKeywords)) o.filterIncludeKeywords = keywords(c.includeKeywords);
-    if (str(c.excludeKeywords)) o.filterExcludeKeywords = keywords(c.excludeKeywords);
+    for (const [field, key] of Object.entries(PANEL_ALIASES)) if (str(c[field])) o[key] = keywords(c[field]);
+    if (str(c.headerElements)) o.headerElements = str(c.headerElements).split(",").map((x) => x.trim());
+    if (str(c.badgeFloatingPosition)) o.badgeFloatingPosition = { ...DEFAULTS.badgeFloatingPosition, position: str(c.badgeFloatingPosition) };
+    if (str(c.widgetMaxWidth)) o.widgetWidth = { auto: false, customValue: str(c.widgetMaxWidth) };
+    if (str(c.carouselAutoplay) && !str(c.sliderAutoplay)) o.sliderAutoplay = str(c.carouselAutoplay);
     if (str(c.placeId)) o.sources = [{ url: str(c.placeId) }];
     return o;
   }
+  var THEME_NUMBER_KEYS = /* @__PURE__ */ new Set(["widgetHorizontalPadding", "widgetVerticalPadding", "reviewCornerRadius", "headerCornerRadius", "carouselArrowSize", "badgeCornerRadius"]);
   function panelTheme(c) {
     const t = {};
-    const colour = (key, set) => {
+    for (const [key, def] of Object.entries(DEFAULTS.theme.themeSettings)) {
       const v = str(c[key]);
-      if (v) set(v);
+      if (!v || typeof def !== "string" && typeof def !== "number") continue;
+      if (THEME_NUMBER_KEYS.has(key) || typeof def === "number") {
+        const n2 = Number(v);
+        if (Number.isFinite(n2)) t[key] = n2;
+      } else t[key] = v;
+    }
+    const n = (key) => str(c[key]) && Number.isFinite(Number(str(c[key]))) ? Number(str(c[key])) : void 0;
+    if (str(c.reviewTextFontSize)) t.reviewTextFontSize = { fontSize: n("reviewTextFontSize") };
+    if (str(c.widgetTitleFontSize)) t.widgetTitleTitleTextStyle = { fontSize: n("widgetTitleFontSize") };
+    if (str(c.widgetBackgroundColor)) t.widgetBackground = { color: str(c.widgetBackgroundColor) };
+    const button = (prefix, target) => {
+      const b = {};
+      if (str(c[`${prefix}Color`])) b.color = str(c[`${prefix}Color`]);
+      if (str(c[`${prefix}TextColor`])) b.fontColor = str(c[`${prefix}TextColor`]);
+      if (n(`${prefix}Radius`) !== void 0) b.borderRadius = n(`${prefix}Radius`);
+      if (str(c[`${prefix}Text`])) b.text = str(c[`${prefix}Text`]);
+      if (Object.keys(b).length) t[target] = b;
     };
-    colour("cardBackground", (v) => {
-      t.reviewBackgroundColor = v;
-    });
-    colour("cardTextColour", (v) => {
-      t.reviewTextColor = v;
-    });
-    colour("starColour", (v) => {
-      t.ratingColor = v;
-      t.popupRatingColor = v;
-      t.badgeRatingColor = v;
-    });
-    colour("accentColour", (v) => {
-      t.reviewReadMoreColor = v;
-      t.reviewVerifiedBadgeColor = v;
-      t.reviewSourceNameColor = v;
-      t.writeReviewButton = { color: v };
-    });
-    colour("fontFamily", (v) => {
-      t.font = { value: v, googleFont: true };
-    });
+    button("writeReviewButton", "writeReviewButton");
+    button("loadMoreButton", "loadMoreButton");
+    if (str(c.fontFamily)) t.font = { value: str(c.fontFamily), googleFont: true };
+    if (str(c.cardBackground)) t.reviewBackgroundColor = str(c.cardBackground);
+    if (str(c.cardTextColour)) t.reviewTextColor = str(c.cardTextColour);
+    if (str(c.starColour)) t.ratingColor = t.popupRatingColor = t.badgeRatingColor = str(c.starColour);
+    if (str(c.accentColour)) {
+      t.reviewReadMoreColor = t.reviewVerifiedBadgeColor = t.reviewSourceNameColor = str(c.accentColour);
+      t.writeReviewButton = { ...t.writeReviewButton, color: str(c.accentColour) };
+    }
     return t;
   }
   function mergeTheme(...layers) {
@@ -486,6 +513,7 @@ var __shazWidgetExport = (() => {
     var _a, _b;
     return {
       placeId: (_b = (_a = settings.sources.find((s) => s.url)) == null ? void 0 : _a.url) != null ? _b : "",
+      businessSearch: str(config.businessSearch),
       googleApiKey: str(config.googleApiKey),
       feedUrl: str(config.feedUrl),
       language: str(config.language) || "en"

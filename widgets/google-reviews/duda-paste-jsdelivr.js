@@ -10,7 +10,7 @@
 // pinned tag — no CloudFront deploy needed. Rendering, styling and data loading
 // all live in the bundle: the HTML tab is one empty <div data-shm-main>, the CSS
 // tab stays empty, and each site's look comes from the widget's settings
-// (paste the site's Elfsight settings JSON into "Settings JSON").
+// (the Content Editor panel built from duda-ai-prompt.md).
 //
 // The tag is immutable: shipping a change = build, commit, tag, bump TAG here.
 // ===========================================================================

@@ -84,7 +84,7 @@ describe('loadReviews', () => {
 
   it('calls the Places API with the field mask and key, then serves the cache', async () => {
     const fetchJson = vi.fn().mockResolvedValue({ rating: 4.5, userRatingCount: 10, reviews: [] });
-    const src = { placeId: 'ChIJabc', googleApiKey: 'KEY', feedUrl: '', language: 'en' };
+    const src = { placeId: 'ChIJabc', businessSearch: '', googleApiKey: 'KEY', feedUrl: '', language: 'en' };
     await loadReviews(src, fetchJson);
     await loadReviews(src, fetchJson);
     expect(fetchJson).toHaveBeenCalledTimes(1);
@@ -93,11 +93,25 @@ describe('loadReviews', () => {
 
   it('prefers the feed URL when set', async () => {
     const fetchJson = vi.fn().mockResolvedValue({ reviews: [] });
-    await loadReviews({ placeId: 'ChIJ', googleApiKey: 'KEY', feedUrl: 'https://feed/x.json', language: 'en' }, fetchJson);
+    await loadReviews({ placeId: 'ChIJ', businessSearch: '', googleApiKey: 'KEY', feedUrl: 'https://feed/x.json', language: 'en' }, fetchJson);
     expect(fetchJson).toHaveBeenCalledWith('https://feed/x.json');
   });
 
   it('rejects with a clear message when there is no source', async () => {
-    await expect(loadReviews({ placeId: '', googleApiKey: '', feedUrl: '', language: 'en' }, vi.fn())).rejects.toThrow(/No review source/);
+    await expect(loadReviews({ placeId: '', businessSearch: '', googleApiKey: '', feedUrl: '', language: 'en' }, vi.fn())).rejects.toThrow(/API key/);
+    await expect(loadReviews({ placeId: '', businessSearch: '', googleApiKey: 'KEY', feedUrl: '', language: 'en' }, vi.fn())).rejects.toThrow(/business name/);
+  });
+
+  it('finds the Place ID from "business name, suburb", then caches it', async () => {
+    const doFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ places: [{ id: 'ChIJfound' }] }) });
+    const fetchJson = vi.fn().mockResolvedValue({ rating: 5, userRatingCount: 3, reviews: [] });
+    const src = { placeId: '', businessSearch: 'Acme Recruitment, Sydney', googleApiKey: 'KEY', feedUrl: '', language: 'en' };
+    const d = await loadReviews(src, fetchJson, doFetch as unknown as typeof fetch);
+    expect(doFetch.mock.calls[0][0]).toBe('https://places.googleapis.com/v1/places:searchText');
+    expect(JSON.parse(doFetch.mock.calls[0][1].body)).toEqual({ textQuery: 'Acme Recruitment, Sydney' });
+    expect(fetchJson.mock.calls[0][0]).toContain('/places/ChIJfound?');
+    expect(d.business.writeReviewUrl).toContain('ChIJfound');
+    await loadReviews(src, fetchJson, doFetch as unknown as typeof fetch);
+    expect(doFetch).toHaveBeenCalledTimes(1);
   });
 });
