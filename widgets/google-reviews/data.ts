@@ -24,6 +24,8 @@ export interface Review {
 
 export interface Business {
   name: string;
+  address?: string;
+  placeId?: string;
   rating: number;
   reviewCount: number;
   reviewsUrl: string;
@@ -35,7 +37,8 @@ export interface ReviewData {
   reviews: Review[];
 }
 
-const PLACES_FIELDS = 'displayName,rating,userRatingCount,googleMapsUri,reviews';
+/** Shazamme's helper: holds the Google Places key and caches reviews a day. */
+export const API_BASE = 'https://shazamme-widgets-api.vercel.app';
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const CACHE_PREFIX = 'shm-greviews:';
 
@@ -56,33 +59,6 @@ type Raw = Record<string, any>;
 
 const text = (v: unknown): string => (typeof v === 'string' ? v : '');
 const list = (v: unknown): Raw[] => (Array.isArray(v) ? v.filter((x): x is Raw => Boolean(x) && typeof x === 'object') : []);
-
-/** Places API (New) place-details response → ReviewData. */
-export function fromPlaces(place: Raw, placeId: string): ReviewData {
-  const reviews: Review[] = list(place?.reviews).map((r, i) => ({
-    id: text(r.name) || `${placeId}-${i}`,
-    authorName: text(r.authorAttribution?.displayName),
-    authorPhoto: text(r.authorAttribution?.photoUri),
-    authorUrl: text(r.authorAttribution?.uri),
-    rating: Number(r.rating) || 0,
-    text: text(r.text?.text) || text(r.originalText?.text),
-    publishedAt: toEpochSeconds(r.publishTime),
-    relativeTime: text(r.relativePublishTimeDescription),
-    url: text(r.googleMapsUri) || text(r.authorAttribution?.uri),
-    images: [],
-    reply: null,
-  }));
-  return {
-    business: {
-      name: text(place?.displayName?.text),
-      rating: Number(place?.rating) || 0,
-      reviewCount: Number(place?.userRatingCount) || reviews.length,
-      reviewsUrl: text(place?.googleMapsUri),
-      writeReviewUrl: writeReviewUrl(placeId),
-    },
-    reviews,
-  };
-}
 
 /**
  * A JSON feed. Accepts our own `{ business, reviews }` shape, or a reviews
@@ -115,10 +91,12 @@ export function fromFeed(feed: Raw, placeId: string): ReviewData {
   return {
     business: {
       name: text(b.name),
+      address: text(b.address),
+      placeId: text(b.placeId) || placeId,
       rating: Number(b.rating) || average(reviews),
       reviewCount: Number(b.reviewCount ?? b.reviews_number) || reviews.length,
       reviewsUrl: text(b.reviewsUrl),
-      writeReviewUrl: text(b.writeReviewUrl) || writeReviewUrl(placeId),
+      writeReviewUrl: text(b.writeReviewUrl) || writeReviewUrl(text(b.placeId) || placeId),
     },
     reviews,
   };
@@ -129,13 +107,14 @@ function average(reviews: Review[]): number {
   return Math.round((reviews.reduce((s, r) => s + r.rating, 0) / reviews.length) * 10) / 10;
 }
 
-function readCache(key: string): ReviewData | null {
+/** The cached copy plus whether it is still fresh; a stale copy is the fallback when the helper is down. */
+function readCache(key: string): { data: ReviewData; fresh: boolean } | null {
   try {
     const raw = localStorage.getItem(CACHE_PREFIX + key);
     if (!raw) return null;
     const { at, data } = JSON.parse(raw);
-    const fresh = typeof at === 'number' && Date.now() - at < CACHE_TTL_MS;
-    return fresh && data?.business && Array.isArray(data.reviews) ? (data as ReviewData) : null;
+    if (typeof at !== 'number' || !data?.business || !Array.isArray(data.reviews)) return null;
+    return { data: data as ReviewData, fresh: Date.now() - at < CACHE_TTL_MS };
   } catch {
     return null;
   }
@@ -151,63 +130,47 @@ function writeCache(key: string, data: ReviewData): void {
 
 async function getJson(url: string): Promise<Raw> {
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText} from ${url.split('?')[0]}`);
-  return res.json();
-}
-
-/** Find the Place ID for "Business name, suburb" with Places Text Search. */
-const PLACE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-
-/** Find the Place ID for "Business name, suburb" with Places Text Search (cached a day). */
-export async function findPlaceId(query: string, apiKey: string, doFetch: typeof fetch = fetch): Promise<string> {
-  const cacheKey = CACHE_PREFIX + 'place|' + query.trim().replace(/\s+/g, ' ').toLowerCase();
-  try {
-    const hit = JSON.parse(localStorage.getItem(cacheKey) ?? 'null');
-    if (hit && typeof hit.id === 'string' && Date.now() - hit.at < PLACE_CACHE_TTL_MS) return hit.id;
-  } catch {
-    // storage blocked or old format — look it up again
-  }
-  const res = await doFetch('https://places.googleapis.com/v1/places:searchText', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': apiKey, 'X-Goog-FieldMask': 'places.id' },
-    body: JSON.stringify({ textQuery: query }),
-  });
-  let body: Raw = {};
+  let body: Raw | null = null;
   try {
     body = await res.json();
   } catch {
-    // non-JSON error page
+    // non-JSON page (error page, captive portal)
   }
-  if (!res.ok) throw new Error(`Google could not search for "${query}" (${res.status}${text(body?.error?.message) ? `: ${text(body.error.message)}` : ''})`);
-  const id = text(body?.places?.[0]?.id);
-  if (!id) throw new Error(`Google found no business matching "${query}". Add the suburb, or paste the Place ID`);
-  try {
-    localStorage.setItem(cacheKey, JSON.stringify({ id, at: Date.now() }));
-  } catch {
-    // not cached, still works
-  }
-  return id;
+  if (!res.ok) throw new Error(text(body?.error) || `${res.status} ${res.statusText} from ${url.split('?')[0]}`);
+  if (!body || typeof body !== 'object') throw new Error(`Unreadable response from ${url.split('?')[0]}`);
+  return body;
 }
 
-export async function loadReviews(src: SourceConfig, fetchJson = getJson, doFetch: typeof fetch = fetch): Promise<ReviewData> {
-  if (!src.feedUrl && !src.googleApiKey) throw new Error('Add the Google API key');
-  if (!src.feedUrl && !src.placeId && !src.businessSearch) throw new Error('Type the business name and suburb (or paste its Google Place ID)');
-  const placeId = src.placeId || (src.feedUrl ? '' : await findPlaceId(src.businessSearch, src.googleApiKey, doFetch));
-  const cacheKey = `${src.feedUrl || placeId}|${src.language}`;
-  const cached = readCache(cacheKey);
-  if (cached) return cached;
+export interface Suggestion {
+  placeId: string;
+  name: string;
+  address: string;
+}
 
-  const data = src.feedUrl
-    ? fromFeed(await fetchJson(src.feedUrl), placeId)
-    : fromPlaces(
-        await fetchJson(
-          `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}` +
-            `?fields=${PLACES_FIELDS}&languageCode=${encodeURIComponent(src.language)}&key=${encodeURIComponent(src.googleApiKey)}`,
-        ),
-        placeId,
-      );
-  writeCache(cacheKey, data);
-  return data;
+/** Company suggestions for the in-editor finder, through Shazamme's helper. */
+export async function searchBusinesses(q: string, lang: string, fetchJson = getJson): Promise<Suggestion[]> {
+  const body = await fetchJson(`${API_BASE}/api/places/search?q=${encodeURIComponent(q)}&lang=${encodeURIComponent(lang)}`);
+  return list(body?.results).map((r) => ({ placeId: text(r.placeId), name: text(r.name), address: text(r.address) })).filter((r) => r.placeId);
+}
+
+export async function loadReviews(src: SourceConfig, fetchJson = getJson): Promise<ReviewData> {
+  if (!src.feedUrl && !src.placeId && !src.businessSearch) throw new Error('Search for the business above, then paste its Place ID into the Source tab');
+  const cacheKey = `${src.feedUrl || src.placeId || src.businessSearch.toLowerCase()}|${src.language}`;
+  const cached = readCache(cacheKey);
+  if (cached?.fresh) return cached.data;
+
+  const lookup = src.placeId ? `placeId=${encodeURIComponent(src.placeId)}` : `q=${encodeURIComponent(src.businessSearch)}`;
+  const url = src.feedUrl || `${API_BASE}/api/reviews?${lookup}&lang=${encodeURIComponent(src.language)}`;
+  try {
+    const data = fromFeed(await fetchJson(url), src.placeId);
+    // An empty answer is a fault, not "no reviews": never cache it over good data.
+    if (!data.business.name && !data.reviews.length) throw new Error('The reviews service returned no business');
+    writeCache(cacheKey, data);
+    return data;
+  } catch (e) {
+    if (cached) return cached.data; // helper down: keep showing the last good copy
+    throw e;
+  }
 }
 
 function matches(text: string, keyword: string): boolean {

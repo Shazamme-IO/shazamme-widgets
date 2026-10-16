@@ -301,7 +301,6 @@ export interface SourceConfig {
   placeId: string;
   /** "Business name, suburb" — looked up on Google when no Place ID is set. */
   businessSearch: string;
-  googleApiKey: string;
   feedUrl: string;
   language: string;
 }
@@ -523,7 +522,6 @@ export function readSource(config: Record<string, unknown>, settings: Settings):
   return {
     placeId: settings.sources.find((s) => s.url)?.url ?? '',
     businessSearch: raw(config.businessSearch).replace(/\s+/g, ' '),
-    googleApiKey: str(config.googleApiKey),
     feedUrl: str(config.feedUrl),
     language: str(config.language) || 'en',
   };

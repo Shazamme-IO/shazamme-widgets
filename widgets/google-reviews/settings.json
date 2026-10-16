@@ -7,21 +7,14 @@
       "label": "Business name and suburb",
       "type": "text",
       "default": "",
-      "help": "Required. As it appears on Google Maps; the widget finds the business on Google."
+      "help": "Only if there is no Place ID. Google picks the closest match."
     },
     {
       "key": "placeId",
       "label": "Google Place ID",
       "type": "text",
       "default": "",
-      "help": "Optional. Only if the business-name search picks the wrong business."
-    },
-    {
-      "key": "googleApiKey",
-      "label": "Google Places API key",
-      "type": "text",
-      "default": "",
-      "help": "Places API (New) key, restricted by HTTP referrer to the site's domains. Google returns the rating, review count and up to 5 reviews."
+      "help": "Use the business finder shown above the widget in the Duda editor, then paste the Place ID here."
     },
     {
       "key": "feedUrl",
