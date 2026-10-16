@@ -84,9 +84,26 @@ describe('loadReviews', () => {
   });
 
   it('prefers the feed URL when set', async () => {
-    const fetchJson = vi.fn().mockResolvedValue({ reviews: [] });
+    const fetchJson = vi.fn().mockResolvedValue({ business: { name: 'Acme' }, reviews: [] });
     await loadReviews(src({ placeId: 'ChIJ', feedUrl: 'https://feed/x.json' }), fetchJson);
     expect(fetchJson).toHaveBeenCalledWith('https://feed/x.json');
+  });
+
+  it('an empty 200 is an error and is never cached', async () => {
+    const fetchJson = vi.fn().mockResolvedValue({});
+    await expect(loadReviews(src({ placeId: 'ChIJempty' }), fetchJson)).rejects.toThrow(/no business/);
+    await expect(loadReviews(src({ placeId: 'ChIJempty' }), fetchJson)).rejects.toThrow();
+    expect(fetchJson).toHaveBeenCalledTimes(2);
+  });
+
+  it('falls back to the last good copy when the helper is down', async () => {
+    const good = { business: { name: 'Acme', rating: 5, reviewCount: 1 }, reviews: [] };
+    vi.useFakeTimers();
+    await loadReviews(src({ placeId: 'ChIJstale' }), vi.fn().mockResolvedValue(good));
+    vi.setSystemTime(Date.now() + 7 * 60 * 60 * 1000);
+    const d = await loadReviews(src({ placeId: 'ChIJstale' }), vi.fn().mockRejectedValue(new Error('down')));
+    expect(d.business.name).toBe('Acme');
+    vi.useRealTimers();
   });
 
   it('tells the site builder what to do when nothing is set', async () => {

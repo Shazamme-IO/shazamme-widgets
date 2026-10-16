@@ -10,7 +10,7 @@ describe('in-editor company finder', () => {
     const onPick = vi.fn();
     mountFinder(host, { lang: 'en', onPick, search });
     const input = host.querySelector<HTMLInputElement>('.es-finder-input')!;
-    input.value = 'h'; input.dispatchEvent(new Event('input'));
+    input.value = 'hr'; input.dispatchEvent(new Event('input'));
     input.value = 'hra'; input.dispatchEvent(new Event('input'));
     await vi.advanceTimersByTimeAsync(300);
     expect(search).toHaveBeenCalledTimes(1);
@@ -19,6 +19,22 @@ describe('in-editor company finder', () => {
     host.querySelector<HTMLButtonElement>('[data-i="0"]')!.click();
     expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ placeId: 'ChIJ1' }));
     expect(host.querySelector('.es-finder-id code')!.textContent).toBe('ChIJ1');
+    vi.useRealTimers();
+  });
+
+  it('clearing the box drops an answer still in flight', async () => {
+    let resolve!: (v: unknown) => void;
+    const search = vi.fn().mockReturnValue(new Promise((r) => { resolve = r; }));
+    vi.useFakeTimers();
+    const host = document.createElement('div');
+    mountFinder(host, { lang: 'en', onPick: vi.fn(), search });
+    const input = host.querySelector<HTMLInputElement>('.es-finder-input')!;
+    input.value = 'acme'; input.dispatchEvent(new Event('input'));
+    await vi.advanceTimersByTimeAsync(300);
+    input.value = ''; input.dispatchEvent(new Event('input'));
+    resolve([{ placeId: 'ChIJ1', name: 'Acme', address: 'x' }]);
+    await vi.runAllTimersAsync();
+    expect(host.querySelector<HTMLElement>('.es-finder-results')!.hidden).toBe(true);
     vi.useRealTimers();
   });
 

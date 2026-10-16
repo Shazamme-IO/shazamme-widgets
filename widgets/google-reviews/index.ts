@@ -12,7 +12,8 @@ import { readSettings, readSource, type Settings, type ThemeSettings } from './s
 import { badge, header, reviewCard, schemaJsonLd, widgetTitle, type RenderCtx } from './render';
 import { carouselHtml, carouselOpts, mountCarousel } from './carousel';
 import { openPopup } from './popup';
-import { mountFinder } from './finder';
+import { mountFinder, type Finder } from './finder';
+import type { Suggestion } from './data';
 import { esc } from './format';
 
 interface WidgetContext {
@@ -246,6 +247,11 @@ function showMessage(root: HTMLElement, inEditor: boolean, message: string): voi
   root.innerHTML = inEditor ? `<div class="es-editor-message">Google Reviews: ${esc(message)}</div>` : '';
 }
 
+/** Latest load per widget, so an older answer never overwrites a newer preview. */
+const loads = new WeakMap<HTMLElement, number>();
+/** The editor's finder per widget, reused across Duda re-runs. */
+const editors = new WeakMap<HTMLElement, { host: HTMLElement; finder: Finder; ref: { onPick: (s: Suggestion) => void } }>();
+
 export default async function googleReviews({ element, data }: WidgetContext): Promise<void> {
   const config = (data?.config ?? {}) as Record<string, unknown>;
   const s = readSettings(config);
@@ -260,32 +266,44 @@ export default async function googleReviews({ element, data }: WidgetContext): P
   root.classList.add('shm-ready');
 
   const inEditor = Boolean(data?.inEditor);
-  const show = async (source: typeof src): Promise<ReviewData | null> => {
+  const token = (loads.get(element) ?? 0) + 1;
+  loads.set(element, token);
+  const show = async (source: typeof src, mine: () => boolean): Promise<ReviewData | null> => {
     try {
       const reviewData = await loadReviews(source);
+      if (!mine()) return null; // a newer load (re-run or pick) owns the preview
       render(root, s, reviewData);
       return reviewData;
     } catch (e) {
       console.error('[google-reviews]', e);
-      showMessage(root, inEditor, (e as Error).message);
+      if (mine()) showMessage(root, inEditor, (e as Error).message);
       return null;
     }
   };
+  const latest = (): boolean => loads.get(element) === token;
 
   if (!inEditor) {
-    await show(src);
+    await show(src, latest);
     return;
   }
-  // Editor only: the company finder sits above the preview (reused across re-runs).
-  let host = element.querySelector<HTMLElement>('[data-shm-finder]');
-  if (!host) {
-    host = document.createElement('div');
+  // Editor only: one finder per widget, kept across Duda re-runs so typing and
+  // a picked business survive a settings change.
+  let ed = editors.get(element);
+  if (!ed || !ed.host.isConnected) {
+    const host = document.createElement('div');
     host.setAttribute('data-shm-finder', '');
     root.before(host);
+    const ref = { onPick: (_: Suggestion): void => undefined };
+    ed = { host, ref, finder: mountFinder(host, { lang: src.language, onPick: (p) => ref.onPick(p) }) };
+    editors.set(element, ed);
   }
-  const finder = mountFinder(host, {
-    lang: src.language,
-    onPick: (pick) => { void show({ ...src, feedUrl: '', businessSearch: '', placeId: pick.placeId }).then((d) => finder.setCurrent(d?.business ?? null)); },
-  });
-  finder.setCurrent((await show(src))?.business ?? null);
+  const { finder } = ed;
+  ed.ref.onPick = (pick) => {
+    const pickToken = (loads.get(element) ?? 0) + 1;
+    loads.set(element, pickToken);
+    const mine = (): boolean => loads.get(element) === pickToken;
+    void show({ ...src, feedUrl: '', businessSearch: '', placeId: pick.placeId }, mine).then((d) => { if (mine()) finder.setCurrent(d?.business ?? null); });
+  };
+  const d = await show(src, latest);
+  if (latest()) finder.setCurrent(d?.business ?? null);
 }

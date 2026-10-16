@@ -107,13 +107,14 @@ function average(reviews: Review[]): number {
   return Math.round((reviews.reduce((s, r) => s + r.rating, 0) / reviews.length) * 10) / 10;
 }
 
-function readCache(key: string): ReviewData | null {
+/** The cached copy plus whether it is still fresh; a stale copy is the fallback when the helper is down. */
+function readCache(key: string): { data: ReviewData; fresh: boolean } | null {
   try {
     const raw = localStorage.getItem(CACHE_PREFIX + key);
     if (!raw) return null;
     const { at, data } = JSON.parse(raw);
-    const fresh = typeof at === 'number' && Date.now() - at < CACHE_TTL_MS;
-    return fresh && data?.business && Array.isArray(data.reviews) ? (data as ReviewData) : null;
+    if (typeof at !== 'number' || !data?.business || !Array.isArray(data.reviews)) return null;
+    return { data: data as ReviewData, fresh: Date.now() - at < CACHE_TTL_MS };
   } catch {
     return null;
   }
@@ -129,13 +130,14 @@ function writeCache(key: string, data: ReviewData): void {
 
 async function getJson(url: string): Promise<Raw> {
   const res = await fetch(url);
-  let body: Raw = {};
+  let body: Raw | null = null;
   try {
     body = await res.json();
   } catch {
-    // non-JSON error page
+    // non-JSON page (error page, captive portal)
   }
   if (!res.ok) throw new Error(text(body?.error) || `${res.status} ${res.statusText} from ${url.split('?')[0]}`);
+  if (!body || typeof body !== 'object') throw new Error(`Unreadable response from ${url.split('?')[0]}`);
   return body;
 }
 
@@ -155,13 +157,20 @@ export async function loadReviews(src: SourceConfig, fetchJson = getJson): Promi
   if (!src.feedUrl && !src.placeId && !src.businessSearch) throw new Error('Search for the business above, then paste its Place ID into the Source tab');
   const cacheKey = `${src.feedUrl || src.placeId || src.businessSearch.toLowerCase()}|${src.language}`;
   const cached = readCache(cacheKey);
-  if (cached) return cached;
+  if (cached?.fresh) return cached.data;
 
   const lookup = src.placeId ? `placeId=${encodeURIComponent(src.placeId)}` : `q=${encodeURIComponent(src.businessSearch)}`;
   const url = src.feedUrl || `${API_BASE}/api/reviews?${lookup}&lang=${encodeURIComponent(src.language)}`;
-  const data = fromFeed(await fetchJson(url), src.placeId);
-  writeCache(cacheKey, data);
-  return data;
+  try {
+    const data = fromFeed(await fetchJson(url), src.placeId);
+    // An empty answer is a fault, not "no reviews": never cache it over good data.
+    if (!data.business.name && !data.reviews.length) throw new Error('The reviews service returned no business');
+    writeCache(cacheKey, data);
+    return data;
+  } catch (e) {
+    if (cached) return cached.data; // helper down: keep showing the last good copy
+    throw e;
+  }
 }
 
 function matches(text: string, keyword: string): boolean {

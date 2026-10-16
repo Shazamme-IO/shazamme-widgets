@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 64e6c8056607. Registers window.ShazammeWidget["<name>"].
+ * Build 4b43359bba70. Registers window.ShazammeWidget["<name>"].
  */
 (function(){
   if (typeof document === 'undefined') return;
@@ -100,8 +100,8 @@ var __shazWidgetExport = (() => {
       const raw2 = localStorage.getItem(CACHE_PREFIX + key);
       if (!raw2) return null;
       const { at, data } = JSON.parse(raw2);
-      const fresh = typeof at === "number" && Date.now() - at < CACHE_TTL_MS;
-      return fresh && (data == null ? void 0 : data.business) && Array.isArray(data.reviews) ? data : null;
+      if (typeof at !== "number" || !(data == null ? void 0 : data.business) || !Array.isArray(data.reviews)) return null;
+      return { data, fresh: Date.now() - at < CACHE_TTL_MS };
     } catch (e) {
       return null;
     }
@@ -114,12 +114,13 @@ var __shazWidgetExport = (() => {
   }
   async function getJson(url) {
     const res = await fetch(url);
-    let body = {};
+    let body = null;
     try {
       body = await res.json();
     } catch (e) {
     }
     if (!res.ok) throw new Error(text(body == null ? void 0 : body.error) || `${res.status} ${res.statusText} from ${url.split("?")[0]}`);
+    if (!body || typeof body !== "object") throw new Error(`Unreadable response from ${url.split("?")[0]}`);
     return body;
   }
   async function searchBusinesses(q, lang, fetchJson = getJson) {
@@ -130,12 +131,18 @@ var __shazWidgetExport = (() => {
     if (!src.feedUrl && !src.placeId && !src.businessSearch) throw new Error("Search for the business above, then paste its Place ID into the Source tab");
     const cacheKey = `${src.feedUrl || src.placeId || src.businessSearch.toLowerCase()}|${src.language}`;
     const cached = readCache(cacheKey);
-    if (cached) return cached;
+    if (cached == null ? void 0 : cached.fresh) return cached.data;
     const lookup = src.placeId ? `placeId=${encodeURIComponent(src.placeId)}` : `q=${encodeURIComponent(src.businessSearch)}`;
     const url = src.feedUrl || `${API_BASE}/api/reviews?${lookup}&lang=${encodeURIComponent(src.language)}`;
-    const data = fromFeed(await fetchJson(url), src.placeId);
-    writeCache(cacheKey, data);
-    return data;
+    try {
+      const data = fromFeed(await fetchJson(url), src.placeId);
+      if (!data.business.name && !data.reviews.length) throw new Error("The reviews service returned no business");
+      writeCache(cacheKey, data);
+      return data;
+    } catch (e) {
+      if (cached) return cached.data;
+      throw e;
+    }
   }
   function matches(text3, keyword) {
     return text3.toLowerCase().includes(keyword.toLowerCase());
@@ -945,7 +952,7 @@ var __shazWidgetExport = (() => {
 
   // widgets/google-reviews/finder.ts
   var DEBOUNCE_MS = 300;
-  var MIN_CHARS = 2;
+  var MIN_CHARS = 3;
   function mountFinder(host, o) {
     var _a;
     const search = (_a = o.search) != null ? _a : searchBusinesses;
@@ -976,6 +983,8 @@ var __shazWidgetExport = (() => {
       clearTimeout(timer);
       const q = input.value.trim();
       if (q.length < MIN_CHARS) {
+        seq++;
+        found = [];
         results.hidden = true;
         return;
       }
@@ -985,6 +994,7 @@ var __shazWidgetExport = (() => {
       const btn = e.target.closest("[data-i]");
       const choice = btn ? found[Number(btn.dataset.i)] : void 0;
       if (!choice) return;
+      seq++;
       results.hidden = true;
       input.value = choice.name;
       picked.hidden = false;
@@ -1210,6 +1220,8 @@ var __shazWidgetExport = (() => {
   function showMessage(root, inEditor, message) {
     root.innerHTML = inEditor ? `<div class="es-editor-message">Google Reviews: ${esc(message)}</div>` : "";
   }
+  var loads = /* @__PURE__ */ new WeakMap();
+  var editors = /* @__PURE__ */ new WeakMap();
   async function googleReviews({ element, data }) {
     var _a, _b, _c, _d, _e;
     const config = (_a = data == null ? void 0 : data.config) != null ? _a : {};
@@ -1224,37 +1236,47 @@ var __shazWidgetExport = (() => {
     loadFont(s.theme.themeSettings);
     root.classList.add("shm-ready");
     const inEditor = Boolean(data == null ? void 0 : data.inEditor);
-    const show = async (source) => {
+    const token = ((_d = loads.get(element)) != null ? _d : 0) + 1;
+    loads.set(element, token);
+    const show = async (source, mine) => {
       try {
         const reviewData = await loadReviews(source);
+        if (!mine()) return null;
         render(root, s, reviewData);
         return reviewData;
       } catch (e) {
         console.error("[google-reviews]", e);
-        showMessage(root, inEditor, e.message);
+        if (mine()) showMessage(root, inEditor, e.message);
         return null;
       }
     };
+    const latest = () => loads.get(element) === token;
     if (!inEditor) {
-      await show(src);
+      await show(src, latest);
       return;
     }
-    let host = element.querySelector("[data-shm-finder]");
-    if (!host) {
-      host = document.createElement("div");
+    let ed = editors.get(element);
+    if (!ed || !ed.host.isConnected) {
+      const host = document.createElement("div");
       host.setAttribute("data-shm-finder", "");
       root.before(host);
+      const ref = { onPick: (_) => void 0 };
+      ed = { host, ref, finder: mountFinder(host, { lang: src.language, onPick: (p) => ref.onPick(p) }) };
+      editors.set(element, ed);
     }
-    const finder = mountFinder(host, {
-      lang: src.language,
-      onPick: (pick) => {
-        void show({ ...src, feedUrl: "", businessSearch: "", placeId: pick.placeId }).then((d) => {
-          var _a2;
-          return finder.setCurrent((_a2 = d == null ? void 0 : d.business) != null ? _a2 : null);
-        });
-      }
-    });
-    finder.setCurrent((_e = (_d = await show(src)) == null ? void 0 : _d.business) != null ? _e : null);
+    const { finder } = ed;
+    ed.ref.onPick = (pick) => {
+      var _a2;
+      const pickToken = ((_a2 = loads.get(element)) != null ? _a2 : 0) + 1;
+      loads.set(element, pickToken);
+      const mine = () => loads.get(element) === pickToken;
+      void show({ ...src, feedUrl: "", businessSearch: "", placeId: pick.placeId }, mine).then((d2) => {
+        var _a3;
+        if (mine()) finder.setCurrent((_a3 = d2 == null ? void 0 : d2.business) != null ? _a3 : null);
+      });
+    };
+    const d = await show(src, latest);
+    if (latest()) finder.setCurrent((_e = d == null ? void 0 : d.business) != null ? _e : null);
   }
   return __toCommonJS(index_exports);
 })();

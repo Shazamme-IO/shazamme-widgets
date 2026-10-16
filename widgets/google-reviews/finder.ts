@@ -7,7 +7,7 @@ import { searchBusinesses, type Business, type Suggestion } from './data';
 import { esc } from './format';
 
 const DEBOUNCE_MS = 300;
-const MIN_CHARS = 2;
+const MIN_CHARS = 3;
 
 export interface FinderOpts {
   lang: string;
@@ -58,6 +58,8 @@ export function mountFinder(host: HTMLElement, o: FinderOpts): Finder {
     clearTimeout(timer);
     const q = input.value.trim();
     if (q.length < MIN_CHARS) {
+      seq++; // drop any answer still in flight for a longer query
+      found = [];
       results.hidden = true;
       return;
     }
@@ -68,6 +70,7 @@ export function mountFinder(host: HTMLElement, o: FinderOpts): Finder {
     const btn = (e.target as Element).closest<HTMLElement>('[data-i]');
     const choice = btn ? found[Number(btn.dataset.i)] : undefined;
     if (!choice) return;
+    seq++;
     results.hidden = true;
     input.value = choice.name;
     picked.hidden = false;
