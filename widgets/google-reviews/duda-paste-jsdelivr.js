@@ -1,3 +1,6 @@
+// LAST UPDATED: 2026-10-16 16:36 AEDT (v0.1.30)
+// Change: always uses Shazamme's Places helper (no API key field); Elfsight-
+// style company finder above the widget in the Duda editor.
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
 // existing widget JS.
@@ -13,9 +16,6 @@
 // (the Content Editor panel built from duda-ai-prompt.md).
 //
 // The tag is immutable: shipping a change = build, commit, tag, bump TAG here.
-// LAST UPDATED: 2026-10-16 16:36 AEDT (v0.1.30)
-// Change: always uses Shazamme's Places helper (no API key field); Elfsight-
-// style company finder above the widget in the Duda editor.
 // ===========================================================================
 (function () {
   var NAME = "google-reviews";
