@@ -1,26 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fromFeed, fromPlaces, loadReviews, selectReviews, writeReviewUrl, type Review } from './data';
+import { API_BASE, fromFeed, loadReviews, searchBusinesses, selectReviews, type Review } from './data';
 import { readSettings } from './settings';
 
 const review = (over: Partial<Review>): Review => ({
   id: 'r', authorName: 'Ann Smith', authorPhoto: '', authorUrl: '', rating: 5, text: 'Great',
   publishedAt: 1_700_000_000, relativeTime: '', url: '', images: [], reply: null, ...over,
-});
-
-describe('fromPlaces', () => {
-  it('maps a Places API (New) place to business + reviews', () => {
-    const d = fromPlaces({
-      displayName: { text: 'Acme Recruitment' }, rating: 4.8, userRatingCount: 129, googleMapsUri: 'https://maps.google.com/?cid=1',
-      reviews: [{ name: 'places/x/reviews/1', rating: 5, text: { text: 'Lovely' }, publishTime: '2026-07-01T10:00:00Z',
-        relativePublishTimeDescription: '3 months ago', authorAttribution: { displayName: 'Lloyd D', photoUri: 'https://p/1', uri: 'https://u/1' } }],
-    }, 'ChIJabc');
-    expect(d.business).toEqual({ name: 'Acme Recruitment', rating: 4.8, reviewCount: 129, reviewsUrl: 'https://maps.google.com/?cid=1', writeReviewUrl: writeReviewUrl('ChIJabc') });
-    expect(d.reviews[0]).toMatchObject({ id: 'places/x/reviews/1', authorName: 'Lloyd D', authorPhoto: 'https://p/1', rating: 5, text: 'Lovely', publishedAt: Date.parse('2026-07-01T10:00:00Z') / 1000 });
-  });
-
-  it('survives a place with no reviews', () => {
-    expect(fromPlaces({ rating: 5 }, 'ChIJ').reviews).toEqual([]);
-  });
 });
 
 describe('fromFeed', () => {
@@ -81,37 +65,39 @@ describe('loadReviews', () => {
     const store = new Map<string, string>();
     vi.stubGlobal('localStorage', { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => store.set(k, v) });
   });
+  const src = (over: Record<string, string> = {}) => ({ placeId: '', businessSearch: '', feedUrl: '', language: 'en', ...over });
 
-  it('calls the Places API with the field mask and key, then serves the cache', async () => {
-    const fetchJson = vi.fn().mockResolvedValue({ rating: 4.5, userRatingCount: 10, reviews: [] });
-    const src = { placeId: 'ChIJabc', businessSearch: '', googleApiKey: 'KEY', feedUrl: '', language: 'en' };
-    await loadReviews(src, fetchJson);
-    await loadReviews(src, fetchJson);
+  it('always goes through the Shazamme helper (never Google directly), then serves the cache', async () => {
+    const fetchJson = vi.fn().mockResolvedValue({ business: { placeId: 'ChIJabc', name: 'Acme', address: '1 St', rating: 4.5, reviewCount: 10 }, reviews: [] });
+    await loadReviews(src({ placeId: 'ChIJabc' }), fetchJson);
+    await loadReviews(src({ placeId: 'ChIJabc' }), fetchJson);
     expect(fetchJson).toHaveBeenCalledTimes(1);
-    expect(fetchJson.mock.calls[0][0]).toBe('https://places.googleapis.com/v1/places/ChIJabc?fields=displayName,rating,userRatingCount,googleMapsUri,reviews&languageCode=en&key=KEY');
+    expect(fetchJson.mock.calls[0][0]).toBe(`${API_BASE}/api/reviews?placeId=ChIJabc&lang=en`);
+    expect(fetchJson.mock.calls[0][0]).not.toContain('googleapis');
+  });
+
+  it('a business name is resolved by the helper; its Place ID feeds the write-review link', async () => {
+    const fetchJson = vi.fn().mockResolvedValue({ business: { placeId: 'ChIJfound', name: 'Acme' }, reviews: [] });
+    const d = await loadReviews(src({ businessSearch: 'Acme Recruitment, Sydney' }), fetchJson);
+    expect(fetchJson.mock.calls[0][0]).toBe(`${API_BASE}/api/reviews?q=Acme%20Recruitment%2C%20Sydney&lang=en`);
+    expect(d.business.writeReviewUrl).toContain('ChIJfound');
   });
 
   it('prefers the feed URL when set', async () => {
     const fetchJson = vi.fn().mockResolvedValue({ reviews: [] });
-    await loadReviews({ placeId: 'ChIJ', businessSearch: '', googleApiKey: 'KEY', feedUrl: 'https://feed/x.json', language: 'en' }, fetchJson);
+    await loadReviews(src({ placeId: 'ChIJ', feedUrl: 'https://feed/x.json' }), fetchJson);
     expect(fetchJson).toHaveBeenCalledWith('https://feed/x.json');
   });
 
-  it('rejects with a clear message when there is no source', async () => {
-    await expect(loadReviews({ placeId: '', businessSearch: '', googleApiKey: '', feedUrl: '', language: 'en' }, vi.fn())).rejects.toThrow(/API key/);
-    await expect(loadReviews({ placeId: '', businessSearch: '', googleApiKey: 'KEY', feedUrl: '', language: 'en' }, vi.fn())).rejects.toThrow(/business name/);
+  it('tells the site builder what to do when nothing is set', async () => {
+    await expect(loadReviews(src(), vi.fn())).rejects.toThrow(/Search for the business/);
   });
+});
 
-  it('finds the Place ID from "business name, suburb", then caches it', async () => {
-    const doFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ places: [{ id: 'ChIJfound' }] }) });
-    const fetchJson = vi.fn().mockResolvedValue({ rating: 5, userRatingCount: 3, reviews: [] });
-    const src = { placeId: '', businessSearch: 'Acme Recruitment, Sydney', googleApiKey: 'KEY', feedUrl: '', language: 'en' };
-    const d = await loadReviews(src, fetchJson, doFetch as unknown as typeof fetch);
-    expect(doFetch.mock.calls[0][0]).toBe('https://places.googleapis.com/v1/places:searchText');
-    expect(JSON.parse(doFetch.mock.calls[0][1].body)).toEqual({ textQuery: 'Acme Recruitment, Sydney' });
-    expect(fetchJson.mock.calls[0][0]).toContain('/places/ChIJfound?');
-    expect(d.business.writeReviewUrl).toContain('ChIJfound');
-    await loadReviews(src, fetchJson, doFetch as unknown as typeof fetch);
-    expect(doFetch).toHaveBeenCalledTimes(1);
+describe('searchBusinesses', () => {
+  it('calls the helper and drops results without a Place ID', async () => {
+    const fetchJson = vi.fn().mockResolvedValue({ results: [{ placeId: 'ChIJ1', name: 'HRA', address: 'Wolverhampton' }, { name: 'x' }] });
+    expect(await searchBusinesses('hra', 'en', fetchJson)).toEqual([{ placeId: 'ChIJ1', name: 'HRA', address: 'Wolverhampton' }]);
+    expect(fetchJson.mock.calls[0][0]).toBe(`${API_BASE}/api/places/search?q=hra&lang=en`);
   });
 });

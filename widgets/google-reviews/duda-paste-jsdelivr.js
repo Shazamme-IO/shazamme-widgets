@@ -13,10 +13,13 @@
 // (the Content Editor panel built from duda-ai-prompt.md).
 //
 // The tag is immutable: shipping a change = build, commit, tag, bump TAG here.
+// LAST UPDATED: 2026-10-16 16:34 AEDT (v0.1.30)
+// Change: always uses Shazamme's Places helper (no API key field); Elfsight-
+// style company finder above the widget in the Duda editor.
 // ===========================================================================
 (function () {
   var NAME = "google-reviews";
-  var TAG = "v0.1.29";
+  var TAG = "v0.1.30";
   var BUNDLE = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" + TAG + "/dist/" + NAME + "/0.1.0/widget.min.js";
   var SDK = "https://sdk.shazamme.io/js/shazamme-1.0.3.min.js";
   window.__shazSDKPromise = window.__shazSDKPromise || new Promise(function (res) {

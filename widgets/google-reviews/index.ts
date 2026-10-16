@@ -12,6 +12,7 @@ import { readSettings, readSource, type Settings, type ThemeSettings } from './s
 import { badge, header, reviewCard, schemaJsonLd, widgetTitle, type RenderCtx } from './render';
 import { carouselHtml, carouselOpts, mountCarousel } from './carousel';
 import { openPopup } from './popup';
+import { mountFinder } from './finder';
 import { esc } from './format';
 
 interface WidgetContext {
@@ -258,10 +259,33 @@ export default async function googleReviews({ element, data }: WidgetContext): P
   loadFont(s.theme.themeSettings);
   root.classList.add('shm-ready');
 
-  try {
-    render(root, s, await loadReviews(src));
-  } catch (e) {
-    console.error('[google-reviews]', e);
-    showMessage(root, Boolean(data?.inEditor), (e as Error).message);
+  const inEditor = Boolean(data?.inEditor);
+  const show = async (source: typeof src): Promise<ReviewData | null> => {
+    try {
+      const reviewData = await loadReviews(source);
+      render(root, s, reviewData);
+      return reviewData;
+    } catch (e) {
+      console.error('[google-reviews]', e);
+      showMessage(root, inEditor, (e as Error).message);
+      return null;
+    }
+  };
+
+  if (!inEditor) {
+    await show(src);
+    return;
   }
+  // Editor only: the company finder sits above the preview (reused across re-runs).
+  let host = element.querySelector<HTMLElement>('[data-shm-finder]');
+  if (!host) {
+    host = document.createElement('div');
+    host.setAttribute('data-shm-finder', '');
+    root.before(host);
+  }
+  const finder = mountFinder(host, {
+    lang: src.language,
+    onPick: (pick) => { void show({ ...src, feedUrl: '', businessSearch: '', placeId: pick.placeId }).then((d) => finder.setCurrent(d?.business ?? null)); },
+  });
+  finder.setCurrent((await show(src))?.business ?? null);
 }

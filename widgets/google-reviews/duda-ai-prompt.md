@@ -11,9 +11,8 @@ order. Use the key exactly as written. Dropdown values are the text before
 the "=" (show the text after it as the label).
 
 ## Tab 1: Source
-- Business name and suburb (required) | key: businessSearch | type: text | default: (empty) | help: As it appears on Google Maps, e.g. "Acme Recruitment, Sydney NSW". We find the business on Google for you.
-- Google API key (required) | key: googleApiKey | type: text | default: (empty) | help: Shazamme's Google Places key for this site.
-- Google Place ID (optional) | key: placeId | type: text | default: (empty) | help: Only if the name search picks the wrong business. Starts with ChIJ.
+- Google Place ID | key: placeId | type: text | default: (empty) | help: Use the business finder shown above the widget in the editor: type the company name, pick it, then paste the Place ID it shows here.
+- Or business name and suburb | key: businessSearch | type: text | default: (empty) | help: Only if you have no Place ID, e.g. "Acme Recruitment, Sydney NSW". Google picks the closest match.
 - Review language | key: language | type: text | default: en | help: e.g. en, en-GB.
 
 ## Tab 2: Layout

@@ -79,11 +79,12 @@ describe('Duda panel parity', () => {
     const keys = [...prompt.matchAll(/key: (\w+)/g)].map((m) => m[1]);
     const known = new Set([
       ...Object.keys(DEFAULTS), ...Object.keys(DEFAULTS.theme.themeSettings),
-      'placeId', 'businessSearch', 'googleApiKey', 'language', 'feedUrl', 'includeKeywords', 'excludeKeywords',
+      'placeId', 'businessSearch', 'language', 'feedUrl', 'includeKeywords', 'excludeKeywords',
       'widgetMaxWidth', 'reviewTextFontSize', 'widgetTitleFontSize', 'widgetBackgroundColor', 'fontFamily',
       'writeReviewButtonColor', 'writeReviewButtonTextColor', 'writeReviewButtonRadius',
     ]);
     expect(keys.length).toBeGreaterThan(70);
+    expect(keys).not.toContain('googleApiKey');
     expect(keys.filter((k) => !known.has(k))).toEqual([]);
   });
 
