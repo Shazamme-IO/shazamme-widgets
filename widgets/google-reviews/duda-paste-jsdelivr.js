@@ -13,6 +13,9 @@
 // (the Content Editor panel built from duda-ai-prompt.md).
 //
 // The tag is immutable: shipping a change = build, commit, tag, bump TAG here.
+// LAST UPDATED: 2026-10-16 15:57 AEDT (v0.1.29)
+// Change: settings are now plain Duda panel fields (built with Duda AI from
+// duda-ai-prompt.md); business found by name + suburb; no Elfsight JSON.
 // ===========================================================================
 (function () {
   var NAME = "google-reviews";
