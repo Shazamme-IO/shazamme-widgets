@@ -324,6 +324,17 @@ function str(v: unknown): string {
   return typeof v === 'string' ? v.trim() : '';
 }
 
+/** Any scalar Duda hands over (string, number or boolean) as a trimmed string. */
+function raw(v: unknown): string {
+  return typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean' ? String(v).trim() : '';
+}
+
+/** Colours go into CSS variables: accept only values the browser parses as a colour. */
+function isColour(v: string): boolean {
+  if (typeof CSS !== 'undefined' && typeof CSS.supports === 'function') return CSS.supports('color', v);
+  return /^(#[0-9a-f]{3,8}|(rgb|hsl)a?\([\d\s.,%/]+\)|[a-z]+)$/i.test(v);
+}
+
 function keywords(v: unknown): Keyword[] {
   return str(v).split(',').map((k) => k.trim()).filter(Boolean).map((keyword) => ({ keyword }));
 }
@@ -405,20 +416,26 @@ const PANEL_ALIASES: Record<string, string> = { includeKeywords: 'filterIncludeK
  * (`layout`, `carouselAutoplay`, `ratingColor`…), so the panel can expose any
  * option without a code change. Empty fields keep the default.
  */
-function panelOverrides(c: Record<string, unknown>): Record<string, unknown> {
+function panelOverrides(c: Record<string, unknown>, json: Partial<Settings>): Record<string, unknown> {
   const o: Record<string, unknown> = {};
   for (const [key, def] of Object.entries(DEFAULTS)) {
-    const v = c[key];
-    if (v === undefined || v === null || v === '') continue;
-    if (typeof def === 'number' || typeof def === 'boolean' || typeof def === 'string') o[key] = typeof v === 'string' ? v.trim() : v;
+    const v = raw(c[key]);
+    if (v && (typeof def === 'number' || typeof def === 'boolean' || typeof def === 'string')) o[key] = v;
   }
-  for (const [field, key] of Object.entries(PANEL_ALIASES)) if (str(c[field])) o[key] = keywords(c[field]);
-  if (str(c.headerElements)) o.headerElements = str(c.headerElements).split(',').map((x) => x.trim());
-  if (str(c.badgeFloatingPosition)) o.badgeFloatingPosition = { ...DEFAULTS.badgeFloatingPosition, position: str(c.badgeFloatingPosition) };
-  if (str(c.widgetMaxWidth)) o.widgetWidth = { auto: false, customValue: str(c.widgetMaxWidth) };
+  for (const [field, key] of Object.entries(PANEL_ALIASES)) if (raw(c[field])) o[key] = keywords(raw(c[field]));
+  if (raw(c.headerElements)) {
+    const els = raw(c.headerElements).split(',').map((x) => x.trim()).filter(Boolean)
+      .map((x) => ({ title: 'title', rating: 'rating', reviewsnumber: 'reviewsNumber' })[x.toLowerCase()]).filter(Boolean);
+    if (els.length) o.headerElements = els;
+  }
+  if (raw(c.badgeFloatingPosition)) {
+    o.badgeFloatingPosition = { ...DEFAULTS.badgeFloatingPosition, ...(json.badgeFloatingPosition ?? {}), position: raw(c.badgeFloatingPosition) };
+  }
+  const maxWidth = parseFloat(raw(c.widgetMaxWidth));
+  if (Number.isFinite(maxWidth) && maxWidth > 0) o.widgetWidth = { ...(json.widgetWidth ?? {}), auto: false, customValue: maxWidth };
   // One autoplay toggle in the panel drives both the carousel and the slider.
-  if (str(c.carouselAutoplay) && !str(c.sliderAutoplay)) o.sliderAutoplay = str(c.carouselAutoplay);
-  if (str(c.placeId)) o.sources = [{ url: str(c.placeId) }];
+  if (raw(c.carouselAutoplay) && !raw(c.sliderAutoplay)) o.sliderAutoplay = coerceBool(c.carouselAutoplay);
+  if (raw(c.placeId)) o.sources = [{ url: raw(c.placeId) }];
   return o;
 }
 
@@ -426,37 +443,47 @@ const THEME_NUMBER_KEYS = new Set(['widgetHorizontalPadding', 'widgetVerticalPad
 
 function panelTheme(c: Record<string, unknown>): ThemeSettings {
   const t: Record<string, unknown> = {};
+  const n = (key: string): number | undefined => {
+    const v = parseFloat(raw(c[key]));
+    return Number.isFinite(v) ? v : undefined;
+  };
+  const colour = (key: string): string | undefined => {
+    const v = raw(c[key]);
+    return v && isColour(v) ? v : undefined;
+  };
   // Flat theme fields, same names as the theme settings (ratingColor, reviewBackgroundColor…).
   for (const [key, def] of Object.entries(DEFAULTS.theme.themeSettings)) {
-    const v = str(c[key]);
-    if (!v || (typeof def !== 'string' && typeof def !== 'number')) continue;
+    if (!raw(c[key])) continue;
     if (THEME_NUMBER_KEYS.has(key) || typeof def === 'number') {
-      const n = Number(v);
-      if (Number.isFinite(n)) t[key] = n;
-    } else t[key] = v;
+      if (n(key) !== undefined) t[key] = n(key);
+    } else if (typeof def === 'string') {
+      const v = key.endsWith('Color') ? colour(key) : raw(c[key]);
+      if (v) t[key] = v;
+    }
   }
-  const n = (key: string): number | undefined => (str(c[key]) && Number.isFinite(Number(str(c[key]))) ? Number(str(c[key])) : undefined);
-  if (str(c.reviewTextFontSize)) t.reviewTextFontSize = { fontSize: n('reviewTextFontSize') };
-  if (str(c.widgetTitleFontSize)) t.widgetTitleTitleTextStyle = { fontSize: n('widgetTitleFontSize') };
-  if (str(c.widgetBackgroundColor)) t.widgetBackground = { color: str(c.widgetBackgroundColor) };
+  if (n('reviewTextFontSize') !== undefined) t.reviewTextFontSize = { fontSize: n('reviewTextFontSize') };
+  if (n('widgetTitleFontSize') !== undefined) t.widgetTitleTitleTextStyle = { fontSize: n('widgetTitleFontSize') };
+  if (colour('widgetBackgroundColor')) t.widgetBackground = { color: colour('widgetBackgroundColor') };
   const button = (prefix: string, target: 'writeReviewButton' | 'loadMoreButton'): void => {
     const b: Record<string, unknown> = {};
-    if (str(c[`${prefix}Color`])) b.color = str(c[`${prefix}Color`]);
-    if (str(c[`${prefix}TextColor`])) b.fontColor = str(c[`${prefix}TextColor`]);
+    if (colour(`${prefix}Color`)) b.color = colour(`${prefix}Color`);
+    if (colour(`${prefix}TextColor`)) b.fontColor = colour(`${prefix}TextColor`);
     if (n(`${prefix}Radius`) !== undefined) b.borderRadius = n(`${prefix}Radius`);
-    if (str(c[`${prefix}Text`])) b.text = str(c[`${prefix}Text`]);
+    if (raw(c[`${prefix}Text`])) b.text = raw(c[`${prefix}Text`]);
     if (Object.keys(b).length) t[target] = b;
   };
   button('writeReviewButton', 'writeReviewButton');
   button('loadMoreButton', 'loadMoreButton');
-  if (str(c.fontFamily)) t.font = { value: str(c.fontFamily), googleFont: true };
+  if (raw(c.fontFamily)) t.font = { value: raw(c.fontFamily).replace(/[^\w\s-]/g, ''), googleFont: true };
   // Short-hand colour fields kept for widgets set up before the full panel.
-  if (str(c.cardBackground)) t.reviewBackgroundColor = str(c.cardBackground);
-  if (str(c.cardTextColour)) t.reviewTextColor = str(c.cardTextColour);
-  if (str(c.starColour)) t.ratingColor = t.popupRatingColor = t.badgeRatingColor = str(c.starColour);
-  if (str(c.accentColour)) {
-    t.reviewReadMoreColor = t.reviewVerifiedBadgeColor = t.reviewSourceNameColor = str(c.accentColour);
-    t.writeReviewButton = { ...(t.writeReviewButton as object), color: str(c.accentColour) };
+  if (colour('cardBackground')) t.reviewBackgroundColor = colour('cardBackground');
+  if (colour('cardTextColour')) t.reviewTextColor = colour('cardTextColour');
+  const star = colour('starColour');
+  if (star) t.ratingColor = t.popupRatingColor = t.badgeRatingColor = star;
+  const accent = colour('accentColour');
+  if (accent) {
+    t.reviewReadMoreColor = t.reviewVerifiedBadgeColor = t.reviewSourceNameColor = accent;
+    t.writeReviewButton = { ...(t.writeReviewButton as object), color: accent };
   }
   return t as ThemeSettings;
 }
@@ -478,7 +505,7 @@ function mergeTheme(...layers: (ThemeSettings | undefined)[]): ThemeSettings {
 
 export function readSettings(config: Record<string, unknown> = {}): Settings {
   const json = parseJson(config.settingsJson);
-  const merged = normalise({ ...(json as Record<string, unknown>), ...panelOverrides(config) });
+  const merged = normalise({ ...(json as Record<string, unknown>), ...panelOverrides(config, json) });
   const jsonTheme = json.theme?.themeSettings;
   return {
     ...merged,
@@ -495,7 +522,7 @@ export function readSettings(config: Record<string, unknown> = {}): Settings {
 export function readSource(config: Record<string, unknown>, settings: Settings): SourceConfig {
   return {
     placeId: settings.sources.find((s) => s.url)?.url ?? '',
-    businessSearch: str(config.businessSearch),
+    businessSearch: raw(config.businessSearch).replace(/\s+/g, ' '),
     googleApiKey: str(config.googleApiKey),
     feedUrl: str(config.feedUrl),
     language: str(config.language) || 'en',

@@ -156,24 +156,33 @@ async function getJson(url: string): Promise<Raw> {
 }
 
 /** Find the Place ID for "Business name, suburb" with Places Text Search. */
+const PLACE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+/** Find the Place ID for "Business name, suburb" with Places Text Search (cached a day). */
 export async function findPlaceId(query: string, apiKey: string, doFetch: typeof fetch = fetch): Promise<string> {
-  const cacheKey = `place|${query.toLowerCase()}`;
+  const cacheKey = CACHE_PREFIX + 'place|' + query.trim().replace(/\s+/g, ' ').toLowerCase();
   try {
-    const hit = localStorage.getItem(CACHE_PREFIX + cacheKey);
-    if (hit) return hit;
+    const hit = JSON.parse(localStorage.getItem(cacheKey) ?? 'null');
+    if (hit && typeof hit.id === 'string' && Date.now() - hit.at < PLACE_CACHE_TTL_MS) return hit.id;
   } catch {
-    // storage blocked — look it up every time
+    // storage blocked or old format — look it up again
   }
   const res = await doFetch('https://places.googleapis.com/v1/places:searchText', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': apiKey, 'X-Goog-FieldMask': 'places.id' },
     body: JSON.stringify({ textQuery: query }),
   });
-  if (!res.ok) throw new Error(`Google could not search for "${query}" (${res.status})`);
-  const id = text((await res.json())?.places?.[0]?.id);
-  if (!id) throw new Error(`Google found no business matching "${query}"`);
+  let body: Raw = {};
   try {
-    localStorage.setItem(CACHE_PREFIX + cacheKey, id);
+    body = await res.json();
+  } catch {
+    // non-JSON error page
+  }
+  if (!res.ok) throw new Error(`Google could not search for "${query}" (${res.status}${text(body?.error?.message) ? `: ${text(body.error.message)}` : ''})`);
+  const id = text(body?.places?.[0]?.id);
+  if (!id) throw new Error(`Google found no business matching "${query}". Add the suburb, or paste the Place ID`);
+  try {
+    localStorage.setItem(cacheKey, JSON.stringify({ id, at: Date.now() }));
   } catch {
     // not cached, still works
   }

@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build e6a06e61f9b8. Registers window.ShazammeWidget["<name>"].
+ * Build 4d26d1f8a7e6. Registers window.ShazammeWidget["<name>"].
  */
 (function(){
   if (typeof document === 'undefined') return;
@@ -124,9 +124,9 @@ var __shazWidgetExport = (() => {
   }
   function readCache(key) {
     try {
-      const raw = localStorage.getItem(CACHE_PREFIX + key);
-      if (!raw) return null;
-      const { at, data } = JSON.parse(raw);
+      const raw2 = localStorage.getItem(CACHE_PREFIX + key);
+      if (!raw2) return null;
+      const { at, data } = JSON.parse(raw2);
       const fresh = typeof at === "number" && Date.now() - at < CACHE_TTL_MS;
       return fresh && (data == null ? void 0 : data.business) && Array.isArray(data.reviews) ? data : null;
     } catch (e) {
@@ -144,12 +144,13 @@ var __shazWidgetExport = (() => {
     if (!res.ok) throw new Error(`${res.status} ${res.statusText} from ${url.split("?")[0]}`);
     return res.json();
   }
+  var PLACE_CACHE_TTL_MS = 24 * 60 * 60 * 1e3;
   async function findPlaceId(query, apiKey, doFetch = fetch) {
-    var _a, _b, _c;
-    const cacheKey = `place|${query.toLowerCase()}`;
+    var _a, _b, _c, _d;
+    const cacheKey = CACHE_PREFIX + "place|" + query.trim().replace(/\s+/g, " ").toLowerCase();
     try {
-      const hit = localStorage.getItem(CACHE_PREFIX + cacheKey);
-      if (hit) return hit;
+      const hit = JSON.parse((_a = localStorage.getItem(cacheKey)) != null ? _a : "null");
+      if (hit && typeof hit.id === "string" && Date.now() - hit.at < PLACE_CACHE_TTL_MS) return hit.id;
     } catch (e) {
     }
     const res = await doFetch("https://places.googleapis.com/v1/places:searchText", {
@@ -157,11 +158,16 @@ var __shazWidgetExport = (() => {
       headers: { "Content-Type": "application/json", "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": "places.id" },
       body: JSON.stringify({ textQuery: query })
     });
-    if (!res.ok) throw new Error(`Google could not search for "${query}" (${res.status})`);
-    const id = text((_c = (_b = (_a = await res.json()) == null ? void 0 : _a.places) == null ? void 0 : _b[0]) == null ? void 0 : _c.id);
-    if (!id) throw new Error(`Google found no business matching "${query}"`);
+    let body = {};
     try {
-      localStorage.setItem(CACHE_PREFIX + cacheKey, id);
+      body = await res.json();
+    } catch (e) {
+    }
+    if (!res.ok) throw new Error(`Google could not search for "${query}" (${res.status}${text((_b = body == null ? void 0 : body.error) == null ? void 0 : _b.message) ? `: ${text(body.error.message)}` : ""})`);
+    const id = text((_d = (_c = body == null ? void 0 : body.places) == null ? void 0 : _c[0]) == null ? void 0 : _d.id);
+    if (!id) throw new Error(`Google found no business matching "${query}". Add the suburb, or paste the Place ID`);
+    try {
+      localStorage.setItem(cacheKey, JSON.stringify({ id, at: Date.now() }));
     } catch (e) {
     }
     return id;
@@ -358,12 +364,12 @@ var __shazWidgetExport = (() => {
       }
     }
   };
-  function parseJson(raw) {
+  function parseJson(raw2) {
     var _a, _b, _c;
-    if (raw && typeof raw === "object") return raw;
-    if (typeof raw !== "string" || !raw.trim()) return {};
+    if (raw2 && typeof raw2 === "object") return raw2;
+    if (typeof raw2 !== "string" || !raw2.trim()) return {};
     try {
-      const parsed = JSON.parse(raw);
+      const parsed = JSON.parse(raw2);
       const settings = (_c = (_b = (_a = parsed == null ? void 0 : parsed.publishedWidgetRevision) == null ? void 0 : _a.settings) != null ? _b : parsed == null ? void 0 : parsed.settings) != null ? _c : parsed;
       return settings && typeof settings === "object" && !Array.isArray(settings) ? settings : {};
     } catch (e) {
@@ -373,6 +379,13 @@ var __shazWidgetExport = (() => {
   }
   function str(v) {
     return typeof v === "string" ? v.trim() : "";
+  }
+  function raw(v) {
+    return typeof v === "string" || typeof v === "number" || typeof v === "boolean" ? String(v).trim() : "";
+  }
+  function isColour(v) {
+    if (typeof CSS !== "undefined" && typeof CSS.supports === "function") return CSS.supports("color", v);
+    return /^(#[0-9a-f]{3,8}|(rgb|hsl)a?\([\d\s.,%/]+\)|[a-z]+)$/i.test(v);
   }
   function keywords(v) {
     return str(v).split(",").map((k) => k.trim()).filter(Boolean).map((keyword) => ({ keyword }));
@@ -403,11 +416,11 @@ var __shazWidgetExport = (() => {
     if (!Array.isArray(v)) return [];
     return v.map((k) => typeof k === "string" ? k : k && typeof k === "object" ? k.keyword : "").filter((k) => typeof k === "string" && k.trim() !== "").map((keyword) => ({ keyword }));
   }
-  function normalise(raw) {
+  function normalise(raw2) {
     var _a, _b;
     const out = {};
     for (const [key, def] of Object.entries(DEFAULTS)) {
-      const v = raw[key];
+      const v = raw2[key];
       const allowed = ENUMS[key];
       if (allowed) out[key] = typeof v === "string" && allowed.includes(v) ? v : def;
       else if (typeof def === "number") out[key] = finite(v, def);
@@ -417,13 +430,13 @@ var __shazWidgetExport = (() => {
     }
     out.filterMinRating = Math.min(5, Math.max(1, out.filterMinRating));
     out.reviewPreviewLinesNumber = Math.max(1, Math.round(out.reviewPreviewLinesNumber));
-    out.sources = Array.isArray(raw.sources) ? raw.sources.map((x) => ({ url: x && typeof x === "object" && typeof x.url === "string" ? x.url.trim() : "" })) : [];
-    out.filterIncludeKeywords = keywordList(raw.filterIncludeKeywords);
-    out.filterExcludeKeywords = keywordList(raw.filterExcludeKeywords);
-    out.headerElements = Array.isArray(raw.headerElements) ? raw.headerElements.filter((e) => HEADER_ELEMENTS.includes(e)) : DEFAULTS.headerElements;
-    const ww = (_a = raw.widgetWidth) != null ? _a : {};
+    out.sources = Array.isArray(raw2.sources) ? raw2.sources.map((x) => ({ url: x && typeof x === "object" && typeof x.url === "string" ? x.url.trim() : "" })) : [];
+    out.filterIncludeKeywords = keywordList(raw2.filterIncludeKeywords);
+    out.filterExcludeKeywords = keywordList(raw2.filterExcludeKeywords);
+    out.headerElements = Array.isArray(raw2.headerElements) ? raw2.headerElements.filter((e) => HEADER_ELEMENTS.includes(e)) : DEFAULTS.headerElements;
+    const ww = (_a = raw2.widgetWidth) != null ? _a : {};
     out.widgetWidth = { auto: coerceBool(ww.auto, DEFAULTS.widgetWidth.auto), customValue: finite(ww.customValue, DEFAULTS.widgetWidth.customValue) };
-    const fp = (_b = raw.badgeFloatingPosition) != null ? _b : {};
+    const fp = (_b = raw2.badgeFloatingPosition) != null ? _b : {};
     out.badgeFloatingPosition = {
       position: ["top-left", "top-right", "bottom-left", "bottom-right"].includes(fp.position) ? fp.position : DEFAULTS.badgeFloatingPosition.position,
       horizontalOffset: finite(fp.horizontalOffset, DEFAULTS.badgeFloatingPosition.horizontalOffset),
@@ -432,53 +445,69 @@ var __shazWidgetExport = (() => {
     return out;
   }
   var PANEL_ALIASES = { includeKeywords: "filterIncludeKeywords", excludeKeywords: "filterExcludeKeywords" };
-  function panelOverrides(c) {
+  function panelOverrides(c, json) {
+    var _a, _b;
     const o = {};
     for (const [key, def] of Object.entries(DEFAULTS)) {
-      const v = c[key];
-      if (v === void 0 || v === null || v === "") continue;
-      if (typeof def === "number" || typeof def === "boolean" || typeof def === "string") o[key] = typeof v === "string" ? v.trim() : v;
+      const v = raw(c[key]);
+      if (v && (typeof def === "number" || typeof def === "boolean" || typeof def === "string")) o[key] = v;
     }
-    for (const [field, key] of Object.entries(PANEL_ALIASES)) if (str(c[field])) o[key] = keywords(c[field]);
-    if (str(c.headerElements)) o.headerElements = str(c.headerElements).split(",").map((x) => x.trim());
-    if (str(c.badgeFloatingPosition)) o.badgeFloatingPosition = { ...DEFAULTS.badgeFloatingPosition, position: str(c.badgeFloatingPosition) };
-    if (str(c.widgetMaxWidth)) o.widgetWidth = { auto: false, customValue: str(c.widgetMaxWidth) };
-    if (str(c.carouselAutoplay) && !str(c.sliderAutoplay)) o.sliderAutoplay = str(c.carouselAutoplay);
-    if (str(c.placeId)) o.sources = [{ url: str(c.placeId) }];
+    for (const [field, key] of Object.entries(PANEL_ALIASES)) if (raw(c[field])) o[key] = keywords(raw(c[field]));
+    if (raw(c.headerElements)) {
+      const els = raw(c.headerElements).split(",").map((x) => x.trim()).filter(Boolean).map((x) => ({ title: "title", rating: "rating", reviewsnumber: "reviewsNumber" })[x.toLowerCase()]).filter(Boolean);
+      if (els.length) o.headerElements = els;
+    }
+    if (raw(c.badgeFloatingPosition)) {
+      o.badgeFloatingPosition = { ...DEFAULTS.badgeFloatingPosition, ...(_a = json.badgeFloatingPosition) != null ? _a : {}, position: raw(c.badgeFloatingPosition) };
+    }
+    const maxWidth = parseFloat(raw(c.widgetMaxWidth));
+    if (Number.isFinite(maxWidth) && maxWidth > 0) o.widgetWidth = { ...(_b = json.widgetWidth) != null ? _b : {}, auto: false, customValue: maxWidth };
+    if (raw(c.carouselAutoplay) && !raw(c.sliderAutoplay)) o.sliderAutoplay = coerceBool(c.carouselAutoplay);
+    if (raw(c.placeId)) o.sources = [{ url: raw(c.placeId) }];
     return o;
   }
   var THEME_NUMBER_KEYS = /* @__PURE__ */ new Set(["widgetHorizontalPadding", "widgetVerticalPadding", "reviewCornerRadius", "headerCornerRadius", "carouselArrowSize", "badgeCornerRadius"]);
   function panelTheme(c) {
     const t = {};
+    const n = (key) => {
+      const v = parseFloat(raw(c[key]));
+      return Number.isFinite(v) ? v : void 0;
+    };
+    const colour = (key) => {
+      const v = raw(c[key]);
+      return v && isColour(v) ? v : void 0;
+    };
     for (const [key, def] of Object.entries(DEFAULTS.theme.themeSettings)) {
-      const v = str(c[key]);
-      if (!v || typeof def !== "string" && typeof def !== "number") continue;
+      if (!raw(c[key])) continue;
       if (THEME_NUMBER_KEYS.has(key) || typeof def === "number") {
-        const n2 = Number(v);
-        if (Number.isFinite(n2)) t[key] = n2;
-      } else t[key] = v;
+        if (n(key) !== void 0) t[key] = n(key);
+      } else if (typeof def === "string") {
+        const v = key.endsWith("Color") ? colour(key) : raw(c[key]);
+        if (v) t[key] = v;
+      }
     }
-    const n = (key) => str(c[key]) && Number.isFinite(Number(str(c[key]))) ? Number(str(c[key])) : void 0;
-    if (str(c.reviewTextFontSize)) t.reviewTextFontSize = { fontSize: n("reviewTextFontSize") };
-    if (str(c.widgetTitleFontSize)) t.widgetTitleTitleTextStyle = { fontSize: n("widgetTitleFontSize") };
-    if (str(c.widgetBackgroundColor)) t.widgetBackground = { color: str(c.widgetBackgroundColor) };
+    if (n("reviewTextFontSize") !== void 0) t.reviewTextFontSize = { fontSize: n("reviewTextFontSize") };
+    if (n("widgetTitleFontSize") !== void 0) t.widgetTitleTitleTextStyle = { fontSize: n("widgetTitleFontSize") };
+    if (colour("widgetBackgroundColor")) t.widgetBackground = { color: colour("widgetBackgroundColor") };
     const button = (prefix, target) => {
       const b = {};
-      if (str(c[`${prefix}Color`])) b.color = str(c[`${prefix}Color`]);
-      if (str(c[`${prefix}TextColor`])) b.fontColor = str(c[`${prefix}TextColor`]);
+      if (colour(`${prefix}Color`)) b.color = colour(`${prefix}Color`);
+      if (colour(`${prefix}TextColor`)) b.fontColor = colour(`${prefix}TextColor`);
       if (n(`${prefix}Radius`) !== void 0) b.borderRadius = n(`${prefix}Radius`);
-      if (str(c[`${prefix}Text`])) b.text = str(c[`${prefix}Text`]);
+      if (raw(c[`${prefix}Text`])) b.text = raw(c[`${prefix}Text`]);
       if (Object.keys(b).length) t[target] = b;
     };
     button("writeReviewButton", "writeReviewButton");
     button("loadMoreButton", "loadMoreButton");
-    if (str(c.fontFamily)) t.font = { value: str(c.fontFamily), googleFont: true };
-    if (str(c.cardBackground)) t.reviewBackgroundColor = str(c.cardBackground);
-    if (str(c.cardTextColour)) t.reviewTextColor = str(c.cardTextColour);
-    if (str(c.starColour)) t.ratingColor = t.popupRatingColor = t.badgeRatingColor = str(c.starColour);
-    if (str(c.accentColour)) {
-      t.reviewReadMoreColor = t.reviewVerifiedBadgeColor = t.reviewSourceNameColor = str(c.accentColour);
-      t.writeReviewButton = { ...t.writeReviewButton, color: str(c.accentColour) };
+    if (raw(c.fontFamily)) t.font = { value: raw(c.fontFamily).replace(/[^\w\s-]/g, ""), googleFont: true };
+    if (colour("cardBackground")) t.reviewBackgroundColor = colour("cardBackground");
+    if (colour("cardTextColour")) t.reviewTextColor = colour("cardTextColour");
+    const star = colour("starColour");
+    if (star) t.ratingColor = t.popupRatingColor = t.badgeRatingColor = star;
+    const accent = colour("accentColour");
+    if (accent) {
+      t.reviewReadMoreColor = t.reviewVerifiedBadgeColor = t.reviewSourceNameColor = accent;
+      t.writeReviewButton = { ...t.writeReviewButton, color: accent };
     }
     return t;
   }
@@ -496,7 +525,7 @@ var __shazWidgetExport = (() => {
   function readSettings(config = {}) {
     var _a;
     const json = parseJson(config.settingsJson);
-    const merged = normalise({ ...json, ...panelOverrides(config) });
+    const merged = normalise({ ...json, ...panelOverrides(config, json) });
     const jsonTheme = (_a = json.theme) == null ? void 0 : _a.themeSettings;
     return {
       ...merged,
@@ -513,7 +542,7 @@ var __shazWidgetExport = (() => {
     var _a, _b;
     return {
       placeId: (_b = (_a = settings.sources.find((s) => s.url)) == null ? void 0 : _a.url) != null ? _b : "",
-      businessSearch: str(config.businessSearch),
+      businessSearch: raw(config.businessSearch).replace(/\s+/g, " "),
       googleApiKey: str(config.googleApiKey),
       feedUrl: str(config.feedUrl),
       language: str(config.language) || "en"

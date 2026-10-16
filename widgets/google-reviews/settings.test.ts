@@ -103,4 +103,22 @@ describe('Duda panel parity', () => {
     expect(s.badgeFloatingPosition.position).toBe('top-right');
     expect(s.widgetWidth).toEqual({ auto: false, customValue: 900 });
   });
+
+  it('accepts real booleans/numbers from Duda, odd casing and units', () => {
+    const s = readSettings({
+      layout: 'slider', carouselAutoplay: true, reviewCornerRadius: 12, headerElements: 'Title, Rating',
+      widgetMaxWidth: '1200px', ratingColor: 'red) , url(//x)',
+    });
+    expect(s.sliderAutoplay).toBe(true);
+    expect(s.theme.themeSettings.reviewCornerRadius).toBe(12);
+    expect(s.headerElements).toEqual(['title', 'rating']);
+    expect(s.widgetWidth.customValue).toBe(1200);
+    expect(s.theme.themeSettings.ratingColor).toBe(DEFAULTS.theme.themeSettings.ratingColor);
+  });
+
+  it('a bad max width or header list keeps the defaults', () => {
+    const s = readSettings({ widgetMaxWidth: 'wide', headerElements: 'nonsense' });
+    expect(s.widgetWidth).toEqual(DEFAULTS.widgetWidth);
+    expect(s.headerElements).toEqual(DEFAULTS.headerElements);
+  });
 });
