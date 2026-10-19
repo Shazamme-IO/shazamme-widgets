@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 7021232c420d. Registers window.ShazammeWidget["<name>"].
+ * Build 7dbe2874f89e. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -552,7 +552,7 @@ var __shazWidgetExport = (() => {
       };
       this.jobModernEl = (j) => {
         var _a, _b, _c, _d;
-        let jobdate = new Date(j.postedDate);
+        let jobdate = this._postedAt(j);
         let isNew = data.config.showNewIcon && jobdate && !isNaN(jobdate.getTime()) && (+/* @__PURE__ */ new Date() - jobdate) / (1e3 * 3600 * 24) <= 1;
         let startDate = new Date(j.jobStartDate || void 0);
         let endDate = new Date(j.jobEndDate || void 0);
@@ -944,6 +944,16 @@ var __shazWidgetExport = (() => {
         return data.inEditor ? addQuery(`/site/${data.siteId}${path}`, `preview=true&insitepreview=true&dm_device=desktop${query ? "&" + query : ""}`) : query ? addQuery(`https://${window.location.hostname}${path}`, query) : `https://${window.location.hostname}${path}`;
       };
       this.loadScript = (src) => window.__shazLoadScript(src);
+      this._postedAt = (j) => {
+        const c = j.changedOnUTC;
+        if (typeof c === "string" && !/T00:00:00(\.0+)?Z?$/.test(c)) {
+          const at = new Date(/Z$/.test(c) ? c : c + "Z");
+          if (!isNaN(at.getTime())) {
+            return at;
+          }
+        }
+        return new Date(j.postedDate);
+      };
       this._timeSince = (d) => {
         if (!d || isNaN(d.getTime())) {
           return null;
