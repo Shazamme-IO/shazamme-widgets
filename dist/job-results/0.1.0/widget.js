@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 38e4f3bdbf72. Registers window.ShazammeWidget["<name>"].
+ * Build 7dbe2874f89e. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -946,8 +946,11 @@ var __shazWidgetExport = (() => {
       this.loadScript = (src) => window.__shazLoadScript(src);
       this._postedAt = (j) => {
         const c = j.changedOnUTC;
-        if (c && !/T00:00:00(\.0+)?Z?$/.test(c)) {
-          return new Date(/Z$/.test(c) ? c : c + "Z");
+        if (typeof c === "string" && !/T00:00:00(\.0+)?Z?$/.test(c)) {
+          const at = new Date(/Z$/.test(c) ? c : c + "Z");
+          if (!isNaN(at.getTime())) {
+            return at;
+          }
         }
         return new Date(j.postedDate);
       };

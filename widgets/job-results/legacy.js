@@ -1149,8 +1149,11 @@ function UX() {
     // old local-midnight parse and those jobs render exactly as before.
     this._postedAt = (j) => {
         const c = j.changedOnUTC;
-        if (c && !/T00:00:00(\.0+)?Z?$/.test(c)) {
-            return new Date(/Z$/.test(c) ? c : c + 'Z');
+        if (typeof c === 'string' && !/T00:00:00(\.0+)?Z?$/.test(c)) {
+            const at = new Date(/Z$/.test(c) ? c : c + 'Z');
+            if (!isNaN(at.getTime())) {
+                return at;
+            }
         }
         return new Date(j.postedDate);
     }
