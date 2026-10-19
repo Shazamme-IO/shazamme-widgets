@@ -596,7 +596,7 @@ function UX() {
     }
 
     this.jobModernEl = j => {
-        let jobdate = new Date(j.postedDate);
+        let jobdate = this._postedAt(j);
         let isNew = data.config.showNewIcon && jobdate && !isNaN(jobdate.getTime()) && (+new Date() - jobdate) / (1000 * 3600 *24) <= 1;
         let startDate = new Date(j.jobStartDate || undefined);
         let endDate = new Date(j.jobEndDate || undefined);
@@ -1139,6 +1139,20 @@ function UX() {
                 function() { rej() }
             );
         });
+    }
+
+    // When the job was posted, for "posted X ago". changedOnUTC carries
+    // dbo.Job.PostedDateTime (UTC, no "Z") when the sync recorded one; the
+    // standard cards already read it. postedDate is a bare MM-DD-YYYY, so on its
+    // own it counts from midnight and a job posted at 2pm reads "14 hours ago".
+    // A midnight changedOnUTC is just PostedDate again, so it falls back to the
+    // old local-midnight parse and those jobs render exactly as before.
+    this._postedAt = (j) => {
+        const c = j.changedOnUTC;
+        if (c && !/T00:00:00(\.0+)?Z?$/.test(c)) {
+            return new Date(/Z$/.test(c) ? c : c + 'Z');
+        }
+        return new Date(j.postedDate);
     }
 
     this._timeSince = (d) => {
