@@ -59,7 +59,7 @@ export function matchKeyword(
   return fields.some((f) => includesCI((job as Record<string, unknown>)[f], t));
 }
 
-function matchLocation(job: Job, term: string): boolean {
+export function matchLocation(job: Job, term: string): boolean {
   return matchKeyword(job, term, LOCATION_FIELDS);
 }
 

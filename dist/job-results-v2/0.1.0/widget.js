@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build ac8a0af0fffe. Registers window.ShazammeWidget["<name>"].
+ * Build 7a1a16b80745. Registers window.ShazammeWidget["<name>"].
  */
 (function(){
   if (typeof document === 'undefined') return;
@@ -36,6 +36,22 @@ var __shazWidgetExport = (() => {
   });
 
   // core/config.ts
+  var DEFAULT_FILTER_KEYS = [
+    ["defaultKeyword", "keyword"],
+    ["defaultLocation", "location"],
+    ["defaultCategory", "category"],
+    ["defaultSubCategory", "subCategory"],
+    ["defaultState", "state"],
+    ["defaultCity", "city"],
+    ["defaultAdvertiserID", "advertiserID"],
+    ["defaultCountry", "country"],
+    ["defaultWorkType", "workType"],
+    ["defaultJobtype", "jobType"],
+    ["defaultCustomField1", "customField1"],
+    ["defaultCustomField2", "customField2"],
+    ["defaultTags", "tags"],
+    ["defaultIndustry", "industry"]
+  ];
   var DEFAULT_PAGE_SIZE = 20;
   var DEFAULT_PROXIMITY = "6371";
   var DEFAULT_DETAILS_PAGE = "/job-details";
@@ -75,8 +91,21 @@ var __shazWidgetExport = (() => {
   function coerceProximity(value) {
     return coerceStr(value) === "12756" ? "12756" : DEFAULT_PROXIMITY;
   }
-  function coerceTemplate(value) {
-    return coerceStr(value).trim().toLowerCase() === "classic" ? "classic" : "modern";
+  function coerceTemplate(value, legacyLayout) {
+    const v = coerceStr(value).trim().toLowerCase();
+    if (v === "") return legacyLayout === "standard" ? "classic" : "modern";
+    return v === "classic" ? "classic" : "modern";
+  }
+  function coerceToggle(value) {
+    return value === void 0 || value === null ? true : coerceBool(value);
+  }
+  function readDefaultFilters(c) {
+    const out = {};
+    for (const [key, field] of DEFAULT_FILTER_KEYS) {
+      const values = coerceStr(c[key]).split(",").map((v) => v.trim()).filter((v) => v !== "");
+      if (values.length > 0) out[field] = values;
+    }
+    return out;
   }
   function rootPath(value, fallback) {
     const raw = coerceStr(value).trim() || fallback;
@@ -85,6 +114,7 @@ var __shazWidgetExport = (() => {
   }
   function readConfig(data) {
     const c = data && data.config || {};
+    const legacyLayout = coerceStr(c.layout).trim().toLowerCase();
     return {
       jobCollection: coerceStr(c.JobCollection || c.jobCollection),
       applicationPage: rootPath(coerceStr(c.applicationPage), DEFAULT_APPLICATION_PAGE),
@@ -98,7 +128,7 @@ var __shazWidgetExport = (() => {
       geocodeApiKey: coerceStr(c.geocodeApiKey),
       pageSize: coerceInt(c.pageSize, DEFAULT_PAGE_SIZE),
       hideLeftNav: coerceBool(c.hideLeftNav),
-      cardTemplate: coerceTemplate(c.cardTemplate),
+      cardTemplate: coerceTemplate(c.cardTemplate, legacyLayout),
       applyNowLabel: coerceLabel(c.applyNowLabel, "Apply Now"),
       readMoreLabel: coerceLabel(c.readMoreLabel, "Read More"),
       saveJobText: coerceLabel(c.saveJobText, "save job"),
@@ -107,7 +137,16 @@ var __shazWidgetExport = (() => {
       noResultsText: coerceLabel(c.resultMessageNone || c.noResultsText, "No jobs match your search."),
       accentColour: coerceStr(c.accentColour || c.accentColor),
       headerBackground: coerceStr(c.headerBackground),
-      cardRadius: coerceLength(c.cardRadius)
+      cardRadius: coerceLength(c.cardRadius),
+      defaultFilters: readDefaultFilters(c),
+      showResultsRow: coerceToggle(c.shmTopResultsRow),
+      showActionBar: coerceToggle(c.showActionBar),
+      searchResultsText: coerceStr(c.searchResultsText).trim(),
+      resultMessage: coerceStr(c.resultMessage).trim(),
+      resultMessagePlural: coerceStr(c.resultMessagePlural).trim(),
+      showApplyButton: coerceToggle(c.applybtn),
+      showReadMoreButton: coerceToggle(c.readmorebtn),
+      legacyLayout
     };
   }
 
@@ -691,8 +730,8 @@ var __shazWidgetExport = (() => {
       </div>
     </div>
     <div class="shmButtonLinks">
-      <a class="shmGoApply" href="${apply}"><span class="text">${escapeHtml(cfg.applyNowLabel)}</span></a>
-      <a class="shmGoReadMore" href="${details}"><span class="text">${escapeHtml(cfg.readMoreLabel)}</span></a>
+      ${cfg.showApplyButton ? `<a class="shmGoApply" href="${apply}"><span class="text">${escapeHtml(cfg.applyNowLabel)}</span></a>` : ""}
+      ${cfg.showReadMoreButton ? `<a class="shmGoReadMore" href="${details}"><span class="text">${escapeHtml(cfg.readMoreLabel)}</span></a>` : ""}
     </div>`;
   }
   var ICONS = {
@@ -701,7 +740,16 @@ var __shazWidgetExport = (() => {
     location: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>',
     category: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>'
   };
-  function metaRows(job) {
+  var SIMPLE_META_CLASS = {
+    workType: "workType",
+    salary: "salaryText",
+    location: "locationText",
+    category: "jobCategory"
+  };
+  function simple(cfg, cls) {
+    return cfg.legacyLayout === "simple" ? ` ${cls}` : "";
+  }
+  function metaRows(job, cfg) {
     const rows = [];
     const workBits = [str(job, "workType"), str(job, "workModel")].filter(Boolean);
     if (workBits.length > 0) rows.push(["workType", workBits.join(" \xB7 ")]);
@@ -712,7 +760,7 @@ var __shazWidgetExport = (() => {
     const category = str(job, "category");
     if (category) rows.push(["category", category]);
     return rows.map(
-      ([field, value]) => `<li class="sjr-meta__item" data-field="${field}">${ICONS[field] || ""}<span>${escapeHtml(value)}</span></li>`
+      ([field, value]) => `<li class="sjr-meta__item${simple(cfg, SIMPLE_META_CLASS[field])}" data-field="${field}">${ICONS[field] || ""}<span>${escapeHtml(value)}</span></li>`
     ).join("");
   }
   function modernCardHtml(job, cfg) {
@@ -723,20 +771,20 @@ var __shazWidgetExport = (() => {
     const iso = postedDate(job);
     return `
     <div class="sjr-card__header">
-      ${isNew(job) ? `<span class="sjr-tag" data-rel="tag-new">New</span>` : ""}
-      ${posted ? `<time class="sjr-card__eyebrow"${iso ? ` datetime="${iso}"` : ""}>${escapeHtml(cfg.postedText)} ${escapeHtml(posted)}</time>` : ""}
-      <h3 class="sjr-card__title"><a href="${details}" data-rel="link-job-name">${name}</a></h3>
+      ${isNew(job) ? `<span class="sjr-tag${simple(cfg, "newTag")}" data-rel="tag-new">New</span>` : ""}
+      ${posted ? `<time class="sjr-card__eyebrow${simple(cfg, "TimeSincePosted")}"${iso ? ` datetime="${iso}"` : ""}>${escapeHtml(cfg.postedText)} ${escapeHtml(posted)}</time>` : ""}
+      <h3 class="sjr-card__title${simple(cfg, "jobResultTitle")}"><a href="${details}"${simple(cfg, "jobResultTitle") ? ' class="jobResultTitle"' : ""} data-rel="link-job-name">${name}</a></h3>
     </div>
     <div class="sjr-card__body">
-      <ul class="sjr-meta">${metaRows(job)}</ul>
+      <ul class="sjr-meta">${metaRows(job, cfg)}</ul>
       <div class="sjr-card__actions">
         <button class="sjr-save" type="button" data-rel="action-save-job" data-save-id="">
           <span class="active">${escapeHtml(cfg.unsaveJobText)}</span>
           <span class="inactive">${escapeHtml(cfg.saveJobText)}</span>
         </button>
         <span class="sjr-actions-group">
-          <a class="sjr-btn sjr-btn--primary" href="${apply}">${escapeHtml(cfg.applyNowLabel)}</a>
-          <a class="sjr-btn" href="${details}">${escapeHtml(cfg.readMoreLabel)}</a>
+          ${cfg.showApplyButton ? `<a class="sjr-btn sjr-btn--primary${simple(cfg, "applyActionButton")}" href="${apply}"><span class="text">${escapeHtml(cfg.applyNowLabel)}</span></a>` : ""}
+          ${cfg.showReadMoreButton ? `<a class="sjr-btn${simple(cfg, "readMoreActionButton")}" href="${details}"><span class="text">${escapeHtml(cfg.readMoreLabel)}</span></a>` : ""}
         </span>
       </div>
     </div>`;
@@ -744,7 +792,7 @@ var __shazWidgetExport = (() => {
   function buildCard(job, cfg) {
     const modern = cfg.cardTemplate === "modern";
     const card = el(modern ? "article" : "div", {
-      class: modern ? "sjr-card" : "shmJobResultStd shmJobResult"
+      class: modern ? `sjr-card${simple(cfg, "shmJobResultSimple")}` : "shmJobResultStd shmJobResult"
     });
     card.setAttribute("data-rel", "article-job-result");
     card.setAttribute("data-id", str(job, "jobID"));
@@ -764,9 +812,14 @@ var __shazWidgetExport = (() => {
       (job, existing) => existing != null ? existing : buildCard(job, cfg)
     );
   }
-  function renderCount(root, total) {
+  function renderCount(root, total, cfg) {
     const nodes = root.querySelectorAll('[data-rel="label-results-count"]');
     for (const node of Array.from(nodes)) node.textContent = String(total);
+    if (cfg.resultMessage === "" && cfg.resultMessagePlural === "") return;
+    const message = total === 1 ? cfg.resultMessage : cfg.resultMessagePlural || cfg.resultMessage;
+    root.querySelectorAll('[data-rel="label-results-message"]').forEach((node) => {
+      node.textContent = message;
+    });
   }
 
   // widgets/job-results-v2/paging.ts
@@ -1030,6 +1083,22 @@ var __shazWidgetExport = (() => {
     }
   };
 
+  // widgets/job-results-v2/defaults.ts
+  var norm = (v) => (v == null ? "" : String(v)).trim().toLowerCase();
+  function fieldMatches(job, field, values) {
+    if (field === "keyword") return values.some((v) => matchKeyword(job, v));
+    if (field === "location") return values.some((v) => matchLocation(job, v));
+    const raw = job[field];
+    const jobValues = field === "tags" ? String(raw != null ? raw : "").split(",").map(norm) : [norm(raw)];
+    return values.some((v) => jobValues.includes(norm(v)));
+  }
+  function hasDefaults(defaults) {
+    return Object.keys(defaults).length > 0;
+  }
+  function inDefaultScope(job, defaults) {
+    return Object.entries(defaults).every(([field, values]) => fieldMatches(job, field, values));
+  }
+
   // widgets/job-results-v2/state.ts
   var DEFAULT_SORT = { field: "changedOnUTC", direction: "desc" };
   var DEFAULT_GEO_RANGE = 50;
@@ -1136,7 +1205,7 @@ var __shazWidgetExport = (() => {
     mainContainer.style.visibility = "hidden";
     let revealed = false;
     let hideNav = false;
-    const GRID_COLUMNS = "repeat(auto-fill, minmax(max(190px, calc((100% - 60px) / 4)), 1fr))";
+    const GRID_COLUMNS = "repeat(auto-fill, minmax(min(100%, max(var(--sjr-card-min, 190px), calc((100% - 60px) / 4))), 1fr))";
     const fillRow = (el2) => {
       if (!el2) return;
       el2.style.setProperty("flex", "1 1 100%", "important");
@@ -1165,7 +1234,7 @@ var __shazWidgetExport = (() => {
       lastMatching = result.matching;
       renderCards(listEl, result, cfg);
       applyGridLayout();
-      renderCount(element, result.total);
+      renderCount(element, result.total, cfg);
       if (pagingEl) renderPaging(pagingEl, result.total, cfg.pageSize, state.page);
       element.classList.add("shaz-job-results");
       if (facetHost) renderFacets(facetHost, tree, cfg, state.facets);
@@ -1191,7 +1260,20 @@ var __shazWidgetExport = (() => {
       element.setAttribute("data-card-template", cfg.cardTemplate);
       if (cfg.cardTemplate === "modern" && listEl) listEl.classList.add("sjr-list");
     }
+    function applyResultsHeader() {
+      var _a2;
+      const countRow = $one(element, ".shmResultCountContainer");
+      if (countRow && !cfg.showResultsRow) countRow.style.setProperty("display", "none", "important");
+      if (actionBar && !cfg.showActionBar) actionBar.style.setProperty("display", "none", "important");
+      const count = $one(element, '[data-rel="label-results-count"]');
+      if (!count || cfg.searchResultsText === "" || $one(element, '[data-rel="label-results-prefix"]')) return;
+      const prefix = document.createElement("span");
+      prefix.setAttribute("data-rel", "label-results-prefix");
+      prefix.textContent = `${cfg.searchResultsText} `;
+      (_a2 = count.parentNode) == null ? void 0 : _a2.insertBefore(prefix, count);
+    }
     function applyConfigVisibility() {
+      applyResultsHeader();
       const locationBlock = $one(element, '[data-rel="filter-location-block"]');
       const proximityBlock = $one(element, '[data-rel="filter-proximity-block"]');
       if (locationBlock) locationBlock.hidden = !cfg.showLocationFilter;
@@ -1340,10 +1422,16 @@ var __shazWidgetExport = (() => {
     }
     (async () => {
       await ensureSdkReady(shazamme, data);
+      let isSample = false;
       try {
         model = await loadJobs(sdk, cfg, { levels: MASTER_LEVELS });
       } catch (e) {
+        isSample = true;
         model = buildModel(FAKE_JOBS, cfg, { levels: MASTER_LEVELS });
+      }
+      if (!isSample && hasDefaults(cfg.defaultFilters)) {
+        const scoped = model.all().filter((job) => inDefaultScope(job, cfg.defaultFilters));
+        model = buildModel(scoped, cfg, { levels: MASTER_LEVELS });
       }
       tree = buildFacetTree(model.all());
       applyTokens();
