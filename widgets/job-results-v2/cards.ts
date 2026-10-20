@@ -130,8 +130,8 @@ function classicCardHtml(job: Job, cfg: WidgetConfig): string {
       </div>
     </div>
     <div class="shmButtonLinks">
-      <a class="shmGoApply" href="${apply}"><span class="text">${escapeHtml(cfg.applyNowLabel)}</span></a>
-      <a class="shmGoReadMore" href="${details}"><span class="text">${escapeHtml(cfg.readMoreLabel)}</span></a>
+      ${cfg.showApplyButton ? `<a class="shmGoApply" href="${apply}"><span class="text">${escapeHtml(cfg.applyNowLabel)}</span></a>` : ''}
+      ${cfg.showReadMoreButton ? `<a class="shmGoReadMore" href="${details}"><span class="text">${escapeHtml(cfg.readMoreLabel)}</span></a>` : ''}
     </div>`;
 }
 
@@ -149,9 +149,24 @@ const ICONS: Record<string, string> = {
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>',
 };
 
+/** Class names the legacy simple layout used for each meta field. Its Design panel
+ *  styles them as `.shmJobResultSimple .<class>`, so a widget still carrying that
+ *  panel only restyles our card if the card wears the same names. */
+const SIMPLE_META_CLASS: Record<string, string> = {
+  workType: 'workType',
+  salary: 'salaryText',
+  location: 'locationText',
+  category: 'jobCategory',
+};
+
+/** Extra class for a legacy simple-layout hook; empty unless that layout is set. */
+function simple(cfg: WidgetConfig, cls: string): string {
+  return cfg.legacyLayout === 'simple' ? ` ${cls}` : '';
+}
+
 /** One meta row per populated field, each tagged with the field it shows so CSS
  *  can target it by meaning (`[data-field="salary"]`) rather than by class name. */
-function metaRows(job: Job): string {
+function metaRows(job: Job, cfg: WidgetConfig): string {
   const rows: Array<[string, string]> = [];
 
   const workBits = [str(job, 'workType'), str(job, 'workModel')].filter(Boolean);
@@ -169,7 +184,7 @@ function metaRows(job: Job): string {
   return rows
     .map(
       ([field, value]) =>
-        `<li class="sjr-meta__item" data-field="${field}">${ICONS[field] || ''}<span>${escapeHtml(value)}</span></li>`,
+        `<li class="sjr-meta__item${simple(cfg, SIMPLE_META_CLASS[field])}" data-field="${field}">${ICONS[field] || ''}<span>${escapeHtml(value)}</span></li>`,
     )
     .join('');
 }
@@ -185,24 +200,24 @@ function modernCardHtml(job: Job, cfg: WidgetConfig): string {
 
   return `
     <div class="sjr-card__header">
-      ${isNew(job) ? `<span class="sjr-tag" data-rel="tag-new">New</span>` : ''}
+      ${isNew(job) ? `<span class="sjr-tag${simple(cfg, 'newTag')}" data-rel="tag-new">New</span>` : ''}
       ${
         posted
-          ? `<time class="sjr-card__eyebrow"${iso ? ` datetime="${iso}"` : ''}>${escapeHtml(cfg.postedText)} ${escapeHtml(posted)}</time>`
+          ? `<time class="sjr-card__eyebrow${simple(cfg, 'TimeSincePosted')}"${iso ? ` datetime="${iso}"` : ''}>${escapeHtml(cfg.postedText)} ${escapeHtml(posted)}</time>`
           : ''
       }
-      <h3 class="sjr-card__title"><a href="${details}" data-rel="link-job-name">${name}</a></h3>
+      <h3 class="sjr-card__title${simple(cfg, 'jobResultTitle')}"><a href="${details}"${simple(cfg, 'jobResultTitle') ? ' class="jobResultTitle"' : ''} data-rel="link-job-name">${name}</a></h3>
     </div>
     <div class="sjr-card__body">
-      <ul class="sjr-meta">${metaRows(job)}</ul>
+      <ul class="sjr-meta">${metaRows(job, cfg)}</ul>
       <div class="sjr-card__actions">
         <button class="sjr-save" type="button" data-rel="action-save-job" data-save-id="">
           <span class="active">${escapeHtml(cfg.unsaveJobText)}</span>
           <span class="inactive">${escapeHtml(cfg.saveJobText)}</span>
         </button>
         <span class="sjr-actions-group">
-          <a class="sjr-btn sjr-btn--primary" href="${apply}">${escapeHtml(cfg.applyNowLabel)}</a>
-          <a class="sjr-btn" href="${details}">${escapeHtml(cfg.readMoreLabel)}</a>
+          ${cfg.showApplyButton ? `<a class="sjr-btn sjr-btn--primary${simple(cfg, 'applyActionButton')}" href="${apply}"><span class="text">${escapeHtml(cfg.applyNowLabel)}</span></a>` : ''}
+          ${cfg.showReadMoreButton ? `<a class="sjr-btn${simple(cfg, 'readMoreActionButton')}" href="${details}"><span class="text">${escapeHtml(cfg.readMoreLabel)}</span></a>` : ''}
         </span>
       </div>
     </div>`;
@@ -212,7 +227,7 @@ function buildCard(job: Job, cfg: WidgetConfig): HTMLElement {
   const modern = cfg.cardTemplate === 'modern';
   // 'classic' keeps the legacy shm* classes a site's own CSS may target.
   const card = el(modern ? 'article' : 'div', {
-    class: modern ? 'sjr-card' : 'shmJobResultStd shmJobResult',
+    class: modern ? `sjr-card${simple(cfg, 'shmJobResultSimple')}` : 'shmJobResultStd shmJobResult',
   });
   card.setAttribute('data-rel', 'article-job-result');
   card.setAttribute('data-id', str(job, 'jobID'));
@@ -242,8 +257,16 @@ export function renderCards(
   );
 }
 
-/** Update the result-count label(s). */
-export function renderCount(root: Element, total: number): void {
+/** Update the result-count label(s), and the panel's singular/plural message when set. */
+export function renderCount(root: Element, total: number, cfg: WidgetConfig): void {
   const nodes = root.querySelectorAll('[data-rel="label-results-count"]');
   for (const node of Array.from(nodes)) node.textContent = String(total);
+
+  // Legacy semantics: once either message is configured, rewrite on every render —
+  // an early return here left the previous count's "positions" next to a 1.
+  if (cfg.resultMessage === '' && cfg.resultMessagePlural === '') return;
+  const message = total === 1 ? cfg.resultMessage : cfg.resultMessagePlural || cfg.resultMessage;
+  root.querySelectorAll('[data-rel="label-results-message"]').forEach((node) => {
+    node.textContent = message;
+  });
 }

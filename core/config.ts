@@ -45,7 +45,40 @@ export interface WidgetConfig {
   accentColour: string;
   headerBackground: string;
   cardRadius: string;
+  /** LEGACY panel (widgets cloned from Job Results 2026). Job field -> accepted
+   *  values; every listed field must match. Empty when no default is set. */
+  defaultFilters: DefaultFilters;
+  /** "Show Results & Favorites Bar" (shmTopResultsRow) and "Show Action Bar". */
+  showResultsRow: boolean;
+  showActionBar: boolean;
+  searchResultsText: string;
+  resultMessage: string;
+  resultMessagePlural: string;
+  showApplyButton: boolean;
+  showReadMoreButton: boolean;
+  /** Legacy card layout; 'simple' tags cards with the classes its Design panel targets. */
+  legacyLayout: string;
 }
+
+export type DefaultFilters = Readonly<Record<string, readonly string[]>>;
+
+/** Legacy `default*` panel keys and the job field each one constrains. */
+const DEFAULT_FILTER_KEYS: ReadonlyArray<readonly [string, string]> = [
+  ['defaultKeyword', 'keyword'],
+  ['defaultLocation', 'location'],
+  ['defaultCategory', 'category'],
+  ['defaultSubCategory', 'subCategory'],
+  ['defaultState', 'state'],
+  ['defaultCity', 'city'],
+  ['defaultAdvertiserID', 'advertiserID'],
+  ['defaultCountry', 'country'],
+  ['defaultWorkType', 'workType'],
+  ['defaultJobtype', 'jobType'],
+  ['defaultCustomField1', 'customField1'],
+  ['defaultCustomField2', 'customField2'],
+  ['defaultTags', 'tags'],
+  ['defaultIndustry', 'industry'],
+];
 
 const DEFAULT_PAGE_SIZE = 20;
 const DEFAULT_PROXIMITY: ProximityDiameter = '6371';
@@ -100,8 +133,28 @@ function coerceProximity(value: unknown): ProximityDiameter {
   return coerceStr(value) === '12756' ? '12756' : DEFAULT_PROXIMITY;
 }
 
-function coerceTemplate(value: unknown): CardTemplate {
-  return coerceStr(value).trim().toLowerCase() === 'classic' ? 'classic' : 'modern';
+function coerceTemplate(value: unknown, legacyLayout: string): CardTemplate {
+  const v = coerceStr(value).trim().toLowerCase();
+  if (v === '') return legacyLayout === 'standard' ? 'classic' : 'modern';
+  return v === 'classic' ? 'classic' : 'modern';
+}
+
+/** A toggle the v2 panel does not have: absent means "on", so v2 sites are unchanged. */
+function coerceToggle(value: unknown): boolean {
+  return value === undefined || value === null ? true : coerceBool(value);
+}
+
+/** Comma-separated values, as the legacy widget split them, minus blanks. */
+function readDefaultFilters(c: Record<string, unknown>): DefaultFilters {
+  const out: Record<string, string[]> = {};
+  for (const [key, field] of DEFAULT_FILTER_KEYS) {
+    const values = coerceStr(c[key])
+      .split(',')
+      .map((v) => v.trim())
+      .filter((v) => v !== '');
+    if (values.length > 0) out[field] = values;
+  }
+  return out;
 }
 
 /** A page setting is a site-relative path. Duda hands it back with or without a
@@ -117,6 +170,7 @@ export function rootPath(value: string, fallback: string): string {
 /** Read `data.config.*` into a typed, defaulted WidgetConfig. */
 export function readConfig(data: DudaData | undefined): WidgetConfig {
   const c = (data && data.config) || {};
+  const legacyLayout = coerceStr(c.layout).trim().toLowerCase();
   return {
     jobCollection: coerceStr(c.JobCollection || c.jobCollection),
     applicationPage: rootPath(coerceStr(c.applicationPage), DEFAULT_APPLICATION_PAGE),
@@ -130,7 +184,7 @@ export function readConfig(data: DudaData | undefined): WidgetConfig {
     geocodeApiKey: coerceStr(c.geocodeApiKey),
     pageSize: coerceInt(c.pageSize, DEFAULT_PAGE_SIZE),
     hideLeftNav: coerceBool(c.hideLeftNav),
-    cardTemplate: coerceTemplate(c.cardTemplate),
+    cardTemplate: coerceTemplate(c.cardTemplate, legacyLayout),
     applyNowLabel: coerceLabel(c.applyNowLabel, 'Apply Now'),
     readMoreLabel: coerceLabel(c.readMoreLabel, 'Read More'),
     saveJobText: coerceLabel(c.saveJobText, 'save job'),
@@ -140,5 +194,14 @@ export function readConfig(data: DudaData | undefined): WidgetConfig {
     accentColour: coerceStr(c.accentColour || c.accentColor),
     headerBackground: coerceStr(c.headerBackground),
     cardRadius: coerceLength(c.cardRadius),
+    defaultFilters: readDefaultFilters(c),
+    showResultsRow: coerceToggle(c.shmTopResultsRow),
+    showActionBar: coerceToggle(c.showActionBar),
+    searchResultsText: coerceStr(c.searchResultsText).trim(),
+    resultMessage: coerceStr(c.resultMessage).trim(),
+    resultMessagePlural: coerceStr(c.resultMessagePlural).trim(),
+    showApplyButton: coerceToggle(c.applybtn),
+    showReadMoreButton: coerceToggle(c.readmorebtn),
+    legacyLayout,
   };
 }

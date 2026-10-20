@@ -23,6 +23,7 @@ import { renderCards, renderCount, escapeHtml } from './cards';
 import { renderPaging } from './paging';
 import { buildFacetTree, renderFacets, MASTER_LEVELS } from './facets';
 import { MapView } from './map-view';
+import { hasDefaults, inDefaultScope } from './defaults';
 import {
   initialState,
   patch,
@@ -150,7 +151,10 @@ export default function jobResults(ctx: WidgetContext): void {
   // steps down to 3/2/1 as the container narrows. Must run AFTER every renderCards()
   // (the reconcile drops inline style); inline `!important` beats the site's
   // `.grid { grid-template-columns: 1fr !important }`.
-  const GRID_COLUMNS = 'repeat(auto-fill, minmax(max(190px, calc((100% - 60px) / 4)), 1fr))';
+  // The floor reads the card-min token, so a narrow viewport drops to one column
+  // instead of two 200px cards; the calc still gives 4 across on a desktop row.
+  const GRID_COLUMNS =
+    'repeat(auto-fill, minmax(min(100%, max(var(--sjr-card-min, 190px), calc((100% - 60px) / 4))), 1fr))';
   const fillRow = (el: HTMLElement | null | undefined): void => {
     if (!el) return;
     el.style.setProperty('flex', '1 1 100%', 'important');
@@ -191,7 +195,7 @@ export default function jobResults(ctx: WidgetContext): void {
     lastMatching = result.matching;
     renderCards(listEl!, result, cfg);
     applyGridLayout();
-    renderCount(element, result.total);
+    renderCount(element, result.total, cfg);
     if (pagingEl) renderPaging(pagingEl, result.total, cfg.pageSize, state.page);
     // Same restamp hazard as `shm-ready` below: Duda re-asserts the root's class
     // attribute and strips runtime-added classes. Every colour in this widget now
@@ -242,7 +246,24 @@ export default function jobResults(ctx: WidgetContext): void {
     if (cfg.cardTemplate === 'modern' && listEl) (listEl as HTMLElement).classList.add('sjr-list');
   }
 
+  // Legacy-panel results header: the "Show Results & Favorites Bar" / "Show Action
+  // Bar" toggles and the "Search Results Text" prefix. The stylesheet forces
+  // `.action-bar { display:flex !important }`, so only inline !important hides it.
+  function applyResultsHeader(): void {
+    const countRow = $one<HTMLElement>(element, '.shmResultCountContainer');
+    if (countRow && !cfg.showResultsRow) countRow.style.setProperty('display', 'none', 'important');
+    if (actionBar && !cfg.showActionBar) (actionBar as HTMLElement).style.setProperty('display', 'none', 'important');
+
+    const count = $one(element, '[data-rel="label-results-count"]');
+    if (!count || cfg.searchResultsText === '' || $one(element, '[data-rel="label-results-prefix"]')) return;
+    const prefix = document.createElement('span');
+    prefix.setAttribute('data-rel', 'label-results-prefix');
+    prefix.textContent = `${cfg.searchResultsText} `;
+    count.parentNode?.insertBefore(prefix, count);
+  }
+
   function applyConfigVisibility(): void {
+    applyResultsHeader();
     const locationBlock = $one<HTMLElement>(element, '[data-rel="filter-location-block"]');
     const proximityBlock = $one<HTMLElement>(element, '[data-rel="filter-proximity-block"]');
     if (locationBlock) locationBlock.hidden = !cfg.showLocationFilter;
@@ -427,12 +448,21 @@ export default function jobResults(ctx: WidgetContext): void {
 
   (async (): Promise<void> => {
     await ensureSdkReady(shazamme, data);
+    let isSample = false;
     try {
       model = await loadJobs(sdk, cfg, { levels: MASTER_LEVELS });
     } catch {
+      isSample = true;
       // Fall back to sample cards only if the live fetch fails (e.g. no SDK in
       // a bare editor context) — real jobs are always attempted first.
       model = buildModel(FAKE_JOBS, cfg, { levels: MASTER_LEVELS });
+    }
+    // Legacy-panel default filters fix the scope before any user filter, so the
+    // count, facets and paging all describe only the in-scope jobs. Sample cards
+    // are never scoped: a real default city would filter them all away.
+    if (!isSample && hasDefaults(cfg.defaultFilters)) {
+      const scoped = model.all().filter((job) => inDefaultScope(job, cfg.defaultFilters));
+      model = buildModel(scoped, cfg, { levels: MASTER_LEVELS });
     }
     tree = buildFacetTree(model.all());
     applyTokens();
