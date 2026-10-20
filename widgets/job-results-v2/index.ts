@@ -253,6 +253,8 @@ export default function jobResults(ctx: WidgetContext): void {
     const countRow = $one<HTMLElement>(element, '.shmResultCountContainer');
     if (countRow && !cfg.showResultsRow) countRow.style.setProperty('display', 'none', 'important');
     if (actionBar && !cfg.showActionBar) (actionBar as HTMLElement).style.setProperty('display', 'none', 'important');
+    const viewToggle = $one<HTMLElement>(element, '[data-rel="view-toggle"]');
+    if (viewToggle && !cfg.showViewToggle) viewToggle.style.setProperty('display', 'none', 'important');
 
     const count = $one(element, '[data-rel="label-results-count"]');
     if (!count || cfg.searchResultsText === '' || $one(element, '[data-rel="label-results-prefix"]')) return;

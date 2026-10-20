@@ -51,6 +51,8 @@ export interface WidgetConfig {
   /** "Show Results & Favorites Bar" (shmTopResultsRow) and "Show Action Bar". */
   showResultsRow: boolean;
   showActionBar: boolean;
+  /** Legacy panel only showed List/Map when its Google `apikey` was filled in. */
+  showViewToggle: boolean;
   searchResultsText: string;
   resultMessage: string;
   resultMessagePlural: string;
@@ -197,6 +199,7 @@ export function readConfig(data: DudaData | undefined): WidgetConfig {
     defaultFilters: readDefaultFilters(c),
     showResultsRow: coerceToggle(c.shmTopResultsRow),
     showActionBar: coerceToggle(c.showActionBar),
+    showViewToggle: c.apikey === undefined || c.apikey === null || coerceStr(c.apikey).trim() !== '',
     searchResultsText: coerceStr(c.searchResultsText).trim(),
     resultMessage: coerceStr(c.resultMessage).trim(),
     resultMessagePlural: coerceStr(c.resultMessagePlural).trim(),

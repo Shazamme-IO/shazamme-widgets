@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 8b898c7d4aa2. Registers window.ShazammeWidget["<name>"].
+ * Build e1725d0e42a2. Registers window.ShazammeWidget["<name>"].
  */
 (function(){
   if (typeof document === 'undefined') return;
@@ -141,6 +141,7 @@ var __shazWidgetExport = (() => {
       defaultFilters: readDefaultFilters(c),
       showResultsRow: coerceToggle(c.shmTopResultsRow),
       showActionBar: coerceToggle(c.showActionBar),
+      showViewToggle: c.apikey === void 0 || c.apikey === null || coerceStr(c.apikey).trim() !== "",
       searchResultsText: coerceStr(c.searchResultsText).trim(),
       resultMessage: coerceStr(c.resultMessage).trim(),
       resultMessagePlural: coerceStr(c.resultMessagePlural).trim(),
