@@ -221,6 +221,25 @@ describe('jobSearch controller', () => {
     if (select) expect(select.style.height).toBe('46px');
   });
 
+  it('sizes the Search button to the fields so the bar lines up', async () => {
+    // G&D Chillers: the widget's CSS tab sets `.searchBtn { height: 40px !important }`
+    // plus a border, so the button stood 42px next to 46px fields and, centred in
+    // the row, sat 4px low. Only an inline !important beats that rule.
+    jobSearch({ element, data: { config: {} }, $: {}, shazamme: stubClient(makeJobs(), []) });
+    await flush();
+    await flush();
+
+    const btn = element.querySelector<HTMLElement>('.searchBtn')!;
+    const field = element.querySelector<HTMLElement>('input.jobSearch')!;
+
+    expect(btn.style.getPropertyValue('height')).toBe(field.style.getPropertyValue('height'));
+    expect(btn.style.getPropertyPriority('height')).toBe('important');
+    expect(btn.style.getPropertyValue('box-sizing')).toBe('border-box');
+    expect(btn.style.getPropertyValue('margin')).toBe('0px');
+    // colours stay with the Design panel
+    expect(btn.style.getPropertyValue('background-color')).toBe('');
+  });
+
   it('locks sub-classification until a classification is chosen, and resets it on change', async () => {
     jobSearch({
       element,
