@@ -221,3 +221,59 @@ describe('legacy card toggles and design hooks', () => {
     expect(host.querySelector('.shmJobResult .shmGoApply')).not.toBeNull();
   });
 });
+
+describe('legacy card field toggles', () => {
+  const job = {
+    jobID: 'f1', jobName: 'Thermal Engineer', city: 'Junction City', state: 'Oregon', country: 'USA',
+    salary: '155400', workType: 'Direct Hire', workModel: 'Onsite', category: 'Engineering',
+    changedOnUTC: new Date().toISOString(),
+  };
+  const render = (config: Record<string, unknown>, template = ''): string => {
+    const host = document.createElement('div');
+    const result = { page: [job], matching: [job], total: 1 } as unknown as QueryResult;
+    renderCards(host, result, readConfig({ config: template ? { ...config, cardTemplate: template } : config }));
+    return host.textContent ?? '';
+  };
+
+  for (const template of ['', 'classic']) {
+    const name = template || 'modern';
+
+    it(`hides salary when Show Salary is off (${name})`, () => {
+      expect(render({}, template)).toContain('155400');
+      expect(render({ showSalary: false }, template)).not.toContain('155400');
+    });
+
+    it(`hides work type, work model and category when their toggles are off (${name})`, () => {
+      const text = render({ showWorkType: false, showWorkModel: false, showCategory: false }, template);
+
+      expect(text).not.toContain('Direct Hire');
+      expect(text).not.toContain('Onsite');
+      expect(text).not.toContain('Engineering');
+    });
+
+    it(`builds the location from the city/state toggles (${name})`, () => {
+      expect(render({ showState: false }, template)).toContain('Junction City');
+      expect(render({ showState: false }, template)).not.toContain('Oregon');
+      expect(render({ showCity: false, showState: false, showCountry: false }, template)).not.toContain('Junction City');
+    });
+  }
+
+  it('hides the posted line and New tag when their toggles are off', () => {
+    const text = render({ showTimeSincePosted: false, showNewIcon: false });
+
+    expect(text).not.toMatch(/Posted/);
+    expect(text).not.toMatch(/\bNew\b/);
+  });
+
+  it('keeps the posted line when only Show Date is off (legacy gates it on time-since)', () => {
+    expect(render({ showDate: false, showTimeSincePosted: true })).toMatch(/Posted/);
+  });
+
+  it('shows every field when the toggles are absent (v2 panel)', () => {
+    const text = render({});
+
+    for (const value of ['155400', 'Direct Hire', 'Onsite', 'Engineering', 'Junction City, Oregon']) {
+      expect(text).toContain(value);
+    }
+  });
+});

@@ -58,11 +58,25 @@ export interface WidgetConfig {
   resultMessagePlural: string;
   showApplyButton: boolean;
   showReadMoreButton: boolean;
+  /** Legacy per-field "Show …" toggles for the card. All on when absent (v2 panel). */
+  cardFields: CardFields;
   /** Legacy card layout; 'simple' tags cards with the classes its Design panel targets. */
   legacyLayout: string;
 }
 
 export type DefaultFilters = Readonly<Record<string, readonly string[]>>;
+
+export interface CardFields {
+  salary: boolean;
+  workType: boolean;
+  workModel: boolean;
+  category: boolean;
+  city: boolean;
+  state: boolean;
+  country: boolean;
+  posted: boolean;
+  newTag: boolean;
+}
 
 /** Legacy `default*` panel keys and the job field each one constrains. */
 const DEFAULT_FILTER_KEYS: ReadonlyArray<readonly [string, string]> = [
@@ -205,6 +219,18 @@ export function readConfig(data: DudaData | undefined): WidgetConfig {
     resultMessagePlural: coerceStr(c.resultMessagePlural).trim(),
     showApplyButton: coerceToggle(c.applybtn),
     showReadMoreButton: coerceToggle(c.readmorebtn),
+    cardFields: {
+      salary: coerceToggle(c.showSalary),
+      workType: coerceToggle(c.showWorkType),
+      workModel: coerceToggle(c.showWorkModel),
+      category: coerceToggle(c.showCategory),
+      city: coerceToggle(c.showCity),
+      state: coerceToggle(c.showState),
+      country: coerceToggle(c.showCountry),
+      // The card shows relative time only, which legacy gated on this toggle alone.
+      posted: coerceToggle(c.showTimeSincePosted),
+      newTag: coerceToggle(c.showNewIcon),
+    },
     legacyLayout,
   };
 }
