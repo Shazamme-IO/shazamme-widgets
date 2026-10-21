@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build f0dffc55b418. Registers window.ShazammeWidget["<name>"].
+ * Build ad05c455dae9. Registers window.ShazammeWidget["<name>"].
  */
 (function(){
   if (typeof document === 'undefined') return;
@@ -147,6 +147,18 @@ var __shazWidgetExport = (() => {
       resultMessagePlural: coerceStr(c.resultMessagePlural).trim(),
       showApplyButton: coerceToggle(c.applybtn),
       showReadMoreButton: coerceToggle(c.readmorebtn),
+      cardFields: {
+        salary: coerceToggle(c.showSalary),
+        workType: coerceToggle(c.showWorkType),
+        workModel: coerceToggle(c.showWorkModel),
+        category: coerceToggle(c.showCategory),
+        city: coerceToggle(c.showCity),
+        state: coerceToggle(c.showState),
+        country: coerceToggle(c.showCountry),
+        // The card shows relative time only, which legacy gated on this toggle alone.
+        posted: coerceToggle(c.showTimeSincePosted),
+        newTag: coerceToggle(c.showNewIcon)
+      },
       legacyLayout
     };
   }
@@ -684,22 +696,25 @@ var __shazWidgetExport = (() => {
     if (Number.isNaN(then)) return false;
     return Date.now() - then <= NEW_JOB_MAX_DAYS * MS_PER_DAY;
   }
-  function locationText(job) {
-    const parts = [str(job, "city"), str(job, "state")].filter(Boolean);
+  function locationText(job, cfg) {
+    const { city, state, country } = cfg.cardFields;
+    const parts = [city ? str(job, "city") : "", state ? str(job, "state") : ""].filter(Boolean);
     if (parts.length > 0) return parts.join(", ");
-    return str(job, "country") || str(job, "location");
+    if (!country) return "";
+    return str(job, "country") || (city && state ? str(job, "location") : "");
   }
-  function detailRows(job) {
+  function detailRows(job, cfg) {
+    const show = cfg.cardFields;
     const rows = [];
-    const loc = locationText(job);
+    const loc = locationText(job, cfg);
     if (loc) rows.push(`<div class="shmLocation">${escapeHtml(loc)}</div>`);
-    const salary = str(job, "salary");
+    const salary = show.salary ? str(job, "salary") : "";
     if (salary) rows.push(`<div class="shmSalary">${escapeHtml(salary)}</div>`);
-    const workType = str(job, "workType");
+    const workType = show.workType ? str(job, "workType") : "";
     if (workType) rows.push(`<div class="work-type">${escapeHtml(workType)}</div>`);
-    const workModel = str(job, "workModel");
+    const workModel = show.workModel ? str(job, "workModel") : "";
     if (workModel) rows.push(`<div class="work-model">${escapeHtml(workModel)}</div>`);
-    const category = str(job, "category");
+    const category = show.category ? str(job, "category") : "";
     if (category) rows.push(`<div class="jobCategory">${escapeHtml(category)}</div>`);
     return rows.join('<div class="shmDetailsDivider shmDividerEnabled">|</div>');
   }
@@ -710,10 +725,10 @@ var __shazWidgetExport = (() => {
     const details = escapeHtml(detailsHref(job, cfg));
     const apply = escapeHtml(applyHref(job, cfg));
     const name = escapeHtml(str(job, "jobName") || str(job, "title"));
-    const posted = timeSince(job);
+    const posted = cfg.cardFields.posted ? timeSince(job) : "";
     return `
     <div class="shmJobItemDetails">
-      ${isNew(job) ? '<span class="shmTag job-new">New</span>' : ""}
+      ${cfg.cardFields.newTag && isNew(job) ? '<span class="shmTag job-new">New</span>' : ""}
       ${posted ? `<div class="shmTimePostedText">${escapeHtml(cfg.postedText)} ${escapeHtml(posted)}</div>` : ""}
       <div class="shmJobItemUpper">
         <div class="shmJobtitle"><a href="${details}" class="shmJobtitle" data-rel="link-job-name">${name}</a></div>
@@ -727,7 +742,7 @@ var __shazWidgetExport = (() => {
         </div>
       </div>
       <div class="shmJobDetails">
-        <div class="shmJobDetailsPanel shmJobDetailsLeft">${detailRows(job)}</div>
+        <div class="shmJobDetailsPanel shmJobDetailsLeft">${detailRows(job, cfg)}</div>
       </div>
     </div>
     <div class="shmButtonLinks">
@@ -751,14 +766,15 @@ var __shazWidgetExport = (() => {
     return cfg.legacyLayout === "simple" ? ` ${cls}` : "";
   }
   function metaRows(job, cfg) {
+    const show = cfg.cardFields;
     const rows = [];
-    const workBits = [str(job, "workType"), str(job, "workModel")].filter(Boolean);
+    const workBits = [show.workType ? str(job, "workType") : "", show.workModel ? str(job, "workModel") : ""].filter(Boolean);
     if (workBits.length > 0) rows.push(["workType", workBits.join(" \xB7 ")]);
-    const salary = str(job, "salaryText") || str(job, "salary");
+    const salary = show.salary ? str(job, "salaryText") || str(job, "salary") : "";
     if (salary) rows.push(["salary", salary]);
-    const loc = locationText(job);
+    const loc = locationText(job, cfg);
     if (loc) rows.push(["location", loc]);
-    const category = str(job, "category");
+    const category = show.category ? str(job, "category") : "";
     if (category) rows.push(["category", category]);
     return rows.map(
       ([field, value]) => `<li class="sjr-meta__item${simple(cfg, SIMPLE_META_CLASS[field])}" data-field="${field}">${ICONS[field] || ""}<span>${escapeHtml(value)}</span></li>`
@@ -768,11 +784,11 @@ var __shazWidgetExport = (() => {
     const details = escapeHtml(detailsHref(job, cfg));
     const apply = escapeHtml(applyHref(job, cfg));
     const name = escapeHtml(str(job, "jobName") || str(job, "title"));
-    const posted = timeSince(job);
+    const posted = cfg.cardFields.posted ? timeSince(job) : "";
     const iso = postedDate(job);
     return `
     <div class="sjr-card__header">
-      ${isNew(job) ? `<span class="sjr-tag${simple(cfg, "newTag")}" data-rel="tag-new">New</span>` : ""}
+      ${cfg.cardFields.newTag && isNew(job) ? `<span class="sjr-tag${simple(cfg, "newTag")}" data-rel="tag-new">New</span>` : ""}
       ${posted ? `<time class="sjr-card__eyebrow${simple(cfg, "TimeSincePosted")}"${iso ? ` datetime="${iso}"` : ""}>${escapeHtml(cfg.postedText)} ${escapeHtml(posted)}</time>` : ""}
       <h3 class="sjr-card__title${simple(cfg, "jobResultTitle")}"><a href="${details}"${simple(cfg, "jobResultTitle") ? ' class="jobResultTitle"' : ""} data-rel="link-job-name">${name}</a></h3>
     </div>

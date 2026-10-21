@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 04885f14599b. Registers window.ShazammeWidget["<name>"].
+ * Build 7df864a47002. Registers window.ShazammeWidget["<name>"].
  */
 (function(){
   if (typeof document === 'undefined') return;
@@ -147,6 +147,18 @@ var __shazWidgetExport = (() => {
       resultMessagePlural: coerceStr(c.resultMessagePlural).trim(),
       showApplyButton: coerceToggle(c.applybtn),
       showReadMoreButton: coerceToggle(c.readmorebtn),
+      cardFields: {
+        salary: coerceToggle(c.showSalary),
+        workType: coerceToggle(c.showWorkType),
+        workModel: coerceToggle(c.showWorkModel),
+        category: coerceToggle(c.showCategory),
+        city: coerceToggle(c.showCity),
+        state: coerceToggle(c.showState),
+        country: coerceToggle(c.showCountry),
+        // The card shows relative time only, which legacy gated on this toggle alone.
+        posted: coerceToggle(c.showTimeSincePosted),
+        newTag: coerceToggle(c.showNewIcon)
+      },
       legacyLayout
     };
   }

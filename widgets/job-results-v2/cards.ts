@@ -75,23 +75,26 @@ function isNew(job: Job): boolean {
   return Date.now() - then <= NEW_JOB_MAX_DAYS * MS_PER_DAY;
 }
 
-function locationText(job: Job): string {
-  const parts = [str(job, 'city'), str(job, 'state')].filter(Boolean);
+function locationText(job: Job, cfg: WidgetConfig): string {
+  const { city, state, country } = cfg.cardFields;
+  const parts = [city ? str(job, 'city') : '', state ? str(job, 'state') : ''].filter(Boolean);
   if (parts.length > 0) return parts.join(', ');
-  return str(job, 'country') || str(job, 'location');
+  if (!country) return '';
+  return str(job, 'country') || (city && state ? str(job, 'location') : '');
 }
 
-function detailRows(job: Job): string {
+function detailRows(job: Job, cfg: WidgetConfig): string {
+  const show = cfg.cardFields;
   const rows: string[] = [];
-  const loc = locationText(job);
+  const loc = locationText(job, cfg);
   if (loc) rows.push(`<div class="shmLocation">${escapeHtml(loc)}</div>`);
-  const salary = str(job, 'salary');
+  const salary = show.salary ? str(job, 'salary') : '';
   if (salary) rows.push(`<div class="shmSalary">${escapeHtml(salary)}</div>`);
-  const workType = str(job, 'workType');
+  const workType = show.workType ? str(job, 'workType') : '';
   if (workType) rows.push(`<div class="work-type">${escapeHtml(workType)}</div>`);
-  const workModel = str(job, 'workModel');
+  const workModel = show.workModel ? str(job, 'workModel') : '';
   if (workModel) rows.push(`<div class="work-model">${escapeHtml(workModel)}</div>`);
-  const category = str(job, 'category');
+  const category = show.category ? str(job, 'category') : '';
   if (category) rows.push(`<div class="jobCategory">${escapeHtml(category)}</div>`);
   return rows.join('<div class="shmDetailsDivider shmDividerEnabled">|</div>');
 }
@@ -109,10 +112,10 @@ function classicCardHtml(job: Job, cfg: WidgetConfig): string {
   const details = escapeHtml(detailsHref(job, cfg));
   const apply = escapeHtml(applyHref(job, cfg));
   const name = escapeHtml(str(job, 'jobName') || str(job, 'title'));
-  const posted = timeSince(job);
+  const posted = cfg.cardFields.posted ? timeSince(job) : '';
   return `
     <div class="shmJobItemDetails">
-      ${isNew(job) ? '<span class="shmTag job-new">New</span>' : ''}
+      ${cfg.cardFields.newTag && isNew(job) ? '<span class="shmTag job-new">New</span>' : ''}
       ${posted ? `<div class="shmTimePostedText">${escapeHtml(cfg.postedText)} ${escapeHtml(posted)}</div>` : ''}
       <div class="shmJobItemUpper">
         <div class="shmJobtitle"><a href="${details}" class="shmJobtitle" data-rel="link-job-name">${name}</a></div>
@@ -126,7 +129,7 @@ function classicCardHtml(job: Job, cfg: WidgetConfig): string {
         </div>
       </div>
       <div class="shmJobDetails">
-        <div class="shmJobDetailsPanel shmJobDetailsLeft">${detailRows(job)}</div>
+        <div class="shmJobDetailsPanel shmJobDetailsLeft">${detailRows(job, cfg)}</div>
       </div>
     </div>
     <div class="shmButtonLinks">
@@ -167,18 +170,19 @@ function simple(cfg: WidgetConfig, cls: string): string {
 /** One meta row per populated field, each tagged with the field it shows so CSS
  *  can target it by meaning (`[data-field="salary"]`) rather than by class name. */
 function metaRows(job: Job, cfg: WidgetConfig): string {
+  const show = cfg.cardFields;
   const rows: Array<[string, string]> = [];
 
-  const workBits = [str(job, 'workType'), str(job, 'workModel')].filter(Boolean);
+  const workBits = [show.workType ? str(job, 'workType') : '', show.workModel ? str(job, 'workModel') : ''].filter(Boolean);
   if (workBits.length > 0) rows.push(['workType', workBits.join(' · ')]);
 
-  const salary = str(job, 'salaryText') || str(job, 'salary');
+  const salary = show.salary ? str(job, 'salaryText') || str(job, 'salary') : '';
   if (salary) rows.push(['salary', salary]);
 
-  const loc = locationText(job);
+  const loc = locationText(job, cfg);
   if (loc) rows.push(['location', loc]);
 
-  const category = str(job, 'category');
+  const category = show.category ? str(job, 'category') : '';
   if (category) rows.push(['category', category]);
 
   return rows
@@ -195,12 +199,12 @@ function modernCardHtml(job: Job, cfg: WidgetConfig): string {
   const details = escapeHtml(detailsHref(job, cfg));
   const apply = escapeHtml(applyHref(job, cfg));
   const name = escapeHtml(str(job, 'jobName') || str(job, 'title'));
-  const posted = timeSince(job);
+  const posted = cfg.cardFields.posted ? timeSince(job) : '';
   const iso = postedDate(job);
 
   return `
     <div class="sjr-card__header">
-      ${isNew(job) ? `<span class="sjr-tag${simple(cfg, 'newTag')}" data-rel="tag-new">New</span>` : ''}
+      ${cfg.cardFields.newTag && isNew(job) ? `<span class="sjr-tag${simple(cfg, 'newTag')}" data-rel="tag-new">New</span>` : ''}
       ${
         posted
           ? `<time class="sjr-card__eyebrow${simple(cfg, 'TimeSincePosted')}"${iso ? ` datetime="${iso}"` : ''}>${escapeHtml(cfg.postedText)} ${escapeHtml(posted)}</time>`
