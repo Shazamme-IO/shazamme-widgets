@@ -120,6 +120,26 @@ describe('legacy results header', () => {
     expect(el.querySelector<HTMLElement>('[data-rel="action-bar"]')?.style.display).toBe('');
   });
 
+  it('hides the List/Map toggle when the legacy Google API key is empty', async () => {
+    const el = await mount({ apikey: '' });
+    const toggle = el.querySelector<HTMLElement>('[data-rel="view-toggle"]');
+
+    expect(toggle?.style.getPropertyValue('display')).toBe('none');
+    expect(toggle?.style.getPropertyPriority('display')).toBe('important');
+  });
+
+  it('keeps the List/Map toggle when a Google API key is set', async () => {
+    const el = await mount({ apikey: 'AIza-test' });
+
+    expect(el.querySelector<HTMLElement>('[data-rel="view-toggle"]')?.style.display).toBe('');
+  });
+
+  it('keeps the List/Map toggle when the key is absent (v2 panel)', async () => {
+    const el = await mount({});
+
+    expect(el.querySelector<HTMLElement>('[data-rel="view-toggle"]')?.style.display).toBe('');
+  });
+
   it('renders the search results text and singular/plural message', async () => {
     const el = await mount({
       searchResultsText: 'Your search resulted in:',

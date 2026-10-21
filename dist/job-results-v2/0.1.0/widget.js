@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 7a1a16b80745. Registers window.ShazammeWidget["<name>"].
+ * Build f0dffc55b418. Registers window.ShazammeWidget["<name>"].
  */
 (function(){
   if (typeof document === 'undefined') return;
@@ -141,6 +141,7 @@ var __shazWidgetExport = (() => {
       defaultFilters: readDefaultFilters(c),
       showResultsRow: coerceToggle(c.shmTopResultsRow),
       showActionBar: coerceToggle(c.showActionBar),
+      showViewToggle: c.apikey === void 0 || c.apikey === null || coerceStr(c.apikey).trim() !== "",
       searchResultsText: coerceStr(c.searchResultsText).trim(),
       resultMessage: coerceStr(c.resultMessage).trim(),
       resultMessagePlural: coerceStr(c.resultMessagePlural).trim(),
@@ -1265,6 +1266,8 @@ var __shazWidgetExport = (() => {
       const countRow = $one(element, ".shmResultCountContainer");
       if (countRow && !cfg.showResultsRow) countRow.style.setProperty("display", "none", "important");
       if (actionBar && !cfg.showActionBar) actionBar.style.setProperty("display", "none", "important");
+      const viewToggle = $one(element, '[data-rel="view-toggle"]');
+      if (viewToggle && !cfg.showViewToggle) viewToggle.style.setProperty("display", "none", "important");
       const count = $one(element, '[data-rel="label-results-count"]');
       if (!count || cfg.searchResultsText === "" || $one(element, '[data-rel="label-results-prefix"]')) return;
       const prefix = document.createElement("span");

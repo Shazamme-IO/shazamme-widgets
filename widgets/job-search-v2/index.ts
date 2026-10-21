@@ -153,6 +153,15 @@ export default function jobSearch(ctx: WidgetContext): void {
       // lines up. (Column spacing lives on .flex-items-js, not the field.)
       el.style.setProperty('margin', '0', 'important');
     });
+
+    // The Search button must match: a legacy CSS tab's `.searchBtn { height:40px
+    // !important }` + border left it 42px beside 46px fields, sitting 4px low in the
+    // centred row. Size only — its colours stay with the Design panel.
+    root.querySelectorAll<HTMLElement>('.flex-items-js .searchBtn').forEach((el) => {
+      el.style.setProperty('height', '46px', 'important');
+      el.style.setProperty('box-sizing', 'border-box', 'important');
+      el.style.setProperty('margin', '0', 'important');
+    });
   }
 
   // Duda re-asserts the widget's HTML shortly after we mount (same behaviour the

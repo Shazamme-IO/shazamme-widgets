@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 8b898c7d4aa2. Registers window.ShazammeWidget["<name>"].
+ * Build 04885f14599b. Registers window.ShazammeWidget["<name>"].
  */
 (function(){
   if (typeof document === 'undefined') return;
@@ -141,6 +141,7 @@ var __shazWidgetExport = (() => {
       defaultFilters: readDefaultFilters(c),
       showResultsRow: coerceToggle(c.shmTopResultsRow),
       showActionBar: coerceToggle(c.showActionBar),
+      showViewToggle: c.apikey === void 0 || c.apikey === null || coerceStr(c.apikey).trim() !== "",
       searchResultsText: coerceStr(c.searchResultsText).trim(),
       resultMessage: coerceStr(c.resultMessage).trim(),
       resultMessagePlural: coerceStr(c.resultMessagePlural).trim(),
@@ -685,6 +686,11 @@ var __shazWidgetExport = (() => {
         el.style.setProperty("border", "1.5px solid #d1d1d1", "important");
         el.style.setProperty("box-sizing", "border-box", "important");
         el.style.setProperty("color", "#222", "important");
+        el.style.setProperty("margin", "0", "important");
+      });
+      root.querySelectorAll(".flex-items-js .searchBtn").forEach((el) => {
+        el.style.setProperty("height", "46px", "important");
+        el.style.setProperty("box-sizing", "border-box", "important");
         el.style.setProperty("margin", "0", "important");
       });
     }
