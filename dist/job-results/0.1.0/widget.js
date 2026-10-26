@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 7dbe2874f89e. Registers window.ShazammeWidget["<name>"].
+ * Build 39061b9af4b2. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -82,6 +82,8 @@ var __shazWidgetExport = (() => {
       jobApply: data.config.applicationPage || "/job-application",
       jobDetails: data.config.detailsPage || "/job-details"
     };
+    const CompanyFields = /^(customField([1-9]|1[0-2])|advertiserName)$/;
+    const DefaultCompanyField = "customField6";
     const Collection = {
       job: {
         name: data.config.JobCollection || "Jobs",
@@ -373,6 +375,7 @@ var __shazWidgetExport = (() => {
                     <div class="shmJobItemUpper">
                         <div class="shmJobtitle">
                         <a  href="${j.detailsUri}" class="shmJobtitle" data-rel="link-job-name">${j.jobName}</a>
+                        ${this._companyEl(j)}
                         </div>
 
                         <div class="shmUpperRight" style="--alignSaveJobAndEmail:${data.config.alignSaveJobAndEmail}">
@@ -494,6 +497,7 @@ var __shazWidgetExport = (() => {
 
             <div class="resultsContainer">
                 <div class="jobResultTitle"><a  href="${j.detailsUri}" class="jobResultTitle" data-rel="link-job-name">${j.jobName}</a></div>
+                ${this._companyEl(j)}
                 ${data.config.showCategory && j.category && !j.professionCatchAll && `<div class="jobCategory">${j.category}</div>` || ""}
                 <div class="flex-col">
                     ${data.config.showWorkType && j.workType && `<div class="flex-col-separator workType" style="padding-right: 0px !important; padding-left: calc(${data.config.workTypeModelSpacing}px * 2) !important; --shaz-spacing: ${data.config.workTypeModelSpacing}px;">${j.workType}</div>` || ""}
@@ -619,6 +623,7 @@ var __shazWidgetExport = (() => {
                 <div class="section-main">
                     <div class="description">
                         <p class="job-title"><a href="${j.detailsUri}">${j.jobName || ""}</a></p>
+                        ${this._companyEl(j)}
                         ${j.shortDescription && `<div class="label-job-description" style="--shaz-job-result-lines: ${data.config.jobDetailsLines || 3};">${j.shortDescription}</div>` || ""}
                     </div>
                     <div class="side-bar">
@@ -953,6 +958,12 @@ var __shazWidgetExport = (() => {
           }
         }
         return new Date(j.postedDate);
+      };
+      this._companyEl = (j) => {
+        if (!data.config.showCompany) return "";
+        let field = CompanyFields.test(data.config.companyField) ? data.config.companyField : DefaultCompanyField;
+        let company = typeof j[field] === "string" ? j[field].trim() : "";
+        return company && `<div class="shmCompany">${$("<div>").text(company).html()}</div>` || "";
       };
       this._timeSince = (d) => {
         if (!d || isNaN(d.getTime())) {
