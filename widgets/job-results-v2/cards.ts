@@ -108,11 +108,42 @@ export function escapeHtml(value: string): string {
     .replace(/"/g, '&quot;');
 }
 
+const ENTITIES: Record<string, string> = { nbsp: ' ', amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", '#39': "'", '#160': ' ' };
+
+/** Description class names avoid the legacy `jobDescription`: the Job Results 2026
+ *  CSS still on cloned widgets hides it in grid view and narrows it to 55%. */
+
+/** The feed's summary may carry markup. Cutting markup by characters leaves tags
+ *  open that escape into the grid as extra cells, so reduce it to text first. */
+function plainText(html: string): string {
+  return html
+    .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&(nbsp|amp|lt|gt|quot|apos|#39|#160);/gi, (_, name: string) => ENTITIES[name.toLowerCase()])
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** Word-safe cut to at most `max` characters plus an ellipsis; 0 means no cap. */
+export function truncateText(text: string, max: number): string {
+  if (max <= 0 || text.length <= max) return text;
+  const cut = text.slice(0, max + 1);
+  const space = cut.lastIndexOf(' ');
+  const kept = space > 0 ? cut.slice(0, space) : text.slice(0, max);
+  return `${kept.replace(/[\s,;:.\-–—]+$/, '')}…`;
+}
+
+function descriptionText(job: Job, cfg: WidgetConfig): string {
+  if (!cfg.showShortDescription) return '';
+  return truncateText(plainText(str(job, 'shortDescription')), cfg.shortDescriptionLength);
+}
+
 function classicCardHtml(job: Job, cfg: WidgetConfig): string {
   const details = escapeHtml(detailsHref(job, cfg));
   const apply = escapeHtml(applyHref(job, cfg));
   const name = escapeHtml(str(job, 'jobName') || str(job, 'title'));
   const posted = cfg.cardFields.posted ? timeSince(job) : '';
+  const description = descriptionText(job, cfg);
   return `
     <div class="shmJobItemDetails">
       ${cfg.cardFields.newTag && isNew(job) ? '<span class="shmTag job-new">New</span>' : ''}
@@ -131,6 +162,7 @@ function classicCardHtml(job: Job, cfg: WidgetConfig): string {
       <div class="shmJobDetails">
         <div class="shmJobDetailsPanel shmJobDetailsLeft">${detailRows(job, cfg)}</div>
       </div>
+      ${description ? `<div class="shmShortDescription" data-rel="label-job-description">${escapeHtml(description)}</div>` : ''}
     </div>
     <div class="shmButtonLinks">
       ${cfg.showApplyButton ? `<a class="shmGoApply" href="${apply}"><span class="text">${escapeHtml(cfg.applyNowLabel)}</span></a>` : ''}
@@ -201,6 +233,7 @@ function modernCardHtml(job: Job, cfg: WidgetConfig): string {
   const name = escapeHtml(str(job, 'jobName') || str(job, 'title'));
   const posted = cfg.cardFields.posted ? timeSince(job) : '';
   const iso = postedDate(job);
+  const description = descriptionText(job, cfg);
 
   return `
     <div class="sjr-card__header">
@@ -214,6 +247,7 @@ function modernCardHtml(job: Job, cfg: WidgetConfig): string {
     </div>
     <div class="sjr-card__body">
       <ul class="sjr-meta">${metaRows(job, cfg)}</ul>
+      ${description ? `<p class="sjr-card__desc" data-rel="label-job-description">${escapeHtml(description)}</p>` : ''}
       <div class="sjr-card__actions">
         <button class="sjr-save" type="button" data-rel="action-save-job" data-save-id="">
           <span class="active">${escapeHtml(cfg.unsaveJobText)}</span>

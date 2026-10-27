@@ -62,6 +62,10 @@ export interface WidgetConfig {
   cardFields: CardFields;
   /** Legacy card layout; 'simple' tags cards with the classes its Design panel targets. */
   legacyLayout: string;
+  /** Job summary under the meta rows. Off when absent, so no existing card changes. */
+  showShortDescription: boolean;
+  /** Character cap for that summary; 0 shows it in full. */
+  shortDescriptionLength: number;
 }
 
 export type DefaultFilters = Readonly<Record<string, readonly string[]>>;
@@ -100,6 +104,7 @@ const DEFAULT_PAGE_SIZE = 20;
 const DEFAULT_PROXIMITY: ProximityDiameter = '6371';
 const DEFAULT_DETAILS_PAGE = '/job-details';
 const DEFAULT_APPLICATION_PAGE = '/job-application';
+const DEFAULT_SHORT_DESCRIPTION_LENGTH = 150;
 
 /** Duda serialises booleans as 'true'/'false' (or leaves them as real bools). */
 export function coerceBool(value: unknown, fallback = false): boolean {
@@ -121,6 +126,12 @@ export function coerceInt(value: unknown, fallback: number): number {
     if (Number.isFinite(n)) return n;
   }
   return fallback;
+}
+
+/** A non-negative integer setting; blank, garbage or negative falls back. */
+function coerceLimit(value: unknown, fallback: number): number {
+  const n = coerceInt(value, fallback);
+  return n < 0 ? fallback : n;
 }
 
 /** Duda hands an unset text setting through as '', which coerceStr would return
@@ -232,5 +243,7 @@ export function readConfig(data: DudaData | undefined): WidgetConfig {
       newTag: coerceToggle(c.showNewIcon),
     },
     legacyLayout,
+    showShortDescription: coerceBool(c.showShortDescription),
+    shortDescriptionLength: coerceLimit(c.shortDescriptionLength, DEFAULT_SHORT_DESCRIPTION_LENGTH),
   };
 }
