@@ -397,6 +397,7 @@ describe('short description on the card', () => {
     expect(align({ shortDescriptionAlign: 'Center' })).toBe('center');
     expect(align({ shortDescriptionAlign: 'right' })).toBe('right');
     expect(align({ shortDescriptionAlignment: 'justify' })).toBe('justify');
+    expect(align({ shortDescriptionAlign: '', shortDescriptionAlignment: 'center' })).toBe('center');
   });
 
   it('falls back to left for an unknown or unsafe alignment', () => {

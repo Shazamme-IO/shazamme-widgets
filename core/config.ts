@@ -257,6 +257,6 @@ export function readConfig(data: DudaData | undefined): WidgetConfig {
     legacyLayout,
     showShortDescription: coerceBool(c.showShortDescription),
     shortDescriptionLength: coerceLimit(c.shortDescriptionLength, DEFAULT_SHORT_DESCRIPTION_LENGTH),
-    shortDescriptionAlign: coerceAlign(c.shortDescriptionAlign ?? c.shortDescriptionAlignment),
+    shortDescriptionAlign: coerceAlign(c.shortDescriptionAlign || c.shortDescriptionAlignment),
   };
 }
