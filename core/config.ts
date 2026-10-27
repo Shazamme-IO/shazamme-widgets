@@ -140,10 +140,14 @@ function coerceLimit(value: unknown, fallback: number): number {
 
 const TEXT_ALIGNS: readonly TextAlign[] = ['left', 'center', 'right', 'justify'];
 
-/** Duda dropdown values arrive in any case; anything unknown is left. */
-function coerceAlign(value: unknown): TextAlign {
-  const v = coerceStr(value).trim().toLowerCase();
-  return TEXT_ALIGNS.find((a) => a === v) ?? 'left';
+/** First valid value across the key spellings a panel may use; any case; else left. */
+function coerceAlign(values: readonly unknown[]): TextAlign {
+  for (const value of values) {
+    const v = coerceStr(value).trim().toLowerCase();
+    const align = TEXT_ALIGNS.find((a) => a === v);
+    if (align) return align;
+  }
+  return 'left';
 }
 
 /** Duda hands an unset text setting through as '', which coerceStr would return
@@ -257,6 +261,6 @@ export function readConfig(data: DudaData | undefined): WidgetConfig {
     legacyLayout,
     showShortDescription: coerceBool(c.showShortDescription),
     shortDescriptionLength: coerceLimit(c.shortDescriptionLength, DEFAULT_SHORT_DESCRIPTION_LENGTH),
-    shortDescriptionAlign: coerceAlign(c.shortDescriptionAlign || c.shortDescriptionAlignment),
+    shortDescriptionAlign: coerceAlign([c.shortDescriptionAlign, c.shortDescriptionAlignment, c.alignShortDescription]),
   };
 }

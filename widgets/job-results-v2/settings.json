@@ -157,7 +157,7 @@
           "label": "Justify"
         }
       ],
-      "help": "Text alignment of the short description. Left unless set; shortDescriptionAlignment is also accepted."
+      "help": "Text alignment of the short description. Left unless set; shortDescriptionAlignment and alignShortDescription are also accepted."
     },
     {
       "key": "saveJobText",
