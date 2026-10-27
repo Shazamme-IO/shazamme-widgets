@@ -108,27 +108,23 @@ export function escapeHtml(value: string): string {
     .replace(/"/g, '&quot;');
 }
 
-const ENTITIES: Record<string, string> = {
-  nbsp: ' ', amp: '&', lt: '<', gt: '>', quot: '"', apos: "'",
-  ndash: '–', mdash: '—', lsquo: '‘', rsquo: '’', ldquo: '“', rdquo: '”', hellip: '…', bull: '•',
-};
-
-function decodeEntity(entity: string, body: string): string {
-  if (body[0] !== '#') return ENTITIES[body.toLowerCase()] ?? entity;
-  const code = body[1] === 'x' || body[1] === 'X' ? parseInt(body.slice(2), 16) : parseInt(body.slice(1), 10);
-  return Number.isInteger(code) && code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : entity;
+/** The browser's own entity decoder: a textarea parses its content as text, so
+ *  no element is created and nothing runs, but every entity is resolved. */
+function decodeEntities(text: string): string {
+  if (!text.includes('&')) return text;
+  const area = document.createElement('textarea');
+  area.innerHTML = text;
+  return area.value;
 }
 
 /** The feed's summary may carry markup. Cutting markup by characters leaves tags
  *  open that escape into the grid as extra cells, so reduce it to text first.
  *  Only real-looking tags are dropped, so a bare `<` in prose survives. */
 function plainText(html: string): string {
-  return html
+  const text = html
     .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, ' ')
-    .replace(/<\/?[a-z][^<>]*>|<!--[\s\S]*?-->/gi, ' ')
-    .replace(/&(#\d+|#x[0-9a-f]+|[a-z]+);/gi, decodeEntity)
-    .replace(/\s+/g, ' ')
-    .trim();
+    .replace(/<\/?[a-z][^<>]*>|<!--[\s\S]*?-->/gi, ' ');
+  return decodeEntities(text).replace(/\s+/g, ' ').trim();
 }
 
 /** Word-safe cut to at most `max` characters plus an ellipsis; 0 means no cap.
@@ -136,7 +132,7 @@ function plainText(html: string): string {
 export function truncateText(text: string, max: number): string {
   if (max <= 0 || text.length <= max) return text;
   const space = text.slice(0, max + 1).lastIndexOf(' ');
-  const cut = space > max / 2 ? text.slice(0, space) : text.slice(0, max);
+  const cut = space >= max / 2 ? text.slice(0, space) : text.slice(0, max);
   const kept = /[\uD800-\uDBFF]$/.test(cut) ? cut.slice(0, -1) : cut;
   return `${kept.replace(/[\s,;:.\-–—]+$/, '')}…`;
 }

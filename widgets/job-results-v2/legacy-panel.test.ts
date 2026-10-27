@@ -352,6 +352,19 @@ describe('short description on the card', () => {
     expect(desc(host)).toBe('Don’t miss – you’ll love it — apply');
   });
 
+  it('decodes every named entity once, never twice', () => {
+    const host = cards({ showShortDescription: 'true' }, { shortDescription: 'Caf&eacute; &euro;50k &copy; &amp;lt;b&amp;gt; &bogus;' });
+
+    expect(desc(host)).toBe('Café €50k © &lt;b&gt; &bogus;');
+    expect(host.querySelector('b')).toBeNull();
+  });
+
+  it('breaks at a word that sits exactly half way', () => {
+    expect(desc(cards({ showShortDescription: 'true', shortDescriptionLength: '20' }, { shortDescription: 'Supervisor of operations hiring now' }))).toBe(
+      'Supervisor of…',
+    );
+  });
+
   it('keeps text around a bare < that is not a tag', () => {
     expect(desc(cards({ showShortDescription: 'true' }, { shortDescription: 'Salary < 50k, apply now > today' }))).toBe(
       'Salary < 50k, apply now > today',
