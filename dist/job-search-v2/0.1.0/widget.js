@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build ae337f99b321. Registers window.ShazammeWidget["<name>"].
+ * Build 1f0e89e4884e. Registers window.ShazammeWidget["<name>"].
  */
 (function(){
   if (typeof document === 'undefined') return;
@@ -173,7 +173,7 @@ var __shazWidgetExport = (() => {
       legacyLayout,
       showShortDescription: coerceBool(c.showShortDescription),
       shortDescriptionLength: coerceLimit(c.shortDescriptionLength, DEFAULT_SHORT_DESCRIPTION_LENGTH),
-      shortDescriptionAlign: coerceAlign(c.shortDescriptionAlign || c.shortDescriptionAlignment)
+      shortDescriptionAlign: coerceAlign(c.shortDescriptionAlign || c.shortDescriptionAlignment || c.alignShortDescription)
     };
   }
 
