@@ -384,6 +384,27 @@ describe('short description on the card', () => {
     expect(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/.test(text)).toBe(false);
   });
 
+  const align = (config: Record<string, unknown>): string | undefined =>
+    (cards({ showShortDescription: 'true', ...config }).querySelector('[data-rel="label-job-description"]') as HTMLElement | null)?.style
+      .textAlign;
+
+  it('is left-aligned by default, overriding a centred card', () => {
+    expect(align({})).toBe('left');
+    expect(align({ cardTemplate: 'classic' })).toBe('left');
+  });
+
+  it('follows the alignment setting, whatever case Duda sends', () => {
+    expect(align({ shortDescriptionAlign: 'Center' })).toBe('center');
+    expect(align({ shortDescriptionAlign: 'right' })).toBe('right');
+    expect(align({ shortDescriptionAlignment: 'justify' })).toBe('justify');
+    expect(align({ shortDescriptionAlign: '', shortDescriptionAlignment: 'center' })).toBe('center');
+  });
+
+  it('falls back to left for an unknown or unsafe alignment', () => {
+    expect(align({ shortDescriptionAlign: 'middle' })).toBe('left');
+    expect(align({ shortDescriptionAlign: 'left;color:red' })).toBe('left');
+  });
+
   it('renders nothing for a job without a summary', () => {
     expect(desc(cards({ showShortDescription: 'true' }, { shortDescription: '' }))).toBeNull();
     expect(desc(cards({ showShortDescription: 'true' }, { shortDescription: '<p> </p>' }))).toBeNull();

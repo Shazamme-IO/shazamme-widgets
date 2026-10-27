@@ -145,6 +145,11 @@ function descriptionText(job: Job, cfg: WidgetConfig): string {
   return truncateText(plainText(str(job, 'shortDescription')), cfg.shortDescriptionLength);
 }
 
+/** Inline and !important: the card's own CSS (or a site's CSS tab) may centre text. */
+function descriptionStyle(cfg: WidgetConfig): string {
+  return `text-align: ${cfg.shortDescriptionAlign} !important`;
+}
+
 function classicCardHtml(job: Job, cfg: WidgetConfig): string {
   const details = escapeHtml(detailsHref(job, cfg));
   const apply = escapeHtml(applyHref(job, cfg));
@@ -169,7 +174,7 @@ function classicCardHtml(job: Job, cfg: WidgetConfig): string {
       <div class="shmJobDetails">
         <div class="shmJobDetailsPanel shmJobDetailsLeft">${detailRows(job, cfg)}</div>
       </div>
-      ${description ? `<div class="shmShortDescription" data-rel="label-job-description">${escapeHtml(description)}</div>` : ''}
+      ${description ? `<div class="shmShortDescription" data-rel="label-job-description" style="${descriptionStyle(cfg)}">${escapeHtml(description)}</div>` : ''}
     </div>
     <div class="shmButtonLinks">
       ${cfg.showApplyButton ? `<a class="shmGoApply" href="${apply}"><span class="text">${escapeHtml(cfg.applyNowLabel)}</span></a>` : ''}
@@ -254,7 +259,7 @@ function modernCardHtml(job: Job, cfg: WidgetConfig): string {
     </div>
     <div class="sjr-card__body">
       <ul class="sjr-meta">${metaRows(job, cfg)}</ul>
-      ${description ? `<p class="sjr-card__desc" data-rel="label-job-description">${escapeHtml(description)}</p>` : ''}
+      ${description ? `<p class="sjr-card__desc" data-rel="label-job-description" style="${descriptionStyle(cfg)}">${escapeHtml(description)}</p>` : ''}
       <div class="sjr-card__actions">
         <button class="sjr-save" type="button" data-rel="action-save-job" data-save-id="">
           <span class="active">${escapeHtml(cfg.unsaveJobText)}</span>

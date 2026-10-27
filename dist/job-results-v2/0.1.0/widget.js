@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 4f003c1743f8. Registers window.ShazammeWidget["<name>"].
+ * Build b0636f8964a6. Registers window.ShazammeWidget["<name>"].
  */
 (function(){
   if (typeof document === 'undefined') return;
@@ -78,6 +78,12 @@ var __shazWidgetExport = (() => {
   function coerceLimit(value, fallback) {
     const n = coerceInt(value, fallback);
     return n < 0 ? fallback : n;
+  }
+  var TEXT_ALIGNS = ["left", "center", "right", "justify"];
+  function coerceAlign(value) {
+    var _a;
+    const v = coerceStr(value).trim().toLowerCase();
+    return (_a = TEXT_ALIGNS.find((a) => a === v)) != null ? _a : "left";
   }
   function coerceLabel(value, fallback) {
     const v = coerceStr(value).trim();
@@ -166,7 +172,8 @@ var __shazWidgetExport = (() => {
       },
       legacyLayout,
       showShortDescription: coerceBool(c.showShortDescription),
-      shortDescriptionLength: coerceLimit(c.shortDescriptionLength, DEFAULT_SHORT_DESCRIPTION_LENGTH)
+      shortDescriptionLength: coerceLimit(c.shortDescriptionLength, DEFAULT_SHORT_DESCRIPTION_LENGTH),
+      shortDescriptionAlign: coerceAlign(c.shortDescriptionAlign || c.shortDescriptionAlignment)
     };
   }
 
@@ -749,6 +756,9 @@ var __shazWidgetExport = (() => {
     if (!cfg.showShortDescription) return "";
     return truncateText(plainText(str(job, "shortDescription")), cfg.shortDescriptionLength);
   }
+  function descriptionStyle(cfg) {
+    return `text-align: ${cfg.shortDescriptionAlign} !important`;
+  }
   function classicCardHtml(job, cfg) {
     const details = escapeHtml(detailsHref(job, cfg));
     const apply = escapeHtml(applyHref(job, cfg));
@@ -773,7 +783,7 @@ var __shazWidgetExport = (() => {
       <div class="shmJobDetails">
         <div class="shmJobDetailsPanel shmJobDetailsLeft">${detailRows(job, cfg)}</div>
       </div>
-      ${description ? `<div class="shmShortDescription" data-rel="label-job-description">${escapeHtml(description)}</div>` : ""}
+      ${description ? `<div class="shmShortDescription" data-rel="label-job-description" style="${descriptionStyle(cfg)}">${escapeHtml(description)}</div>` : ""}
     </div>
     <div class="shmButtonLinks">
       ${cfg.showApplyButton ? `<a class="shmGoApply" href="${apply}"><span class="text">${escapeHtml(cfg.applyNowLabel)}</span></a>` : ""}
@@ -825,7 +835,7 @@ var __shazWidgetExport = (() => {
     </div>
     <div class="sjr-card__body">
       <ul class="sjr-meta">${metaRows(job, cfg)}</ul>
-      ${description ? `<p class="sjr-card__desc" data-rel="label-job-description">${escapeHtml(description)}</p>` : ""}
+      ${description ? `<p class="sjr-card__desc" data-rel="label-job-description" style="${descriptionStyle(cfg)}">${escapeHtml(description)}</p>` : ""}
       <div class="sjr-card__actions">
         <button class="sjr-save" type="button" data-rel="action-save-job" data-save-id="">
           <span class="active">${escapeHtml(cfg.unsaveJobText)}</span>

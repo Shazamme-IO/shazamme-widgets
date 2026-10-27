@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 56ba0b6a54f8. Registers window.ShazammeWidget["<name>"].
+ * Build ae337f99b321. Registers window.ShazammeWidget["<name>"].
  */
 (function(){
   if (typeof document === 'undefined') return;
@@ -78,6 +78,12 @@ var __shazWidgetExport = (() => {
   function coerceLimit(value, fallback) {
     const n = coerceInt(value, fallback);
     return n < 0 ? fallback : n;
+  }
+  var TEXT_ALIGNS = ["left", "center", "right", "justify"];
+  function coerceAlign(value) {
+    var _a;
+    const v = coerceStr(value).trim().toLowerCase();
+    return (_a = TEXT_ALIGNS.find((a) => a === v)) != null ? _a : "left";
   }
   function coerceLabel(value, fallback) {
     const v = coerceStr(value).trim();
@@ -166,7 +172,8 @@ var __shazWidgetExport = (() => {
       },
       legacyLayout,
       showShortDescription: coerceBool(c.showShortDescription),
-      shortDescriptionLength: coerceLimit(c.shortDescriptionLength, DEFAULT_SHORT_DESCRIPTION_LENGTH)
+      shortDescriptionLength: coerceLimit(c.shortDescriptionLength, DEFAULT_SHORT_DESCRIPTION_LENGTH),
+      shortDescriptionAlign: coerceAlign(c.shortDescriptionAlign || c.shortDescriptionAlignment)
     };
   }
 
