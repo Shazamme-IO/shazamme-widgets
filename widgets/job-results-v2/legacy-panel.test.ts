@@ -277,3 +277,115 @@ describe('legacy card field toggles', () => {
     }
   });
 });
+
+describe('short description on the card', () => {
+  const SUMMARY =
+    'The Chiller Test Engineer is responsible for planning, executing, monitoring, and documenting performance testing of commercial chiller systems.';
+  const job = { jobID: 'd1', jobName: 'Test Engineer', state: 'Oregon', shortDescription: SUMMARY };
+  const cards = (config: Record<string, unknown>, extra: Record<string, unknown> = {}): HTMLElement => {
+    const host = document.createElement('div');
+    const page = [{ ...job, ...extra }];
+    renderCards(host, { page, matching: page, total: 1 } as unknown as QueryResult, readConfig({ config }));
+    return host;
+  };
+  const desc = (host: HTMLElement): string | null =>
+    host.querySelector('[data-rel="label-job-description"]')?.textContent ?? null;
+
+  it('is hidden when Show Short Description is absent or off', () => {
+    expect(desc(cards({}))).toBeNull();
+    expect(desc(cards({ showShortDescription: 'false' }))).toBeNull();
+  });
+
+  for (const template of ['modern', 'classic']) {
+    it(`shows the full summary when it fits the length (${template})`, () => {
+      const host = cards({ showShortDescription: 'true', shortDescriptionLength: '500', cardTemplate: template });
+
+      expect(desc(host)).toBe(SUMMARY);
+      // Legacy CSS hides `.shmResultView.grid div.jobDescription`; stay clear of it.
+      expect(host.querySelector('.jobDescription')).toBeNull();
+    });
+  }
+
+  it('cuts at a word boundary within the configured length and adds an ellipsis', () => {
+    const text = desc(cards({ showShortDescription: 'true', shortDescriptionLength: '40' })) ?? '';
+
+    expect(text).toBe('The Chiller Test Engineer is responsible…');
+    expect(text.length).toBeLessThanOrEqual(41);
+  });
+
+  it('defaults to 150 characters when the length is blank or invalid', () => {
+    const long = 'word '.repeat(60).trim();
+    for (const shortDescriptionLength of ['', 'abc', '-5']) {
+      const text = desc(cards({ showShortDescription: 'true', shortDescriptionLength }, { shortDescription: long })) ?? '';
+
+      expect(text.endsWith('…')).toBe(true);
+      expect(text.length).toBeLessThanOrEqual(151);
+    }
+  });
+
+  it('shows the whole summary when the length is 0', () => {
+    const long = 'word '.repeat(60).trim();
+
+    expect(desc(cards({ showShortDescription: 'true', shortDescriptionLength: '0' }, { shortDescription: long }))).toBe(long);
+  });
+
+  it('strips markup before cutting so no tag is left open in the grid', () => {
+    const host = cards(
+      { showShortDescription: 'true', shortDescriptionLength: '21' },
+      { shortDescription: '<p><strong>Great&nbsp;role</strong> &amp; benefits for a <em>senior</em> engineer</p><script>x()</script>' },
+    );
+
+    expect(desc(host)).toBe('Great role & benefits…');
+    expect(host.querySelector('[data-rel="label-job-description"] *, strong, em, script')).toBeNull();
+  });
+
+  it('renders decoded angle brackets as text, not markup', () => {
+    const host = cards({ showShortDescription: 'true' }, { shortDescription: '&lt;img src=x onerror=alert(1)&gt; Apply today' });
+
+    expect(host.querySelector('img')).toBeNull();
+    expect(desc(host)).toBe('<img src=x onerror=alert(1)> Apply today');
+  });
+
+  it('decodes numeric and common named entities instead of showing them', () => {
+    const host = cards({ showShortDescription: 'true' }, { shortDescription: 'Don&#8217;t miss &ndash; you&rsquo;ll love it &#x2014; apply' });
+
+    expect(desc(host)).toBe('Don’t miss – you’ll love it — apply');
+  });
+
+  it('decodes every named entity once, never twice', () => {
+    const host = cards({ showShortDescription: 'true' }, { shortDescription: 'Caf&eacute; &euro;50k &copy; &amp;lt;b&amp;gt; &bogus;' });
+
+    expect(desc(host)).toBe('Café €50k © &lt;b&gt; &bogus;');
+    expect(host.querySelector('b')).toBeNull();
+  });
+
+  it('breaks at a word that sits exactly half way', () => {
+    expect(desc(cards({ showShortDescription: 'true', shortDescriptionLength: '20' }, { shortDescription: 'Supervisor of operations hiring now' }))).toBe(
+      'Supervisor of…',
+    );
+  });
+
+  it('keeps text around a bare < that is not a tag', () => {
+    expect(desc(cards({ showShortDescription: 'true' }, { shortDescription: 'Salary < 50k, apply now > today' }))).toBe(
+      'Salary < 50k, apply now > today',
+    );
+  });
+
+  it('hard-cuts rather than keep only a tiny first word', () => {
+    const text = desc(cards({ showShortDescription: 'true', shortDescriptionLength: '20' }, { shortDescription: `I ${'x'.repeat(40)}` }));
+
+    expect(text).toBe(`I ${'x'.repeat(18)}…`);
+  });
+
+  it('never splits an emoji on a hard cut', () => {
+    const text = desc(cards({ showShortDescription: 'true', shortDescriptionLength: '5' }, { shortDescription: 'abcd😀efgh' })) ?? '';
+
+    expect(text).toBe('abcd…');
+    expect(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/.test(text)).toBe(false);
+  });
+
+  it('renders nothing for a job without a summary', () => {
+    expect(desc(cards({ showShortDescription: 'true' }, { shortDescription: '' }))).toBeNull();
+    expect(desc(cards({ showShortDescription: 'true' }, { shortDescription: '<p> </p>' }))).toBeNull();
+  });
+});

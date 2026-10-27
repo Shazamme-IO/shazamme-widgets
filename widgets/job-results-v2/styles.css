@@ -632,3 +632,13 @@
   font-size: 18px;
   font-weight: bold;
 }
+
+/* Job summary (Show Short Description). Plain text, already cut to the panel's length. */
+.sjr-card__desc,
+.shmShortDescription {
+  margin: 0;
+  color: var(--sjr-muted);
+  font-size: 14px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}

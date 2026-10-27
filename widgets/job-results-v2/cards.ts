@@ -108,11 +108,49 @@ export function escapeHtml(value: string): string {
     .replace(/"/g, '&quot;');
 }
 
+/** The browser's own entity decoder: a textarea parses its content as text, so
+ *  no element is created and nothing runs, but every entity is resolved. */
+function decodeEntities(text: string): string {
+  if (!text.includes('&')) return text;
+  const area = document.createElement('textarea');
+  area.innerHTML = text;
+  return area.value;
+}
+
+/** The feed's summary may carry markup. Cutting markup by characters leaves tags
+ *  open that escape into the grid as extra cells, so reduce it to text first.
+ *  Only real-looking tags are dropped, so a bare `<` in prose survives. */
+function plainText(html: string): string {
+  const text = html
+    .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<\/?[a-z][^<>]*>|<!--[\s\S]*?-->/gi, ' ');
+  return decodeEntities(text).replace(/\s+/g, ' ').trim();
+}
+
+/** Word-safe cut to at most `max` characters plus an ellipsis; 0 means no cap.
+ *  A break in the first half would leave too little, so that hard-cuts instead. */
+export function truncateText(text: string, max: number): string {
+  if (max <= 0 || text.length <= max) return text;
+  const space = text.slice(0, max + 1).lastIndexOf(' ');
+  const cut = space >= max / 2 ? text.slice(0, space) : text.slice(0, max);
+  const kept = /[\uD800-\uDBFF]$/.test(cut) ? cut.slice(0, -1) : cut;
+  return `${kept.replace(/[\s,;:.\-–—]+$/, '')}…`;
+}
+
+/** Rendered as `sjr-card__desc` / `shmShortDescription`, never the legacy
+ *  `jobDescription`: the Job Results 2026 CSS still on cloned widgets hides that in
+ *  grid view and narrows it to 55%. */
+function descriptionText(job: Job, cfg: WidgetConfig): string {
+  if (!cfg.showShortDescription) return '';
+  return truncateText(plainText(str(job, 'shortDescription')), cfg.shortDescriptionLength);
+}
+
 function classicCardHtml(job: Job, cfg: WidgetConfig): string {
   const details = escapeHtml(detailsHref(job, cfg));
   const apply = escapeHtml(applyHref(job, cfg));
   const name = escapeHtml(str(job, 'jobName') || str(job, 'title'));
   const posted = cfg.cardFields.posted ? timeSince(job) : '';
+  const description = descriptionText(job, cfg);
   return `
     <div class="shmJobItemDetails">
       ${cfg.cardFields.newTag && isNew(job) ? '<span class="shmTag job-new">New</span>' : ''}
@@ -131,6 +169,7 @@ function classicCardHtml(job: Job, cfg: WidgetConfig): string {
       <div class="shmJobDetails">
         <div class="shmJobDetailsPanel shmJobDetailsLeft">${detailRows(job, cfg)}</div>
       </div>
+      ${description ? `<div class="shmShortDescription" data-rel="label-job-description">${escapeHtml(description)}</div>` : ''}
     </div>
     <div class="shmButtonLinks">
       ${cfg.showApplyButton ? `<a class="shmGoApply" href="${apply}"><span class="text">${escapeHtml(cfg.applyNowLabel)}</span></a>` : ''}
@@ -201,6 +240,7 @@ function modernCardHtml(job: Job, cfg: WidgetConfig): string {
   const name = escapeHtml(str(job, 'jobName') || str(job, 'title'));
   const posted = cfg.cardFields.posted ? timeSince(job) : '';
   const iso = postedDate(job);
+  const description = descriptionText(job, cfg);
 
   return `
     <div class="sjr-card__header">
@@ -214,6 +254,7 @@ function modernCardHtml(job: Job, cfg: WidgetConfig): string {
     </div>
     <div class="sjr-card__body">
       <ul class="sjr-meta">${metaRows(job, cfg)}</ul>
+      ${description ? `<p class="sjr-card__desc" data-rel="label-job-description">${escapeHtml(description)}</p>` : ''}
       <div class="sjr-card__actions">
         <button class="sjr-save" type="button" data-rel="action-save-job" data-save-id="">
           <span class="active">${escapeHtml(cfg.unsaveJobText)}</span>

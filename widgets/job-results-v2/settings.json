@@ -121,6 +121,20 @@
       "help": "Text on the details link."
     },
     {
+      "key": "showShortDescription",
+      "label": "Show Short Description",
+      "type": "boolean",
+      "default": false,
+      "help": "Show the job's short description (summary) on each card, as plain text. Off unless set."
+    },
+    {
+      "key": "shortDescriptionLength",
+      "label": "Short Description Length",
+      "type": "number",
+      "default": 150,
+      "help": "Maximum characters shown, cut at a word with an ellipsis. 0 shows the full summary; blank uses 150."
+    },
+    {
       "key": "saveJobText",
       "label": "Save job label",
       "type": "string",

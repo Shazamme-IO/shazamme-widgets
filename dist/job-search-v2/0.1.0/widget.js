@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 7df864a47002. Registers window.ShazammeWidget["<name>"].
+ * Build 56ba0b6a54f8. Registers window.ShazammeWidget["<name>"].
  */
 (function(){
   if (typeof document === 'undefined') return;
@@ -56,6 +56,7 @@ var __shazWidgetExport = (() => {
   var DEFAULT_PROXIMITY = "6371";
   var DEFAULT_DETAILS_PAGE = "/job-details";
   var DEFAULT_APPLICATION_PAGE = "/job-application";
+  var DEFAULT_SHORT_DESCRIPTION_LENGTH = 150;
   function coerceBool(value, fallback = false) {
     if (typeof value === "boolean") return value;
     if (typeof value === "string") {
@@ -73,6 +74,10 @@ var __shazWidgetExport = (() => {
       if (Number.isFinite(n)) return n;
     }
     return fallback;
+  }
+  function coerceLimit(value, fallback) {
+    const n = coerceInt(value, fallback);
+    return n < 0 ? fallback : n;
   }
   function coerceLabel(value, fallback) {
     const v = coerceStr(value).trim();
@@ -159,7 +164,9 @@ var __shazWidgetExport = (() => {
         posted: coerceToggle(c.showTimeSincePosted),
         newTag: coerceToggle(c.showNewIcon)
       },
-      legacyLayout
+      legacyLayout,
+      showShortDescription: coerceBool(c.showShortDescription),
+      shortDescriptionLength: coerceLimit(c.shortDescriptionLength, DEFAULT_SHORT_DESCRIPTION_LENGTH)
     };
   }
 
