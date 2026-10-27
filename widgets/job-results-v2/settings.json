@@ -135,6 +135,31 @@
       "help": "Maximum characters shown, cut at a word with an ellipsis. 0 shows the full summary; blank uses 150."
     },
     {
+      "key": "shortDescriptionAlign",
+      "label": "Short Description Alignment",
+      "type": "select",
+      "default": "left",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Centre"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        },
+        {
+          "value": "justify",
+          "label": "Justify"
+        }
+      ],
+      "help": "Text alignment of the short description. Left unless set; shortDescriptionAlignment is also accepted."
+    },
+    {
       "key": "saveJobText",
       "label": "Save job label",
       "type": "string",

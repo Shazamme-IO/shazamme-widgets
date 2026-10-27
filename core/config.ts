@@ -66,7 +66,11 @@ export interface WidgetConfig {
   showShortDescription: boolean;
   /** Character cap for that summary; 0 shows it in full. */
   shortDescriptionLength: number;
+  /** Summary text alignment; left unless set, as cards may centre their text. */
+  shortDescriptionAlign: TextAlign;
 }
+
+export type TextAlign = 'left' | 'center' | 'right' | 'justify';
 
 export type DefaultFilters = Readonly<Record<string, readonly string[]>>;
 
@@ -132,6 +136,14 @@ export function coerceInt(value: unknown, fallback: number): number {
 function coerceLimit(value: unknown, fallback: number): number {
   const n = coerceInt(value, fallback);
   return n < 0 ? fallback : n;
+}
+
+const TEXT_ALIGNS: readonly TextAlign[] = ['left', 'center', 'right', 'justify'];
+
+/** Duda dropdown values arrive in any case; anything unknown is left. */
+function coerceAlign(value: unknown): TextAlign {
+  const v = coerceStr(value).trim().toLowerCase();
+  return TEXT_ALIGNS.find((a) => a === v) ?? 'left';
 }
 
 /** Duda hands an unset text setting through as '', which coerceStr would return
@@ -245,5 +257,6 @@ export function readConfig(data: DudaData | undefined): WidgetConfig {
     legacyLayout,
     showShortDescription: coerceBool(c.showShortDescription),
     shortDescriptionLength: coerceLimit(c.shortDescriptionLength, DEFAULT_SHORT_DESCRIPTION_LENGTH),
+    shortDescriptionAlign: coerceAlign(c.shortDescriptionAlign ?? c.shortDescriptionAlignment),
   };
 }

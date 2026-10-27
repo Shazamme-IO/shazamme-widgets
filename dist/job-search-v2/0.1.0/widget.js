@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 56ba0b6a54f8. Registers window.ShazammeWidget["<name>"].
+ * Build 7a280a5b9fa8. Registers window.ShazammeWidget["<name>"].
  */
 (function(){
   if (typeof document === 'undefined') return;
@@ -79,6 +79,12 @@ var __shazWidgetExport = (() => {
     const n = coerceInt(value, fallback);
     return n < 0 ? fallback : n;
   }
+  var TEXT_ALIGNS = ["left", "center", "right", "justify"];
+  function coerceAlign(value) {
+    var _a;
+    const v = coerceStr(value).trim().toLowerCase();
+    return (_a = TEXT_ALIGNS.find((a) => a === v)) != null ? _a : "left";
+  }
   function coerceLabel(value, fallback) {
     const v = coerceStr(value).trim();
     return v === "" ? fallback : v;
@@ -118,6 +124,7 @@ var __shazWidgetExport = (() => {
     return ("/" + raw).replace(/^\/+/, "/").replace(/\/+$/, "");
   }
   function readConfig(data) {
+    var _a;
     const c = data && data.config || {};
     const legacyLayout = coerceStr(c.layout).trim().toLowerCase();
     return {
@@ -166,7 +173,8 @@ var __shazWidgetExport = (() => {
       },
       legacyLayout,
       showShortDescription: coerceBool(c.showShortDescription),
-      shortDescriptionLength: coerceLimit(c.shortDescriptionLength, DEFAULT_SHORT_DESCRIPTION_LENGTH)
+      shortDescriptionLength: coerceLimit(c.shortDescriptionLength, DEFAULT_SHORT_DESCRIPTION_LENGTH),
+      shortDescriptionAlign: coerceAlign((_a = c.shortDescriptionAlign) != null ? _a : c.shortDescriptionAlignment)
     };
   }
 
