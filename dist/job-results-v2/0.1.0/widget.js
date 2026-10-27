@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 7d2dfee81974. Registers window.ShazammeWidget["<name>"].
+ * Build 0e53945f74a7. Registers window.ShazammeWidget["<name>"].
  */
 (function(){
   if (typeof document === 'undefined') return;
@@ -728,15 +728,36 @@ var __shazWidgetExport = (() => {
   function escapeHtml(value) {
     return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
-  var ENTITIES = { nbsp: " ", amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", "#39": "'", "#160": " " };
+  var ENTITIES = {
+    nbsp: " ",
+    amp: "&",
+    lt: "<",
+    gt: ">",
+    quot: '"',
+    apos: "'",
+    ndash: "\u2013",
+    mdash: "\u2014",
+    lsquo: "\u2018",
+    rsquo: "\u2019",
+    ldquo: "\u201C",
+    rdquo: "\u201D",
+    hellip: "\u2026",
+    bull: "\u2022"
+  };
+  function decodeEntity(entity, body) {
+    var _a;
+    if (body[0] !== "#") return (_a = ENTITIES[body.toLowerCase()]) != null ? _a : entity;
+    const code = body[1] === "x" || body[1] === "X" ? parseInt(body.slice(2), 16) : parseInt(body.slice(1), 10);
+    return Number.isInteger(code) && code > 0 && code <= 1114111 ? String.fromCodePoint(code) : entity;
+  }
   function plainText(html) {
-    return html.replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, " ").replace(/<[^>]*>/g, " ").replace(/&(nbsp|amp|lt|gt|quot|apos|#39|#160);/gi, (_, name) => ENTITIES[name.toLowerCase()]).replace(/\s+/g, " ").trim();
+    return html.replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, " ").replace(/<\/?[a-z][^<>]*>|<!--[\s\S]*?-->/gi, " ").replace(/&(#\d+|#x[0-9a-f]+|[a-z]+);/gi, decodeEntity).replace(/\s+/g, " ").trim();
   }
   function truncateText(text, max) {
     if (max <= 0 || text.length <= max) return text;
-    const cut = text.slice(0, max + 1);
-    const space = cut.lastIndexOf(" ");
-    const kept = space > 0 ? cut.slice(0, space) : text.slice(0, max);
+    const space = text.slice(0, max + 1).lastIndexOf(" ");
+    const cut = space > max / 2 ? text.slice(0, space) : text.slice(0, max);
+    const kept = /[\uD800-\uDBFF]$/.test(cut) ? cut.slice(0, -1) : cut;
     return `${kept.replace(/[\s,;:.\-–—]+$/, "")}\u2026`;
   }
   function descriptionText(job, cfg) {

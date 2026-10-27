@@ -346,6 +346,31 @@ describe('short description on the card', () => {
     expect(desc(host)).toBe('<img src=x onerror=alert(1)> Apply today');
   });
 
+  it('decodes numeric and common named entities instead of showing them', () => {
+    const host = cards({ showShortDescription: 'true' }, { shortDescription: 'Don&#8217;t miss &ndash; you&rsquo;ll love it &#x2014; apply' });
+
+    expect(desc(host)).toBe('Don’t miss – you’ll love it — apply');
+  });
+
+  it('keeps text around a bare < that is not a tag', () => {
+    expect(desc(cards({ showShortDescription: 'true' }, { shortDescription: 'Salary < 50k, apply now > today' }))).toBe(
+      'Salary < 50k, apply now > today',
+    );
+  });
+
+  it('hard-cuts rather than keep only a tiny first word', () => {
+    const text = desc(cards({ showShortDescription: 'true', shortDescriptionLength: '20' }, { shortDescription: `I ${'x'.repeat(40)}` }));
+
+    expect(text).toBe(`I ${'x'.repeat(18)}…`);
+  });
+
+  it('never splits an emoji on a hard cut', () => {
+    const text = desc(cards({ showShortDescription: 'true', shortDescriptionLength: '5' }, { shortDescription: 'abcd😀efgh' })) ?? '';
+
+    expect(text).toBe('abcd…');
+    expect(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/.test(text)).toBe(false);
+  });
+
   it('renders nothing for a job without a summary', () => {
     expect(desc(cards({ showShortDescription: 'true' }, { shortDescription: '' }))).toBeNull();
     expect(desc(cards({ showShortDescription: 'true' }, { shortDescription: '<p> </p>' }))).toBeNull();

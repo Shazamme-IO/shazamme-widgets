@@ -108,31 +108,42 @@ export function escapeHtml(value: string): string {
     .replace(/"/g, '&quot;');
 }
 
-const ENTITIES: Record<string, string> = { nbsp: ' ', amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", '#39': "'", '#160': ' ' };
+const ENTITIES: Record<string, string> = {
+  nbsp: ' ', amp: '&', lt: '<', gt: '>', quot: '"', apos: "'",
+  ndash: '–', mdash: '—', lsquo: '‘', rsquo: '’', ldquo: '“', rdquo: '”', hellip: '…', bull: '•',
+};
 
-/** Description class names avoid the legacy `jobDescription`: the Job Results 2026
- *  CSS still on cloned widgets hides it in grid view and narrows it to 55%. */
+function decodeEntity(entity: string, body: string): string {
+  if (body[0] !== '#') return ENTITIES[body.toLowerCase()] ?? entity;
+  const code = body[1] === 'x' || body[1] === 'X' ? parseInt(body.slice(2), 16) : parseInt(body.slice(1), 10);
+  return Number.isInteger(code) && code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : entity;
+}
 
 /** The feed's summary may carry markup. Cutting markup by characters leaves tags
- *  open that escape into the grid as extra cells, so reduce it to text first. */
+ *  open that escape into the grid as extra cells, so reduce it to text first.
+ *  Only real-looking tags are dropped, so a bare `<` in prose survives. */
 function plainText(html: string): string {
   return html
     .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, ' ')
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&(nbsp|amp|lt|gt|quot|apos|#39|#160);/gi, (_, name: string) => ENTITIES[name.toLowerCase()])
+    .replace(/<\/?[a-z][^<>]*>|<!--[\s\S]*?-->/gi, ' ')
+    .replace(/&(#\d+|#x[0-9a-f]+|[a-z]+);/gi, decodeEntity)
     .replace(/\s+/g, ' ')
     .trim();
 }
 
-/** Word-safe cut to at most `max` characters plus an ellipsis; 0 means no cap. */
+/** Word-safe cut to at most `max` characters plus an ellipsis; 0 means no cap.
+ *  A break in the first half would leave too little, so that hard-cuts instead. */
 export function truncateText(text: string, max: number): string {
   if (max <= 0 || text.length <= max) return text;
-  const cut = text.slice(0, max + 1);
-  const space = cut.lastIndexOf(' ');
-  const kept = space > 0 ? cut.slice(0, space) : text.slice(0, max);
+  const space = text.slice(0, max + 1).lastIndexOf(' ');
+  const cut = space > max / 2 ? text.slice(0, space) : text.slice(0, max);
+  const kept = /[\uD800-\uDBFF]$/.test(cut) ? cut.slice(0, -1) : cut;
   return `${kept.replace(/[\s,;:.\-–—]+$/, '')}…`;
 }
 
+/** Rendered as `sjr-card__desc` / `shmShortDescription`, never the legacy
+ *  `jobDescription`: the Job Results 2026 CSS still on cloned widgets hides that in
+ *  grid view and narrows it to 55%. */
 function descriptionText(job: Job, cfg: WidgetConfig): string {
   if (!cfg.showShortDescription) return '';
   return truncateText(plainText(str(job, 'shortDescription')), cfg.shortDescriptionLength);
