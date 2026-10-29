@@ -1,3 +1,4 @@
+// Job Search loader — shazamme-widgets v0.1.35 — deployed 2026-10-29 13:09 AEDT (02:09 UTC)
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
 // existing widget JS.
