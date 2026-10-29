@@ -34,8 +34,9 @@ function ShApi(){
                             }
 
                             return filters[f]
-                                .map( i => i?.toLowerCase() )
-                                .some( i => i.includes(v.toLowerCase()) );
+                                .map( i => i?.trim().toLowerCase() )
+                                .filter( i => i )
+                                .some( i => v.toLowerCase().includes(i) );
                         }
 
                         for (f in filters) {
@@ -169,6 +170,9 @@ function UX() {
         });
     }
 }
+
+const LOCATION_FILTERS = ['state', 'city', 'country'];
+const NO_JOBS_TEXT = data.config.NoJobsPlaceholder || 'No jobs available';
 
 const shApi = new ShApi();
 const ux = new UX();
@@ -595,6 +599,8 @@ const main = (w) => {
 
             jobs.push(...j);
 
+            let hasNoKeywordMatches = j.length === 0 && activeFilter.keyword?.some( k => k.trim().length > 0 );
+
             for (let v in values) {
                 let l = values[v].list;
                 let opt = [];
@@ -611,7 +617,7 @@ const main = (w) => {
 
                 ux.el.find(`[data-filter=${v}]`)
                     .empty()
-                    .append(`<option value="">${values[v].all}</option`)
+                    .append(`<option value="">${hasNoKeywordMatches && LOCATION_FILTERS.includes(v) ? NO_JOBS_TEXT : values[v].all}</option`)
                     .append(opt.sort(sort).map( o => `<option value="${o.id}">${o.text} (${o.count})</option>`))
                     .val(activeFilter[v] || '');
             }
