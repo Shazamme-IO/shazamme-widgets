@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build d2a481fcaa4f. Registers window.ShazammeWidget["<name>"].
+ * Build 6862f5015df1. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -94,7 +94,7 @@ var __shazWidgetExport = (() => {
                 if (typeof v !== "string") {
                   return false;
                 }
-                return filters[f].map((i) => i == null ? void 0 : i.toLowerCase()).some((i) => i.includes(v.toLowerCase()));
+                return filters[f].map((i) => i == null ? void 0 : i.trim().toLowerCase()).filter((i) => i).some((i) => v.toLowerCase().includes(i));
               };
               for (f in filters) {
                 switch (f) {
@@ -180,6 +180,8 @@ var __shazWidgetExport = (() => {
       };
       this.loadScript = (src) => window.__shazLoadScript(src);
     }
+    const LOCATION_FILTERS = ["state", "city", "country"];
+    const NO_JOBS_TEXT = data.config.NoJobsPlaceholder || "No jobs available";
     const shApi = new ShApi();
     const ux = new UX();
     const main = (w) => {
@@ -469,61 +471,63 @@ var __shazWidgetExport = (() => {
           }
         };
         let processJobs = (j) => {
+          var _a;
           push(values.professionID.list, j.map((i) => {
-            var _a;
-            return new Object({ id: i.data.professionID, text: (_a = i.data.category) != null ? _a : "" });
+            var _a2;
+            return new Object({ id: i.data.professionID, text: (_a2 = i.data.category) != null ? _a2 : "" });
           }));
           let subCategorySource = j;
           if (selectedProfessionID) {
             subCategorySource = subCategorySource.filter((i) => i.data.professionID === selectedProfessionID);
           }
           push(values.roleID.list, subCategorySource.map((i) => {
-            var _a;
-            return new Object({ id: i.data.roleID, text: (_a = i.data.subCategory) != null ? _a : "" });
+            var _a2;
+            return new Object({ id: i.data.roleID, text: (_a2 = i.data.subCategory) != null ? _a2 : "" });
           }));
           push(values.workTypeID.list, j.map((i) => {
-            var _a;
-            return new Object({ id: i.data.workTypeID, text: (_a = i.data.workType) != null ? _a : "" });
+            var _a2;
+            return new Object({ id: i.data.workTypeID, text: (_a2 = i.data.workType) != null ? _a2 : "" });
           }));
           push(values.workModelID.list, j.map((i) => {
-            var _a;
-            return new Object({ id: i.data.workModelID, text: (_a = i.data.workModel) != null ? _a : "" });
+            var _a2;
+            return new Object({ id: i.data.workModelID, text: (_a2 = i.data.workModel) != null ? _a2 : "" });
           }));
           push(values.state.list, j.map((i) => {
-            var _a;
-            return new Object({ id: i.data.state, text: (_a = i.data.state) != null ? _a : "" });
+            var _a2;
+            return new Object({ id: i.data.state, text: (_a2 = i.data.state) != null ? _a2 : "" });
           }));
           push(values.city.list, j.map((i) => {
-            var _a;
-            return new Object({ id: i.data.city, text: (_a = i.data.city) != null ? _a : "" });
+            var _a2;
+            return new Object({ id: i.data.city, text: (_a2 = i.data.city) != null ? _a2 : "" });
           }));
           push(values.country.list, j.map((i) => {
-            var _a;
-            return new Object({ id: i.data.country, text: (_a = i.data.country) != null ? _a : "" });
+            var _a2;
+            return new Object({ id: i.data.country, text: (_a2 = i.data.country) != null ? _a2 : "" });
           }));
           if (data.config.legacyMode) {
             push(values.category.list, j.map((i) => {
-              var _a;
-              return new Object({ id: i.data.category, text: (_a = i.data.category) != null ? _a : "" });
+              var _a2;
+              return new Object({ id: i.data.category, text: (_a2 = i.data.category) != null ? _a2 : "" });
             }));
             let legacySubSource = j;
             if (selectedCategory) {
               legacySubSource = legacySubSource.filter((i) => i.data.category === selectedCategory);
             }
             push(values.subCategory.list, legacySubSource.map((i) => {
-              var _a;
-              return new Object({ id: i.data.subCategory, text: (_a = i.data.subCategory) != null ? _a : "" });
+              var _a2;
+              return new Object({ id: i.data.subCategory, text: (_a2 = i.data.subCategory) != null ? _a2 : "" });
             }));
             push(values.workType.list, j.map((i) => {
-              var _a;
-              return new Object({ id: i.data.workType, text: (_a = i.data.workType) != null ? _a : "" });
+              var _a2;
+              return new Object({ id: i.data.workType, text: (_a2 = i.data.workType) != null ? _a2 : "" });
             }));
             push(values.workModel.list, j.map((i) => {
-              var _a;
-              return new Object({ id: i.data.workModel, text: (_a = i.data.workModel) != null ? _a : "" });
+              var _a2;
+              return new Object({ id: i.data.workModel, text: (_a2 = i.data.workModel) != null ? _a2 : "" });
             }));
           }
           jobs.push(...j);
+          let hasNoKeywordMatches = j.length === 0 && ((_a = activeFilter.keyword) == null ? void 0 : _a.some((k) => k.trim().length > 0));
           for (let v in values) {
             let l = values[v].list;
             let opt = [];
@@ -536,7 +540,7 @@ var __shazWidgetExport = (() => {
                 });
               }
             }
-            ux.el.find(`[data-filter=${v}]`).empty().append(`<option value="">${values[v].all}</option`).append(opt.sort(sort).map((o) => `<option value="${o.id}">${o.text} (${o.count})</option>`)).val(activeFilter[v] || "");
+            ux.el.find(`[data-filter=${v}]`).empty().append(`<option value="">${hasNoKeywordMatches && LOCATION_FILTERS.includes(v) ? NO_JOBS_TEXT : values[v].all}</option`).append(opt.sort(sort).map((o) => `<option value="${o.id}">${o.text} (${o.count})</option>`)).val(activeFilter[v] || "");
           }
           for (let i in fuseSettings.keys) {
             jobs.forEach((j2) => fuseSettings.keys[i].forEach((k) => j2.data[k] = j2.data[k] || ""));
