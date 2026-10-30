@@ -1,0 +1,1 @@
+.shm-tc.is-cols-m .shm-tc-list { display: grid; grid-template-columns: repeat(var(--shm-tc-cols-m, 1), minmax(0, 1fr)); }

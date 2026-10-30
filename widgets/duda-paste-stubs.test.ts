@@ -8,6 +8,8 @@ import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
 
 const here = dirname(fileURLToPath(import.meta.url));
+const noSdk = (w: string) => existsSync(join(here, w, '.no-sdk'));
+
 const stubs = readdirSync(here)
   .filter((w) => existsSync(join(here, w, 'duda-paste.js')))
   .map((w) => [w, readFileSync(join(here, w, 'duda-paste.js'), 'utf8')] as const);
@@ -26,7 +28,8 @@ describe.each(stubs)('%s duda-paste.js', (widget, src) => {
     expect(src).toContain('"https://sdk.shazamme.io/js/widget/" + NAME + "/widget.min.js"');
   });
 
-  it('pins the SDK all widgets share', () => {
+  // A .no-sdk widget's stub must not wait on the SDK: an SDK outage would leave it unrendered.
+  it.skipIf(noSdk(widget))('pins the SDK all widgets share', () => {
     expect(src).toContain('https://sdk.shazamme.io/js/shazamme-1.0.3.min.js');
   });
 
