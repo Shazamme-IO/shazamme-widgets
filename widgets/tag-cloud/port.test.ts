@@ -72,6 +72,15 @@ describe('tag-cloud bundle', () => {
     expect(el.querySelector('.shm-tc-empty')).not.toBeNull();
   });
 
+  it('keeps every pill when Duda re-runs it on already-rendered markup', () => {
+    const el = mount([{ heading: 'Tech', tags: 'Java\nC#' }]);
+    const win = window as unknown as Win;
+    win.ShazammeWidget['tag-cloud']({ element: el, data: { config: {}, inEditor: true }, $: undefined, shazamme: undefined });
+    expect(el.querySelectorAll('.shm-tc-pill')).toHaveLength(2);
+    expect(el.querySelector('.shm-tc-empty')).toBeNull();
+    expect(el.querySelector('.shm-tc')!.classList.contains('is-ready')).toBe(true);
+  });
+
   it('swaps the heading level and sets the column grid', () => {
     const el = mount([{ heading: 'Tech', tags: 'Java' }], { headingTag: 'h4', columnsDesktop: '3' });
     expect(el.querySelector('h4.shm-tc-heading')!.textContent).toBe('Tech');

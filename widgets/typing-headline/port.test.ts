@@ -68,6 +68,38 @@ describe('typing-headline bundle', () => {
     expect(word()).toBe('Cloud & DevOps');
   });
 
+  it('holds the first word and hides the cursor and pause button under reduced motion', () => {
+    vi.useFakeTimers();
+    const win = window as unknown as Win;
+    const matchMedia = win.matchMedia;
+    win.matchMedia = (q: string) => ({ matches: q.includes('reduce'), media: q, addEventListener() {}, removeEventListener() {} });
+    try {
+      const { element, word } = mount({ pauseMs: '200', deleteSpeed: '0', typeSpeed: '10' });
+      vi.advanceTimersByTime(5000);
+      expect(word()).toBe('Cloud & DevOps');
+      expect(element.querySelector('.shm-ty')!.classList.contains('has-cursor')).toBe(false);
+      expect((element.querySelector('button.shm-ty-pause') as HTMLButtonElement).hidden).toBe(true);
+    } finally {
+      win.matchMedia = matchMedia;
+    }
+  });
+
+  it('stops on the last word when looping is off', () => {
+    vi.useFakeTimers();
+    const { word } = mount({ loop: 'false', pauseMs: '200', deleteSpeed: '0', typeSpeed: '10' });
+    vi.advanceTimersByTime(20000);
+    expect(word()).toBe('Data');
+  });
+
+  it('re-reads the word list when Duda re-renders it with new words', () => {
+    vi.useFakeTimers();
+    const { win, element, word } = mount();
+    element.querySelector('.shm-ty-word')!.textContent = 'Energy\nMining';
+    run(win, element, { lead: 'Experts in', words: 'Energy\nMining', reserveSpace: 'false' });
+    expect(word()).toBe('Energy');
+    expect(element.querySelector('h2')!.getAttribute('aria-label')).toBe('Experts in Energy');
+  });
+
   it('adds a keyboard pause button that holds the current word', () => {
     vi.useFakeTimers();
     const { element, word } = mount({ pauseMs: '200', deleteSpeed: '0', typeSpeed: '10' });

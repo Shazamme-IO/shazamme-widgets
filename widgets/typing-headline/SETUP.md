@@ -19,6 +19,8 @@ The CSS stays in Duda, not in the bundle. It hides the raw text before the scrip
 runs, so it has to be on the page before the bundle loads, and the Design Editor
 writes to the same selectors.
 
+The widget needs no Shazamme SDK (`.no-sdk`), so its stubs load only the bundle.
+
 ## Shipping a change
 
 1. Edit `legacy.js`, then `npm run check` and commit `dist/typing-headline`.
