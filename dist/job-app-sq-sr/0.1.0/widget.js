@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 75356d64c94a. Registers window.ShazammeWidget["<name>"].
+ * Build d7bbb7e05981. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -75,8 +75,6 @@ var __shazWidgetExport = (() => {
     let dudaAlias = data.siteId;
     let importData = {};
     let thankYouPage = "thank-you";
-    let dashboardPage = "dashboard";
-    let registerPage = "register";
     let loginFrom;
     if (data.config.toggleThankyouPage) {
       thankYouPage = data.config.txt_Thankyoupageurl;
@@ -635,6 +633,10 @@ var __shazWidgetExport = (() => {
         }
       });
       return isOk;
+    }
+    const DUPLICATE_REAPPLY_MESSAGE = "You have already applied for this job.\n\nClick OK to submit another application, or Cancel to go back.";
+    function confirmReapply() {
+      return confirm(data.config.duplicateReapplyWarning || DUPLICATE_REAPPLY_MESSAGE);
     }
     function checkForDuplicate(candidateID) {
       return shazamme.site().then(
@@ -1408,17 +1410,10 @@ var __shazWidgetExport = (() => {
               shazamme.endSession();
               candidateInfo2.candidateID = u.candidate.candidateID;
               return checkForDuplicate(candidateInfo2.candidateID).then((exists) => {
-                if (exists) {
-                  if (confirm(data.config.duplicateWarning || "DUPLICATE WARNING MESSAGE")) {
-                    let link = window.location.href.includes(dudaAlias) ? `/site/${dudaAlias}/${dashboardPage}?preview=true&insitepreview=true&dm_device=desktop` : `/${registerPage}`;
-                    window.location.href = link;
-                  } else {
-                    window.location.reload();
-                  }
+                if (exists && !confirmReapply()) {
                   return Promise.reject();
-                } else {
-                  return Promise.resolve(u);
                 }
+                return Promise.resolve(u);
               });
             } else {
               return shazamme.submit({
@@ -1587,13 +1582,9 @@ ${invalid.join("\n")}`);
         shazamme.currentUser().then((u) => {
           if (u == null ? void 0 : u.candidate) {
             checkForDuplicate(u.candidate.candidateID).then((exists) => {
-              if (exists) {
-                if (confirm(data.config.duplicateWarning || "DUPLICATE WARNING MESSAGE")) {
-                  let link = window.location.href.includes(dudaAlias) ? `/site/${dudaAlias}/${dashboardPage}?preview=true&insitepreview=true&dm_device=desktop` : `/${dashboardPage}`;
-                  window.location.href = link;
-                } else {
-                  window.location.reload();
-                }
+              if (exists && !confirmReapply()) {
+                buttonAction("hide");
+                $(element).find(".fcLoader").removeClass("fcLoadingSeek");
                 return;
               }
               apply(u);
@@ -1668,16 +1659,6 @@ ${invalid.join("\n")}`);
         }
         let session = u == null ? void 0 : u.candidate;
         showOrHideForms(session);
-        (session == null ? void 0 : session.candidateID) && checkForDuplicate(session.candidateID).then((exists) => {
-          if (exists) {
-            if (confirm(data.config.duplicateWarning || "DUPLICATE WARNING MESSAGE")) {
-              let link = window.location.href.includes(dudaAlias) ? `/site/${dudaAlias}/${dashboardPage}?preview=true&insitepreview=true&dm_device=desktop` : `/${dashboardPage}`;
-              window.location.href = link;
-            } else {
-              window.location.reload();
-            }
-          }
-        });
       };
       shazamme.currentUser().then((u) => {
         handleUser(u);
