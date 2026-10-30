@@ -1,0 +1,39 @@
+.shm-tc { box-sizing: border-box; width: 100%; }
+.shm-tc *, .shm-tc *::before, .shm-tc *::after { box-sizing: border-box; }
+
+.shm-tc .shm-tc-group { margin: 0 0 50px; }
+.shm-tc .shm-tc-group:last-child { margin-bottom: 0; }
+
+.shm-tc .shm-tc-heading { margin: 0 0 24px; font-size: 32px; line-height: 1.2; font-weight: 700; color: inherit; }
+
+.shm-tc .shm-tc-list { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 12.5px; margin: 0; padding: 0; }
+.shm-tc .shm-tc-raw { white-space: pre-line; }
+/* Kept in the DOM for search engines, hidden until the pills replace it */
+.shm-tc:not(.is-ready) .shm-tc-raw { display: block; max-height: 0; overflow: hidden; }
+
+.shm-tc .shm-tc-pill {
+  display: inline-block;
+  max-width: 100%;
+  margin: 0;
+  padding: 2.5px 15px;
+  color: #101920;
+  background-color: transparent;
+  border: 2px solid #1ba9cc;
+  border-radius: 30px;
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.6667;
+  text-align: left;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+.shm-tc a.shm-tc-pill:hover { color: #101920; background-color: #1ba9cc; border-color: #1ba9cc; text-decoration: none; }
+.shm-tc a.shm-tc-pill:focus-visible { outline: 3px solid #101920; outline-offset: 2px; box-shadow: 0 0 0 5px #ffffff; }
+
+.shm-tc .shm-tc-empty { margin: 0; padding: 16px; border: 1px dashed #999; color: #555; font-size: 14px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .shm-tc .shm-tc-pill { transition: none; }
+}
