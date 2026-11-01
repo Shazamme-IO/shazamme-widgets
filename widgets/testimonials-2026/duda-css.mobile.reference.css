@@ -1,0 +1,10 @@
+/* Testimonials 2026: mobile only (767px and below) */
+.shm-tm .shm-tm-heading { font-size: 26px; }
+.shm-tm .shm-tm-intro { font-size: 16px; }
+.shm-tm .shm-tm-card { gap: 14px; padding: 20px; }
+.shm-tm .shm-tm-quote { font-size: 16px; }
+.shm-tm .shm-tm-slide { padding: 0 6px; }
+.shm-tm.is-layout-featured .shm-tm-card { padding: 28px 20px; }
+.shm-tm.is-layout-featured .shm-tm-quote { font-size: 19px; }
+.shm-tm.is-layout-featured .shm-tm-mark { font-size: 64px; height: 32px; }
+.shm-tm-dialog-panel { padding: 40px 20px 20px; }
