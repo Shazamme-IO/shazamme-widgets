@@ -11,7 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const here = dirname(fileURLToPath(import.meta.url));
 const VERSION = JSON.parse(readFileSync(join(here, '..', '..', 'package.json'), 'utf8')).version as string;
 const BUNDLE = readFileSync(join(here, '..', '..', 'dist', 'testimonials-2026', VERSION, 'widget.min.js'), 'utf8');
-const SHELL = readFileSync(join(here, 'content.hbs'), 'utf8').replace(/\{\{config\.\w+\}\}/g, '');
+const SHELL = readFileSync(join(here, 'content.hbs'), 'utf8').replace(/\{\{\w+\}\}/g, '');
 
 // A classic <script> makes the bundle's top-level `var` global; strict-mode eval keeps it local.
 // Assign it to window instead, leaving the bundle strict.
