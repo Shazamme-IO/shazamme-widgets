@@ -10,6 +10,10 @@ export interface CarouselOptions {
 
 export interface Carousel {
   goTo(index: number): void;
+  /** Make sure slide `index` is in view (so it can take focus). */
+  reveal(index: number): void;
+  /** Hold autoplay still from outside, for example while a dialog is open. */
+  hold(on: boolean): void;
   destroy(): void;
 }
 
@@ -47,7 +51,7 @@ export function mountCarousel(opts: CarouselOptions): Carousel {
   const total = slides.length;
   const autoplayMs = reducedMotion ? 0 : opts.autoplayMs;
 
-  if (!track || total === 0) return { goTo: () => undefined, destroy: () => undefined };
+  if (!track || total === 0) return { goTo: () => undefined, reveal: () => undefined, hold: () => undefined, destroy: () => undefined };
   const scroller: HTMLElement = track;
 
   let current = 0;
@@ -56,6 +60,8 @@ export function mountCarousel(opts: CarouselOptions): Carousel {
   let hoverPaused = false;
   let focusPaused = false;
   let offscreen = false;
+  let touching = false;
+  let held = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let raf = 0;
   let resizeTimer: ReturnType<typeof setTimeout> | undefined;
@@ -105,6 +111,7 @@ export function mountCarousel(opts: CarouselOptions): Carousel {
       if (i === page) dot.setAttribute('aria-current', 'true');
       else dot.removeAttribute('aria-current');
     });
+    root.classList.toggle('is-multi', perView > 1);
     setDisabled(prev, !loop && current <= 0);
     setDisabled(next, !loop && current >= maxIndex());
     const scrollable = total > perView;
@@ -117,7 +124,10 @@ export function mountCarousel(opts: CarouselOptions): Carousel {
     const left = leftOf(i);
     scrollTarget = left;
     if (settleTimer) clearTimeout(settleTimer);
-    settleTimer = setTimeout(() => { scrollTarget = null; }, SCROLL_GIVE_UP_MS);
+    settleTimer = setTimeout(() => {
+      scrollTarget = null;
+      if (!raf) raf = requestAnimationFrame(syncFromScroll);
+    }, SCROLL_GIVE_UP_MS);
     if (typeof scroller.scrollTo === 'function') scroller.scrollTo({ left, behavior });
     else scroller.scrollLeft = left;
   }
@@ -155,8 +165,13 @@ export function mountCarousel(opts: CarouselOptions): Carousel {
     scrollTarget = null;
   }
 
+  function reveal(index: number): void {
+    const i = Math.max(0, Math.min(total - 1, index));
+    if (i < current || i > current + perView - 1) goTo(i, 'auto');
+  }
+
   function canAutoplay(): boolean {
-    return autoplayMs > 0 && !userPaused && !hoverPaused && !focusPaused && !offscreen && !document.hidden && total > perView;
+    return autoplayMs > 0 && !userPaused && !hoverPaused && !focusPaused && !held && !touching && !offscreen && !document.hidden && total > perView;
   }
 
   function setLive(running: boolean): void {
@@ -189,9 +204,11 @@ export function mountCarousel(opts: CarouselOptions): Carousel {
   }
 
   scroller.addEventListener('scroll', () => { if (!raf) raf = requestAnimationFrame(syncFromScroll); }, { passive: true, signal });
-  scroller.addEventListener('pointerdown', userTookOver, { passive: true, signal });
   scroller.addEventListener('wheel', userTookOver, { passive: true, signal });
-  scroller.addEventListener('touchstart', userTookOver, { passive: true, signal });
+  scroller.addEventListener('touchstart', () => { userTookOver(); touching = true; restartTimer(); }, { passive: true, signal });
+  const touchDone = (): void => { touching = false; restartTimer(); };
+  scroller.addEventListener('touchend', touchDone, { passive: true, signal });
+  scroller.addEventListener('touchcancel', touchDone, { passive: true, signal });
   prev?.addEventListener('click', () => { if (prev.getAttribute('aria-disabled') !== 'true') step(-1); }, { signal });
   next?.addEventListener('click', () => { if (next.getAttribute('aria-disabled') !== 'true') step(1); }, { signal });
   dots.forEach((dot, i) => dot.addEventListener('click', () => goTo(Math.min(i * perView, maxIndex())), { signal }));
@@ -251,5 +268,13 @@ export function mountCarousel(opts: CarouselOptions): Carousel {
   paint();
   restartTimer();
 
-  return { goTo: (i: number) => goTo(i), destroy };
+  return {
+    goTo: (i: number) => goTo(i),
+    reveal,
+    hold(on: boolean): void {
+      held = on;
+      restartTimer();
+    },
+    destroy,
+  };
 }

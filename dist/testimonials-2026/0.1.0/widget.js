@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 94622f2e2a59. Registers window.ShazammeWidget["<name>"].
+ * Build 736b147b7b1e. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var __shazWidgetExport = (() => {
@@ -293,7 +293,7 @@ var __shazWidgetExport = (() => {
     const { signal } = ac;
     const total = slides.length;
     const autoplayMs = reducedMotion ? 0 : opts.autoplayMs;
-    if (!track || total === 0) return { goTo: () => void 0, destroy: () => void 0 };
+    if (!track || total === 0) return { goTo: () => void 0, reveal: () => void 0, hold: () => void 0, destroy: () => void 0 };
     const scroller = track;
     let current = 0;
     let perView = 1;
@@ -301,6 +301,8 @@ var __shazWidgetExport = (() => {
     let hoverPaused = false;
     let focusPaused = false;
     let offscreen = false;
+    let touching = false;
+    let held = false;
     let timer;
     let raf = 0;
     let resizeTimer;
@@ -345,6 +347,7 @@ var __shazWidgetExport = (() => {
         if (i === page) dot.setAttribute("aria-current", "true");
         else dot.removeAttribute("aria-current");
       });
+      root.classList.toggle("is-multi", perView > 1);
       setDisabled(prev, !loop && current <= 0);
       setDisabled(next, !loop && current >= maxIndex());
       const scrollable = total > perView;
@@ -358,6 +361,7 @@ var __shazWidgetExport = (() => {
       if (settleTimer) clearTimeout(settleTimer);
       settleTimer = setTimeout(() => {
         scrollTarget = null;
+        if (!raf) raf = requestAnimationFrame(syncFromScroll);
       }, SCROLL_GIVE_UP_MS);
       if (typeof scroller.scrollTo === "function") scroller.scrollTo({ left, behavior });
       else scroller.scrollLeft = left;
@@ -390,8 +394,12 @@ var __shazWidgetExport = (() => {
     function userTookOver() {
       scrollTarget = null;
     }
+    function reveal(index) {
+      const i = Math.max(0, Math.min(total - 1, index));
+      if (i < current || i > current + perView - 1) goTo(i, "auto");
+    }
     function canAutoplay() {
-      return autoplayMs > 0 && !userPaused && !hoverPaused && !focusPaused && !offscreen && !document.hidden && total > perView;
+      return autoplayMs > 0 && !userPaused && !hoverPaused && !focusPaused && !held && !touching && !offscreen && !document.hidden && total > perView;
     }
     function setLive(running) {
       scroller.setAttribute("aria-live", running ? "off" : "polite");
@@ -422,9 +430,18 @@ var __shazWidgetExport = (() => {
     scroller.addEventListener("scroll", () => {
       if (!raf) raf = requestAnimationFrame(syncFromScroll);
     }, { passive: true, signal });
-    scroller.addEventListener("pointerdown", userTookOver, { passive: true, signal });
     scroller.addEventListener("wheel", userTookOver, { passive: true, signal });
-    scroller.addEventListener("touchstart", userTookOver, { passive: true, signal });
+    scroller.addEventListener("touchstart", () => {
+      userTookOver();
+      touching = true;
+      restartTimer();
+    }, { passive: true, signal });
+    const touchDone = () => {
+      touching = false;
+      restartTimer();
+    };
+    scroller.addEventListener("touchend", touchDone, { passive: true, signal });
+    scroller.addEventListener("touchcancel", touchDone, { passive: true, signal });
     prev == null ? void 0 : prev.addEventListener("click", () => {
       if (prev.getAttribute("aria-disabled") !== "true") step(-1);
     }, { signal });
@@ -502,41 +519,64 @@ var __shazWidgetExport = (() => {
     measure();
     paint();
     restartTimer();
-    return { goTo: (i) => goTo(i), destroy };
+    return {
+      goTo: (i) => goTo(i),
+      reveal,
+      hold(on) {
+        held = on;
+        restartTimer();
+      },
+      destroy
+    };
   }
 
   // widgets/testimonials-2026/dialog.ts
   var FOCUSABLE = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"]), input, select, textarea';
   function isUsable(el) {
-    return Boolean(el && el.isConnected && !el.closest("[hidden]"));
+    return Boolean(el && el.isConnected && !el.closest("[hidden], [inert]"));
   }
-  function openDialog(html, { trigger, fallback, onClosed }) {
+  var lock = null;
+  function lockPage(host) {
+    const body = document.body;
+    if (lock) {
+      lock.open += 1;
+      return;
+    }
+    const behind = Array.from(body.children).filter((el) => el instanceof HTMLElement && el !== host && !el.hasAttribute("inert"));
+    lock = { behind, overflow: body.style.overflow, padding: body.style.paddingRight, open: 1 };
+    const scrollbar = window.innerWidth - document.documentElement.clientWidth;
+    behind.forEach((el) => el.setAttribute("inert", ""));
+    body.style.overflow = "hidden";
+    if (scrollbar > 0) body.style.paddingRight = `${scrollbar}px`;
+  }
+  function unlockPage() {
+    if (!lock) return;
+    lock.open -= 1;
+    if (lock.open > 0) return;
+    lock.behind.forEach((el) => el.removeAttribute("inert"));
+    document.body.style.overflow = lock.overflow;
+    document.body.style.paddingRight = lock.padding;
+    lock = null;
+  }
+  function openDialog(html, { trigger, fallback, beforeFocus, onClosed }) {
     var _a;
     const host = document.createElement("div");
     host.className = "shm-tm-dialog";
     host.innerHTML = html;
-    const body = document.body;
-    const behind = Array.from(body.children).filter((el) => el instanceof HTMLElement && !el.hasAttribute("inert"));
-    body.appendChild(host);
-    behind.forEach((el) => el.setAttribute("inert", ""));
+    document.body.appendChild(host);
+    lockPage(host);
     const panel = host.querySelector(".shm-tm-dialog-panel");
     const closeBtn = host.querySelector(".shm-tm-dialog-close");
-    const previousOverflow = body.style.overflow;
-    const previousPadding = body.style.paddingRight;
-    const scrollbar = window.innerWidth - document.documentElement.clientWidth;
-    body.style.overflow = "hidden";
-    if (scrollbar > 0) body.style.paddingRight = `${scrollbar}px`;
     let closed = false;
     const focusables = () => Array.from(host.querySelectorAll(FOCUSABLE)).filter((el) => !el.hasAttribute("hidden"));
-    function close() {
+    function close(restoreFocus = true) {
       if (closed) return;
       closed = true;
       document.removeEventListener("keydown", onKey, true);
       host.remove();
-      behind.forEach((el) => el.removeAttribute("inert"));
-      body.style.overflow = previousOverflow;
-      body.style.paddingRight = previousPadding;
-      const target = isUsable(trigger) ? trigger : isUsable(fallback) ? fallback : null;
+      unlockPage();
+      if (restoreFocus) beforeFocus == null ? void 0 : beforeFocus();
+      const target = restoreFocus ? isUsable(trigger) ? trigger : isUsable(fallback) ? fallback : null : null;
       if (target) {
         if (!target.matches("button, a[href], [tabindex]")) target.setAttribute("tabindex", "-1");
         target.focus();
@@ -871,7 +911,7 @@ var __shazWidgetExport = (() => {
       }, { capture: true, signal });
     }
     onReadMore(btn, ctx) {
-      var _a;
+      var _a, _b;
       const card = btn.closest(".shm-tm-card");
       if (!card) return;
       const item = this.items[Number(card.getAttribute("data-index"))];
@@ -883,11 +923,18 @@ var __shazWidgetExport = (() => {
       }
       (_a = this.dialog) == null ? void 0 : _a.close();
       const titleId = `${ctx.uid}-dialog`;
+      (_b = this.carousel) == null ? void 0 : _b.hold(true);
       this.dialog = openDialog(dialogHtml(item, ctx, titleId, "Close testimonial"), {
         trigger: btn,
         fallback: this.stage,
+        beforeFocus: () => {
+          var _a2;
+          return (_a2 = this.carousel) == null ? void 0 : _a2.reveal(this.items.indexOf(item));
+        },
         onClosed: () => {
+          var _a2;
           this.dialog = void 0;
+          (_a2 = this.carousel) == null ? void 0 : _a2.hold(false);
         }
       });
     }
@@ -948,13 +995,13 @@ var __shazWidgetExport = (() => {
       this.ac.abort();
       (_a = this.carousel) == null ? void 0 : _a.destroy();
       (_b = this.resizeObs) == null ? void 0 : _b.disconnect();
-      (_c = this.dialog) == null ? void 0 : _c.close();
+      (_c = this.dialog) == null ? void 0 : _c.close(false);
       this.stage.innerHTML = "";
     }
   };
   var runs = /* @__PURE__ */ new WeakMap();
   async function testimonials2026(ctx) {
-    var _a, _b, _c, _d, _e, _f, _g;
+    var _a, _b, _c, _d, _e, _f, _g, _h;
     const element = ctx == null ? void 0 : ctx.element;
     if (!element || typeof element.querySelector !== "function") return;
     (_a = element.__shmTmDestroy) == null ? void 0 : _a.call(element);
@@ -988,11 +1035,13 @@ var __shazWidgetExport = (() => {
         return;
       }
       const instance = new Instance(root, stage, s, items, normaliseConsultants(consultantRows));
-      instance.render();
       element.__shmTmDestroy = () => instance.destroy();
+      instance.render();
     } catch (err) {
       if (!current()) return;
       console.error("[testimonials-2026]", err);
+      (_h = element.__shmTmDestroy) == null ? void 0 : _h.call(element);
+      element.__shmTmDestroy = void 0;
       showEditorNote(root, stage, inEditor, err instanceof Error && err.message ? err.message : GENERIC_ERROR);
     }
   }

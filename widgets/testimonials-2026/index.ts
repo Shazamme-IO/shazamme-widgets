@@ -14,7 +14,7 @@ import {
   type Testimonial,
 } from './data';
 import { mountCarousel, prefersReducedMotion, type Carousel } from './carousel';
-import { openDialog } from './dialog';
+import { openDialog, type DialogHandle } from './dialog';
 import { carouselHtml, dialogHtml, esc, initials, listHtml, loadMoreHtml, moreLabelHtml, schemaJsonLd, statusHtml, tagFilterHtml, type CardCtx } from './render';
 import { readSettings, type Settings } from './settings';
 
@@ -112,7 +112,7 @@ class Instance {
   private carousel: Carousel | undefined;
   private readonly ac = new AbortController();
   private resizeObs: ResizeObserver | undefined;
-  private dialog: { close(): void } | undefined;
+  private dialog: DialogHandle | undefined;
   private visible = 0;
   private activeTag = '';
   private destroyed = false;
@@ -198,10 +198,15 @@ class Instance {
     }
     this.dialog?.close();
     const titleId = `${ctx.uid}-dialog`;
+    this.carousel?.hold(true);
     this.dialog = openDialog(dialogHtml(item, ctx, titleId, 'Close testimonial'), {
       trigger: btn,
       fallback: this.stage,
-      onClosed: () => { this.dialog = undefined; },
+      beforeFocus: () => this.carousel?.reveal(this.items.indexOf(item)),
+      onClosed: () => {
+        this.dialog = undefined;
+        this.carousel?.hold(false);
+      },
     });
   }
 
@@ -259,7 +264,7 @@ class Instance {
     this.ac.abort();
     this.carousel?.destroy();
     this.resizeObs?.disconnect();
-    this.dialog?.close();
+    this.dialog?.close(false);
     this.stage.innerHTML = '';
   }
 }
@@ -305,11 +310,13 @@ export default async function testimonials2026(ctx: WidgetContext): Promise<void
       return;
     }
     const instance = new Instance(root, stage, s, items, normaliseConsultants(consultantRows));
-    instance.render();
     element.__shmTmDestroy = () => instance.destroy();
+    instance.render();
   } catch (err) {
     if (!current()) return;
     console.error('[testimonials-2026]', err);
+    element.__shmTmDestroy?.();
+    element.__shmTmDestroy = undefined;
     showEditorNote(root, stage, inEditor, err instanceof Error && err.message ? err.message : GENERIC_ERROR);
   }
 }

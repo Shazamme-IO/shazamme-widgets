@@ -3,53 +3,81 @@
 // scrolling, so keyboard, pointer and screen reader users all stay inside it.
 
 export interface DialogHandle {
-  close(): void;
+  close(restoreFocus?: boolean): void;
 }
 
 export interface DialogOptions {
   trigger: HTMLElement | null;
   /** Gets focus on close when the trigger is gone or hidden (a resize can hide it). */
   fallback?: HTMLElement | null;
+  /** Runs once the page is live again, before focus returns (bring the trigger back into view here). */
+  beforeFocus?: () => void;
   onClosed?: () => void;
 }
 
 const FOCUSABLE = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"]), input, select, textarea';
 
 function isUsable(el: HTMLElement | null | undefined): el is HTMLElement {
-  return Boolean(el && el.isConnected && !el.closest('[hidden]'));
+  return Boolean(el && el.isConnected && !el.closest('[hidden], [inert]'));
 }
 
-export function openDialog(html: string, { trigger, fallback, onClosed }: DialogOptions): DialogHandle {
+interface PageLock {
+  behind: HTMLElement[];
+  overflow: string;
+  padding: string;
+  open: number;
+}
+
+/** Shared by every open dialog, so closing one never un-locks the page under another. */
+let lock: PageLock | null = null;
+
+function lockPage(host: HTMLElement): void {
+  const body = document.body;
+  if (lock) {
+    lock.open += 1;
+    return;
+  }
+  const behind = Array.from(body.children).filter((el): el is HTMLElement => el instanceof HTMLElement && el !== host && !el.hasAttribute('inert'));
+  lock = { behind, overflow: body.style.overflow, padding: body.style.paddingRight, open: 1 };
+  const scrollbar = window.innerWidth - document.documentElement.clientWidth;
+  behind.forEach((el) => el.setAttribute('inert', ''));
+  body.style.overflow = 'hidden';
+  if (scrollbar > 0) body.style.paddingRight = `${scrollbar}px`;
+}
+
+function unlockPage(): void {
+  if (!lock) return;
+  lock.open -= 1;
+  if (lock.open > 0) return;
+  lock.behind.forEach((el) => el.removeAttribute('inert'));
+  document.body.style.overflow = lock.overflow;
+  document.body.style.paddingRight = lock.padding;
+  lock = null;
+}
+
+export function openDialog(html: string, { trigger, fallback, beforeFocus, onClosed }: DialogOptions): DialogHandle {
   const host = document.createElement('div');
   host.className = 'shm-tm-dialog';
   host.innerHTML = html;
 
-  const body = document.body;
-  const behind = Array.from(body.children).filter((el): el is HTMLElement => el instanceof HTMLElement && !el.hasAttribute('inert'));
-  body.appendChild(host);
-  behind.forEach((el) => el.setAttribute('inert', ''));
+  document.body.appendChild(host);
+  lockPage(host);
 
   const panel = host.querySelector<HTMLElement>('.shm-tm-dialog-panel');
   const closeBtn = host.querySelector<HTMLElement>('.shm-tm-dialog-close');
-  const previousOverflow = body.style.overflow;
-  const previousPadding = body.style.paddingRight;
-  const scrollbar = window.innerWidth - document.documentElement.clientWidth;
-  body.style.overflow = 'hidden';
-  if (scrollbar > 0) body.style.paddingRight = `${scrollbar}px`;
   let closed = false;
 
   const focusables = (): HTMLElement[] =>
     Array.from(host.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((el) => !el.hasAttribute('hidden'));
 
-  function close(): void {
+  function close(restoreFocus = true): void {
     if (closed) return;
     closed = true;
     document.removeEventListener('keydown', onKey, true);
     host.remove();
-    behind.forEach((el) => el.removeAttribute('inert'));
-    body.style.overflow = previousOverflow;
-    body.style.paddingRight = previousPadding;
-    const target = isUsable(trigger) ? trigger : isUsable(fallback) ? fallback : null;
+    unlockPage();
+    if (restoreFocus) beforeFocus?.();
+    const target = restoreFocus ? (isUsable(trigger) ? trigger : isUsable(fallback) ? fallback : null) : null;
     if (target) {
       if (!target.matches('button, a[href], [tabindex]')) target.setAttribute('tabindex', '-1');
       target.focus();

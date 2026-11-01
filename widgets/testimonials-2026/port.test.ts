@@ -60,6 +60,7 @@ beforeEach(() => {
   vi.spyOn(console, 'error').mockImplementation(() => undefined);
   const win = window as unknown as Win;
   win.document.body.innerHTML = '';
+  win.document.body.removeAttribute('style');
   delete win.ShazammeWidget;
   delete win.__shmTmFetch;
   win.eval(GLOBAL_BUNDLE);
@@ -717,7 +718,7 @@ describe('review fixes', () => {
       next.click();
       expect(currentDot(element)).toBe(2);
       expect(scrolls).toEqual([100, 200]);
-      track.dispatchEvent(new Event('pointerdown'));
+      track.dispatchEvent(new Event('wheel'));
       track.scrollLeft = 400;
       track.dispatchEvent(new Event('scroll'));
       await new Promise((r) => requestAnimationFrame(() => r(null)));
@@ -839,5 +840,105 @@ describe('review fixes', () => {
     const { element } = await mount([row()], { testimonialLayout: 'grid', showConsultant: 'true' }, { consultants });
     expect(element.querySelector('a.shm-tm-consultant-link')).toBeNull();
     expect(element.querySelector('.shm-tm-consultant')!.textContent).toBe('Consultant: J W');
+  });
+});
+
+describe('second review fixes', () => {
+  const many = ['A', 'B', 'C', 'D'].map((who, i) => row({ who, content: 'Word '.repeat(200).trim(), testimonialDate: `2024-01-0${4 - i}T00:00:00` }));
+  const cur = (el: HTMLElement) => [...el.querySelectorAll('.shm-tm-dot')].findIndex((d) => d.getAttribute('aria-current') === 'true');
+
+  it('holds autoplay still while a dialog is open and resumes when it closes', async () => {
+    vi.useFakeTimers();
+    const { element } = await mount(many, { autoplay: 'true', autoplaySeconds: '2' });
+    element.querySelector<HTMLElement>('.shm-tm-more')!.click();
+    vi.advanceTimersByTime(10000);
+    expect(cur(element)).toBe(0);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    (document.activeElement as HTMLElement).blur();
+    vi.advanceTimersByTime(2100);
+    expect(cur(element)).toBe(1);
+  });
+
+  it('holds autoplay still during a touch and resumes after it', async () => {
+    vi.useFakeTimers();
+    const { element } = await mount(many, { autoplay: 'true', autoplaySeconds: '2' });
+    const track = element.querySelector<HTMLElement>('.shm-tm-track')!;
+    track.dispatchEvent(new Event('touchstart'));
+    vi.advanceTimersByTime(9000);
+    expect(cur(element)).toBe(0);
+    track.dispatchEvent(new Event('touchend'));
+    vi.advanceTimersByTime(2100);
+    expect(cur(element)).toBe(1);
+  });
+
+  it('brings the opening slide back into view so focus can return to its button', async () => {
+    const { element } = await mount(many, { loop: 'true' });
+    const firstBtn = element.querySelector<HTMLElement>('.shm-tm-more')!;
+    firstBtn.focus();
+    firstBtn.click();
+    element.querySelector<HTMLElement>('.shm-tm-next')!.click();
+    expect(firstBtn.closest('.shm-tm-slide')!.hasAttribute('inert')).toBe(true);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(cur(element)).toBe(0);
+    expect(document.activeElement).toBe(firstBtn);
+  });
+
+  it('keeps the page locked until the last of two open dialogs closes', async () => {
+    const outside = document.createElement('main');
+    document.body.append(outside);
+    const a = await mount(many.slice(0, 1), { testimonialLayout: 'grid' });
+    const b = await mount(many.slice(1, 2), { testimonialLayout: 'grid' }, { sdk: fakeSdk(many.slice(1, 2)) });
+    a.element.querySelector<HTMLElement>('.shm-tm-more')!.click();
+    b.element.querySelector<HTMLElement>('.shm-tm-more')!.click();
+    expect(document.querySelectorAll('.shm-tm-dialog')).toHaveLength(2);
+    document.querySelector<HTMLElement>('.shm-tm-dialog .shm-tm-dialog-close')!.click();
+    expect(outside.hasAttribute('inert')).toBe(true);
+    expect(document.body.style.overflow).toBe('hidden');
+    document.querySelector<HTMLElement>('.shm-tm-dialog .shm-tm-dialog-close')!.click();
+    expect(outside.hasAttribute('inert')).toBe(false);
+    expect(document.body.style.overflow).toBe('');
+  });
+
+  it('resyncs the dots from the scroll position after its own scroll gave up waiting', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'requestAnimationFrame', 'cancelAnimationFrame'] });
+    const proto = HTMLElement.prototype;
+    const wDesc = Object.getOwnPropertyDescriptor(proto, 'offsetWidth');
+    const cDesc = Object.getOwnPropertyDescriptor(proto, 'clientWidth');
+    Object.defineProperty(proto, 'offsetWidth', { configurable: true, get(this: HTMLElement) { return this.classList.contains('shm-tm-slide') ? 100 : 0; } });
+    Object.defineProperty(proto, 'clientWidth', { configurable: true, get(this: HTMLElement) { return this.classList.contains('shm-tm-track') ? 100 : 0; } });
+    try {
+      const { element } = await mount(many);
+      const track = element.querySelector<HTMLElement>('.shm-tm-track')!;
+      track.scrollTo = (() => undefined) as typeof track.scrollTo;
+      element.querySelector<HTMLElement>('.shm-tm-next')!.click();
+      track.scrollLeft = 240;
+      track.dispatchEvent(new Event('scroll'));
+      vi.advanceTimersByTime(50);
+      expect(cur(element)).toBe(1);
+      vi.advanceTimersByTime(1000);
+      expect(cur(element)).toBe(2);
+    } finally {
+      if (wDesc) Object.defineProperty(proto, 'offsetWidth', wDesc); else delete (proto as unknown as Record<string, unknown>).offsetWidth;
+      if (cDesc) Object.defineProperty(proto, 'clientWidth', cDesc); else delete (proto as unknown as Record<string, unknown>).clientWidth;
+    }
+  });
+
+  it('falls back to plain dots when avatars would label a page of several slides', async () => {
+    const { element } = await mount(many, { pagination: 'avatars' });
+    expect(element.querySelectorAll('.shm-tm-dot.is-avatar')).toHaveLength(4);
+    expect(element.querySelector('.shm-tm-carousel')!.classList.contains('is-multi')).toBe(false);
+  });
+
+  it('cleans up if a render step throws', async () => {
+    const win = window as unknown as Win;
+    const element: HTMLElement = win.document.createElement('div');
+    element.innerHTML = SHELL;
+    win.document.body.appendChild(element);
+    const spy = vi.spyOn(Element.prototype, 'querySelectorAll').mockImplementationOnce(() => { throw new Error('boom'); });
+    await win.ShazammeWidget['testimonials-2026']({ element, data: { config: { testimonialLayout: 'grid' }, inEditor: true }, shazamme: fakeSdk([row()]) });
+    spy.mockRestore();
+    expect(element.querySelector('.shm-tm-editor-note')!.textContent).toMatch(/boom/);
+    await win.ShazammeWidget['testimonials-2026']({ element, data: { config: { testimonialLayout: 'grid' }, inEditor: true }, shazamme: fakeSdk([row()]) });
+    expect(element.querySelectorAll('.shm-tm-card')).toHaveLength(1);
   });
 });

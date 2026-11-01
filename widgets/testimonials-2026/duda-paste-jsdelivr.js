@@ -18,9 +18,11 @@
   var TAG = "v0.1.37";
   var BUNDLE = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" + TAG + "/dist/" + NAME + "/0.1.0/widget.min.js";
   var SDK = "https://sdk.shazamme.io/js/shazamme-1.0.3.min.js";
-  window.__shazSDKPromise = window.__shazSDKPromise || new Promise(function (res) {
+  window.__shazSDKPromise = window.__shazSDKPromise || new Promise(function (res, rej) {
     if (window.shazamme) return res();
-    var s = document.createElement("script"); s.src = SDK; s.onload = res; document.head.appendChild(s);
+    var s = document.createElement("script"); s.src = SDK; s.onload = res;
+    s.onerror = function () { window.__shazSDKPromise = null; rej(new Error("Could not load " + SDK)); };
+    document.head.appendChild(s);
   });
   function bundle() {
     window.__shazBundles = window.__shazBundles || {};
