@@ -953,3 +953,34 @@ describe('second review fixes', () => {
     expect(element.querySelectorAll('.shm-tm-card')).toHaveLength(1);
   });
 });
+
+describe('button standard (platform/standards/BUTTONS.md section 3)', () => {
+  const css = readFileSync(join(here, 'duda-css.reference.css'), 'utf8');
+  const mobile = readFileSync(join(here, 'duda-css.mobile.reference.css'), 'utf8');
+  const rule = (src: string, selector: string) => src.match(new RegExp(`^${selector.replace(/[.[\]]/g, '\\$&')} \\{([^}]*)\\}`, 'm'))?.[1] ?? '';
+
+  it.each(['.shm-tm .shm-tm-loadmore', '.shm-tm .shm-tm-chip'])('%s has 14px 32px padding, 44px height and centred inline-flex', (sel) => {
+    const body = rule(css, sel);
+    expect(body).toMatch(/padding: 14px 32px/);
+    expect(body).toMatch(/min-height: 44px/);
+    expect(body).toMatch(/display: inline-flex/);
+    expect(body).toMatch(/align-items: center/);
+    expect(body).toMatch(/justify-content: center/);
+  });
+
+  it('keeps Read more a text link with a 44px tap area', () => {
+    const body = rule(css, '.shm-tm .shm-tm-more');
+    expect(body).toMatch(/min-height: 44px/);
+    expect(body).toMatch(/background: none/);
+  });
+
+  it('tightens the horizontal padding on mobile', () => {
+    expect(mobile).toMatch(/\.shm-tm-loadmore, \.shm-tm \.shm-tm-chip \{ padding: 14px 24px; \}/);
+  });
+
+  it('leaves the icon-only arrows as 44px circles', () => {
+    const body = rule(css, '.shm-tm .shm-tm-btn');
+    expect(body).toMatch(/width: 44px; height: 44px/);
+    expect(body).toMatch(/border-radius: 50%/);
+  });
+});

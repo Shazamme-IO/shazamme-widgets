@@ -30,7 +30,8 @@
 .shm-tm .shm-tm-quote { margin: 0; color: #1f2937; font-size: 17px; font-style: normal; line-height: 1.65; }
 .shm-tm .shm-tm-text { display: -webkit-box; margin: 0; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: var(--shm-tm-lines, 6); line-clamp: var(--shm-tm-lines, 6); white-space: pre-line; overflow-wrap: anywhere; }
 .shm-tm .shm-tm-card.is-expanded .shm-tm-text { display: block; overflow: visible; -webkit-line-clamp: none; line-clamp: none; }
-.shm-tm .shm-tm-more { align-self: flex-start; min-height: 24px; padding: 2px 0; border: 0; background: none; color: #1d4ed8; font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+/* Read more stays a text link: no button look, but a 44px tap area made from padding (margin pulls the extra space back in) */
+.shm-tm .shm-tm-more { display: inline-flex; align-items: center; align-self: flex-start; min-height: 44px; margin: -10px 0; padding: 10px 0; border: 0; background: none; color: #1d4ed8; font: inherit; font-weight: 600; line-height: 1.2; text-decoration: underline; cursor: pointer; }
 .shm-tm .shm-tm-more:hover { color: #1e3a8a; }
 
 /* Stars: the filled layer is clipped to the rating, so 4.5 shows four and a half */
@@ -81,10 +82,12 @@
 .shm-tm .shm-tm-grid { display: grid; grid-template-columns: repeat(var(--shm-tm-per, 1), minmax(0, 1fr)); gap: 20px; margin: 0; padding: 0; list-style: none; }
 .shm-tm .shm-tm-item { min-width: 0; margin: 0; padding: 0; }
 .shm-tm .shm-tm-filter { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 0 0 20px; }
-.shm-tm .shm-tm-chip { min-height: 36px; padding: 6px 16px; border: 1px solid #6b7280; border-radius: 999px; background-color: #ffffff; color: #1f2937; font: inherit; font-size: 14px; cursor: pointer; }
+.shm-tm .shm-tm-chip { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 14px 32px; border: 1px solid #6b7280; border-radius: 999px; background-color: #ffffff; color: #1f2937; font: inherit; font-size: 14px; line-height: 1.2; cursor: pointer; transition: background-color 0.15s ease, color 0.15s ease; }
+.shm-tm .shm-tm-chip:hover { background-color: #f3f4f6; }
+.shm-tm .shm-tm-chip[aria-pressed="true"]:hover { background-color: #374151; }
 .shm-tm .shm-tm-chip[aria-pressed="true"] { border-color: #111827; background-color: #111827; color: #ffffff; }
 .shm-tm .shm-tm-more-wrap { margin-top: 24px; text-align: center; }
-.shm-tm .shm-tm-loadmore { min-height: 44px; padding: 10px 28px; border: 2px solid #111827; border-radius: 999px; background-color: #ffffff; color: #111827; font: inherit; font-weight: 600; cursor: pointer; }
+.shm-tm .shm-tm-loadmore { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 14px 32px; border: 2px solid #111827; border-radius: 999px; background-color: #ffffff; color: #111827; font: inherit; font-weight: 600; line-height: 1.2; cursor: pointer; transition: background-color 0.15s ease, color 0.15s ease; }
 .shm-tm .shm-tm-loadmore:hover { background-color: #111827; color: #ffffff; }
 @container shm-tm (min-width: 640px) {
   .shm-tm.is-layout-list .shm-tm-card { flex-direction: row; align-items: center; gap: 28px; }
