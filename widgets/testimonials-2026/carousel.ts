@@ -146,7 +146,7 @@ export function mountCarousel(opts: CarouselOptions): Carousel {
 
   function syncFromScroll(): void {
     raf = 0;
-    const w = slides[0].offsetWidth;
+    const w = slides.length > 1 ? slides[1].offsetLeft - slides[0].offsetLeft || slides[0].offsetWidth : slides[0].offsetWidth;
     if (w <= 0) return;
     if (scrollTarget !== null) {
       // A scroll we started: wait for it to arrive instead of reading its halfway positions.
@@ -179,6 +179,7 @@ export function mountCarousel(opts: CarouselOptions): Carousel {
   }
 
   function restartTimer(): void {
+    if (destroyed) return;
     if (timer) clearTimeout(timer);
     timer = undefined;
     const running = canAutoplay();

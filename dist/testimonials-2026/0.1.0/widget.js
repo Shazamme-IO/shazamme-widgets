@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 736b147b7b1e. Registers window.ShazammeWidget["<name>"].
+ * Build 996f15e38b78. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var __shazWidgetExport = (() => {
@@ -378,7 +378,7 @@ var __shazWidgetExport = (() => {
     }
     function syncFromScroll() {
       raf = 0;
-      const w = slides[0].offsetWidth;
+      const w = slides.length > 1 ? slides[1].offsetLeft - slides[0].offsetLeft || slides[0].offsetWidth : slides[0].offsetWidth;
       if (w <= 0) return;
       if (scrollTarget !== null) {
         if (Math.abs(scroller.scrollLeft - scrollTarget) > SCROLL_SETTLE_PX) return;
@@ -405,6 +405,7 @@ var __shazWidgetExport = (() => {
       scroller.setAttribute("aria-live", running ? "off" : "polite");
     }
     function restartTimer() {
+      if (destroyed) return;
       if (timer) clearTimeout(timer);
       timer = void 0;
       const running = canAutoplay();
@@ -536,6 +537,7 @@ var __shazWidgetExport = (() => {
     return Boolean(el && el.isConnected && !el.closest("[hidden], [inert]"));
   }
   var lock = null;
+  var stack = [];
   function lockPage(host) {
     const body = document.body;
     if (lock) {
@@ -565,6 +567,7 @@ var __shazWidgetExport = (() => {
     host.innerHTML = html;
     document.body.appendChild(host);
     lockPage(host);
+    stack.push(host);
     const panel = host.querySelector(".shm-tm-dialog-panel");
     const closeBtn = host.querySelector(".shm-tm-dialog-close");
     let closed = false;
@@ -574,6 +577,7 @@ var __shazWidgetExport = (() => {
       closed = true;
       document.removeEventListener("keydown", onKey, true);
       host.remove();
+      stack.splice(stack.indexOf(host), 1);
       unlockPage();
       if (restoreFocus) beforeFocus == null ? void 0 : beforeFocus();
       const target = restoreFocus ? isUsable(trigger) ? trigger : isUsable(fallback) ? fallback : null : null;
@@ -584,6 +588,7 @@ var __shazWidgetExport = (() => {
       onClosed == null ? void 0 : onClosed();
     }
     function onKey(e) {
+      if (stack[stack.length - 1] !== host) return;
       if (e.key === "Escape") {
         e.preventDefault();
         e.stopPropagation();

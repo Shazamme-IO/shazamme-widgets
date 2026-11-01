@@ -30,6 +30,8 @@ interface PageLock {
 
 /** Shared by every open dialog, so closing one never un-locks the page under another. */
 let lock: PageLock | null = null;
+/** Open dialogs, newest last: only the top one answers the keyboard. */
+const stack: HTMLElement[] = [];
 
 function lockPage(host: HTMLElement): void {
   const body = document.body;
@@ -62,6 +64,7 @@ export function openDialog(html: string, { trigger, fallback, beforeFocus, onClo
 
   document.body.appendChild(host);
   lockPage(host);
+  stack.push(host);
 
   const panel = host.querySelector<HTMLElement>('.shm-tm-dialog-panel');
   const closeBtn = host.querySelector<HTMLElement>('.shm-tm-dialog-close');
@@ -75,6 +78,7 @@ export function openDialog(html: string, { trigger, fallback, beforeFocus, onClo
     closed = true;
     document.removeEventListener('keydown', onKey, true);
     host.remove();
+    stack.splice(stack.indexOf(host), 1);
     unlockPage();
     if (restoreFocus) beforeFocus?.();
     const target = restoreFocus ? (isUsable(trigger) ? trigger : isUsable(fallback) ? fallback : null) : null;
@@ -86,6 +90,7 @@ export function openDialog(html: string, { trigger, fallback, beforeFocus, onClo
   }
 
   function onKey(e: KeyboardEvent): void {
+    if (stack[stack.length - 1] !== host) return;
     if (e.key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();

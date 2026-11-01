@@ -899,6 +899,17 @@ describe('second review fixes', () => {
     expect(document.body.style.overflow).toBe('');
   });
 
+  it('answers Esc in the newest dialog only', async () => {
+    const a = await mount(many.slice(0, 1), { testimonialLayout: 'grid' });
+    const b = await mount(many.slice(1, 2), { testimonialLayout: 'grid' }, { sdk: fakeSdk(many.slice(1, 2)) });
+    a.element.querySelector<HTMLElement>('.shm-tm-more')!.click();
+    b.element.querySelector<HTMLElement>('.shm-tm-more')!.click();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(document.querySelectorAll('.shm-tm-dialog')).toHaveLength(1);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(document.querySelectorAll('.shm-tm-dialog')).toHaveLength(0);
+  });
+
   it('resyncs the dots from the scroll position after its own scroll gave up waiting', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'requestAnimationFrame', 'cancelAnimationFrame'] });
     const proto = HTMLElement.prototype;
