@@ -19,6 +19,7 @@ Build the first part of the Design Editor for this widget. Every line is one sty
 - Card inner space | selector: .shm-tm .shm-tm-card | property: padding | default: 28px
 - Text alignment | selector: .shm-tm .shm-tm-card | property: text-align | default: left
 - Space between cards (slider) | selector: .shm-tm .shm-tm-slide | property: padding | default: 0 10px
+- Space kept free while the testimonials load | selector: .shm-tm:not(.is-ready) .shm-tm-stage | property: min-height | default: 380px
 - Space between cards (grid and list) | selector: .shm-tm .shm-tm-grid | property: gap | default: 20px
 
 **Quote**
@@ -32,7 +33,7 @@ Build the first part of the Design Editor for this widget. Every line is one sty
 - Quote mark size | selector: .shm-tm .shm-tm-mark | property: font-size | default: 64px
 - Star colour | selector: .shm-tm .shm-tm-stars | property: color | default: #b45309
 - Star size | selector: .shm-tm .shm-tm-stars | property: font-size | default: 20px
-- Empty star colour | selector: .shm-tm .shm-tm-stars-off | property: color | default: #d1d5db
+- Empty star colour | selector: .shm-tm .shm-tm-stars-off | property: color | default: #868d9a
 - Read more colour | selector: .shm-tm .shm-tm-more | property: color | default: #1d4ed8
 - Read more weight | selector: .shm-tm .shm-tm-more | property: font-weight | default: 600
 

@@ -15,7 +15,7 @@ import {
 } from './data';
 import { mountCarousel, prefersReducedMotion, type Carousel } from './carousel';
 import { openDialog } from './dialog';
-import { carouselHtml, cardHtml, dialogHtml, esc, listHtml, loadMoreHtml, schemaJsonLd, tagFilterHtml, type CardCtx } from './render';
+import { carouselHtml, dialogHtml, esc, initials, listHtml, loadMoreHtml, moreLabelHtml, schemaJsonLd, statusHtml, tagFilterHtml, type CardCtx } from './render';
 import { readSettings, type Settings } from './settings';
 
 interface WidgetContext {
@@ -31,7 +31,13 @@ const CONSULTANTS = 'Consultants';
 const WIDGET_NAME = 'testimonials-2026';
 const FALLBACK_CHARS_PER_LINE = 90;
 const GENERIC_ERROR = 'The testimonials could not be loaded.';
-let instanceCounter = 0;
+type Counter = Window & { __shmTmCount?: number };
+
+function nextUid(): string {
+  const w = window as Counter;
+  w.__shmTmCount = (w.__shmTmCount ?? 0) + 1;
+  return `shm-tm-${w.__shmTmCount}`;
+}
 
 function ensureShell(element: HTMLElement): { root: HTMLElement; stage: HTMLElement } {
   let root = element.querySelector<HTMLElement>('.shm-tm');
@@ -95,6 +101,7 @@ function emptyMessage(s: Settings, total: number): string {
 }
 
 function measureOverflow(card: HTMLElement, chars: number, lines: number): boolean {
+  if (lines <= 0) return false;
   const text = card.querySelector<HTMLElement>('.shm-tm-text');
   if (!text) return false;
   if (text.clientHeight > 0) return text.scrollHeight > text.clientHeight + 1;
@@ -108,6 +115,7 @@ class Instance {
   private dialog: { close(): void } | undefined;
   private visible = 0;
   private activeTag = '';
+  private destroyed = false;
 
   constructor(
     private readonly root: HTMLElement,
@@ -122,12 +130,12 @@ class Instance {
     const ctx: CardCtx = {
       settings: s,
       consultants: this.consultants,
-      uid: `shm-tm-${++instanceCounter}`,
+      uid: nextUid(),
       locale: document.documentElement.lang || undefined,
     };
     const carousel = s.layout === 'slider' || s.layout === 'featured';
     const filter = carousel ? '' : tagFilterHtml(distinctTags(items), s);
-    const body = carousel ? carouselHtml(items, ctx) : `${filter}<div class="shm-tm-list" role="region" aria-label="${esc(s.ariaLabel)}">${listHtml(items, ctx)}${s.pageSize > 0 ? loadMoreHtml(s) : ''}</div>`;
+    const body = carousel ? carouselHtml(items, ctx) : `${filter}<div class="shm-tm-list" role="region" aria-label="${esc(s.ariaLabel)}">${listHtml(items, ctx)}${s.pageSize > 0 ? loadMoreHtml(s) : ''}${statusHtml()}</div>`;
     const ld = schemaJsonLd(items, s);
     stage.innerHTML = body + (ld ? `<script type="application/ld+json">${ld}</script>` : '');
     root.classList.add('is-ready');
@@ -141,6 +149,8 @@ class Instance {
       this.applyVisibility();
     }
     this.refreshReadMore();
+    const fonts = (document as Document & { fonts?: { ready?: Promise<unknown> } }).fonts;
+    void fonts?.ready?.then(() => { if (!this.destroyed) this.refreshReadMore(); });
     if (typeof ResizeObserver === 'function') {
       let last = stage.clientWidth;
       this.resizeObs = new ResizeObserver(() => {
@@ -161,48 +171,62 @@ class Instance {
       if (more) return this.onReadMore(more, ctx);
       const chip = target.closest<HTMLElement>('.shm-tm-chip');
       if (chip) return this.onChip(chip);
-      if (target.closest('.shm-tm-loadmore')) {
-        this.visible += this.s.pageSize;
-        this.applyVisibility();
-      }
+      if (target.closest('.shm-tm-loadmore')) this.showMore();
     }, { signal });
     stage.addEventListener('error', (e) => {
       const img = e.target;
       if (!(img instanceof HTMLImageElement)) return;
       const photo = img.parentElement;
       if (!photo) return;
-      const card = img.closest<HTMLElement>('.shm-tm-card, .shm-tm-dot');
-      const name = card?.querySelector('.shm-tm-name')?.textContent ?? img.closest('.shm-tm-dot')?.getAttribute('aria-label') ?? '';
+      const name =
+        img.closest('.shm-tm-card')?.querySelector('.shm-tm-name')?.textContent ?? img.closest('.shm-tm-dot')?.getAttribute('data-name') ?? '';
       photo.classList.add('shm-tm-initials');
       photo.setAttribute('aria-hidden', 'true');
-      photo.textContent = initialsOf(name);
+      photo.textContent = initials(name);
     }, { capture: true, signal });
   }
 
   private onReadMore(btn: HTMLElement, ctx: CardCtx): void {
     const card = btn.closest<HTMLElement>('.shm-tm-card');
     if (!card) return;
-    if (this.s.readMore === 'expand') {
-      const open = card.classList.toggle('is-expanded');
-      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-      btn.textContent = open ? this.s.readLessText : this.s.readMoreText;
-      return;
-    }
     const item = this.items[Number(card.getAttribute('data-index'))];
     if (!item) return;
+    if (this.s.readMore === 'expand') {
+      const open = card.classList.toggle('is-expanded');
+      btn.innerHTML = moreLabelHtml(open ? this.s.readLessText : this.s.readMoreText, item.name);
+      return;
+    }
     this.dialog?.close();
     const titleId = `${ctx.uid}-dialog`;
-    this.dialog = openDialog(dialogHtml(item, ctx, titleId, 'Close testimonial'), btn, () => { this.dialog = undefined; });
+    this.dialog = openDialog(dialogHtml(item, ctx, titleId, 'Close testimonial'), {
+      trigger: btn,
+      fallback: this.stage,
+      onClosed: () => { this.dialog = undefined; },
+    });
   }
 
   private onChip(chip: HTMLElement): void {
     this.activeTag = chip.getAttribute('data-tag') ?? '';
     this.stage.querySelectorAll<HTMLElement>('.shm-tm-chip').forEach((c) => c.setAttribute('aria-pressed', c === chip ? 'true' : 'false'));
     this.visible = this.s.pageSize > 0 ? this.s.pageSize : this.items.length;
-    this.applyVisibility();
+    this.applyVisibility(true);
   }
 
-  private applyVisibility(): void {
+  private showMore(): void {
+    const before = this.shownRows().length;
+    this.visible += this.s.pageSize;
+    this.applyVisibility(true);
+    const fresh = this.shownRows()[before]?.querySelector<HTMLElement>('.shm-tm-card');
+    if (!fresh) return;
+    fresh.setAttribute('tabindex', '-1');
+    fresh.focus();
+  }
+
+  private shownRows(): HTMLElement[] {
+    return Array.from(this.stage.querySelectorAll<HTMLElement>('.shm-tm-item')).filter((row) => !row.hidden);
+  }
+
+  private applyVisibility(announce = false): void {
     const rows = Array.from(this.stage.querySelectorAll<HTMLElement>('.shm-tm-item'));
     let matched = 0;
     rows.forEach((row) => {
@@ -214,6 +238,8 @@ class Instance {
     });
     const btn = this.stage.querySelector<HTMLElement>('.shm-tm-loadmore');
     if (btn) btn.hidden = matched <= this.visible;
+    const status = this.stage.querySelector<HTMLElement>('.shm-tm-status');
+    if (status && announce) status.textContent = `Showing ${Math.min(matched, this.visible)} of ${matched} testimonials`;
     this.refreshReadMore();
   }
 
@@ -229,19 +255,13 @@ class Instance {
   }
 
   destroy(): void {
+    this.destroyed = true;
     this.ac.abort();
     this.carousel?.destroy();
     this.resizeObs?.disconnect();
     this.dialog?.close();
     this.stage.innerHTML = '';
   }
-}
-
-function initialsOf(name: string): string {
-  const words = name.replace(/^Show testimonial \d+:\s*/, '').trim().split(/\s+/).filter(Boolean);
-  const first = Array.from(words[0] ?? '')[0] ?? '';
-  const last = words.length > 1 ? (Array.from(words[words.length - 1])[0] ?? '') : '';
-  return (first + last).toUpperCase() || '?';
 }
 
 const runs = new WeakMap<HTMLElement, number>();

@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 178f70958ca1. Registers window.ShazammeWidget["<name>"].
+ * Build 94622f2e2a59. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var __shazWidgetExport = (() => {
@@ -72,6 +72,8 @@ var __shazWidgetExport = (() => {
   function readSettings(config) {
     const c = config && typeof config === "object" ? config : {};
     const businessType = toText(c.schemaBusinessType);
+    const pagination = toChoice(c.pagination, PAGINATIONS, "dots");
+    const arrows = toBool(c.arrows, true) || pagination === "none";
     return {
       siteId: toText(c.siteId),
       tags: splitTags(c.tags),
@@ -107,8 +109,8 @@ var __shazWidgetExport = (() => {
       autoplay: toBool(c.autoplay, false),
       autoplaySeconds: toInt(c.autoplaySeconds, 6, LIMITS.autoplaySeconds.min, LIMITS.autoplaySeconds.max),
       loop: toBool(c.loop, true),
-      arrows: toBool(c.arrows, true),
-      pagination: toChoice(c.pagination, PAGINATIONS, "dots"),
+      arrows,
+      pagination,
       schemaEnabled: toBool(c.schemaEnabled, false),
       schemaBusinessName: toText(c.schemaBusinessName),
       schemaBusinessType: BUSINESS_TYPES.includes(businessType) ? businessType : "Organization"
@@ -120,6 +122,7 @@ var __shazWidgetExport = (() => {
   var RATING_KEYS = ["rating", "testimonialRating", "starRating", "stars"];
   function safeUrl(v) {
     const s = typeof v === "string" ? v.trim() : "";
+    if (!s || /[\\\u0000-\u001f\u007f]/.test(s)) return "";
     if (/^https?:\/\//i.test(s)) return s;
     if (/^\/(?!\/)/.test(s)) return s;
     return "";
@@ -129,8 +132,9 @@ var __shazWidgetExport = (() => {
     const html = typeof v === "string" ? v : "";
     if (!html) return "";
     if (!/[<&]/.test(html)) return html.trim();
-    const spaced = html.replace(/<\s*br\s*\/?>/gi, "\n").replace(/<\/\s*(p|div|li|h[1-6])\s*>/gi, "\n");
+    const spaced = html.replace(/<\s*br\s*\/?>/gi, "\n").replace(/<\/\s*(p|div|li|h[1-6])\s*>/gi, "\n\n");
     const doc = new DOMParser().parseFromString(spaced, "text/html");
+    doc.querySelectorAll("script, style").forEach((el) => el.remove());
     return ((_a = doc.body.textContent) != null ? _a : "").replace(/\n{3,}/g, "\n\n").trim();
   }
   function parseRating(row) {
@@ -261,8 +265,20 @@ var __shazWidgetExport = (() => {
 
   // widgets/testimonials-2026/carousel.ts
   var RESIZE_DEBOUNCE_MS = 120;
+  var SCROLL_SETTLE_PX = 2;
+  var SCROLL_GIVE_UP_MS = 900;
+  var PAUSE_LABEL = "Pause testimonials";
+  var PLAY_LABEL = "Play testimonials";
   function prefersReducedMotion() {
     return typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+  function isKeyboardFocus(target) {
+    if (!(target instanceof Element)) return true;
+    try {
+      return target.matches(":focus-visible");
+    } catch (e) {
+      return true;
+    }
   }
   function mountCarousel(opts) {
     const { root, loop, reducedMotion } = opts;
@@ -277,6 +293,8 @@ var __shazWidgetExport = (() => {
     const { signal } = ac;
     const total = slides.length;
     const autoplayMs = reducedMotion ? 0 : opts.autoplayMs;
+    if (!track || total === 0) return { goTo: () => void 0, destroy: () => void 0 };
+    const scroller = track;
     let current = 0;
     let perView = 1;
     let userPaused = false;
@@ -286,14 +304,31 @@ var __shazWidgetExport = (() => {
     let timer;
     let raf = 0;
     let resizeTimer;
-    if (!track || total === 0) return { goTo: () => void 0, destroy: () => void 0 };
+    let settleTimer;
+    let scrollTarget = null;
+    let lastWidth = scroller.clientWidth;
+    let destroyed = false;
     const maxIndex = () => Math.max(0, total - perView);
     const pageCount = () => Math.max(1, Math.ceil(total / perView));
     const pageOf = (i) => i >= maxIndex() ? pageCount() - 1 : Math.floor(i / perView);
+    const leftOf = (i) => slides[i].offsetLeft - slides[0].offsetLeft;
     function measure() {
-      const first = slides[0];
-      const w = first.offsetWidth;
-      perView = w > 0 && track.clientWidth > 0 ? Math.max(1, Math.min(total, Math.round(track.clientWidth / w))) : 1;
+      const w = slides[0].offsetWidth;
+      perView = w > 0 && scroller.clientWidth > 0 ? Math.max(1, Math.min(total, Math.round(scroller.clientWidth / w))) : 1;
+    }
+    function setDisabled(btn, off) {
+      if (!btn) return;
+      btn.setAttribute("aria-disabled", off ? "true" : "false");
+      btn.classList.toggle("is-disabled", off);
+    }
+    function dotLabel(dot, page) {
+      if (perView === 1) {
+        const name = dot.getAttribute("data-name");
+        return name ? `Show testimonial ${page + 1}: ${name}` : `Show testimonial ${page + 1}`;
+      }
+      const from = page * perView + 1;
+      const to = Math.min(total, (page + 1) * perView);
+      return `Show testimonials ${from} to ${to}`;
     }
     function paint() {
       const visibleTo = current + perView - 1;
@@ -305,33 +340,31 @@ var __shazWidgetExport = (() => {
       });
       const page = pageOf(current);
       dots.forEach((dot, i) => {
-        const inRange = i < pageCount();
-        dot.hidden = !inRange;
+        dot.hidden = i >= pageCount();
+        dot.setAttribute("aria-label", dotLabel(dot, i));
         if (i === page) dot.setAttribute("aria-current", "true");
         else dot.removeAttribute("aria-current");
       });
-      const atStart = current <= 0;
-      const atEnd = current >= maxIndex();
-      setDisabled(prev, !loop && atStart);
-      setDisabled(next, !loop && atEnd);
-      if (controls) controls.hidden = total <= perView;
+      setDisabled(prev, !loop && current <= 0);
+      setDisabled(next, !loop && current >= maxIndex());
+      const scrollable = total > perView;
+      if (controls) controls.hidden = !scrollable;
+      if (scrollable) scroller.setAttribute("tabindex", "0");
+      else scroller.removeAttribute("tabindex");
     }
-    function setDisabled(btn, off) {
-      if (!btn) return;
-      btn.setAttribute("aria-disabled", off ? "true" : "false");
-      btn.classList.toggle("is-disabled", off);
+    function scrollToIndex(i, behavior) {
+      const left = leftOf(i);
+      scrollTarget = left;
+      if (settleTimer) clearTimeout(settleTimer);
+      settleTimer = setTimeout(() => {
+        scrollTarget = null;
+      }, SCROLL_GIVE_UP_MS);
+      if (typeof scroller.scrollTo === "function") scroller.scrollTo({ left, behavior });
+      else scroller.scrollLeft = left;
     }
-    function scrollToIndex(i) {
-      const slide = slides[i];
-      const left = slide.offsetLeft - slides[0].offsetLeft;
-      const behavior = reducedMotion ? "auto" : "smooth";
-      if (typeof track.scrollTo === "function") track.scrollTo({ left, behavior });
-      else track.scrollLeft = left;
-    }
-    function goTo(index) {
-      const target = Math.max(0, Math.min(maxIndex(), index));
-      current = target;
-      scrollToIndex(target);
+    function goTo(index, behavior = reducedMotion ? "auto" : "smooth") {
+      current = Math.max(0, Math.min(maxIndex(), index));
+      scrollToIndex(current, behavior);
       paint();
       restartTimer();
     }
@@ -339,47 +372,68 @@ var __shazWidgetExport = (() => {
       if (dir === 1) goTo(current >= maxIndex() ? loop ? 0 : current : current + 1);
       else goTo(current <= 0 ? loop ? maxIndex() : 0 : current - 1);
     }
-    function goToPage(page) {
-      goTo(Math.min(page * perView, maxIndex()));
-    }
     function syncFromScroll() {
       raf = 0;
       const w = slides[0].offsetWidth;
       if (w <= 0) return;
-      const index = Math.round(track.scrollLeft / w);
-      const clamped = Math.max(0, Math.min(maxIndex(), index));
-      if (clamped !== current) {
-        current = clamped;
-        paint();
+      if (scrollTarget !== null) {
+        if (Math.abs(scroller.scrollLeft - scrollTarget) > SCROLL_SETTLE_PX) return;
+        scrollTarget = null;
       }
+      const index = Math.max(0, Math.min(maxIndex(), Math.round(scroller.scrollLeft / w)));
+      if (index !== current) {
+        current = index;
+        paint();
+        restartTimer();
+      }
+    }
+    function userTookOver() {
+      scrollTarget = null;
     }
     function canAutoplay() {
       return autoplayMs > 0 && !userPaused && !hoverPaused && !focusPaused && !offscreen && !document.hidden && total > perView;
     }
+    function setLive(running) {
+      scroller.setAttribute("aria-live", running ? "off" : "polite");
+    }
     function restartTimer() {
       if (timer) clearTimeout(timer);
       timer = void 0;
-      if (!canAutoplay()) return;
+      const running = canAutoplay();
+      setLive(running);
+      if (!running) return;
       timer = setTimeout(() => {
+        if (!root.isConnected) return destroy();
         if (!loop && current >= maxIndex()) return;
         step(1);
       }, autoplayMs);
     }
-    function setLive() {
-      track.setAttribute("aria-live", autoplayMs > 0 && !userPaused ? "off" : "polite");
+    function destroy() {
+      if (destroyed) return;
+      destroyed = true;
+      ac.abort();
+      if (timer) clearTimeout(timer);
+      if (resizeTimer) clearTimeout(resizeTimer);
+      if (settleTimer) clearTimeout(settleTimer);
+      if (raf) cancelAnimationFrame(raf);
+      io == null ? void 0 : io.disconnect();
+      ro == null ? void 0 : ro.disconnect();
     }
-    track.addEventListener("scroll", () => {
+    scroller.addEventListener("scroll", () => {
       if (!raf) raf = requestAnimationFrame(syncFromScroll);
     }, { passive: true, signal });
+    scroller.addEventListener("pointerdown", userTookOver, { passive: true, signal });
+    scroller.addEventListener("wheel", userTookOver, { passive: true, signal });
+    scroller.addEventListener("touchstart", userTookOver, { passive: true, signal });
     prev == null ? void 0 : prev.addEventListener("click", () => {
       if (prev.getAttribute("aria-disabled") !== "true") step(-1);
     }, { signal });
     next == null ? void 0 : next.addEventListener("click", () => {
       if (next.getAttribute("aria-disabled") !== "true") step(1);
     }, { signal });
-    dots.forEach((dot, i) => dot.addEventListener("click", () => goToPage(i), { signal }));
-    track.addEventListener("keydown", (e) => {
-      if (e.target !== track) return;
+    dots.forEach((dot, i) => dot.addEventListener("click", () => goTo(Math.min(i * perView, maxIndex())), { signal }));
+    scroller.addEventListener("keydown", (e) => {
+      if (e.target !== scroller) return;
       if (e.key === "ArrowRight") {
         e.preventDefault();
         step(1);
@@ -394,15 +448,19 @@ var __shazWidgetExport = (() => {
         goTo(maxIndex());
       }
     }, { signal });
-    root.addEventListener("mouseenter", () => {
+    const isTouch = (e) => e.pointerType === "touch";
+    root.addEventListener("pointerenter", (e) => {
+      if (isTouch(e)) return;
       hoverPaused = true;
       restartTimer();
     }, { signal });
-    root.addEventListener("mouseleave", () => {
+    root.addEventListener("pointerleave", (e) => {
+      if (isTouch(e)) return;
       hoverPaused = false;
       restartTimer();
     }, { signal });
-    root.addEventListener("focusin", () => {
+    root.addEventListener("focusin", (e) => {
+      if (!isKeyboardFocus(e.target)) return;
       focusPaused = true;
       restartTimer();
     }, { signal });
@@ -411,13 +469,11 @@ var __shazWidgetExport = (() => {
       focusPaused = false;
       restartTimer();
     }, { signal });
-    document.addEventListener("visibilitychange", restartTimer, { signal });
+    document.addEventListener("visibilitychange", () => root.isConnected ? restartTimer() : destroy(), { signal });
     pauseBtn == null ? void 0 : pauseBtn.addEventListener("click", () => {
       userPaused = !userPaused;
-      pauseBtn.setAttribute("aria-pressed", userPaused ? "true" : "false");
-      pauseBtn.setAttribute("aria-label", userPaused ? "Play testimonials" : "Pause testimonials");
+      pauseBtn.setAttribute("aria-label", userPaused ? PLAY_LABEL : PAUSE_LABEL);
       pauseBtn.classList.toggle("is-paused", userPaused);
-      setLive();
       restartTimer();
     }, { signal });
     let io;
@@ -433,43 +489,43 @@ var __shazWidgetExport = (() => {
       ro = new ResizeObserver(() => {
         if (resizeTimer) clearTimeout(resizeTimer);
         resizeTimer = setTimeout(() => {
+          if (scroller.clientWidth === lastWidth) return;
+          lastWidth = scroller.clientWidth;
           measure();
           current = Math.min(current, maxIndex());
-          scrollToIndex(current);
+          scrollToIndex(current, "auto");
           paint();
         }, RESIZE_DEBOUNCE_MS);
       });
-      ro.observe(track);
+      ro.observe(scroller);
     }
     measure();
-    setLive();
     paint();
     restartTimer();
-    return {
-      goTo,
-      destroy() {
-        ac.abort();
-        if (timer) clearTimeout(timer);
-        if (resizeTimer) clearTimeout(resizeTimer);
-        if (raf) cancelAnimationFrame(raf);
-        io == null ? void 0 : io.disconnect();
-        ro == null ? void 0 : ro.disconnect();
-      }
-    };
+    return { goTo: (i) => goTo(i), destroy };
   }
 
   // widgets/testimonials-2026/dialog.ts
   var FOCUSABLE = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"]), input, select, textarea';
-  function openDialog(html, trigger, onClosed) {
+  function isUsable(el) {
+    return Boolean(el && el.isConnected && !el.closest("[hidden]"));
+  }
+  function openDialog(html, { trigger, fallback, onClosed }) {
     var _a;
     const host = document.createElement("div");
     host.className = "shm-tm-dialog";
     host.innerHTML = html;
-    document.body.appendChild(host);
+    const body = document.body;
+    const behind = Array.from(body.children).filter((el) => el instanceof HTMLElement && !el.hasAttribute("inert"));
+    body.appendChild(host);
+    behind.forEach((el) => el.setAttribute("inert", ""));
     const panel = host.querySelector(".shm-tm-dialog-panel");
     const closeBtn = host.querySelector(".shm-tm-dialog-close");
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const previousOverflow = body.style.overflow;
+    const previousPadding = body.style.paddingRight;
+    const scrollbar = window.innerWidth - document.documentElement.clientWidth;
+    body.style.overflow = "hidden";
+    if (scrollbar > 0) body.style.paddingRight = `${scrollbar}px`;
     let closed = false;
     const focusables = () => Array.from(host.querySelectorAll(FOCUSABLE)).filter((el) => !el.hasAttribute("hidden"));
     function close() {
@@ -477,8 +533,14 @@ var __shazWidgetExport = (() => {
       closed = true;
       document.removeEventListener("keydown", onKey, true);
       host.remove();
-      document.body.style.overflow = previousOverflow;
-      if (trigger && trigger.isConnected) trigger.focus();
+      behind.forEach((el) => el.removeAttribute("inert"));
+      body.style.overflow = previousOverflow;
+      body.style.paddingRight = previousPadding;
+      const target = isUsable(trigger) ? trigger : isUsable(fallback) ? fallback : null;
+      if (target) {
+        if (!target.matches("button, a[href], [tabindex]")) target.setAttribute("tabindex", "-1");
+        target.focus();
+      }
       onClosed == null ? void 0 : onClosed();
     }
     function onKey(e) {
@@ -498,10 +560,11 @@ var __shazWidgetExport = (() => {
       const first = items[0];
       const last = items[items.length - 1];
       const active = document.activeElement;
-      if (e.shiftKey && (active === first || !host.contains(active))) {
+      const outside = !host.contains(active) || active === panel;
+      if (e.shiftKey && (active === first || outside)) {
         e.preventDefault();
         last.focus();
-      } else if (!e.shiftKey && (active === last || !host.contains(active))) {
+      } else if (!e.shiftKey && (active === last || outside)) {
         e.preventDefault();
         first.focus();
       }
@@ -530,7 +593,8 @@ var __shazWidgetExport = (() => {
   var STAR_ROW = "\u2605\u2605\u2605\u2605\u2605";
   var CHEVRON_LEFT = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   var CHEVRON_RIGHT = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  var PAUSE_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path d="M8 5v14M16 5v14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>';
+  var PAUSE_ICON = '<svg class="shm-tm-ico-pause" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path d="M8 5v14M16 5v14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>';
+  var PLAY_ICON = '<svg class="shm-tm-ico-play" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path d="M8 5l11 7-11 7z" fill="currentColor"/></svg>';
   var QUOTE_MARK = "\u201C";
   var pad2 = (n) => String(n).padStart(2, "0");
   function isoDay(ms) {
@@ -559,6 +623,9 @@ var __shazWidgetExport = (() => {
     }
     return `<span class="${cls} shm-tm-initials" aria-hidden="true">${esc(initials(t.name))}</span>`;
   }
+  function moreLabelHtml(text, name) {
+    return `${esc(text)}<span class="shm-tm-sr"> from ${esc(name)}</span>`;
+  }
   function consultantHtml(t, ctx) {
     if (!ctx.settings.showConsultant) return "";
     const c = ctx.consultants.get(t.consultantId);
@@ -577,14 +644,15 @@ var __shazWidgetExport = (() => {
       const f = formatDate(t.dateMs, s.dateFormat, ctx.locale);
       date = `<time class="shm-tm-date"${f.iso ? ` datetime="${esc(f.iso)}"` : ""}>${esc(f.text)}</time>`;
     }
-    return `<figcaption class="shm-tm-person">${photoHtml(t, s)}<span class="shm-tm-meta"><cite class="shm-tm-name">${esc(t.name)}</cite>${role}${company}${date}${consultantHtml(t, ctx)}</span></figcaption>`;
+    return `<figcaption class="shm-tm-person">${photoHtml(t, s)}<span class="shm-tm-meta"><span class="shm-tm-name">${esc(t.name)}</span>${role}${company}${date}${consultantHtml(t, ctx)}</span></figcaption>`;
   }
   function cardHtml(t, index, ctx) {
     const s = ctx.settings;
     const textId = `${ctx.uid}-q${index}`;
     const mark = s.showQuoteMark ? `<span class="shm-tm-mark" aria-hidden="true">${QUOTE_MARK}</span>` : "";
     const stars = s.showRating && t.rating !== null ? starsHtml(t.rating) : "";
-    const more = s.readMore === "off" ? "" : `<button type="button" class="shm-tm-more" aria-controls="${esc(textId)}" aria-expanded="false" hidden>${esc(s.readMoreText)}</button>`;
+    const popup = s.readMore === "dialog" ? ' aria-haspopup="dialog"' : "";
+    const more = s.readMore === "off" ? "" : `<button type="button" class="shm-tm-more"${popup} hidden>${moreLabelHtml(s.readMoreText, t.name)}</button>`;
     return `<figure class="shm-tm-card" data-index="${index}"><div class="shm-tm-body">${mark}${stars}<blockquote class="shm-tm-quote"><p class="shm-tm-text" id="${esc(textId)}">${esc(t.quote)}</p></blockquote>${more}</div>${personHtml(t, ctx)}</figure>`;
   }
   function tagFilterHtml(tags, s) {
@@ -596,6 +664,9 @@ var __shazWidgetExport = (() => {
     const cards = items.map((t, i) => `<li class="shm-tm-item" data-index="${i}">${cardHtml(t, i, ctx)}</li>`).join("");
     return `<ul class="shm-tm-grid" role="list">${cards}</ul>`;
   }
+  function statusHtml() {
+    return '<div class="shm-tm-sr shm-tm-status" role="status" aria-live="polite"></div>';
+  }
   function loadMoreHtml(s) {
     return `<div class="shm-tm-more-wrap"><button type="button" class="shm-tm-loadmore" hidden>${esc(s.loadMoreText)}</button></div>`;
   }
@@ -606,20 +677,20 @@ var __shazWidgetExport = (() => {
       (t, i) => `<div class="shm-tm-slide" role="group" aria-roledescription="slide" aria-label="${i + 1} of ${total}" data-index="${i}">${cardHtml(t, i, ctx)}</div>`
     ).join("");
     const avatars = s.pagination === "avatars";
-    const dots = s.pagination === "none" ? "" : `<div class="shm-tm-dots">${items.map((t, i) => dotHtml(t, i, s, avatars)).join("")}</div>`;
+    const dots = s.pagination === "none" ? "" : `<div class="shm-tm-dots" role="group" aria-label="Choose testimonial">${items.map((t, i) => dotHtml(t, i, s, avatars)).join("")}</div>`;
     const prev = s.arrows ? `<button type="button" class="shm-tm-btn shm-tm-prev" aria-label="Previous testimonial">${CHEVRON_LEFT}</button>` : "";
     const next = s.arrows ? `<button type="button" class="shm-tm-btn shm-tm-next" aria-label="Next testimonial">${CHEVRON_RIGHT}</button>` : "";
-    const pause = s.autoplay ? `<button type="button" class="shm-tm-btn shm-tm-pause" aria-pressed="false" aria-label="Pause testimonials">${PAUSE_ICON}</button>` : "";
-    return `<div class="shm-tm-carousel${avatars ? " has-avatars" : ""}" role="region" aria-roledescription="carousel" aria-label="${esc(s.ariaLabel)}"><div class="shm-tm-track" tabindex="0" aria-live="off">${slides}</div><div class="shm-tm-controls">${prev}${dots}${next}${pause}</div></div>`;
+    const pause = s.autoplay ? `<button type="button" class="shm-tm-btn shm-tm-pause" aria-label="Pause testimonials">${PAUSE_ICON}${PLAY_ICON}</button>` : "";
+    return `<div class="shm-tm-carousel${avatars ? " has-avatars" : ""}" role="region" aria-roledescription="carousel" aria-label="${esc(s.ariaLabel)}"><div class="shm-tm-track" role="group" aria-label="Testimonial slides, use the arrow keys" tabindex="0" aria-live="off">${slides}</div><div class="shm-tm-controls">${prev}${dots}${next}${pause}</div></div>`;
   }
   function dotHtml(t, i, s, avatar) {
     const label = `Show testimonial ${i + 1}`;
     const inner = avatar ? photoHtml(t, { ...s, showPhoto: true }, "shm-tm-dot-photo") : "";
-    return `<button type="button" class="shm-tm-dot${avatar ? " is-avatar" : ""}" data-page="${i}" aria-label="${esc(avatar ? `${label}: ${t.name}` : label)}">${inner}</button>`;
+    return `<button type="button" class="shm-tm-dot${avatar ? " is-avatar" : ""}" data-page="${i}" data-name="${esc(t.name)}" aria-label="${esc(label)}">${inner}</button>`;
   }
   function dialogHtml(t, ctx, titleId, closeLabel) {
     const stars = ctx.settings.showRating && t.rating !== null ? starsHtml(t.rating) : "";
-    return `<div class="shm-tm-dialog-backdrop" data-close></div><div class="shm-tm-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="${esc(titleId)}"><button type="button" class="shm-tm-dialog-close" aria-label="${esc(closeLabel)}">\xD7</button><figure class="shm-tm-dialog-card">${stars}<blockquote class="shm-tm-dialog-quote"><p id="${esc(titleId)}">${esc(t.quote)}</p></blockquote>${personHtml(t, ctx)}</figure></div>`;
+    return `<div class="shm-tm-dialog-backdrop" data-close></div><div class="shm-tm-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="${esc(titleId)}" aria-describedby="${esc(titleId)}-q"><button type="button" class="shm-tm-dialog-close" aria-label="${esc(closeLabel)}">\xD7</button><span class="shm-tm-sr" id="${esc(titleId)}">Testimonial from ${esc(t.name)}</span><figure class="shm-tm-dialog-card">${stars}<blockquote class="shm-tm-dialog-quote"><p id="${esc(titleId)}-q">${esc(t.quote)}</p></blockquote>${personHtml(t, ctx)}</figure></div>`;
   }
   var SCHEMA_BEST = 5;
   function schemaJsonLd(items, s) {
@@ -658,7 +729,12 @@ var __shazWidgetExport = (() => {
   var WIDGET_NAME = "testimonials-2026";
   var FALLBACK_CHARS_PER_LINE = 90;
   var GENERIC_ERROR = "The testimonials could not be loaded.";
-  var instanceCounter = 0;
+  function nextUid() {
+    var _a;
+    const w = window;
+    w.__shmTmCount = ((_a = w.__shmTmCount) != null ? _a : 0) + 1;
+    return `shm-tm-${w.__shmTmCount}`;
+  }
   function ensureShell(element) {
     let root = element.querySelector(".shm-tm");
     if (!root) {
@@ -715,6 +791,7 @@ var __shazWidgetExport = (() => {
     return `no testimonials match ${parts.join(" and ") || "the current settings"}. Clear the filter to show all ${total}.`;
   }
   function measureOverflow(card, chars, lines) {
+    if (lines <= 0) return false;
     const text = card.querySelector(".shm-tm-text");
     if (!text) return false;
     if (text.clientHeight > 0) return text.scrollHeight > text.clientHeight + 1;
@@ -730,18 +807,20 @@ var __shazWidgetExport = (() => {
       this.ac = new AbortController();
       this.visible = 0;
       this.activeTag = "";
+      this.destroyed = false;
     }
     render() {
+      var _a;
       const { root, stage, s, items } = this;
       const ctx = {
         settings: s,
         consultants: this.consultants,
-        uid: `shm-tm-${++instanceCounter}`,
+        uid: nextUid(),
         locale: document.documentElement.lang || void 0
       };
       const carousel = s.layout === "slider" || s.layout === "featured";
       const filter = carousel ? "" : tagFilterHtml(distinctTags(items), s);
-      const body = carousel ? carouselHtml(items, ctx) : `${filter}<div class="shm-tm-list" role="region" aria-label="${esc(s.ariaLabel)}">${listHtml(items, ctx)}${s.pageSize > 0 ? loadMoreHtml(s) : ""}</div>`;
+      const body = carousel ? carouselHtml(items, ctx) : `${filter}<div class="shm-tm-list" role="region" aria-label="${esc(s.ariaLabel)}">${listHtml(items, ctx)}${s.pageSize > 0 ? loadMoreHtml(s) : ""}${statusHtml()}</div>`;
       const ld = schemaJsonLd(items, s);
       stage.innerHTML = body + (ld ? `<script type="application/ld+json">${ld}<\/script>` : "");
       root.classList.add("is-ready");
@@ -754,6 +833,10 @@ var __shazWidgetExport = (() => {
         this.applyVisibility();
       }
       this.refreshReadMore();
+      const fonts = document.fonts;
+      void ((_a = fonts == null ? void 0 : fonts.ready) == null ? void 0 : _a.then(() => {
+        if (!this.destroyed) this.refreshReadMore();
+      }));
       if (typeof ResizeObserver === "function") {
         let last = stage.clientWidth;
         this.resizeObs = new ResizeObserver(() => {
@@ -773,40 +856,39 @@ var __shazWidgetExport = (() => {
         if (more) return this.onReadMore(more, ctx);
         const chip = target.closest(".shm-tm-chip");
         if (chip) return this.onChip(chip);
-        if (target.closest(".shm-tm-loadmore")) {
-          this.visible += this.s.pageSize;
-          this.applyVisibility();
-        }
+        if (target.closest(".shm-tm-loadmore")) this.showMore();
       }, { signal });
       stage.addEventListener("error", (e) => {
-        var _a, _b, _c, _d;
+        var _a, _b, _c, _d, _e;
         const img = e.target;
         if (!(img instanceof HTMLImageElement)) return;
         const photo = img.parentElement;
         if (!photo) return;
-        const card = img.closest(".shm-tm-card, .shm-tm-dot");
-        const name = (_d = (_c = (_a = card == null ? void 0 : card.querySelector(".shm-tm-name")) == null ? void 0 : _a.textContent) != null ? _c : (_b = img.closest(".shm-tm-dot")) == null ? void 0 : _b.getAttribute("aria-label")) != null ? _d : "";
+        const name = (_e = (_d = (_b = (_a = img.closest(".shm-tm-card")) == null ? void 0 : _a.querySelector(".shm-tm-name")) == null ? void 0 : _b.textContent) != null ? _d : (_c = img.closest(".shm-tm-dot")) == null ? void 0 : _c.getAttribute("data-name")) != null ? _e : "";
         photo.classList.add("shm-tm-initials");
         photo.setAttribute("aria-hidden", "true");
-        photo.textContent = initialsOf(name);
+        photo.textContent = initials(name);
       }, { capture: true, signal });
     }
     onReadMore(btn, ctx) {
       var _a;
       const card = btn.closest(".shm-tm-card");
       if (!card) return;
-      if (this.s.readMore === "expand") {
-        const open = card.classList.toggle("is-expanded");
-        btn.setAttribute("aria-expanded", open ? "true" : "false");
-        btn.textContent = open ? this.s.readLessText : this.s.readMoreText;
-        return;
-      }
       const item = this.items[Number(card.getAttribute("data-index"))];
       if (!item) return;
+      if (this.s.readMore === "expand") {
+        const open = card.classList.toggle("is-expanded");
+        btn.innerHTML = moreLabelHtml(open ? this.s.readLessText : this.s.readMoreText, item.name);
+        return;
+      }
       (_a = this.dialog) == null ? void 0 : _a.close();
       const titleId = `${ctx.uid}-dialog`;
-      this.dialog = openDialog(dialogHtml(item, ctx, titleId, "Close testimonial"), btn, () => {
-        this.dialog = void 0;
+      this.dialog = openDialog(dialogHtml(item, ctx, titleId, "Close testimonial"), {
+        trigger: btn,
+        fallback: this.stage,
+        onClosed: () => {
+          this.dialog = void 0;
+        }
       });
     }
     onChip(chip) {
@@ -814,9 +896,22 @@ var __shazWidgetExport = (() => {
       this.activeTag = (_a = chip.getAttribute("data-tag")) != null ? _a : "";
       this.stage.querySelectorAll(".shm-tm-chip").forEach((c) => c.setAttribute("aria-pressed", c === chip ? "true" : "false"));
       this.visible = this.s.pageSize > 0 ? this.s.pageSize : this.items.length;
-      this.applyVisibility();
+      this.applyVisibility(true);
     }
-    applyVisibility() {
+    showMore() {
+      var _a;
+      const before = this.shownRows().length;
+      this.visible += this.s.pageSize;
+      this.applyVisibility(true);
+      const fresh = (_a = this.shownRows()[before]) == null ? void 0 : _a.querySelector(".shm-tm-card");
+      if (!fresh) return;
+      fresh.setAttribute("tabindex", "-1");
+      fresh.focus();
+    }
+    shownRows() {
+      return Array.from(this.stage.querySelectorAll(".shm-tm-item")).filter((row) => !row.hidden);
+    }
+    applyVisibility(announce = false) {
       const rows = Array.from(this.stage.querySelectorAll(".shm-tm-item"));
       let matched = 0;
       rows.forEach((row) => {
@@ -829,6 +924,8 @@ var __shazWidgetExport = (() => {
       });
       const btn = this.stage.querySelector(".shm-tm-loadmore");
       if (btn) btn.hidden = matched <= this.visible;
+      const status = this.stage.querySelector(".shm-tm-status");
+      if (status && announce) status.textContent = `Showing ${Math.min(matched, this.visible)} of ${matched} testimonials`;
       this.refreshReadMore();
     }
     refreshReadMore() {
@@ -847,6 +944,7 @@ var __shazWidgetExport = (() => {
     }
     destroy() {
       var _a, _b, _c;
+      this.destroyed = true;
       this.ac.abort();
       (_a = this.carousel) == null ? void 0 : _a.destroy();
       (_b = this.resizeObs) == null ? void 0 : _b.disconnect();
@@ -854,13 +952,6 @@ var __shazWidgetExport = (() => {
       this.stage.innerHTML = "";
     }
   };
-  function initialsOf(name) {
-    var _a, _b, _c;
-    const words = name.replace(/^Show testimonial \d+:\s*/, "").trim().split(/\s+/).filter(Boolean);
-    const first = (_b = Array.from((_a = words[0]) != null ? _a : "")[0]) != null ? _b : "";
-    const last = words.length > 1 ? (_c = Array.from(words[words.length - 1])[0]) != null ? _c : "" : "";
-    return (first + last).toUpperCase() || "?";
-  }
   var runs = /* @__PURE__ */ new WeakMap();
   async function testimonials2026(ctx) {
     var _a, _b, _c, _d, _e, _f, _g;

@@ -47,6 +47,7 @@ async function mount(rows: unknown, config: Record<string, string> = {}, opts: {
   const element: HTMLElement = win.document.createElement('div');
   element.innerHTML = SHELL;
   win.document.body.appendChild(element);
+  if (opts.sdk === undefined) delete win.__shmTmFetch;
   const sdk = opts.sdk === undefined ? fakeSdk(rows, opts.consultants) : opts.sdk;
   const ctx = { element, data: { config, inEditor: Boolean(opts.inEditor), siteId: 'site-1' }, $: undefined, shazamme: sdk };
   await win.ShazammeWidget['testimonials-2026'](ctx);
@@ -206,7 +207,7 @@ describe('escaping', () => {
     for (const layout of ['slider', 'grid', 'list', 'featured']) {
       const { element } = await mount([evil], { testimonialLayout: layout, showTagFilter: 'true' });
       expect(element.querySelector('img[onerror], script:not([type]), .shm-tm-card svg, .shm-tm-card b, .shm-tm-card i')).toBeNull();
-      expect(element.querySelector('.shm-tm-text')!.textContent).toBe('alert(2) & more');
+      expect(element.querySelector('.shm-tm-text')!.textContent).toBe('& more');
       expect(element.querySelector('.shm-tm-name')!.textContent).toBe('Eve');
       expect(element.querySelector('[onmouseover], [onload], [onerror]')).toBeNull();
     }
@@ -236,7 +237,7 @@ describe('escaping', () => {
 describe('card content', () => {
   it('strips rich text from the quote and keeps paragraph breaks', async () => {
     const { element } = await mount([row({ content: '<p>One</p><p>Two &amp; three</p>' })], { testimonialLayout: 'grid' });
-    expect(element.querySelector('.shm-tm-text')!.textContent).toBe('One\nTwo & three');
+    expect(element.querySelector('.shm-tm-text')!.textContent).toBe('One\n\nTwo & three');
   });
 
   it('shows photo, role, company and date by their switches, with an initials fallback', async () => {
@@ -394,23 +395,55 @@ describe('carousel', () => {
     vi.useFakeTimers();
     const off = await mount(rows);
     expect(off.element.querySelector('.shm-tm-pause')).toBeNull();
-    const { element } = await mount(rows, { autoplay: 'true', autoplaySeconds: '3' });
+    const many = ['A', 'B', 'C', 'D', 'E', 'F'].map((who, i) => row({ who, testimonialDate: `2024-01-0${6 - i}T00:00:00` }));
+    const { element } = await mount(many, { autoplay: 'true', autoplaySeconds: '3' });
     expect(current(element)).toBe(0);
     vi.advanceTimersByTime(3100);
     expect(current(element)).toBe(1);
     const carousel = element.querySelector<HTMLElement>('.shm-tm-carousel')!;
-    carousel.dispatchEvent(new MouseEvent('mouseenter'));
+    expect(element.querySelector('.shm-tm-track')!.getAttribute('aria-live')).toBe('off');
+    carousel.dispatchEvent(new Event('pointerenter'));
+    expect(element.querySelector('.shm-tm-track')!.getAttribute('aria-live')).toBe('polite');
     vi.advanceTimersByTime(10000);
     expect(current(element)).toBe(1);
-    carousel.dispatchEvent(new MouseEvent('mouseleave'));
+    carousel.dispatchEvent(new Event('pointerleave'));
     vi.advanceTimersByTime(3100);
     expect(current(element)).toBe(2);
     const pause = element.querySelector<HTMLElement>('.shm-tm-pause')!;
+    expect(pause.getAttribute('aria-label')).toBe('Pause testimonials');
+    expect(pause.hasAttribute('aria-pressed')).toBe(false);
     pause.click();
-    expect(pause.getAttribute('aria-pressed')).toBe('true');
     expect(pause.getAttribute('aria-label')).toBe('Play testimonials');
+    expect(pause.classList.contains('is-paused')).toBe(true);
     vi.advanceTimersByTime(20000);
     expect(current(element)).toBe(2);
+    pause.click();
+    vi.advanceTimersByTime(3100);
+    expect(current(element)).toBe(3);
+  });
+
+  it('ignores touch hover, so a tap does not hold autoplay still', async () => {
+    vi.useFakeTimers();
+    const many = ['A', 'B', 'C'].map((who) => row({ who }));
+    const { element } = await mount(many, { autoplay: 'true', autoplaySeconds: '2' });
+    const touch = new Event('pointerenter');
+    Object.defineProperty(touch, 'pointerType', { value: 'touch' });
+    element.querySelector('.shm-tm-carousel')!.dispatchEvent(touch);
+    vi.advanceTimersByTime(2100);
+    expect(current(element)).toBe(1);
+  });
+
+  it('stops autoplaying and drops its listeners once its widget is removed from the page', async () => {
+    vi.useFakeTimers();
+    const many = ['A', 'B', 'C'].map((who) => row({ who }));
+    const { element } = await mount(many, { autoplay: 'true', autoplaySeconds: '2' });
+    expect(vi.getTimerCount()).toBeGreaterThan(0);
+    element.remove();
+    vi.advanceTimersByTime(2100);
+    expect(vi.getTimerCount()).toBe(0);
+    const hidden = new Event('visibilitychange');
+    document.dispatchEvent(hidden);
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it('never autoplays when the visitor prefers reduced motion', async () => {
@@ -442,13 +475,13 @@ describe('read more', () => {
   it('expands in place and collapses again', async () => {
     const { element } = await mount([row({ content: long })], { testimonialLayout: 'grid', readMore: 'expand' });
     const btn = element.querySelector<HTMLElement>('.shm-tm-more')!;
-    expect(btn.getAttribute('aria-expanded')).toBe('false');
+    expect(btn.hasAttribute('aria-expanded')).toBe(false);
     btn.click();
-    expect(btn.getAttribute('aria-expanded')).toBe('true');
-    expect(btn.textContent).toBe('Read less');
+    expect(btn.textContent).toBe('Read less from Steve Jobs');
+    expect(btn.querySelector('.shm-tm-sr')).not.toBeNull();
     expect(element.querySelector('.shm-tm-card')!.classList.contains('is-expanded')).toBe(true);
     btn.click();
-    expect(btn.textContent).toBe('Read more');
+    expect(btn.textContent).toBe('Read more from Steve Jobs');
   });
 
   it('shows the full text and no button when read more is off', async () => {
@@ -467,7 +500,10 @@ describe('read more', () => {
       expect(panel.getAttribute('role')).toBe('dialog');
       expect(panel.getAttribute('aria-modal')).toBe('true');
       const labelledBy = panel.getAttribute('aria-labelledby')!;
-      expect(document.getElementById(labelledBy)!.textContent).toBe(long);
+      expect(document.getElementById(labelledBy)!.textContent).toBe('Testimonial from Dee');
+      expect(document.getElementById(panel.getAttribute('aria-describedby')!)!.textContent).toBe(long);
+      expect(btn.getAttribute('aria-haspopup')).toBe('dialog');
+      expect(btn.hasAttribute('aria-expanded')).toBe(false);
       expect(document.body.style.overflow).toBe('hidden');
       const close = document.querySelector<HTMLElement>('.shm-tm-dialog-close')!;
       expect(document.activeElement).toBe(close);
@@ -604,5 +640,204 @@ describe('Duda AI prompts', () => {
       const classes = [...selector.matchAll(/\.(shm-tm[\w-]*)/g)].map((m) => m[1]);
       for (const cls of classes) expect(css, `${cls} (${property})`).toContain(`.${cls}`);
     }
+  });
+});
+
+describe('review fixes', () => {
+  const five = ['A', 'B', 'C', 'D', 'E'].map((who, i) => row({ who, testimonialDate: `2024-01-0${5 - i}T00:00:00` }));
+  const dotsOn = (el: HTMLElement) => [...el.querySelectorAll<HTMLElement>('.shm-tm-dot')].filter((d) => !d.hidden);
+  const currentDot = (el: HTMLElement) => [...el.querySelectorAll('.shm-tm-dot')].findIndex((d) => d.getAttribute('aria-current') === 'true');
+  const slideState = (el: HTMLElement) => [...el.querySelectorAll<HTMLElement>('.shm-tm-slide')].map((s) => (s.hasAttribute('inert') ? 0 : 1)).join('');
+
+  // jsdom has no layout: give each slide a width and the track a width, so three are visible at once.
+  function withLayout(perView: number): () => void {
+    const proto = HTMLElement.prototype;
+    const widthDesc = Object.getOwnPropertyDescriptor(proto, 'offsetWidth');
+    const clientDesc = Object.getOwnPropertyDescriptor(proto, 'clientWidth');
+    const leftDesc = Object.getOwnPropertyDescriptor(proto, 'offsetLeft');
+    Object.defineProperty(proto, 'offsetWidth', { configurable: true, get(this: HTMLElement) { return this.classList.contains('shm-tm-slide') ? 100 : 0; } });
+    Object.defineProperty(proto, 'clientWidth', { configurable: true, get(this: HTMLElement) { return this.classList.contains('shm-tm-track') ? 100 * perView : 0; } });
+    Object.defineProperty(proto, 'offsetLeft', { configurable: true, get(this: HTMLElement) { return this.classList.contains('shm-tm-slide') ? Number(this.dataset.index) * 100 : 0; } });
+    return () => {
+      for (const [k, d] of [['offsetWidth', widthDesc], ['clientWidth', clientDesc], ['offsetLeft', leftDesc]] as const) {
+        if (d) Object.defineProperty(proto, k, d);
+        else delete (proto as unknown as Record<string, unknown>)[k];
+      }
+    };
+  }
+
+  it('pages by the number of slides in view: 5 slides, 3 in view', async () => {
+    const restore = withLayout(3);
+    try {
+      const { element } = await mount(five, { columnsDesktop: '3' });
+      expect(dotsOn(element)).toHaveLength(2);
+      expect(slideState(element)).toBe('11100');
+      expect(dotsOn(element).map((d) => d.getAttribute('aria-label'))).toEqual(['Show testimonials 1 to 3', 'Show testimonials 4 to 5']);
+      element.querySelector<HTMLElement>('.shm-tm-next')!.click();
+      expect(slideState(element)).toBe('01110');
+      expect(currentDot(element)).toBe(0);
+      element.querySelector<HTMLElement>('.shm-tm-next')!.click();
+      expect(slideState(element)).toBe('00111');
+      expect(currentDot(element)).toBe(1);
+      element.querySelectorAll<HTMLElement>('.shm-tm-dot')[0]!.click();
+      expect(slideState(element)).toBe('11100');
+      element.querySelectorAll<HTMLElement>('.shm-tm-dot')[1]!.click();
+      expect(slideState(element)).toBe('00111');
+    } finally {
+      restore();
+    }
+  });
+
+  it('hides the controls and the tab stop when every slide is in view', async () => {
+    const restore = withLayout(3);
+    try {
+      const { element } = await mount(five.slice(0, 2));
+      expect(element.querySelector<HTMLElement>('.shm-tm-controls')!.hidden).toBe(true);
+      expect(element.querySelector('.shm-tm-track')!.hasAttribute('tabindex')).toBe(false);
+      expect(slideState(element)).toBe('11');
+    } finally {
+      restore();
+    }
+  });
+
+  it('does not let a scroll event from its own animation undo the button press', async () => {
+    const restore = withLayout(1);
+    try {
+      const { element } = await mount(five);
+      const track = element.querySelector<HTMLElement>('.shm-tm-track')!;
+      const scrolls: number[] = [];
+      track.scrollTo = ((o: ScrollToOptions) => { scrolls.push(Number(o.left)); }) as typeof track.scrollTo;
+      const next = element.querySelector<HTMLElement>('.shm-tm-next')!;
+      next.click();
+      expect(scrolls).toEqual([100]);
+      track.scrollLeft = 10;
+      track.dispatchEvent(new Event('scroll'));
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+      expect(currentDot(element)).toBe(1);
+      next.click();
+      expect(currentDot(element)).toBe(2);
+      expect(scrolls).toEqual([100, 200]);
+      track.dispatchEvent(new Event('pointerdown'));
+      track.scrollLeft = 400;
+      track.dispatchEvent(new Event('scroll'));
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+      expect(currentDot(element)).toBe(4);
+    } finally {
+      restore();
+    }
+  });
+
+  it('keeps the arrows when both arrows and pagination are switched off', async () => {
+    const { element } = await mount(five, { arrows: 'false', pagination: 'none' });
+    expect(element.querySelector('.shm-tm-prev')).not.toBeNull();
+    expect(element.querySelector('.shm-tm-dots')).toBeNull();
+  });
+
+  it('names the dots, the dot group and the slide track', async () => {
+    const { element } = await mount(five.slice(0, 2), { pagination: 'avatars', testimonialLayout: 'featured' });
+    expect(element.querySelector('.shm-tm-dots')!.getAttribute('role')).toBe('group');
+    expect(element.querySelector('.shm-tm-track')!.getAttribute('role')).toBe('group');
+    expect(element.querySelector('.shm-tm-track')!.getAttribute('aria-label')).toMatch(/arrow keys/);
+    expect(element.querySelector('.shm-tm-dot')!.getAttribute('aria-label')).toBe('Show testimonial 1: A');
+  });
+
+  it('tells the live region to announce while autoplay is not moving it', async () => {
+    const { element } = await mount(five);
+    expect(element.querySelector('.shm-tm-track')!.getAttribute('aria-live')).toBe('polite');
+  });
+
+  it('gives every read more button the person name, and keeps it constant in text', async () => {
+    const long = 'Word '.repeat(200).trim();
+    const { element } = await mount([row({ content: long, who: 'Dee' }), row({ content: long, who: 'Eve' })], { testimonialLayout: 'grid', sortOrder: 'manual' });
+    expect([...element.querySelectorAll('.shm-tm-more')].map((b) => b.textContent)).toEqual(['Read more from Dee', 'Read more from Eve']);
+  });
+
+  it('moves focus to the first newly shown card and announces the count after Show more', async () => {
+    const rows = Array.from({ length: 5 }, (_, i) => row({ who: `P${i}`, testimonialDate: `2024-01-0${5 - i}T00:00:00` }));
+    const { element } = await mount(rows, { testimonialLayout: 'grid', pageSize: '2' });
+    const status = element.querySelector('.shm-tm-status')!;
+    expect(status.getAttribute('role')).toBe('status');
+    expect(status.textContent).toBe('');
+    const more = element.querySelector<HTMLButtonElement>('.shm-tm-loadmore')!;
+    more.focus();
+    more.click();
+    expect(status.textContent).toBe('Showing 4 of 5 testimonials');
+    const cards = [...element.querySelectorAll<HTMLElement>('.shm-tm-card')];
+    expect(document.activeElement).toBe(cards[2]);
+    more.click();
+    expect(status.textContent).toBe('Showing 5 of 5 testimonials');
+    expect(document.activeElement).toBe(cards[4]);
+    expect(more.hidden).toBe(true);
+  });
+
+  it('announces the count when a tag filter changes', async () => {
+    const rows = [row({ who: 'A', tags: 'Candidate' }), row({ who: 'B', tags: 'Client' }), row({ who: 'C', tags: 'Client' })];
+    const { element } = await mount(rows, { testimonialLayout: 'grid', showTagFilter: 'true', pageSize: '0' });
+    [...element.querySelectorAll<HTMLButtonElement>('.shm-tm-chip')][2].click();
+    expect(element.querySelector('.shm-tm-status')!.textContent).toBe('Showing 2 of 2 testimonials');
+  });
+
+  describe('dialog', () => {
+    const long = 'Word '.repeat(200).trim();
+
+    it('makes the page behind inert while open and restores it, including pre-existing inert', async () => {
+      const outside = document.createElement('main');
+      const alreadyInert = document.createElement('aside');
+      alreadyInert.setAttribute('inert', '');
+      document.body.append(outside, alreadyInert);
+      const { element } = await mount([row({ content: long })], { testimonialLayout: 'grid' });
+      element.querySelector<HTMLElement>('.shm-tm-more')!.click();
+      expect(outside.hasAttribute('inert')).toBe(true);
+      expect(element.hasAttribute('inert')).toBe(true);
+      expect(document.querySelector('.shm-tm-dialog')!.hasAttribute('inert')).toBe(false);
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      expect(outside.hasAttribute('inert')).toBe(false);
+      expect(element.hasAttribute('inert')).toBe(false);
+      expect(alreadyInert.hasAttribute('inert')).toBe(true);
+    });
+
+    it('keeps Shift+Tab inside the dialog when the panel itself has focus', async () => {
+      const { element } = await mount([row({ content: long })], { testimonialLayout: 'grid' });
+      element.querySelector<HTMLElement>('.shm-tm-more')!.click();
+      const panel = document.querySelector<HTMLElement>('.shm-tm-dialog-panel')!;
+      panel.focus();
+      const e = new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true });
+      document.dispatchEvent(e);
+      expect(e.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(document.querySelector('.shm-tm-dialog-close'));
+    });
+
+    it('returns focus to the widget when the opening button was hidden meanwhile', async () => {
+      const { element } = await mount([row({ content: long })], { testimonialLayout: 'grid' });
+      const btn = element.querySelector<HTMLElement>('.shm-tm-more')!;
+      btn.click();
+      btn.hidden = true;
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      expect(document.activeElement).toBe(element.querySelector('.shm-tm-stage'));
+    });
+
+    it('closes an earlier dialog before opening another', async () => {
+      const { element } = await mount([row({ content: long, who: 'A' }), row({ content: long, who: 'B' })], { testimonialLayout: 'grid' });
+      const [a, b] = [...element.querySelectorAll<HTMLElement>('.shm-tm-more')];
+      a.click();
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      b.click();
+      expect(document.querySelectorAll('.shm-tm-dialog')).toHaveLength(1);
+    });
+  });
+
+  it('refuses backslash and control-character paths that browsers treat as protocol-relative', async () => {
+    const { element } = await mount(
+      [row({ photoURL: '/\\evil.example/p.jpg', who: 'A' }), row({ photoURL: '/\t/evil.example/p.jpg', who: 'B' }), row({ photoURL: '/img/ok.jpg', who: 'C' })],
+      { testimonialLayout: 'grid', sortOrder: 'manual' },
+    );
+    expect([...element.querySelectorAll('.shm-tm-photo img')].map((i) => i.getAttribute('src'))).toEqual(['/img/ok.jpg']);
+  });
+
+  it('does not give the consultant link a path that escapes the site', async () => {
+    const consultants = [{ data: { consultantID: 'c1', firstName: 'J', lastName: 'W', consultantURL: '/\\evil.example' } }];
+    const { element } = await mount([row()], { testimonialLayout: 'grid', showConsultant: 'true' }, { consultants });
+    expect(element.querySelector('a.shm-tm-consultant-link')).toBeNull();
+    expect(element.querySelector('.shm-tm-consultant')!.textContent).toBe('Consultant: J W');
   });
 });

@@ -101,6 +101,9 @@ export function splitTags(v: unknown): string[] {
 export function readSettings(config: unknown): Settings {
   const c: Record<string, unknown> = config && typeof config === 'object' ? (config as Record<string, unknown>) : {};
   const businessType = toText(c.schemaBusinessType);
+  const pagination = toChoice(c.pagination, PAGINATIONS, 'dots');
+  // With no buttons and no dots a mouse visitor could never reach slide two, so arrows stay on.
+  const arrows = toBool(c.arrows, true) || pagination === 'none';
   return {
     siteId: toText(c.siteId),
     tags: splitTags(c.tags),
@@ -136,8 +139,8 @@ export function readSettings(config: unknown): Settings {
     autoplay: toBool(c.autoplay, false),
     autoplaySeconds: toInt(c.autoplaySeconds, 6, LIMITS.autoplaySeconds.min, LIMITS.autoplaySeconds.max),
     loop: toBool(c.loop, true),
-    arrows: toBool(c.arrows, true),
-    pagination: toChoice(c.pagination, PAGINATIONS, 'dots'),
+    arrows,
+    pagination,
     schemaEnabled: toBool(c.schemaEnabled, false),
     schemaBusinessName: toText(c.schemaBusinessName),
     schemaBusinessType: (BUSINESS_TYPES as readonly string[]).includes(businessType) ? businessType : 'Organization',

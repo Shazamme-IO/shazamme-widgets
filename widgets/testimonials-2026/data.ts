@@ -33,6 +33,8 @@ const RATING_KEYS = ['rating', 'testimonialRating', 'starRating', 'stars'] as co
 /** http(s) or site-relative URLs only. Anything else (javascript:, data:, //host) renders as nothing. */
 export function safeUrl(v: unknown): string {
   const s = typeof v === 'string' ? v.trim() : '';
+  // Browsers read a backslash as a slash and drop tabs and newlines, so "/\evil.example" would become "//evil.example".
+  if (!s || /[\\\u0000-\u001f\u007f]/.test(s)) return '';
   if (/^https?:\/\//i.test(s)) return s;
   if (/^\/(?!\/)/.test(s)) return s;
   return '';
@@ -43,8 +45,9 @@ export function plainText(v: unknown): string {
   const html = typeof v === 'string' ? v : '';
   if (!html) return '';
   if (!/[<&]/.test(html)) return html.trim();
-  const spaced = html.replace(/<\s*br\s*\/?>/gi, '\n').replace(/<\/\s*(p|div|li|h[1-6])\s*>/gi, '\n');
+  const spaced = html.replace(/<\s*br\s*\/?>/gi, '\n').replace(/<\/\s*(p|div|li|h[1-6])\s*>/gi, '\n\n');
   const doc = new DOMParser().parseFromString(spaced, 'text/html');
+  doc.querySelectorAll('script, style').forEach((el) => el.remove());
   return (doc.body.textContent ?? '').replace(/\n{3,}/g, '\n\n').trim();
 }
 
