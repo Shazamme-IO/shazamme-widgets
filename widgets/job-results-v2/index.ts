@@ -59,7 +59,8 @@ function readHash(): Partial<QueryState> {
     const raw = window.location.hash.replace(/^#/, '');
     if (!raw) return {};
     const parsed = JSON.parse(decodeURIComponent(raw)) as { facets?: FilterState; keyword?: string };
-    if (parsed === null || typeof parsed !== 'object') return {};
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    if (!('facets' in parsed) && !('keyword' in parsed)) return {};
     return { facets: parsed.facets ?? {}, keyword: typeof parsed.keyword === 'string' ? parsed.keyword : '' };
   } catch {
     return {};
@@ -449,7 +450,9 @@ export default function jobResults(ctx: WidgetContext): void {
   function onHashChange(): void {
     const next = readHash();
     if (next.facets === undefined) return;
-    state = patch(state, { facets: next.facets, keyword: next.keyword ?? '', page: 0 });
+    const keyword = next.keyword ?? '';
+    if (keyword === state.keyword && JSON.stringify(next.facets) === JSON.stringify(state.facets)) return;
+    state = patch(state, { facets: next.facets, keyword, page: 0 });
     render();
   }
 

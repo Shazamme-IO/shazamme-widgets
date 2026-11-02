@@ -208,6 +208,19 @@ describe('jobResults controller', () => {
       expect(element.querySelectorAll('[data-rel="article-job-result"]').length).toBe(1);
     });
 
+    it.each(['{}', '[]', '{"tab":1}'])('ignores the unrelated JSON hash %s', async (json) => {
+      window.location.hash = hashFor('nurse');
+      jobResults({ element, data: { config: {} }, $: {}, shazamme: stubClient(makeJobs()) });
+      await flush();
+      await flush();
+
+      window.location.hash = `#${encodeURIComponent(json)}`;
+      await flush();
+
+      expect(keywordBox().value).toBe('nurse');
+      expect(element.querySelectorAll('[data-rel="article-job-result"]').length).toBe(1);
+    });
+
     it('does not overwrite the box while the visitor is typing in it', async () => {
       jobResults({ element, data: { config: {} }, $: {}, shazamme: stubClient(makeJobs()) });
       await flush();

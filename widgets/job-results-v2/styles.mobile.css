@@ -95,8 +95,8 @@
 }
 
 /* Buttons: 14px 24px padding on mobile (BUTTONS.md section 3). */
-.sjr-btn,
-.action-bar .action-item button,
-.section-job-result-filter .toolbar .submit {
+.shaz-job-results .sjr-btn,
+.shaz-job-results .action-bar .action-item button,
+.shaz-job-results .section-job-result-filter .toolbar .submit {
   padding: 14px 24px;
 }

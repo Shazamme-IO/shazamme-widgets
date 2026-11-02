@@ -172,14 +172,15 @@
   color: var(--sjr-accent-ink);
 }
 
-/* Save stays a text button: a 44px tap area made of padding, with margins that
- * hand the extra space back so the card does not grow. */
+/* Save stays a text button: a 44px tap area, with negative margins that hand
+ * the extra height back (44 - 13 - 13 = 18, the text's own line) so the card
+ * does not grow. */
 .sjr-save {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  margin: -10px 0;
-  padding: 10px 0;
+  margin: -13px 0;
+  padding: 0;
   border: 0;
   background: none;
   color: var(--sjr-muted);
@@ -281,7 +282,7 @@
 }
 
 .section-job-result-filter .filter-field {
-  padding: 10px;
+  padding: 10px 52px 10px 10px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -342,6 +343,7 @@
 }
 
 .section-job-result-filter .filter-toggle input {
+  flex: none;
   margin-right: 6px;
 }
 
@@ -471,7 +473,6 @@
 }
 
 .menu-option {
-  display: block;
   text-transform: uppercase;
   text-align: left;
   text-decoration: none;

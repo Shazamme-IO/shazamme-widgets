@@ -54,13 +54,19 @@ describe('job-results-v2 buttons', () => {
     expect(clear).toMatch(/height: 44px/);
   });
 
+  it('keeps Save from growing the card row', () => {
+    const body = rule(results, '.sjr-save');
+    const margin = Number(body.match(/margin: (-?\d+)px 0/)?.[1]);
+    expect(44 + 2 * margin).toBeLessThanOrEqual(20);
+  });
+
   it('tightens horizontal padding to 24px on mobile', () => {
-    expect(resultsMobile).toMatch(/\.sjr-btn,[\s\S]*\.action-bar \.action-item button,[\s\S]*\.submit \{\s*padding: 14px 24px;/);
+    expect(resultsMobile).toMatch(/\.shaz-job-results \.sjr-btn,[\s\S]*\.shaz-job-results \.action-bar \.action-item button,[\s\S]*\.submit \{\s*padding: 14px 24px;/);
   });
 });
 
 describe('job-search-v2 buttons', () => {
-  it('searchBtn is 14px 32px, at least 44px and centred inline-flex', () => {
+  it('searchBtn is 14px 32px, keeps its 46px bar height and centred inline-flex', () => {
     const body = rule(search, '.flex-items-js .searchBtn');
     expect(body).toMatch(/padding: 14px 32px/);
     expect(body).toMatch(/min-height: 46px/);
@@ -76,6 +82,8 @@ describe('job-search-v2 buttons', () => {
     const body = rule(search, '.job-search-root [data-chip-remove]');
     expect(body).toMatch(/min-width: 44px/);
     expect(body).toMatch(/min-height: 44px/);
-    expect(body).toMatch(/margin: -14px/);
+    const [top, right, bottom, left] = [...body.matchAll(/margin: (-?\d+)px (-?\d+)px (-?\d+)px (-?\d+)px/g)][0].slice(1).map(Number);
+    expect(44 + left + right).toBeLessThanOrEqual(10);
+    expect(44 + top + bottom).toBeLessThanOrEqual(18);
   });
 });
