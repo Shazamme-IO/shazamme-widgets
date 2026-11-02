@@ -31,11 +31,22 @@ Build the second part of the Design Editor for this widget. Every line is one st
 - Dot size (height) | selector: .shm-tm .shm-tm-dot | property: height | default: 10px
 - Filter button background | selector: .shm-tm .shm-tm-chip | property: background-color | default: #ffffff
 - Filter button text | selector: .shm-tm .shm-tm-chip | property: color | default: #1f2937
+- Filter button border | selector: .shm-tm .shm-tm-chip | property: border | default: 1px solid #6b7280
+- Filter button corner radius | selector: .shm-tm .shm-tm-chip | property: border-radius | default: 999px
+- Filter button padding (all screen sizes) | selector: .shm-tm .shm-tm-chip | property: padding | default: 14px 32px
+- Filter button hover background | selector: .shm-tm .shm-tm-chip:hover | property: background-color | default: #f3f4f6
 - Selected filter background | selector: .shm-tm .shm-tm-chip[aria-pressed="true"] | property: background-color | default: #111827
 - Selected filter text | selector: .shm-tm .shm-tm-chip[aria-pressed="true"] | property: color | default: #ffffff
-- Show more button border | selector: .shm-tm .shm-tm-loadmore | property: border | default: 2px solid #111827
-- Show more button text | selector: .shm-tm .shm-tm-loadmore | property: color | default: #111827
+- Selected filter border | selector: .shm-tm .shm-tm-chip[aria-pressed="true"] | property: border-color | default: #111827
+- Selected filter hover background | selector: .shm-tm .shm-tm-chip[aria-pressed="true"]:hover | property: background-color | default: #374151
 - Show more button background | selector: .shm-tm .shm-tm-loadmore | property: background-color | default: #ffffff
+- Show more button text | selector: .shm-tm .shm-tm-loadmore | property: color | default: #111827
+- Show more button border | selector: .shm-tm .shm-tm-loadmore | property: border | default: 2px solid #111827
+- Show more button corner radius | selector: .shm-tm .shm-tm-loadmore | property: border-radius | default: 999px
+- Show more button padding (all screen sizes) | selector: .shm-tm .shm-tm-loadmore | property: padding | default: 14px 32px
+- Show more button hover background | selector: .shm-tm .shm-tm-loadmore:hover | property: background-color | default: #111827
+- Show more button hover text | selector: .shm-tm .shm-tm-loadmore:hover | property: color | default: #ffffff
+- Read more hover colour | selector: .shm-tm .shm-tm-more:hover | property: color | default: #1e3a8a
 - Focus outline | selector: .shm-tm :focus-visible | property: outline | default: 3px solid #1d4ed8
 
 **Read more pop-up**
