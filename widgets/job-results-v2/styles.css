@@ -145,16 +145,26 @@
   gap: 8px;
 }
 
+/* Buttons follow BUTTONS.md section 3: 14px 32px padding (14px 24px on mobile),
+ * 44px minimum, centred inline-flex. */
 .sjr-btn {
-  padding: 8px 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: 14px 32px;
   border: 1.5px solid var(--sjr-accent);
   border-radius: 999px;
   background: none;
   color: var(--sjr-accent);
   font: inherit;
   font-size: 14px;
+  line-height: 1.2;
   white-space: nowrap;
   text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .sjr-btn--primary {
@@ -162,13 +172,21 @@
   color: var(--sjr-accent-ink);
 }
 
+/* Save stays a text button: a 44px tap area, with negative margins that hand
+ * the extra height back (44 - 13 - 13 = 18, the text's own line) so the card
+ * does not grow. */
 .sjr-save {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: -13px 0;
   padding: 0;
   border: 0;
   background: none;
   color: var(--sjr-muted);
   font: inherit;
   font-size: 14px;
+  line-height: 1.2;
   cursor: pointer;
 }
 
@@ -264,7 +282,7 @@
 }
 
 .section-job-result-filter .filter-field {
-  padding: 10px;
+  padding: 10px 52px 10px 10px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -281,12 +299,17 @@
   background: transparent;
   border: none;
   padding: 0;
-  width: 24px;
-  height: 24px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   align-items: center;
   justify-content: center;
   color: #888;
+}
+
+.section-job-result-filter .filter-keyword-clear svg {
+  width: 24px;
+  height: 24px;
 }
 
 .section-job-result-filter .filter-field:not(:placeholder-shown) + .filter-keyword-clear {
@@ -294,7 +317,10 @@
 }
 
 .section-job-result-filter .filter-toggle {
-  display: block;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  box-sizing: border-box;
   font-size: 16px;
   border-bottom: 1px solid var(--sjr-faint);
   padding: 5px;
@@ -317,6 +343,7 @@
 }
 
 .section-job-result-filter .filter-toggle input {
+  flex: none;
   margin-right: 6px;
 }
 
@@ -414,10 +441,13 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  gap: 8px;
+  box-sizing: border-box;
   min-width: 60px;
-  height: 40px;
-  padding: 5px 12px;
+  min-height: 44px;
+  padding: 14px 32px;
   font-family: inherit;
+  line-height: 1.2;
   background: var(--sjr-ink);
   color: white;
   border: 0;
@@ -443,13 +473,16 @@
 }
 
 .menu-option {
-  display: block;
   text-transform: uppercase;
   text-align: left;
   text-decoration: none;
   color: var(--sjr-ink);
   margin: 5px 0;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 12px;
 }
 
 .menu-option.active {
@@ -586,8 +619,14 @@
 }
 
 .section-job-results-paging .button-paging {
-  display: inline-block;
-  padding: 3px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 14px 12px;
+  line-height: 1.2;
   margin: 0 5px;
   border: 0;
   text-decoration: none;
@@ -641,4 +680,24 @@
   font-size: 14px;
   line-height: 1.45;
   overflow-wrap: anywhere;
+}
+
+/* Mobile drawer "Show results" button. */
+.section-job-result-filter .toolbar .submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 14px 32px;
+  border: 0;
+  border-radius: 0;
+  background: var(--sjr-ink-strong);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
 }

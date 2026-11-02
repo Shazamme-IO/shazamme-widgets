@@ -59,7 +59,9 @@ function readHash(): Partial<QueryState> {
     const raw = window.location.hash.replace(/^#/, '');
     if (!raw) return {};
     const parsed = JSON.parse(decodeURIComponent(raw)) as { facets?: FilterState; keyword?: string };
-    return { facets: parsed.facets ?? {}, keyword: parsed.keyword ?? '' };
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    if (!('facets' in parsed) && !('keyword' in parsed)) return {};
+    return { facets: parsed.facets ?? {}, keyword: typeof parsed.keyword === 'string' ? parsed.keyword : '' };
   } catch {
     return {};
   }
@@ -188,6 +190,15 @@ export default function jobResults(ctx: WidgetContext): void {
     });
   }
 
+  // Show the keyword held in state (from the URL hash, the search widget or a
+  // hashchange) in this widget's own keyword box. Never overwrite the box while
+  // the visitor is typing in it: its value leads state by the input debounce.
+  function syncKeywordInput(): void {
+    const box = sidebar?.querySelector<HTMLInputElement>('[data-keyword-field="keyword"]');
+    if (!box || box.value === state.keyword || document.activeElement === box) return;
+    box.value = state.keyword;
+  }
+
   function render(): void {
     const input = toFilterInput(state) as unknown as FilterState;
     const result = model.query(input, state.sort, state.page, cfg.pageSize);
@@ -204,6 +215,7 @@ export default function jobResults(ctx: WidgetContext): void {
     element.classList.add('shaz-job-results');
 
     if (facetHost) renderFacets(facetHost, tree, cfg, state.facets);
+    syncKeywordInput();
     if (mapView?.isReady) mapView.setJobs(result.matching);
     writeHash(state);
     resultsReadyChannel.publish(sdk, { total: result.total });
@@ -432,7 +444,20 @@ export default function jobResults(ctx: WidgetContext): void {
     });
   }
 
+  // The hash is rewritten with replaceState (no event), so hashchange only fires
+  // for an outside change: back/forward or a link carrying a search. Ignore a
+  // hash that is not ours rather than wiping the current search.
+  function onHashChange(): void {
+    const next = readHash();
+    if (next.facets === undefined) return;
+    const keyword = next.keyword ?? '';
+    if (keyword === state.keyword && JSON.stringify(next.facets) === JSON.stringify(state.facets)) return;
+    state = patch(state, { facets: next.facets, keyword, page: 0 });
+    render();
+  }
+
   function subscribe(): void {
+    window.addEventListener('hashchange', onHashChange);
     onFilterChange(sdk, (payload) => {
       state = patch(state, {
         facets: payload.state ?? {},
