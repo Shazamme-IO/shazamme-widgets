@@ -33,7 +33,7 @@ Build the second part of the Design Editor for this widget. Every line is one st
 - Filter button text | selector: .shm-tm .shm-tm-chip | property: color | default: #1f2937
 - Filter button border | selector: .shm-tm .shm-tm-chip | property: border | default: 1px solid #6b7280
 - Filter button corner radius | selector: .shm-tm .shm-tm-chip | property: border-radius | default: 999px
-- Filter button padding | selector: .shm-tm .shm-tm-chip | property: padding | default: 14px 32px
+- Filter button padding (all screen sizes) | selector: .shm-tm .shm-tm-chip | property: padding | default: 14px 32px
 - Filter button hover background | selector: .shm-tm .shm-tm-chip:hover | property: background-color | default: #f3f4f6
 - Selected filter background | selector: .shm-tm .shm-tm-chip[aria-pressed="true"] | property: background-color | default: #111827
 - Selected filter text | selector: .shm-tm .shm-tm-chip[aria-pressed="true"] | property: color | default: #ffffff
@@ -43,10 +43,9 @@ Build the second part of the Design Editor for this widget. Every line is one st
 - Show more button text | selector: .shm-tm .shm-tm-loadmore | property: color | default: #111827
 - Show more button border | selector: .shm-tm .shm-tm-loadmore | property: border | default: 2px solid #111827
 - Show more button corner radius | selector: .shm-tm .shm-tm-loadmore | property: border-radius | default: 999px
-- Show more button padding | selector: .shm-tm .shm-tm-loadmore | property: padding | default: 14px 32px
+- Show more button padding (all screen sizes) | selector: .shm-tm .shm-tm-loadmore | property: padding | default: 14px 32px
 - Show more button hover background | selector: .shm-tm .shm-tm-loadmore:hover | property: background-color | default: #111827
 - Show more button hover text | selector: .shm-tm .shm-tm-loadmore:hover | property: color | default: #ffffff
-- Read more tap area | selector: .shm-tm .shm-tm-more | property: padding | default: 10px 0
 - Read more hover colour | selector: .shm-tm .shm-tm-more:hover | property: color | default: #1e3a8a
 - Focus outline | selector: .shm-tm :focus-visible | property: outline | default: 3px solid #1d4ed8
 
