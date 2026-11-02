@@ -146,4 +146,80 @@ describe('jobResults controller', () => {
       expect(card.style.getPropertyValue('grid-column')).toBe('auto');
     });
   });
+
+  describe('keyword box follows the URL hash', () => {
+    const hashFor = (keyword: string): string =>
+      `#${encodeURIComponent(JSON.stringify({ facets: {}, keyword }))}`;
+    const keywordBox = (): HTMLInputElement =>
+      element.querySelector<HTMLInputElement>('[data-keyword-field="keyword"]')!;
+
+    it('fills the keyword box from the hash on load', async () => {
+      window.location.hash = hashFor('nurse');
+      jobResults({ element, data: { config: {} }, $: {}, shazamme: stubClient(makeJobs()) });
+      await flush();
+      await flush();
+
+      expect(keywordBox().value).toBe('nurse');
+      expect(element.querySelectorAll('[data-rel="article-job-result"]').length).toBe(1);
+    });
+
+    it('refills the box and re-renders when the hash changes', async () => {
+      jobResults({ element, data: { config: {} }, $: {}, shazamme: stubClient(makeJobs()) });
+      await flush();
+      await flush();
+      expect(keywordBox().value).toBe('');
+
+      window.location.hash = hashFor('engineer');
+      await flush();
+
+      expect(keywordBox().value).toBe('engineer');
+      expect(element.querySelectorAll('[data-rel="article-job-result"]').length).toBe(1);
+    });
+
+    it('ticks the facet checkbox named in the hash', async () => {
+      window.location.hash = `#${encodeURIComponent(JSON.stringify({ facets: { jobTypeID: ['perm'] }, keyword: '' }))}`;
+      jobResults({ element, data: { config: { showJobTypeFilter: 'true' } }, $: {}, shazamme: stubClient(makeJobs()) });
+      await flush();
+      await flush();
+
+      const toggle = element.querySelector('[data-filter-type="jobTypeID"][data-filter-value="perm"]');
+      expect(toggle?.classList.contains('active')).toBe(true);
+    });
+
+    it('leaves the box empty and the results alone when there is no hash', async () => {
+      jobResults({ element, data: { config: {} }, $: {}, shazamme: stubClient(makeJobs()) });
+      await flush();
+      await flush();
+
+      expect(keywordBox().value).toBe('');
+      expect(element.querySelectorAll('[data-rel="article-job-result"]').length).toBe(2);
+    });
+
+    it('ignores a hash that is not a search, so an anchor link does not wipe the results', async () => {
+      window.location.hash = hashFor('nurse');
+      jobResults({ element, data: { config: {} }, $: {}, shazamme: stubClient(makeJobs()) });
+      await flush();
+      await flush();
+
+      window.location.hash = '#top';
+      await flush();
+
+      expect(keywordBox().value).toBe('nurse');
+      expect(element.querySelectorAll('[data-rel="article-job-result"]').length).toBe(1);
+    });
+
+    it('does not overwrite the box while the visitor is typing in it', async () => {
+      jobResults({ element, data: { config: {} }, $: {}, shazamme: stubClient(makeJobs()) });
+      await flush();
+      await flush();
+
+      const box = keywordBox();
+      box.focus();
+      box.value = 'sit';
+      window.location.hash = hashFor('nurse');
+      await flush();
+
+      expect(box.value).toBe('sit');
+    });
+  });
 });
