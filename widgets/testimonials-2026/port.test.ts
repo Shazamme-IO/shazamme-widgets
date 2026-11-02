@@ -957,7 +957,7 @@ describe('second review fixes', () => {
 describe('button standard (platform/standards/BUTTONS.md section 3)', () => {
   const css = readFileSync(join(here, 'duda-css.reference.css'), 'utf8');
   const mobile = readFileSync(join(here, 'duda-css.mobile.reference.css'), 'utf8');
-  const rule = (src: string, selector: string) => src.match(new RegExp(`^${selector.replace(/[.[\]]/g, '\\$&')} \\{([^}]*)\\}`, 'm'))?.[1] ?? '';
+  const rule = (src: string, selector: string) => src.match(new RegExp(`^${selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\{([^}]*)\\}`, 'm'))?.[1] ?? '';
 
   it.each(['.shm-tm .shm-tm-loadmore', '.shm-tm .shm-tm-chip'])('%s has 14px 32px padding, 44px height and centred inline-flex', (sel) => {
     const body = rule(css, sel);
