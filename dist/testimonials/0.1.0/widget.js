@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 6bdcc400814b. Registers window.ShazammeWidget["<name>"].
+ * Build e04e0bad708b. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -267,7 +267,7 @@ var __shazWidgetExport = (() => {
             var maxLength = DescriptionLength;
             var trimmedString = removehtmlfromstring(yourString).substr(0, maxLength);
             trimmedString = trimmedString.substr(0, Math.min(trimmedString.length, trimmedString.lastIndexOf(" ")));
-            castShortDescription = trimmedString + "...";
+            castShortDescription = escapeHtmlText(trimmedString) + "...";
           }
           let ConsultantImage = "";
           let ConsultantName = "";
@@ -418,7 +418,7 @@ var __shazWidgetExport = (() => {
       };
       this.urlparam = (name, url) => {
         if (!url) url = window.location.href;
-        name = name.replace(/[\[\]]/g, "\\$&");
+        name = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"), results = regex.exec(url);
         if (!results) return null;
         if (!results[2]) return "";
@@ -502,6 +502,11 @@ var __shazWidgetExport = (() => {
     }
     function OpenModel() {
       ReadMoreOpenmodal.style.display = "block";
+    }
+    function escapeHtmlText(text) {
+      return String(text).replace(/[&<>"']/g, function(c) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+      });
     }
     function removehtmlfromstring(stringhtml) {
       var html = stringhtml;

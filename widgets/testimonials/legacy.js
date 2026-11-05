@@ -225,7 +225,7 @@ function Create(){
                 var maxLength = DescriptionLength;
                 var trimmedString = removehtmlfromstring(yourString).substr(0, maxLength);
                 trimmedString = trimmedString.substr(0, Math.min(trimmedString.length, trimmedString.lastIndexOf(" ")));
-                castShortDescription=trimmedString+'...';
+                castShortDescription=escapeHtmlText(trimmedString)+'...';
             }
 
             let ConsultantImage="";
@@ -385,7 +385,7 @@ function Getdata() {
     };
     this.urlparam = (name, url) => {
         if (!url) url = window.location.href;
-        name = name.replace(/[\[\]]/g, '\\$&');
+        name = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
             results = regex.exec(url);
         if (!results) return null;
@@ -481,6 +481,12 @@ if (ReadMoreClosespan) {
 function OpenModel(){
     ReadMoreOpenmodal.style.display = "block";
 }
+function escapeHtmlText(text){
+    return String(text).replace(/[&<>"']/g, function(c){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+}
+
 function removehtmlfromstring(stringhtml){
     var html = stringhtml;
     var div = document.createElement("div");
