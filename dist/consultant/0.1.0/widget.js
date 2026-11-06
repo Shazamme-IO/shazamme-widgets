@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 4c4ef7fdafd9. Registers window.ShazammeWidget["<name>"].
+ * Build c991210da2fe. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -352,17 +352,50 @@ var __shazWidgetExport = (() => {
     function fluidCards(slick) {
       var root = $(element);
       root.find(".consultList-consultantWrap .slick-slide").each(function() {
-        setImportant(this, { "width": slick.slideWidth + "px", "margin-left": "0", "margin-right": "0", "max-width": "none", "padding": "0" });
+        setImportant(this, { "width": slick.slideWidth + "px", "margin-left": "0", "margin-right": "0", "max-width": "none", "padding": "0", "left": "0", "right": "auto" });
+        var card = this.classList.contains("consultList-consultant") ? null : this.querySelector(".consultList-consultant");
+        if (card) setImportant(card, { "width": "100%", "max-width": "none", "margin-left": "0", "margin-right": "0", "padding": "0", "left": "0", "right": "auto" });
       });
       root.find(".consultList-consultantWrap .consultList-top").each(function() {
         setImportant(this, { "width": "100%" });
       });
-      root.find(".consultList-consultantWrap .consultList-consultImg").each(function() {
-        setImportant(this, { "margin-left": "auto", "margin-right": "auto", "aspect-ratio": "1 / 1", "height": "auto" });
-      });
+      fluidPortraits();
       root.find(".consultList-consultantWrap .consultList-consultName, .consultList-consultantWrap .consultList-consultPos, .consultList-consultantWrap .consultList-consultLoc").each(function() {
         setImportant(this, { "width": "100%", "padding": "0 6px", "overflow-wrap": "break-word", "word-break": "normal", "text-wrap": "balance" });
       });
+    }
+    var PORTRAIT_SHARE = 0.8;
+    var PORTRAIT_MAX = 230;
+    function fluidPortraits() {
+      $(element).find(".consultList-consultant").each(function() {
+        var cardWidth = this.getBoundingClientRect().width;
+        if (!cardWidth) return;
+        var size = Math.round(Math.min(PORTRAIT_MAX, cardWidth * PORTRAIT_SHARE)) + "px";
+        $(this).find(".consultList-consultImg").each(function() {
+          setImportant(this, { "width": size, "height": size, "max-width": "none", "aspect-ratio": "1 / 1", "border-radius": "50%", "margin-left": "auto", "margin-right": "auto", "overflow": "hidden" });
+        });
+      });
+    }
+    var GRID_MIN_CARD = 240;
+    var GRID_MAX_COLUMNS = 5;
+    function fluidGrid() {
+      if (layout != "grid" || itemLayout == "newslider") return;
+      var wrap = $(element).find(".consultList-consultantWrap");
+      var cards = wrap.children(".consultList-consultant");
+      var count = cards.length;
+      var width = wrap.width();
+      if (!count || !width) return;
+      var columns = Math.max(1, Math.min(GRID_MAX_COLUMNS, Math.floor(width / GRID_MIN_CARD)));
+      while (columns > 2 && count > 1 && count % columns === 1) columns--;
+      setImportant(wrap.get(0), { "display": "flex", "flex-wrap": "wrap", "justify-content": "center" });
+      cards.each(function() {
+        setImportant(this, { "width": 100 / columns + "%", "max-width": "none", "margin-left": "0", "margin-right": "0", "padding": "0 10px", "box-sizing": "border-box", "float": "none", "left": "0", "right": "auto" });
+      });
+      fluidPortraits();
+      wrap.find(".consultList-top").each(function() {
+        setImportant(this, { "width": "100%" });
+      });
+      growWrapper();
     }
     function growWrapper() {
       var wrapper = element.closest ? element.closest(".widget-wrapper") : null;
@@ -388,6 +421,10 @@ var __shazWidgetExport = (() => {
       });
     }
     function refitSlider() {
+      if (layout == "grid") {
+        fluidGrid();
+        return;
+      }
       var wrap = $(element).find(".consultList-consultantWrap");
       if (itemLayout == "newslider" || layout != "slider" || !wrap.hasClass("slick-initialized")) return;
       var columns = fluidColumns();
@@ -403,6 +440,10 @@ var __shazWidgetExport = (() => {
         refitSlider();
       });
       element.__shmConsultantObserver.observe(element);
+    }
+    function watchContent() {
+      var content = element.querySelector(".consultList");
+      if (content && element.__shmConsultantObserver) element.__shmConsultantObserver.observe(content);
     }
     $(element).find("#manageInput").change(function(e) {
       filters.classification = $(this).find("option:selected").val();
@@ -447,13 +488,16 @@ var __shazWidgetExport = (() => {
       } else {
         if (layout == "grid") {
           $(element).find(".consultList-consultantWrap").html(filteredStructure);
+          fluidGrid();
           return;
         } else if (layout == "vertical") {
           $(element).find(".consultList-consultantWrap").html(filteredStructure);
+          fluidPortraits();
           return;
         }
         if (layout == "verticalRight") {
           $(element).find(".consultList-consultantWrap").html(filteredStructure);
+          fluidPortraits();
           return;
         }
         $(element).find(".consultList-consultantWrap").slick("unslick");
@@ -926,9 +970,13 @@ var __shazWidgetExport = (() => {
             whenSlickReady(function() {
               slider();
               el.find(".consultList-consultant").parent().css("height", "100%");
+              watchContent();
             });
           } else {
             el.find(".consultList-consultantWrap").html(structure);
+            fluidGrid();
+            fluidPortraits();
+            watchContent();
           }
           el.find(".consultList-consultantWrap").addClass(justify);
         }

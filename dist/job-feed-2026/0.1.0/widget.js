@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 251629d4aa46. Registers window.ShazammeWidget["<name>"].
+ * Build 143075346793. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -487,6 +487,10 @@ var __shazWidgetExport = (() => {
       };
       this.fluidSlides = (slides) => {
         const share = `calc(100% / ${slides.options.perPage || 1})`;
+        const list = this.el.find(".splide__list").get(0);
+        if (list) {
+          list.style.setProperty("justify-content", slides.length < (slides.options.perPage || 1) ? "center" : "flex-start", "important");
+        }
         this.el.find(".splide__slide").each(function() {
           this.style.setProperty("width", share, "important");
           this.style.setProperty("flex", `0 0 ${share}`, "important");

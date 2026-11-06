@@ -1,5 +1,5 @@
-// LAST UPDATED: 2026-11-06 09:58 AEDT (v0.1.38)
-// Change: Cards per view follow the widget width (320px minimum, capped by Slides per page): 3, 2 or 1 with no fixed card width and no peeking card; the wrapper follows the real content height. Based on live v131.
+// LAST UPDATED: 2026-11-06 12:59 AEDT (v0.1.40)
+// Change: Round 3: a lone job (fewer jobs than cards per view) is centred in the row.
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
 // existing widget JS.
@@ -16,7 +16,7 @@
 // ===========================================================================
 (function () {
   var NAME = "job-feed-2026";
-  var TAG = "v0.1.38";
+  var TAG = "v0.1.40";
   var BUNDLE = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" + TAG + "/dist/" + NAME + "/0.1.0/widget.min.js";
   var SDK = "https://sdk.shazamme.io/js/shazamme-1.0.3.min.js";
   window.__shazSDKPromise = window.__shazSDKPromise || new Promise(function (res) {
