@@ -53,6 +53,14 @@ describe('job-feed-2026', () => {
 });
 
 describe('testimonials', () => {
+  it('snaps the track to the current slide after a re-fit, with autoplay paused meanwhile', () => {
+    const body = src('testimonials');
+    expect(body).toContain('function settleSlider(track)');
+    expect(body).toContain("slick.disableTransition()");
+    expect(body).toContain("track.slick('slickPause')");
+    expect(body).toContain("track.slick('slickPlay')");
+  });
+
   it('opts the slider out of the site one-slide fallback and no longer reads data.device for slides', () => {
     expect(src('testimonials')).toContain('main-review-slider-container');
     expect(src('testimonials')).toContain('slidesToShow: fluidColumns()');

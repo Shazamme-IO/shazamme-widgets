@@ -124,12 +124,22 @@ function fluidSlides(slick){
     var gap = FLUID_GAP;
     var single = slick.options.slidesToShow === 1;
     var slot = slick.slideWidth;
+    var tracks = slick.$slideTrack.children('.slick-slide');
+    var cardSlides = tracks.first().hasClass('shmTestimonial-comments');
+    if (cardSlides && !slick.$slider.data('shmGapped')) {
+        // Slides that are the cards themselves carry the gap as a right margin; widen the slider
+        // by the same amount so the first card sits flush left and the last flush right.
+        slick.$slider.data('shmGapped', true);
+        setImportant(slick.$slider.get(0), { 'width': 'calc(100% + ' + gap + 'px)', 'max-width': 'none' });
+        slick.setPosition();
+        return;
+    }
     var cardWidth = Math.max(0, Math.min(slot - gap, single ? FLUID_SINGLE_CARD_MAX : slot - gap));
     var side = Math.max(0, Math.floor((slot - cardWidth) / 2));
-    slick.$slideTrack.children('.slick-slide').each(function(){
+    tracks.each(function(){
         var isCard = this.classList.contains('shmTestimonial-comments');
         if (isCard) {
-            setImportant(this, { 'width': cardWidth + 'px', 'max-width': 'none', 'margin-left': side + 'px', 'margin-right': side + 'px', 'box-sizing': 'border-box' });
+            setImportant(this, { 'width': (slot - gap) + 'px', 'max-width': 'none', 'margin-left': '0', 'margin-right': gap + 'px', 'box-sizing': 'border-box' });
             return;
         }
         setImportant(this, { 'width': slot + 'px', 'max-width': 'none', 'margin-left': '0', 'margin-right': '0' });
@@ -181,23 +191,55 @@ function slider(){
     });
     $(element).find(".slick-list").css('height',$(element).find('.slick-current>div').outerHeight() + 'px');
     $(element).find(".shmTestimonial-comments").addClass("shmTestimonial-commentsSlider");
+    watchSlider();
 }
+
+// A resize while the track is mid-animation leaves its CSS transition running towards the old
+// slot, so the card comes to rest off position. Drop the transition and snap to the current slide.
+function settleSlider(track){
+    var slick = track.slick('getSlick');
+    slick.disableTransition();
+    slick.animating = false;
+    track.slick('slickGoTo', slick.currentSlide, true);
+    track.slick('setPosition');
+}
+
+var REFIT_SETTLE_MS = 400;
+var refitTimer;
 
 function refitSlider(){
     var track = $(element).find('.shmTestimonial');
     if (!track.hasClass('slick-initialized')) return;
+    if (autoplay) track.slick('slickPause');
     var columns = fluidColumns();
     if (track.slick('slickGetOption', 'slidesToShow') !== columns) {
         track.slick('slickSetOption', 'slidesToShow', columns, true);
     } else {
         track.slick('setPosition');
     }
+    settleSlider(track);
+    clearTimeout(refitTimer);
+    refitTimer = setTimeout(function(){
+        settleSlider(track);
+        if (autoplay) track.slick('slickPlay');
+    }, REFIT_SETTLE_MS);
 }
 
 if (typeof ResizeObserver !== 'undefined') {
     if (element.__shmTestimonialsObserver) element.__shmTestimonialsObserver.disconnect();
     element.__shmTestimonialsObserver = new ResizeObserver(function(){ refitSlider(); });
     element.__shmTestimonialsObserver.observe(element);
+}
+
+// The slider's own box can change without the widget's width changing (late fonts, section
+// reveal), which strands the slides at the width Slick measured at init. Watch it too.
+var LATE_REFIT_MS = 800;
+
+function watchSlider(){
+    $(element).find('.shmTestimonial').each(function(){
+        if (typeof ResizeObserver !== 'undefined' && element.__shmTestimonialsObserver) element.__shmTestimonialsObserver.observe(this);
+    });
+    setTimeout(refitSlider, LATE_REFIT_MS);
 }
 
 let ReadMoreArray=[];
