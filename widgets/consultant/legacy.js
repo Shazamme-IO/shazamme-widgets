@@ -346,7 +346,37 @@ function fluidCards(slick){
     root.find('.consultList-consultantWrap .consultList-consultName, .consultList-consultantWrap .consultList-consultPos, .consultList-consultantWrap .consultList-consultLoc').each(function(){
         setImportant(this, { 'width': '100%', 'padding': '0 6px', 'overflow-wrap': 'break-word', 'word-break': 'normal', 'text-wrap': 'balance' });
     });
+    fitNames();
 }
+
+// Names and titles stay on one line at the card width: shrink the type to fit, down to
+// NAME_MIN_PX. Below that they wrap instead, so a long title is never clipped.
+var NAME_MIN_PX = 13;
+
+function fitOneLine(el){
+    el.style.removeProperty('white-space');
+    el.style.removeProperty('font-size');
+    var style = getComputedStyle(el);
+    var inner = el.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+    if (inner <= 0) return;
+    setImportant(el, { 'white-space': 'nowrap' });
+    var needed = el.scrollWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+    if (needed <= inner) return;
+    var size = Math.floor(parseFloat(style.fontSize) * inner / needed * 10) / 10;
+    if (size >= NAME_MIN_PX) {
+        setImportant(el, { 'font-size': size + 'px' });
+    } else {
+        el.style.removeProperty('white-space');
+    }
+}
+
+function fitNames(){
+    $(element).find('.consultList-consultantWrap .consultList-consultName, .consultList-consultantWrap .consultList-consultPos').each(function(){
+        fitOneLine(this);
+    });
+}
+
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitNames);
 
 // The portrait is always a circle sized from its card, in every layout. Site CSS swaps it for
 // a 55-57px square at tablet widths and pins other sizes per breakpoint.
@@ -384,6 +414,7 @@ function fluidGrid(){
     });
     fluidPortraits();
     wrap.find('.consultList-top').each(function(){ setImportant(this, { 'width': '100%' }); });
+    fitNames();
     growWrapper();
 }
 

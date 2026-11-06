@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build c991210da2fe. Registers window.ShazammeWidget["<name>"].
+ * Build 09b15eacdf2f. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -363,7 +363,31 @@ var __shazWidgetExport = (() => {
       root.find(".consultList-consultantWrap .consultList-consultName, .consultList-consultantWrap .consultList-consultPos, .consultList-consultantWrap .consultList-consultLoc").each(function() {
         setImportant(this, { "width": "100%", "padding": "0 6px", "overflow-wrap": "break-word", "word-break": "normal", "text-wrap": "balance" });
       });
+      fitNames();
     }
+    var NAME_MIN_PX = 13;
+    function fitOneLine(el) {
+      el.style.removeProperty("white-space");
+      el.style.removeProperty("font-size");
+      var style2 = getComputedStyle(el);
+      var inner = el.clientWidth - parseFloat(style2.paddingLeft) - parseFloat(style2.paddingRight);
+      if (inner <= 0) return;
+      setImportant(el, { "white-space": "nowrap" });
+      var needed = el.scrollWidth - parseFloat(style2.paddingLeft) - parseFloat(style2.paddingRight);
+      if (needed <= inner) return;
+      var size = Math.floor(parseFloat(style2.fontSize) * inner / needed * 10) / 10;
+      if (size >= NAME_MIN_PX) {
+        setImportant(el, { "font-size": size + "px" });
+      } else {
+        el.style.removeProperty("white-space");
+      }
+    }
+    function fitNames() {
+      $(element).find(".consultList-consultantWrap .consultList-consultName, .consultList-consultantWrap .consultList-consultPos").each(function() {
+        fitOneLine(this);
+      });
+    }
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitNames);
     var PORTRAIT_SHARE = 0.8;
     var PORTRAIT_MAX = 230;
     function fluidPortraits() {
@@ -395,6 +419,7 @@ var __shazWidgetExport = (() => {
       wrap.find(".consultList-top").each(function() {
         setImportant(this, { "width": "100%" });
       });
+      fitNames();
       growWrapper();
     }
     function growWrapper() {

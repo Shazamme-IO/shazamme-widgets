@@ -127,13 +127,15 @@ function fluidSlides(slick){
     var cardWidth = Math.max(0, Math.min(slot - gap, single ? FLUID_SINGLE_CARD_MAX : slot - gap));
     var side = Math.max(0, Math.floor((slot - cardWidth) / 2));
     slick.$slideTrack.children('.slick-slide').each(function(){
-        setImportant(this, { 'width': slot + 'px', 'max-width': 'none', 'margin-left': '0', 'margin-right': '0', 'padding-left': side + 'px', 'padding-right': side + 'px', 'box-sizing': 'border-box' });
+        setImportant(this, { 'width': slot + 'px', 'max-width': 'none', 'margin-left': '0', 'margin-right': '0', 'padding-left': side + 'px', 'padding-right': side + 'px', 'box-sizing': 'border-box', 'height': 'auto', 'display': 'flex', 'align-items': 'flex-start' });
         var card = this.querySelector('.shmTestimonial-comments');
         if (!card) return;
         for (var holder = card.parentElement; holder && holder !== this; holder = holder.parentElement) {
-            setImportant(holder, { 'width': '100%', 'padding-left': '0', 'padding-right': '0', 'margin-left': '0', 'margin-right': '0', 'box-sizing': 'border-box' });
+            setImportant(holder, { 'width': '100%', 'padding-left': '0', 'padding-right': '0', 'margin-left': '0', 'margin-right': '0', 'box-sizing': 'border-box', 'display': 'flex' });
         }
-        setImportant(card, { 'width': '100%', 'max-width': 'none', 'margin-left': '0', 'margin-right': '0', 'display': 'block', 'box-sizing': 'border-box' });
+        // Site CSS pins a 415px min-height on the card; the card should fit its text.
+        // fitHeights() then equalises the cards that are on screen together.
+        setImportant(card, { 'width': '100%', 'max-width': 'none', 'margin-left': '0', 'margin-right': '0', 'display': 'block', 'box-sizing': 'border-box', 'min-height': '0', 'height': 'auto' });
     });
 }
 
@@ -145,6 +147,26 @@ function wrapCards(slider){
     });
 }
 
+// Cards on screen together share the height of the tallest of them; the slider is exactly that
+// tall, so there is no empty band under short testimonials. Slides are found by Slick's own
+// index (clones carry one too), so the window is right when the slider is about to wrap.
+function fitHeights(slick, first){
+    var visible = slick.options.slidesToShow;
+    var cards = slick.$slideTrack.find('.shmTestimonial-comments');
+    cards.each(function(){ setImportant(this, { 'min-height': '0' }); });
+    var tallest = 0;
+    for (var i = first; i < first + visible; i++) {
+        var card = slick.$slideTrack.children('[data-slick-index="' + i + '"]').find('.shmTestimonial-comments')[0];
+        if (card) tallest = Math.max(tallest, Math.ceil(card.getBoundingClientRect().height));
+    }
+    if (!tallest) return;
+    cards.each(function(){ setImportant(this, { 'min-height': tallest + 'px' }); });
+    var list = slick.$list[0];
+    var listStyle = getComputedStyle(list);
+    var listPadding = parseFloat(listStyle.paddingTop) + parseFloat(listStyle.paddingBottom);
+    setImportant(list, { 'height': (tallest + listPadding) + 'px' });
+}
+
 // Duda gives the widget's wrapper a fixed pixel height. Follow the real content so
 // the section grows with it and nothing placed below overlaps.
 function growWrapper(){
@@ -152,7 +174,11 @@ function growWrapper(){
     if (!wrapper) return;
     wrapper.style.setProperty('height', 'auto', 'important');
     // Ancestor groups can still squeeze the wrapper, so also floor it at the content height.
-    wrapper.style.setProperty('min-height', Math.ceil(element.scrollHeight) + 'px', 'important');
+    // Clear the old floor first so the wrapper shrinks again when the content does.
+    wrapper.style.setProperty('min-height', '0px', 'important');
+    var panel = element.querySelector('.shmTestimonialPanelMain') || element;
+    var contentHeight = panel.getBoundingClientRect().bottom - element.getBoundingClientRect().top;
+    wrapper.style.setProperty('min-height', Math.ceil(contentHeight) + 'px', 'important');
 }
 
 function slider(){
@@ -171,10 +197,14 @@ function slider(){
         autoplay: autoplay,
         prevArrow: '<i class="fas fa-chevron-left slick-prev"></i>',
         nextArrow: '<i class="fas fa-chevron-right slick-next"></i>',
+    }).on('beforeChange', function (event, slick, current, next) {
+        if(!adaptive) fitHeights(slick, next);
+        growWrapper();
     }).on('setPosition', function (event, slick) {
         fluidSlides(slick);
+        setImportant(slick.$slideTrack[0], { 'display': 'flex', 'align-items': 'flex-start' });
         if(!adaptive){
-            slick.$slides.css('height', slick.$slideTrack.height() + 'px');
+            fitHeights(slick, slick.currentSlide);
         }else{
             let newHeight = [];
             $(element).find('.slick-active>div').each(function(){
@@ -185,7 +215,6 @@ function slider(){
         }
         growWrapper();
     });
-    $(element).find(".slick-list").css('height',$(element).find('.slick-current>div').outerHeight() + 'px');
     $(element).find(".shmTestimonial-comments").addClass("shmTestimonial-commentsSlider");
     watchSlider();
 }

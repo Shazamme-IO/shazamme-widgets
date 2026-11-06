@@ -95,3 +95,41 @@ describe('testimonials', () => {
     expect(src('testimonials')).toContain('slidesToShow: fluidColumns()');
   });
 });
+
+describe('Quinn pass 2 (WOW, 6 Nov 2026)', () => {
+  it('testimonials: cards fit their text and the slider is as tall as the cards on screen', () => {
+    const body = src('testimonials');
+    expect(body).toContain('function fitHeights(slick, first)');
+    expect(body).toContain("'min-height': '0'");
+    expect(body).toContain('data-slick-index');
+    expect(body).not.toContain("slick.$slides.css('height'");
+  });
+
+  it('testimonials: the wrapper floor is cleared before it is measured so it can shrink again', () => {
+    const grow = src('testimonials').match(/function growWrapper\(\)\{[\s\S]*?\n\}/)![0];
+    expect(grow.indexOf("'min-height', '0px'")).toBeGreaterThan(-1);
+    expect(grow.indexOf("'min-height', '0px'")).toBeLessThan(grow.indexOf('contentHeight'));
+  });
+
+  it('consultant: names and titles shrink to one line, never below 13px, and wrap instead of clipping', () => {
+    const body = src('consultant');
+    expect(body).toContain('var NAME_MIN_PX = 13;');
+    expect(body).toContain("'white-space': 'nowrap'");
+    expect(body.match(/fitNames\(\)/g)!.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('job-search: fields wrap by the bar width with container queries', () => {
+    const body = src('job-search');
+    expect(body).toContain('container-type:inline-size');
+    expect(body).toContain('@container (max-width: 899px)');
+    expect(body).toContain('@container (max-width: 559px)');
+  });
+
+  it('infinite-logo-slider: logos per view follow the strip width and edges fade', () => {
+    const body = src('infinite-logo-slider');
+    expect(body).toContain('var MIN_LOGO_SLOT = 110;');
+    expect(body).toContain('new ResizeObserver');
+    expect(body).toContain('mask-image');
+    expect(bundle('infinite-logo-slider')).toContain('ResizeObserver');
+  });
+});
