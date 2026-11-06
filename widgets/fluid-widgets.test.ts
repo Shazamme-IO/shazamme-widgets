@@ -40,7 +40,31 @@ describe('consultant', () => {
   });
 });
 
+describe('consultant round 3', () => {
+  it('draws every portrait as a circle sized from its card, in every layout', () => {
+    const body = src('consultant');
+    expect(body).toContain('function fluidPortraits()');
+    expect(body).toContain("'border-radius': '50%'");
+    expect(body.match(/fluidPortraits\(\)/g)!.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it('lays the grid out centred with no lone card on the last row', () => {
+    const body = src('consultant');
+    expect(body).toContain('function fluidGrid()');
+    expect(body).toContain('count % columns === 1');
+    expect(body).toContain("'justify-content': 'center'");
+  });
+
+  it('cancels the position:relative left nudge site CSS puts on cards', () => {
+    expect(src('consultant')).toContain("'left': '0'");
+  });
+});
+
 describe('job-feed-2026', () => {
+  it('centres a lone card', () => {
+    expect(src('job-feed-2026')).toContain("slides.length < (slides.options.perPage || 1) ? 'center'");
+  });
+
   it('picks cards per view from the track width, not from data.device', () => {
     expect(src('job-feed-2026')).toContain('perPage: sender.fluidPerPage(splideEl)');
     expect(src('job-feed-2026')).not.toContain('slidePerPageTablet');
@@ -53,6 +77,11 @@ describe('job-feed-2026', () => {
 });
 
 describe('testimonials', () => {
+  it('wraps every card so the slide is the full slot and the gap is padding', () => {
+    expect(src('testimonials')).toContain('function wrapCards(slider)');
+    expect(src('testimonials')).not.toContain('shmGapped');
+  });
+
   it('snaps the track to the current slide after a re-fit, with autoplay paused meanwhile', () => {
     const body = src('testimonials');
     expect(body).toContain('function settleSlider(track)');

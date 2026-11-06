@@ -124,29 +124,24 @@ function fluidSlides(slick){
     var gap = FLUID_GAP;
     var single = slick.options.slidesToShow === 1;
     var slot = slick.slideWidth;
-    var tracks = slick.$slideTrack.children('.slick-slide');
-    var cardSlides = tracks.first().hasClass('shmTestimonial-comments');
-    if (cardSlides && !slick.$slider.data('shmGapped')) {
-        // Slides that are the cards themselves carry the gap as a right margin; widen the slider
-        // by the same amount so the first card sits flush left and the last flush right.
-        slick.$slider.data('shmGapped', true);
-        setImportant(slick.$slider.get(0), { 'width': 'calc(100% + ' + gap + 'px)', 'max-width': 'none' });
-        slick.setPosition();
-        return;
-    }
     var cardWidth = Math.max(0, Math.min(slot - gap, single ? FLUID_SINGLE_CARD_MAX : slot - gap));
     var side = Math.max(0, Math.floor((slot - cardWidth) / 2));
-    tracks.each(function(){
-        var isCard = this.classList.contains('shmTestimonial-comments');
-        if (isCard) {
-            setImportant(this, { 'width': (slot - gap) + 'px', 'max-width': 'none', 'margin-left': '0', 'margin-right': gap + 'px', 'box-sizing': 'border-box' });
-            return;
-        }
-        setImportant(this, { 'width': slot + 'px', 'max-width': 'none', 'margin-left': '0', 'margin-right': '0' });
-        var holder = this.firstElementChild;
-        if (holder) setImportant(holder, { 'padding-left': side + 'px', 'padding-right': side + 'px', 'box-sizing': 'border-box' });
+    slick.$slideTrack.children('.slick-slide').each(function(){
+        setImportant(this, { 'width': slot + 'px', 'max-width': 'none', 'margin-left': '0', 'margin-right': '0', 'padding-left': side + 'px', 'padding-right': side + 'px', 'box-sizing': 'border-box' });
         var card = this.querySelector('.shmTestimonial-comments');
-        if (card) setImportant(card, { 'width': '100%', 'max-width': 'none', 'margin-left': '0', 'margin-right': '0', 'display': 'block', 'box-sizing': 'border-box' });
+        if (!card) return;
+        for (var holder = card.parentElement; holder && holder !== this; holder = holder.parentElement) {
+            setImportant(holder, { 'width': '100%', 'padding-left': '0', 'padding-right': '0', 'margin-left': '0', 'margin-right': '0', 'box-sizing': 'border-box' });
+        }
+        setImportant(card, { 'width': '100%', 'max-width': 'none', 'margin-left': '0', 'margin-right': '0', 'display': 'block', 'box-sizing': 'border-box' });
+    });
+}
+
+// Slick is handed the cards as direct children on some loads and wrapped on others. Always wrap
+// them, so every slide is a full-slot box with the card inside it and the gap is padding.
+function wrapCards(slider){
+    slider.children('.shmTestimonial-comments').each(function(){
+        $(this).wrap('<div class="shm-slide"></div>');
     });
 }
 
@@ -162,6 +157,7 @@ function growWrapper(){
 
 function slider(){
 
+    wrapCards($(element).find(".shmTestimonial"));
     $(element).find(".shmTestimonial").addClass('shm-fluid-slider main-review-slider-container').slick({
         dots: dotsPagination,
         dotsClass: ButtonLayout,

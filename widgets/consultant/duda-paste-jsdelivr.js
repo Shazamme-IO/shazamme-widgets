@@ -1,5 +1,5 @@
-// LAST UPDATED: 2026-11-06 09:58 AEDT (v0.1.38)
-// Change: Consultant slider is container-fluid: columns follow the widget width (min 220px each, capped by Slides to show), names and titles use the full card width on one flowing line, photo centred in a fixed-ratio box, wrapper grows to the real content height.
+// LAST UPDATED: 2026-11-06 12:59 AEDT (v0.1.40)
+// Change: Round 3: portrait is always a circle sized from its card (never the 57px square), card pins and left offsets from site CSS overridden so single cards centre, grid layout is 4-5 up and centred with no lone last card, wrapper follows content.
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
 // existing widget JS.
@@ -16,7 +16,7 @@
 // ===========================================================================
 (function () {
   var NAME = "consultant";
-  var TAG = "v0.1.38";
+  var TAG = "v0.1.40";
   var BUNDLE = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" + TAG + "/dist/" + NAME + "/0.1.0/widget.min.js";
   var SDK = "https://sdk.shazamme.io/js/shazamme-1.0.3.min.js";
   window.__shazSDKPromise = window.__shazSDKPromise || new Promise(function (res) {

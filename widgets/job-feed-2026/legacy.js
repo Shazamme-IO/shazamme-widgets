@@ -451,6 +451,13 @@ function UX() {
     this.fluidSlides = (slides) => {
         const share = `calc(100% / ${slides.options.perPage || 1})`;
 
+        // A lone card (or fewer jobs than cards per view) sits centred in the row.
+        const list = this.el.find('.splide__list').get(0);
+
+        if (list) {
+            list.style.setProperty('justify-content', slides.length < (slides.options.perPage || 1) ? 'center' : 'flex-start', 'important');
+        }
+
         this.el.find('.splide__slide').each(function () {
             this.style.setProperty('width', share, 'important');
             this.style.setProperty('flex', `0 0 ${share}`, 'important');
