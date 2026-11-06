@@ -1,5 +1,5 @@
-// LAST UPDATED: 2026-11-06 09:58 AEDT (v0.1.38)
-// Change: Slider shows 1 centred card on narrow containers and 2 on wide ones, tracks width changes without a reload, and no longer shows a sliver of the previous card.
+// LAST UPDATED: 2026-11-06 11:49 AEDT (v0.1.39)
+// Change: Re-fit no longer leaves the card off position when the window is resized mid-animation (autoplay paused during the re-fit, track snapped to the current slide).
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
 // existing widget JS.
@@ -16,7 +16,7 @@
 // ===========================================================================
 (function () {
   var NAME = "testimonials";
-  var TAG = "v0.1.38";
+  var TAG = "v0.1.39";
   var BUNDLE = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" + TAG + "/dist/" + NAME + "/0.1.0/widget.min.js";
   var SDK = "https://sdk.shazamme.io/js/shazamme-1.0.3.min.js";
   window.__shazSDKPromise = window.__shazSDKPromise || new Promise(function (res) {
