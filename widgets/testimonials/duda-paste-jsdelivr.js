@@ -1,5 +1,5 @@
-// LAST UPDATED: 2026-11-06 12:59 AEDT (v0.1.40)
-// Change: Round 3: slides are always wrapped so both 2-up cards sit whole inside the visible list (no clipped outer edges); includes the round 2 resize fix.
+// LAST UPDATED: 2026-11-06 18:30 AEDT (v0.1.41)
+// Change: Quinn pass 2: cards fit their text (no 415px floor), cards on screen share the tallest one's height, wrapper shrinks again when content does (no empty band under the card).
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
 // existing widget JS.
@@ -16,7 +16,7 @@
 // ===========================================================================
 (function () {
   var NAME = "testimonials";
-  var TAG = "v0.1.40";
+  var TAG = "v0.1.41";
   var BUNDLE = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" + TAG + "/dist/" + NAME + "/0.1.0/widget.min.js";
   var SDK = "https://sdk.shazamme.io/js/shazamme-1.0.3.min.js";
   window.__shazSDKPromise = window.__shazSDKPromise || new Promise(function (res) {

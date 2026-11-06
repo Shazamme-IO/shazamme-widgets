@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 6862f5015df1. Registers window.ShazammeWidget["<name>"].
+ * Build 0c67c07071be. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -184,6 +184,17 @@ var __shazWidgetExport = (() => {
     const NO_JOBS_TEXT = data.config.NoJobsPlaceholder || "No jobs available";
     const shApi = new ShApi();
     const ux = new UX();
+    if (!document.getElementById("shm-job-search-fluid")) {
+      const fluid = document.createElement("style");
+      fluid.id = "shm-job-search-fluid";
+      fluid.textContent = [
+        ".mainSearchContainer:not(.columnLayout):not(.columnLayoutVertical){container-type:inline-size;display:flex;flex-direction:row;flex-wrap:wrap;}",
+        "@container (max-width: 899px){.mainSearchContainer .flex-items-js{flex:1 1 calc(50% - 10px);min-width:0;}}",
+        "@container (max-width: 559px){.mainSearchContainer .flex-items-js{flex:1 1 100%;}}",
+        ".mainSearchContainer .flex-items-js select,.mainSearchContainer .flex-items-js input{text-overflow:ellipsis;min-width:0;}"
+      ].join("");
+      document.head.appendChild(fluid);
+    }
     const main = (w) => {
       let activeFilter = {};
       let fuseSettings = {
