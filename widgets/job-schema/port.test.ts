@@ -90,8 +90,14 @@ describe('job-schema bundle: valid JSON from raw values', () => {
   });
 
   it('takes the empty block off a page that has no job', () => {
-    expect(mount({ ...JOB, jobTitle: '  ' }).querySelector('script[type="application/ld+json"]')).toBeNull();
+    const html = '<script class="jobSchema" type="application/ld+json">{\n  "@type": "JobPosting",\n  "title": "",\n  "description": ""\n}</script>';
+    expect(mount({ ...JOB, jobTitle: '  ' }, { html }).querySelector('script[type="application/ld+json"]')).toBeNull();
     expect(mount({}, { html: '' }).querySelector('script')).toBeNull();
+  });
+
+  it('keeps a block the HTML tab filled in when the widget was handed no title', () => {
+    const el = mount({ ...JOB, jobTitle: null });
+    expect(JSON.parse(scriptText(el)).title).toBe('static');
   });
 
   it('gives the same result when Duda runs it twice', () => {
@@ -123,6 +129,9 @@ describe('job-schema bundle: employmentType', () => {
     // Labels in use on the platform (dbo.WorkType, 2026-11-09).
     ['FullTimeRegular', 'FULL_TIME'],
     ['FullTime', 'FULL_TIME'],
+    ['Fulltime', 'FULL_TIME'],
+    ['FULLTIME', 'FULL_TIME'],
+    ['Parttime', 'PART_TIME'],
     ['Direct Hire', 'FULL_TIME'],
     ['Direct Placement', 'FULL_TIME'],
     ['Non-Permanent', 'OTHER'],
@@ -164,6 +173,11 @@ describe('job-schema bundle: baseSalary', () => {
 
   it('sends equal bounds as one value', () => {
     expect(posting({ ...paid, salaryTo: '80000' }).baseSalary.value).toEqual({ '@type': 'QuantitativeValue', unitText: 'YEAR', value: 80000 });
+  });
+
+  it('reads an amount that carries its currency symbol', () => {
+    expect(posting({ ...paid, salaryFrom: 'A$80,000', salaryTo: '$ 95000' }).baseSalary.value).toMatchObject({ minValue: 80000, maxValue: 95000 });
+    expect(posting({ ...paid, salaryFrom: '80k', salaryTo: null })).not.toHaveProperty('baseSalary');
   });
 
   it('puts a reversed range the right way round', () => {
@@ -220,7 +234,7 @@ describe('job-schema bundle: organisation, dates and address', () => {
     expect(posting({ ...JOB, datePosted }).datePosted).toBe(expected);
   });
 
-  it.each(['05/11/2026', '2026-13-45', '31-Feb-2026', 'yesterday', null])('leaves out the unreadable datePosted %s', (datePosted) => {
+  it.each(['05/11/2026', '2026-13-45', '31-Feb-2026', '2026-11-05T25:00', '2026-11-05T10:99', '2026-11-05T10:00:61', 'yesterday', null])('leaves out the unreadable datePosted %s', (datePosted) => {
     expect(posting({ ...JOB, datePosted })).not.toHaveProperty('datePosted');
   });
 
@@ -262,6 +276,8 @@ describe('job-schema bundle: organisation, dates and address', () => {
   it.each([
     ['united kingdom', 'GB'],
     ['USA', 'US'],
+    ['UK', 'GB'],
+    ['uk', 'GB'],
     ['nz', 'NZ'],
     ['Atlantis', 'Atlantis'],
     // Not a country, and not a key the lookup may answer from Object.prototype.

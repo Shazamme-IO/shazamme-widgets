@@ -59,7 +59,7 @@ function str(v) {
 }
 // A positive amount, or null. Zero is how the feed says "no salary set".
 function amount(v) {
-  var s = str(v).replace(/[$£€,\s]/g, '');
+  var s = str(v).replace(/^[A-Za-z]{0,3}\s?(?=[$£€])/, '').replace(/[$£€,\s]/g, '');
   return /^\d+(\.\d+)?$/.test(s) ? parseFloat(s) || null : null;
 }
 function httpUrl(v) {
@@ -94,10 +94,10 @@ function employmentType(raw) {
   var asEnum = s.toUpperCase().replace(/[\s-]+/g, '_');
   if (EMPLOYMENT_TYPES.indexOf(asEnum) > -1) { return asEnum; }
   var t = s.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase();
-  var partTime = /\bpart\b/.test(t);
+  var partTime = /\bpart([\s-]?time)?\b/.test(t);
   var permanent = /\bperm|\bdirect (hire|placement)\b/.test(t) && !/\bnon[\s-]?perm/.test(t);
   var types = [];
-  if (/\bfull\b/.test(t) || (permanent && !partTime)) { types.push('FULL_TIME'); }
+  if (/\bfull([\s-]?time)?\b/.test(t) || (permanent && !partTime)) { types.push('FULL_TIME'); }
   if (partTime) { types.push('PART_TIME'); }
   if (/\bcontract|\bfreelanc/.test(t)) { types.push('CONTRACTOR'); }
   if (/\btemp|\bcasual|\bfixed|\bseasonal/.test(t)) { types.push('TEMPORARY'); }
@@ -120,9 +120,9 @@ function salaryUnit(raw) {
 // A name the list does not know is sent as it came, as v38 did.
 function countryCode(raw) {
   var s = str(raw);
-  if (s.length === 2) { return s.toUpperCase(); }
   var key = s.toLowerCase();
-  return Object.prototype.hasOwnProperty.call(COUNTRY_CODES, key) ? COUNTRY_CODES[key] : s;
+  if (Object.prototype.hasOwnProperty.call(COUNTRY_CODES, key)) { return COUNTRY_CODES[key]; }
+  return s.length === 2 ? s.toUpperCase() : s;
 }
 
 // An ISO 8601 date or date-time, or ''. Takes the feed's two shapes, "2026-11-05T00:38:19.567"
@@ -131,7 +131,7 @@ function countryCode(raw) {
 // safely by anyone.
 function isoDateTime(v) {
   var s = str(v).replace(/^(\d{4}-\d{2}-\d{2}) (?=\d{2}:)/, '$1T');
-  var iso = /^(\d{4})-(\d{2})-(\d{2})(T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?)?$/.exec(s);
+  var iso = /^(\d{4})-(\d{2})-(\d{2})(T([01]\d|2[0-3]):[0-5]\d(:[0-5]\d(\.\d+)?)?(Z|[+-]([01]\d|2[0-3]):?[0-5]\d)?)?$/.exec(s);
   if (iso) { return isCalendarDate(+iso[1], +iso[2], +iso[3]) ? s : ''; }
   var named = /^(\d{1,2})[-\s]([A-Za-z]{3})[a-z]*[-\s](\d{4})$/.exec(s);
   if (!named) { return ''; }
@@ -224,11 +224,12 @@ if (data && data.inEditor) {
 
 // No job on this page (the widget dropped on a static page, or an unbound instance):
 // the HTML tab has rendered a JobPosting with every value empty, which is reported as
-// an invalid posting on a page that has none. Take it off the page.
+// an invalid posting on a page that has none. Take it off the page, but only when the
+// HTML tab agrees there is no title: a block that carries one is left as it is.
 var script = host.querySelector('script.jobSchema');
 var title = str(cfg.jobTitle);
 if (!title) {
-  if (script) { script.parentNode.removeChild(script); }
+  if (script && /"title"\s*:\s*""/.test(script.textContent)) { script.parentNode.removeChild(script); }
   return;
 }
 

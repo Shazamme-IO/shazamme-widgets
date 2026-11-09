@@ -1,4 +1,4 @@
-// LAST UPDATED: 2026-11-09 22:30 AEDT (11:30 UTC) (v0.1.42)
+// LAST UPDATED: 2026-11-09 22:37 AEDT (11:37 UTC) (v0.1.42)
 // Change: JS moved out of Duda into the shazamme-widgets bundle. The JobPosting is now built from the widget's raw values, so a description with line breaks can no longer leave invalid JSON-LD.
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the

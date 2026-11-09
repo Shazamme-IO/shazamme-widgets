@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 63500cc73f18. Registers window.ShazammeWidget["<name>"].
+ * Build 85f04947a981. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -280,7 +280,7 @@ var __shazWidgetExport = (() => {
       return v == null ? "" : String(v).trim();
     }
     function amount(v) {
-      var s = str(v).replace(/[$£€,\s]/g, "");
+      var s = str(v).replace(/^[A-Za-z]{0,3}\s?(?=[$£€])/, "").replace(/[$£€,\s]/g, "");
       return /^\d+(\.\d+)?$/.test(s) ? parseFloat(s) || null : null;
     }
     function httpUrl(v) {
@@ -313,10 +313,10 @@ var __shazWidgetExport = (() => {
         return asEnum;
       }
       var t = s.replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase();
-      var partTime = /\bpart\b/.test(t);
+      var partTime = /\bpart([\s-]?time)?\b/.test(t);
       var permanent = /\bperm|\bdirect (hire|placement)\b/.test(t) && !/\bnon[\s-]?perm/.test(t);
       var types = [];
-      if (/\bfull\b/.test(t) || permanent && !partTime) {
+      if (/\bfull([\s-]?time)?\b/.test(t) || permanent && !partTime) {
         types.push("FULL_TIME");
       }
       if (partTime) {
@@ -360,15 +360,15 @@ var __shazWidgetExport = (() => {
     }
     function countryCode(raw) {
       var s = str(raw);
-      if (s.length === 2) {
-        return s.toUpperCase();
-      }
       var key = s.toLowerCase();
-      return Object.prototype.hasOwnProperty.call(COUNTRY_CODES, key) ? COUNTRY_CODES[key] : s;
+      if (Object.prototype.hasOwnProperty.call(COUNTRY_CODES, key)) {
+        return COUNTRY_CODES[key];
+      }
+      return s.length === 2 ? s.toUpperCase() : s;
     }
     function isoDateTime(v) {
       var s = str(v).replace(/^(\d{4}-\d{2}-\d{2}) (?=\d{2}:)/, "$1T");
-      var iso = /^(\d{4})-(\d{2})-(\d{2})(T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?)?$/.exec(s);
+      var iso = /^(\d{4})-(\d{2})-(\d{2})(T([01]\d|2[0-3]):[0-5]\d(:[0-5]\d(\.\d+)?)?(Z|[+-]([01]\d|2[0-3]):?[0-5]\d)?)?$/.exec(s);
       if (iso) {
         return isCalendarDate(+iso[1], +iso[2], +iso[3]) ? s : "";
       }
@@ -457,7 +457,7 @@ var __shazWidgetExport = (() => {
     var script = host.querySelector("script.jobSchema");
     var title = str(cfg.jobTitle);
     if (!title) {
-      if (script) {
+      if (script && /"title"\s*:\s*""/.test(script.textContent)) {
         script.parentNode.removeChild(script);
       }
       return;
