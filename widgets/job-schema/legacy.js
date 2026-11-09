@@ -129,14 +129,16 @@ function salaryUnit(raw) {
   return '';
 }
 
-// A name the list does not know is sent as it came, as v38 did, unless it is plainly
-// not a country: the feed's "- None Specified -", a region ("Asia"), a number.
+// A name the list does not know is sent as it came, as v38 did ("Côte d'Ivoire",
+// "Türkiye"), unless it is plainly not a country: the feed's "- None Specified -" and
+// "– Keine Angabe –" (they open with a dash), "Off-Site / Remote", a region, a number.
 function countryCode(raw) {
   var s = str(raw);
   var key = s.toLowerCase();
   if (Object.prototype.hasOwnProperty.call(COUNTRY_CODES, key)) { return COUNTRY_CODES[key]; }
   if (/^[a-z]{2}$/i.test(s)) { return s.toUpperCase(); }
-  return /^[a-z][a-z .,'()-]*$/i.test(s) && NOT_COUNTRIES.indexOf(key) === -1 ? s : '';
+  var opensWithLetter = /^[A-Za-z\u00C0-\u1FFF\u2C00-\uFFFF]/.test(s);
+  return opensWithLetter && !/[\d\/]/.test(s) && NOT_COUNTRIES.indexOf(key) === -1 ? s : '';
 }
 
 // An ISO 8601 date or date-time, or ''. Takes the feed's two shapes, "2026-11-05T00:38:19.567"
@@ -246,7 +248,7 @@ if (data && data.inEditor) {
 var script = host.querySelector('script.jobSchema');
 var title = str(cfg.jobTitle);
 if (!title) {
-  if (script && /"title"\s*:\s*""/.test(script.textContent)) { script.parentNode.removeChild(script); }
+  if (script && /"title"\s*:\s*"\s*"/.test(script.textContent)) { script.parentNode.removeChild(script); }
   return;
 }
 

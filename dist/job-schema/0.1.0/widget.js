@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build a1335163b90b. Registers window.ShazammeWidget["<name>"].
+ * Build 628bf1b1758d. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -391,7 +391,8 @@ var __shazWidgetExport = (() => {
       if (/^[a-z]{2}$/i.test(s)) {
         return s.toUpperCase();
       }
-      return /^[a-z][a-z .,'()-]*$/i.test(s) && NOT_COUNTRIES.indexOf(key) === -1 ? s : "";
+      var opensWithLetter = /^[A-Za-z\u00C0-\u1FFF\u2C00-\uFFFF]/.test(s);
+      return opensWithLetter && !/[\d\/]/.test(s) && NOT_COUNTRIES.indexOf(key) === -1 ? s : "";
     }
     function isoDateTime(v) {
       var s = str(v).replace(/^(\d{4}-\d{2}-\d{2}) (?=\d{2}:)/, "$1T");
@@ -487,7 +488,7 @@ var __shazWidgetExport = (() => {
     var script = host.querySelector("script.jobSchema");
     var title = str(cfg.jobTitle);
     if (!title) {
-      if (script && /"title"\s*:\s*""/.test(script.textContent)) {
+      if (script && /"title"\s*:\s*"\s*"/.test(script.textContent)) {
         script.parentNode.removeChild(script);
       }
       return;

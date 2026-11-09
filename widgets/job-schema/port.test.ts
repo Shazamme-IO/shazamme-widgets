@@ -92,6 +92,9 @@ describe('job-schema bundle: valid JSON from raw values', () => {
   it('takes the empty block off a page that has no job', () => {
     const html = '<script class="jobSchema" type="application/ld+json">{\n  "@type": "JobPosting",\n  "title": "",\n  "description": ""\n}</script>';
     expect(mount({ ...JOB, jobTitle: '  ' }, { html }).querySelector('script[type="application/ld+json"]')).toBeNull();
+    // Handlebars renders a whitespace-only title as it is.
+    const spaced = html.replace('"title": ""', '"title": "  "');
+    expect(mount({ ...JOB, jobTitle: '  ' }, { html: spaced }).querySelector('script[type="application/ld+json"]')).toBeNull();
     expect(mount({}, { html: '' }).querySelector('script')).toBeNull();
   });
 
@@ -310,6 +313,10 @@ describe('job-schema bundle: organisation, dates and address', () => {
     ['uk', 'GB'],
     ['nz', 'NZ'],
     ['Atlantis', 'Atlantis'],
+    ["Côte d'Ivoire", "Côte d'Ivoire"],
+    ['Türkiye', 'Türkiye'],
+    ['Österreich', 'Österreich'],
+    ['日本', '日本'],
     // Not a country, and not a key the lookup may answer from Object.prototype.
     ['constructor', 'constructor'],
     // Names on live jobs (ss_mapped_jobs, 2026-11-09).
