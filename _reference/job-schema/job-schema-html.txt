@@ -1,0 +1,45 @@
+<div class="smSetUp">SCHEMA MARKUP ( This text will only show on the editor. )</div>
+
+
+<script class="jobSchema" type="application/ld+json">
+{
+  "@context": "https://schema.org/",
+  "@type": "JobPosting",
+  "title": "{{jobTitle}}",
+  "description": "{{Description}}",
+  "identifier": {
+    "@type": "PropertyValue",
+    "name": "{{advertiserName}}",
+    "value": "{{jobID}}"
+  },
+  "hiringOrganization" : {
+    "@type": "Organization",
+    "name": "{{advertiserName}}",
+    "sameAs": "{{siteUri}}",
+    "logo": "{{advertiserImageURL}}"
+  },
+  "industry": "{{category}}",
+  "employmentType": "{{worktype}}",
+  "datePosted": "{{datePosted}}",
+  "jobLocation": {
+    "@type": "Place",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "{{address}}",
+      "addressLocality": "{{city}}",
+      "addressCountry": "{{country}}"
+    }
+  },
+  "baseSalary": {
+    "@type": "MonetaryAmount",
+    "currency": "{{currencyCode}}",
+    "value": {
+      "@type": "QuantitativeValue",
+      "minValue": "{{salaryFrom}}",
+      "maxValue": "{{salaryTo}}",
+      "unitText": "{{salaryType}}"
+    }
+  }
+}
+
+</script>
