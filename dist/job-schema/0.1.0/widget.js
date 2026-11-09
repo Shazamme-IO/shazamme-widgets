@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 628bf1b1758d. Registers window.ShazammeWidget["<name>"].
+ * Build 9134187c732c. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -299,7 +299,7 @@ var __shazWidgetExport = (() => {
       return v == null ? "" : String(v).trim();
     }
     function amount(v) {
-      var s = str(v).replace(/^[A-Za-z]{0,3}\s?(?=[$£€])/, "").replace(/[$£€\s]/g, "");
+      var s = str(v).replace(/^[A-Za-z]{0,3}\s?(?=[$\u00A3\u20AC])/, "").replace(/[$\u00A3\u20AC\s]/g, "");
       if (/,\d{1,2}$/.test(s) || /^\d{1,3}(\.\d{3})+$/.test(s)) {
         return null;
       }

@@ -59,14 +59,14 @@ var COUNTRY_CODES = {
 };
 // Values the country field holds that are not a country.
 var NOT_COUNTRIES = ['other', 'remote', 'asia', 'europe', 'none', 'various', 'worldwide', 'global'];
-var CURRENCY_SYMBOLS = { '£': 'GBP', '€': 'EUR' };
+var CURRENCY_SYMBOLS = { '\u00A3': 'GBP', '\u20AC': 'EUR' }; // pound and euro signs
 
 function str(v) {
   return v == null ? '' : String(v).trim();
 }
 // A positive amount, or null. Zero is how the feed says "no salary set".
 function amount(v) {
-  var s = str(v).replace(/^[A-Za-z]{0,3}\s?(?=[$£€])/, '').replace(/[$£€\s]/g, '');
+  var s = str(v).replace(/^[A-Za-z]{0,3}\s?(?=[$\u00A3\u20AC])/, '').replace(/[$\u00A3\u20AC\s]/g, '');
   // "80.000" and "80.000,00" are 80,000 written the European way. Read the English way
   // they are a valid 80, so refuse them: a salary 1,000 times too small is worse than none.
   if (/,\d{1,2}$/.test(s) || /^\d{1,3}(\.\d{3})+$/.test(s)) { return null; }
