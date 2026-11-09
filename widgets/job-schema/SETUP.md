@@ -35,10 +35,13 @@ renders the page. Compared with v38 it:
    `TEMPORARY`, an unknown label to `OTHER`)
 4. sends `baseSalary` only when there is an amount, a unit and a currency, and
    sends a single bound as `minValue` or `maxValue`, not as an exact salary
-5. sends `datePosted` and `validThrough` only as ISO dates; the feed's
-   `09-Nov-2026` shape is converted, anything else is left out
+5. sends `datePosted` and `validThrough` as ISO dates; the feed's `09-Nov-2026`
+   shape is converted. An unreadable `validThrough` is left out. An unreadable
+   `datePosted` is sent as it came, because Google requires the property and the
+   test tools then show what the feed holds
 6. adds `addressRegion` from `state`, drops a filler street address (`NA`, `.`)
-   and trailing commas
+   and trailing commas, and leaves out a country value that is not a country
+   (`- None Specified -`, `Asia`, a number)
 7. drops an empty `logo` and `sameAs`
 8. removes the block altogether on a page that has no job, where the HTML tab
    renders a `JobPosting` with every value empty

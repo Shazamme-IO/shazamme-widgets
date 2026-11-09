@@ -180,6 +180,18 @@ describe('job-schema bundle: baseSalary', () => {
     expect(posting({ ...paid, salaryFrom: '80k', salaryTo: null })).not.toHaveProperty('baseSalary');
   });
 
+  it('refuses an amount written with a decimal comma or dotted thousands', () => {
+    expect(posting({ ...paid, salaryFrom: '80.000', salaryTo: null })).not.toHaveProperty('baseSalary');
+    expect(posting({ ...paid, salaryFrom: '80.000,00', salaryTo: null })).not.toHaveProperty('baseSalary');
+    expect(posting({ ...paid, salaryFrom: '80000.00', salaryTo: null }).baseSalary.value.minValue).toBe(80000);
+  });
+
+  it('reads the two currency symbols that name one currency', () => {
+    expect(posting({ ...paid, currencyCode: '£' }).baseSalary.currency).toBe('GBP');
+    expect(posting({ ...paid, currencyCode: '€' }).baseSalary.currency).toBe('EUR');
+    expect(posting({ ...paid, currencyCode: '$' })).not.toHaveProperty('baseSalary');
+  });
+
   it('puts a reversed range the right way round', () => {
     const { value } = posting({ ...paid, salaryFrom: '95000', salaryTo: '80000' }).baseSalary;
     expect([value.minValue, value.maxValue]).toEqual([80000, 95000]);
@@ -193,6 +205,9 @@ describe('job-schema bundle: baseSalary', () => {
     ['Monthly', 'MONTH'],
     ['Yearly', 'YEAR'],
     ['Per Annum', 'YEAR'],
+    ['p.a.', 'YEAR'],
+    ['PA', 'YEAR'],
+    ['per yr', 'YEAR'],
   ])('unit %s -> %s', (salaryType, unit) => {
     expect(posting({ ...paid, salaryType }).baseSalary.value.unitText).toBe(unit);
   });
@@ -234,9 +249,24 @@ describe('job-schema bundle: organisation, dates and address', () => {
     expect(posting({ ...JOB, datePosted }).datePosted).toBe(expected);
   });
 
-  it.each(['05/11/2026', '2026-13-45', '31-Feb-2026', '2026-11-05T25:00', '2026-11-05T10:99', '2026-11-05T10:00:61', 'yesterday', null])('leaves out the unreadable datePosted %s', (datePosted) => {
-    expect(posting({ ...JOB, datePosted })).not.toHaveProperty('datePosted');
+  // datePosted is required: an unreadable one is sent as it came so the test tools show it.
+  it.each(['05/11/2026', '2026-13-45', '31-Feb-2026', '2026-11-05T25:00', '2026-11-05T10:99', '2026-11-05T10:00:61', 'yesterday'])(
+    'sends the unreadable datePosted %s as it came',
+    (datePosted) => {
+      expect(posting({ ...JOB, datePosted }).datePosted).toBe(datePosted);
+    },
+  );
+
+  it('leaves datePosted out when the job has none', () => {
+    expect(posting({ ...JOB, datePosted: null })).not.toHaveProperty('datePosted');
   });
+
+  it.each(['2026-13-45', '31-Feb-2026', '2026-12-01T25:00', '2026-12-01T10:99', '2026-12-01T10:00:61', '2026-12-01T10:00+25:00'])(
+    'leaves out the unreadable validThrough %s',
+    (validThrough) => {
+      expect(posting({ ...JOB, validThrough })).not.toHaveProperty('validThrough');
+    },
+  );
 
   it('adds validThrough as an ISO date-time, and only when it can be read', () => {
     expect(posting(JOB)).not.toHaveProperty('validThrough');
@@ -262,7 +292,7 @@ describe('job-schema bundle: organisation, dates and address', () => {
     });
   });
 
-  it.each(['NA', 'N/A', '.', 'a', ' ', 'TBC'])('leaves out the filler street address "%s"', (address) => {
+  it.each(['NA', 'N/A', '.', 'a', ' ', 'TBC', '---', 'None', 'TBD', 'Remote', 'n.a.'])('leaves out the filler street address "%s"', (address) => {
     expect(posting({ ...JOB, address }).jobLocation.address).not.toHaveProperty('streetAddress');
   });
 
@@ -282,9 +312,21 @@ describe('job-schema bundle: organisation, dates and address', () => {
     ['Atlantis', 'Atlantis'],
     // Not a country, and not a key the lookup may answer from Object.prototype.
     ['constructor', 'constructor'],
+    // Names on live jobs (ss_mapped_jobs, 2026-11-09).
+    ['England', 'GB'],
+    ['Deutschland', 'DE'],
+    ['Cayman Islands', 'KY'],
+    ['Korea; Republic Of (South)', 'KR'],
   ])('country %s -> %s', (country, expected) => {
     expect(posting({ ...JOB, country }).jobLocation.address.addressCountry).toBe(expected);
   });
+
+  it.each(['- None Specified -', '– Keine Angabe –', '100533663', 'Asia', 'Other', 'Off-Site / Remote', 'A1'])(
+    'leaves out "%s", which is not a country',
+    (country) => {
+      expect(posting({ ...JOB, country }).jobLocation.address).not.toHaveProperty('addressCountry');
+    },
+  );
 
   it('leaves industry out, as the inline version did', () => {
     expect(posting(JOB)).not.toHaveProperty('industry');

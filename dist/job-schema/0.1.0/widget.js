@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 85f04947a981. Registers window.ShazammeWidget["<name>"].
+ * Build a1335163b90b. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -269,18 +269,41 @@ var __shazWidgetExport = (() => {
       "yemen": "YE",
       "zambia": "ZM",
       "zimbabwe": "ZW",
-      // Common short forms the list above does not carry.
+      // Short forms, and names on live jobs (2026-11-09) that the list above does not carry.
       "usa": "US",
       "united states of america": "US",
       "uk": "GB",
       "great britain": "GB",
-      "uae": "AE"
+      "uae": "AE",
+      "england": "GB",
+      "scotland": "GB",
+      "wales": "GB",
+      "northern ireland": "GB",
+      "republic of ireland": "IE",
+      "deutschland": "DE",
+      "frankreich": "FR",
+      "aotearoa new zealand": "NZ",
+      "russian federation": "RU",
+      "brunei darussalam": "BN",
+      "korea; republic of (south)": "KR",
+      "cayman islands": "KY",
+      "bermuda": "BM",
+      "guernsey": "GG",
+      "jersey": "JE",
+      "isle of man": "IM",
+      "puerto rico": "PR"
     };
+    var NOT_COUNTRIES = ["other", "remote", "asia", "europe", "none", "various", "worldwide", "global"];
+    var CURRENCY_SYMBOLS = { "\xA3": "GBP", "\u20AC": "EUR" };
     function str(v) {
       return v == null ? "" : String(v).trim();
     }
     function amount(v) {
-      var s = str(v).replace(/^[A-Za-z]{0,3}\s?(?=[$£€])/, "").replace(/[$£€,\s]/g, "");
+      var s = str(v).replace(/^[A-Za-z]{0,3}\s?(?=[$£€])/, "").replace(/[$£€\s]/g, "");
+      if (/,\d{1,2}$/.test(s) || /^\d{1,3}(\.\d{3})+$/.test(s)) {
+        return null;
+      }
+      s = s.replace(/,/g, "");
       return /^\d+(\.\d+)?$/.test(s) ? parseFloat(s) || null : null;
     }
     function httpUrl(v) {
@@ -292,7 +315,8 @@ var __shazWidgetExport = (() => {
     }
     function streetAddress(v) {
       var s = addressPart(v);
-      return s.length < 3 || /^(n\/a|tbc|tba)$/i.test(s) ? "" : s;
+      var filler = s.length < 3 || !/[a-z0-9]/i.test(s) || /^(n\/a|n\.a\.?|tbc|tba|tbd|none|null|undefined|various|remote)$/i.test(s);
+      return filler ? "" : s;
     }
     function compact(o) {
       var out = {};
@@ -353,7 +377,7 @@ var __shazWidgetExport = (() => {
       if (/month/.test(t)) {
         return "MONTH";
       }
-      if (/year|annual|annum/.test(t)) {
+      if (/year|annual|annum|\byr\b|\bp\.?a\b/.test(t)) {
         return "YEAR";
       }
       return "";
@@ -364,7 +388,10 @@ var __shazWidgetExport = (() => {
       if (Object.prototype.hasOwnProperty.call(COUNTRY_CODES, key)) {
         return COUNTRY_CODES[key];
       }
-      return s.length === 2 ? s.toUpperCase() : s;
+      if (/^[a-z]{2}$/i.test(s)) {
+        return s.toUpperCase();
+      }
+      return /^[a-z][a-z .,'()-]*$/i.test(s) && NOT_COUNTRIES.indexOf(key) === -1 ? s : "";
     }
     function isoDateTime(v) {
       var s = str(v).replace(/^(\d{4}-\d{2}-\d{2}) (?=\d{2}:)/, "$1T");
@@ -393,7 +420,7 @@ var __shazWidgetExport = (() => {
       var min = amount(cfg.salaryFrom);
       var max = amount(cfg.salaryTo);
       var unit = salaryUnit(cfg.salaryType);
-      var currency = str(cfg.currencyCode).toUpperCase();
+      var currency = CURRENCY_SYMBOLS[str(cfg.currencyCode)] || str(cfg.currencyCode).toUpperCase();
       if (!min && !max || !unit || !/^[A-Z]{3}$/.test(currency)) {
         return null;
       }
@@ -437,7 +464,10 @@ var __shazWidgetExport = (() => {
           logo: httpUrl(cfg.companyLogo) || httpUrl(cfg.advertiserImageURL)
         }) : null,
         employmentType: employmentType(cfg.worktype),
-        datePosted: isoDateTime(cfg.datePosted).slice(0, 10),
+        // Required by Google, so a value that cannot be read is sent as it came, as v38 sent
+        // it: the posting is invalid either way, and this way the test tools show what the
+        // feed holds. validThrough is optional, so an unreadable one is left out.
+        datePosted: isoDateTime(cfg.datePosted).slice(0, 10) || str(cfg.datePosted),
         validThrough: isoDateTime(cfg.validThrough),
         jobLocation: hasAddress ? { "@type": "Place", address: Object.assign({ "@type": "PostalAddress" }, address) } : null,
         baseSalary: baseSalary()
