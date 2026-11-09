@@ -1,0 +1,254 @@
+if(data.inEditor){
+    $(element).find('.smSetUp').show();
+}
+
+var schemaEl = $(element).find('script.jobSchema');
+if (schemaEl.length) {
+    try {
+        var schema = JSON.parse(schemaEl.text());
+
+        var empMap = {
+            'Full Time': 'FULL_TIME',
+            'Part Time': 'PART_TIME',
+            'Casual/Temp': 'TEMPORARY',
+            'Contract': 'CONTRACTOR',
+            'Internship': 'INTERN',
+            'Volunteer': 'VOLUNTEER'
+        };
+        if (empMap[schema.employmentType]) {
+            schema.employmentType = empMap[schema.employmentType];
+        }
+
+        var unitMap = {
+            'Hourly': 'HOUR',
+            'Daily': 'DAY',
+            'Weekly': 'WEEK',
+            'Monthly': 'MONTH',
+            'Yearly': 'YEAR',
+            'Annual': 'YEAR'
+        };
+        var sal = schema.baseSalary && schema.baseSalary.value;
+        if (sal) {
+            if (unitMap[sal.unitText]) {
+                sal.unitText = unitMap[sal.unitText];
+            }
+            if (sal.minValue) sal.minValue = parseFloat(sal.minValue);
+            if (sal.maxValue) sal.maxValue = parseFloat(sal.maxValue);
+        }
+
+        if (schema.datePosted && schema.datePosted.indexOf('T') > -1) {
+            schema.datePosted = schema.datePosted.split('T')[0];
+        }
+
+        var addr = schema.jobLocation && schema.jobLocation.address;
+        if (addr && addr.addressCountry && addr.addressCountry.length > 2) {
+            var c = addr.addressCountry;
+            var cm = {};
+            cm['Afghanistan'] = 'AF';
+            cm['Albania'] = 'AL';
+            cm['Algeria'] = 'DZ';
+            cm['Andorra'] = 'AD';
+            cm['Angola'] = 'AO';
+            cm['Argentina'] = 'AR';
+            cm['Armenia'] = 'AM';
+            cm['Australia'] = 'AU';
+            cm['Austria'] = 'AT';
+            cm['Azerbaijan'] = 'AZ';
+            cm['Bahamas'] = 'BS';
+            cm['Bahrain'] = 'BH';
+            cm['Bangladesh'] = 'BD';
+            cm['Barbados'] = 'BB';
+            cm['Belarus'] = 'BY';
+            cm['Belgium'] = 'BE';
+            cm['Belize'] = 'BZ';
+            cm['Benin'] = 'BJ';
+            cm['Bhutan'] = 'BT';
+            cm['Bolivia'] = 'BO';
+            cm['Bosnia and Herzegovina'] = 'BA';
+            cm['Botswana'] = 'BW';
+            cm['Brazil'] = 'BR';
+            cm['Brunei'] = 'BN';
+            cm['Bulgaria'] = 'BG';
+            cm['Burkina Faso'] = 'BF';
+            cm['Burundi'] = 'BI';
+            cm['Cambodia'] = 'KH';
+            cm['Cameroon'] = 'CM';
+            cm['Canada'] = 'CA';
+            cm['Cape Verde'] = 'CV';
+            cm['Central African Republic'] = 'CF';
+            cm['Chad'] = 'TD';
+            cm['Chile'] = 'CL';
+            cm['China'] = 'CN';
+            cm['Colombia'] = 'CO';
+            cm['Comoros'] = 'KM';
+            cm['Congo'] = 'CG';
+            cm['Costa Rica'] = 'CR';
+            cm['Croatia'] = 'HR';
+            cm['Cuba'] = 'CU';
+            cm['Cyprus'] = 'CY';
+            cm['Czech Republic'] = 'CZ';
+            cm['Czechia'] = 'CZ';
+            cm['Denmark'] = 'DK';
+            cm['Djibouti'] = 'DJ';
+            cm['Dominica'] = 'DM';
+            cm['Dominican Republic'] = 'DO';
+            cm['Ecuador'] = 'EC';
+            cm['Egypt'] = 'EG';
+            cm['El Salvador'] = 'SV';
+            cm['Equatorial Guinea'] = 'GQ';
+            cm['Eritrea'] = 'ER';
+            cm['Estonia'] = 'EE';
+            cm['Eswatini'] = 'SZ';
+            cm['Ethiopia'] = 'ET';
+            cm['Fiji'] = 'FJ';
+            cm['Finland'] = 'FI';
+            cm['France'] = 'FR';
+            cm['Gabon'] = 'GA';
+            cm['Gambia'] = 'GM';
+            cm['Georgia'] = 'GE';
+            cm['Germany'] = 'DE';
+            cm['Ghana'] = 'GH';
+            cm['Greece'] = 'GR';
+            cm['Grenada'] = 'GD';
+            cm['Guatemala'] = 'GT';
+            cm['Guinea'] = 'GN';
+            cm['Guyana'] = 'GY';
+            cm['Haiti'] = 'HT';
+            cm['Honduras'] = 'HN';
+            cm['Hong Kong'] = 'HK';
+            cm['Hungary'] = 'HU';
+            cm['Iceland'] = 'IS';
+            cm['India'] = 'IN';
+            cm['Indonesia'] = 'ID';
+            cm['Iraq'] = 'IQ';
+            cm['Ireland'] = 'IE';
+            cm['Israel'] = 'IL';
+            cm['Italy'] = 'IT';
+            cm['Ivory Coast'] = 'CI';
+            cm['Jamaica'] = 'JM';
+            cm['Japan'] = 'JP';
+            cm['Jordan'] = 'JO';
+            cm['Kazakhstan'] = 'KZ';
+            cm['Kenya'] = 'KE';
+            cm['Kiribati'] = 'KI';
+            cm['Kosovo'] = 'XK';
+            cm['Kuwait'] = 'KW';
+            cm['Kyrgyzstan'] = 'KG';
+            cm['Laos'] = 'LA';
+            cm['Latvia'] = 'LV';
+            cm['Lebanon'] = 'LB';
+            cm['Lesotho'] = 'LS';
+            cm['Liberia'] = 'LR';
+            cm['Libya'] = 'LY';
+            cm['Liechtenstein'] = 'LI';
+            cm['Lithuania'] = 'LT';
+            cm['Luxembourg'] = 'LU';
+            cm['Macau'] = 'MO';
+            cm['Madagascar'] = 'MG';
+            cm['Malawi'] = 'MW';
+            cm['Malaysia'] = 'MY';
+            cm['Maldives'] = 'MV';
+            cm['Mali'] = 'ML';
+            cm['Malta'] = 'MT';
+            cm['Marshall Islands'] = 'MH';
+            cm['Mauritania'] = 'MR';
+            cm['Mauritius'] = 'MU';
+            cm['Mexico'] = 'MX';
+            cm['Micronesia'] = 'FM';
+            cm['Moldova'] = 'MD';
+            cm['Monaco'] = 'MC';
+            cm['Mongolia'] = 'MN';
+            cm['Montenegro'] = 'ME';
+            cm['Morocco'] = 'MA';
+            cm['Mozambique'] = 'MZ';
+            cm['Myanmar'] = 'MM';
+            cm['Namibia'] = 'NA';
+            cm['Nauru'] = 'NR';
+            cm['Nepal'] = 'NP';
+            cm['Netherlands'] = 'NL';
+            cm['New Zealand'] = 'NZ';
+            cm['Nicaragua'] = 'NI';
+            cm['Niger'] = 'NE';
+            cm['Nigeria'] = 'NG';
+            cm['North Macedonia'] = 'MK';
+            cm['Norway'] = 'NO';
+            cm['Oman'] = 'OM';
+            cm['Pakistan'] = 'PK';
+            cm['Palau'] = 'PW';
+            cm['Palestine'] = 'PS';
+            cm['Panama'] = 'PA';
+            cm['Papua New Guinea'] = 'PG';
+            cm['Paraguay'] = 'PY';
+            cm['Peru'] = 'PE';
+            cm['Philippines'] = 'PH';
+            cm['Poland'] = 'PL';
+            cm['Portugal'] = 'PT';
+            cm['Qatar'] = 'QA';
+            cm['Romania'] = 'RO';
+            cm['Russia'] = 'RU';
+            cm['Rwanda'] = 'RW';
+            cm['Saint Kitts and Nevis'] = 'KN';
+            cm['Saint Lucia'] = 'LC';
+            cm['Samoa'] = 'WS';
+            cm['San Marino'] = 'SM';
+            cm['Saudi Arabia'] = 'SA';
+            cm['Senegal'] = 'SN';
+            cm['Serbia'] = 'RS';
+            cm['Seychelles'] = 'SC';
+            cm['Sierra Leone'] = 'SL';
+            cm['Singapore'] = 'SG';
+            cm['Slovakia'] = 'SK';
+            cm['Slovenia'] = 'SI';
+            cm['Solomon Islands'] = 'SB';
+            cm['Somalia'] = 'SO';
+            cm['South Africa'] = 'ZA';
+            cm['South Korea'] = 'KR';
+            cm['South Sudan'] = 'SS';
+            cm['Spain'] = 'ES';
+            cm['Sri Lanka'] = 'LK';
+            cm['Sudan'] = 'SD';
+            cm['Suriname'] = 'SR';
+            cm['Sweden'] = 'SE';
+            cm['Switzerland'] = 'CH';
+            cm['Taiwan'] = 'TW';
+            cm['Tajikistan'] = 'TJ';
+            cm['Tanzania'] = 'TZ';
+            cm['Thailand'] = 'TH';
+            cm['Timor-Leste'] = 'TL';
+            cm['Togo'] = 'TG';
+            cm['Tonga'] = 'TO';
+            cm['Trinidad and Tobago'] = 'TT';
+            cm['Tunisia'] = 'TN';
+            cm['Turkey'] = 'TR';
+            cm['Turkmenistan'] = 'TM';
+            cm['Tuvalu'] = 'TV';
+            cm['Uganda'] = 'UG';
+            cm['Ukraine'] = 'UA';
+            cm['United Arab Emirates'] = 'AE';
+            cm['United Kingdom'] = 'GB';
+            cm['United States'] = 'US';
+            cm['Uruguay'] = 'UY';
+            cm['Uzbekistan'] = 'UZ';
+            cm['Vanuatu'] = 'VU';
+            cm['Vatican City'] = 'VA';
+            cm['Venezuela'] = 'VE';
+            cm['Vietnam'] = 'VN';
+            cm['Yemen'] = 'YE';
+            cm['Zambia'] = 'ZM';
+            cm['Zimbabwe'] = 'ZW';
+            if (cm[c]) addr.addressCountry = cm[c];
+        }
+
+        var org = schema.hiringOrganization;
+        if (org) {
+            if (!org.sameAs) delete org.sameAs;
+            if (!org.logo) delete org.logo;
+        }
+        if (addr && !addr.streetAddress) delete addr.streetAddress;
+
+        delete schema.industry;
+
+        schemaEl.text(JSON.stringify(schema));
+    } catch(e) {}
+}
+

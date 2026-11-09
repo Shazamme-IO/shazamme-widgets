@@ -1,0 +1,42 @@
+<script class="jobSchema" type="application/ld+json">
+{
+  "@context": "https://schema.org/",
+  "@type": "JobPosting",
+  "title": "{{jobTitle}}",
+  "description": "{{Description}}",
+  "identifier": {
+    "@type": "PropertyValue",
+    "name": "{{advertiserName}}",
+    "value": "{{jobID}}"
+  },
+  "hiringOrganization" : {
+    "@type": "Organization",
+    {{#if advertiserImageURL}}"logo": "{{advertiserImageURL}}",{{/if}}
+    "sameAs": "{{siteUri}}",
+    "name": "{{advertiserName}}"
+  },
+  "industry": "{{category}}",
+  "employmentType": "{{worktype}}",
+  "datePosted": "{{datePosted}}",
+  {{#if salaryFrom}}"baseSalary": {
+    "@type": "MonetaryAmount",
+    "currency": "{{currencyCode}}",
+    "value": {
+      "@type": "QuantitativeValue",
+      "minValue": "{{salaryFrom}}",
+      "maxValue": "{{salaryTo}}",
+      "unitText": "{{salaryType}}"
+    }
+  },{{/if}}
+  "jobLocation": {
+    "@type": "Place",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "{{address}}",
+      "addressLocality": "{{city}}",
+      "addressRegion": "{{state}}",
+      "addressCountry": "{{country}}"
+    }
+  }
+}
+</script>
