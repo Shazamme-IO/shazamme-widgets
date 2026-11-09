@@ -30,16 +30,32 @@ renders the page. Compared with v38 it:
 
 1. is always valid JSON (`JSON.stringify`), whatever the description contains
 2. sends the description as HTML, not as `&lt;p&gt;` text
-3. maps any work type label to Google's list (`Permanent` and `Full Time` to
-   `FULL_TIME`, `Temp` and `Fixed Term` to `TEMPORARY`, an unknown label to `OTHER`)
-4. sends `baseSalary` only when there is an amount, a unit and a currency
-5. adds `addressRegion` from `state`, drops a filler street address (`NA`, `.`)
+3. maps any work type label to Google's list (`Permanent`, `Full Time`,
+   `FullTimeRegular` and `Direct Hire` to `FULL_TIME`, `Temp` and `Fixed Term` to
+   `TEMPORARY`, an unknown label to `OTHER`)
+4. sends `baseSalary` only when there is an amount, a unit and a currency, and
+   sends a single bound as `minValue` or `maxValue`, not as an exact salary
+5. sends `datePosted` and `validThrough` only as ISO dates; the feed's
+   `09-Nov-2026` shape is converted, anything else is left out
+6. adds `addressRegion` from `state`, drops a filler street address (`NA`, `.`)
    and trailing commas
-6. drops an empty `logo` and `sameAs`
-7. adds the "SCHEMA MARKUP" label in the editor only, so it is no longer in a live
+7. drops an empty `logo` and `sameAs`
+8. removes the block altogether on a page that has no job, where the HTML tab
+   renders a `JobPosting` with every value empty
+9. adds the "SCHEMA MARKUP" label in the editor only, so it is no longer in a live
    page's source
 
 `industry` is left out, as v38 left it out.
+
+If the bundle cannot be fetched the page keeps the HTML tab's block and the stub
+writes one `[job-schema]` warning to the console.
+
+### Correcting a mapping on one site
+
+The mapping from label to Google value is in the bundle. A site whose label it
+reads wrongly binds the input to a field that already holds the Google value,
+which the bundle passes through unchanged: `worktype` to `workTypeGoogleSEO`,
+`salaryType` to `salaryTypeGoogleSEO` (both are in the job feed).
 
 ## Optional inputs
 

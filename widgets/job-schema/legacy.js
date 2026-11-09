@@ -14,7 +14,7 @@ if (!host) { return; }
 
 var EDITOR_LABEL = 'SCHEMA MARKUP ( This text will only show on the editor. )';
 var EMPLOYMENT_TYPES = ['FULL_TIME', 'PART_TIME', 'CONTRACTOR', 'TEMPORARY', 'INTERN', 'VOLUNTEER', 'PER_DIEM', 'OTHER'];
-var ISO_DATE = /^\d{4}-\d{2}-\d{2}/;
+var MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
 // Country names as the job feed sends them, lower-cased, to ISO 3166-1 alpha-2.
 var COUNTRY_CODES = {
@@ -84,17 +84,20 @@ function compact(o) {
   return out;
 }
 
-// Work type labels are named per site ("Permanent", "Temp", "Fixed Term"); Google takes
-// only its own list. A label that names two types sends both.
+// Work type labels are named per site ("Permanent", "Temp", "Fixed Term",
+// "FullTimeRegular", "Direct Hire"); Google takes only its own list. A label that names
+// two types sends both. A site that needs a different answer binds the worktype input
+// to a field that already holds a Google value, which is passed through.
 function employmentType(raw) {
   var s = str(raw);
   if (!s) { return null; }
   var asEnum = s.toUpperCase().replace(/[\s-]+/g, '_');
   if (EMPLOYMENT_TYPES.indexOf(asEnum) > -1) { return asEnum; }
-  var t = s.toLowerCase();
+  var t = s.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase();
   var partTime = /\bpart\b/.test(t);
+  var permanent = /\bperm|\bdirect (hire|placement)\b/.test(t) && !/\bnon[\s-]?perm/.test(t);
   var types = [];
-  if (/\bfull\b/.test(t) || (/\bperm/.test(t) && !partTime)) { types.push('FULL_TIME'); }
+  if (/\bfull\b/.test(t) || (permanent && !partTime)) { types.push('FULL_TIME'); }
   if (partTime) { types.push('PART_TIME'); }
   if (/\bcontract|\bfreelanc/.test(t)) { types.push('CONTRACTOR'); }
   if (/\btemp|\bcasual|\bfixed|\bseasonal/.test(t)) { types.push('TEMPORARY'); }
@@ -118,7 +121,30 @@ function salaryUnit(raw) {
 function countryCode(raw) {
   var s = str(raw);
   if (s.length === 2) { return s.toUpperCase(); }
-  return COUNTRY_CODES[s.toLowerCase()] || s;
+  var key = s.toLowerCase();
+  return Object.prototype.hasOwnProperty.call(COUNTRY_CODES, key) ? COUNTRY_CODES[key] : s;
+}
+
+// An ISO 8601 date or date-time, or ''. Takes the feed's two shapes, "2026-11-05T00:38:19.567"
+// (a space for the T is put right) and "09-Nov-2026", and refuses anything else: a date
+// Google cannot read is reported against the posting, and "05/11/2026" cannot be read
+// safely by anyone.
+function isoDateTime(v) {
+  var s = str(v).replace(/^(\d{4}-\d{2}-\d{2}) (?=\d{2}:)/, '$1T');
+  var iso = /^(\d{4})-(\d{2})-(\d{2})(T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?)?$/.exec(s);
+  if (iso) { return isCalendarDate(+iso[1], +iso[2], +iso[3]) ? s : ''; }
+  var named = /^(\d{1,2})[-\s]([A-Za-z]{3})[a-z]*[-\s](\d{4})$/.exec(s);
+  if (!named) { return ''; }
+  var month = MONTHS.indexOf(named[2].toLowerCase()) + 1;
+  if (!month || !isCalendarDate(+named[3], month, +named[1])) { return ''; }
+  return named[3] + '-' + pad2(month) + '-' + pad2(+named[1]);
+}
+function isCalendarDate(y, m, d) {
+  var date = new Date(Date.UTC(y, m - 1, d));
+  return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d;
+}
+function pad2(n) {
+  return (n < 10 ? '0' : '') + n;
 }
 
 // Sent only with an amount, a unit Google knows and a currency: a baseSalary missing
@@ -129,12 +155,17 @@ function baseSalary() {
   var unit = salaryUnit(cfg.salaryType);
   var currency = str(cfg.currencyCode).toUpperCase();
   if ((!min && !max) || !unit || !/^[A-Z]{3}$/.test(currency)) { return null; }
+  // One bound is sent as that bound: "from 80,000" is not a salary of exactly 80,000.
   var value = { '@type': 'QuantitativeValue', unitText: unit };
   if (min && max && min !== max) {
     value.minValue = Math.min(min, max);
     value.maxValue = Math.max(min, max);
+  } else if (min && max) {
+    value.value = min;
+  } else if (min) {
+    value.minValue = min;
   } else {
-    value.value = min || max;
+    value.maxValue = max;
   }
   return { '@type': 'MonetaryAmount', currency: currency, value: value };
 }
@@ -143,8 +174,6 @@ function buildPosting(title) {
   // companyName and companyLogo are optional inputs: advertiserName is the internal
   // advertiser record ("Acme Bullhorn"), which is not always the public company name.
   var orgName = str(cfg.companyName) || str(cfg.advertiserName);
-  var posted = str(cfg.datePosted);
-  var validThrough = str(cfg.validThrough);
   var jobId = str(cfg.jobID);
   var address = compact({
     streetAddress: streetAddress(cfg.address),
@@ -171,8 +200,8 @@ function buildPosting(title) {
         })
       : null,
     employmentType: employmentType(cfg.worktype),
-    datePosted: posted.indexOf('T') > -1 ? posted.split('T')[0] : posted,
-    validThrough: ISO_DATE.test(validThrough) ? validThrough : '',
+    datePosted: isoDateTime(cfg.datePosted).slice(0, 10),
+    validThrough: isoDateTime(cfg.validThrough),
     jobLocation: hasAddress ? { '@type': 'Place', address: Object.assign({ '@type': 'PostalAddress' }, address) } : null,
     baseSalary: baseSalary()
   };
@@ -194,11 +223,15 @@ if (data && data.inEditor) {
 }
 
 // No job on this page (the widget dropped on a static page, or an unbound instance):
-// leave whatever the HTML tab rendered.
-var title = str(cfg.jobTitle);
-if (!title) { return; }
-
+// the HTML tab has rendered a JobPosting with every value empty, which is reported as
+// an invalid posting on a page that has none. Take it off the page.
 var script = host.querySelector('script.jobSchema');
+var title = str(cfg.jobTitle);
+if (!title) {
+  if (script) { script.parentNode.removeChild(script); }
+  return;
+}
+
 if (!script) {
   script = document.createElement('script');
   script.type = 'application/ld+json';

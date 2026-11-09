@@ -8,7 +8,7 @@
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const VERSION = JSON.parse(readFileSync(join(here, '..', '..', 'package.json'), 'utf8')).version as string;
@@ -89,9 +89,9 @@ describe('job-schema bundle: valid JSON from raw values', () => {
     expect(JSON.parse(scripts[0].textContent!).title).toBe('Financial Operations Analyst');
   });
 
-  it('leaves the HTML tab block alone when the page has no job', () => {
-    const el = mount({ ...JOB, jobTitle: '  ' });
-    expect(JSON.parse(scriptText(el)).title).toBe('static');
+  it('takes the empty block off a page that has no job', () => {
+    expect(mount({ ...JOB, jobTitle: '  ' }).querySelector('script[type="application/ld+json"]')).toBeNull();
+    expect(mount({}, { html: '' }).querySelector('script')).toBeNull();
   });
 
   it('gives the same result when Duda runs it twice', () => {
@@ -120,12 +120,19 @@ describe('job-schema bundle: employmentType', () => {
     ['Per Diem', 'PER_DIEM'],
     ['Locum', 'OTHER'],
     ['Internal', 'OTHER'],
+    // Labels in use on the platform (dbo.WorkType, 2026-11-09).
+    ['FullTimeRegular', 'FULL_TIME'],
+    ['FullTime', 'FULL_TIME'],
+    ['Direct Hire', 'FULL_TIME'],
+    ['Direct Placement', 'FULL_TIME'],
+    ['Non-Permanent', 'OTHER'],
   ])('%s -> %s', (worktype, expected) => {
     expect(posting({ ...JOB, worktype }).employmentType).toBe(expected);
   });
 
   it('lists every type a combined label names', () => {
     expect(posting({ ...JOB, worktype: 'Contract/Temp' }).employmentType).toEqual(['CONTRACTOR', 'TEMPORARY']);
+    expect(posting({ ...JOB, worktype: 'Contract to Perm' }).employmentType).toEqual(['FULL_TIME', 'CONTRACTOR']);
     expect(posting({ ...JOB, worktype: 'Full Time / Part Time' }).employmentType).toEqual(['FULL_TIME', 'PART_TIME']);
   });
 
@@ -150,9 +157,18 @@ describe('job-schema bundle: baseSalary', () => {
     });
   });
 
-  it('sends a single amount as value', () => {
-    expect(posting({ ...paid, salaryTo: null }).baseSalary.value).toEqual({ '@type': 'QuantitativeValue', unitText: 'YEAR', value: 80000 });
-    expect(posting({ ...paid, salaryTo: '80000' }).baseSalary.value.value).toBe(80000);
+  it('sends one bound as that bound, not as an exact salary', () => {
+    expect(posting({ ...paid, salaryTo: null }).baseSalary.value).toEqual({ '@type': 'QuantitativeValue', unitText: 'YEAR', minValue: 80000 });
+    expect(posting({ ...paid, salaryFrom: 0 }).baseSalary.value).toEqual({ '@type': 'QuantitativeValue', unitText: 'YEAR', maxValue: 95000.5 });
+  });
+
+  it('sends equal bounds as one value', () => {
+    expect(posting({ ...paid, salaryTo: '80000' }).baseSalary.value).toEqual({ '@type': 'QuantitativeValue', unitText: 'YEAR', value: 80000 });
+  });
+
+  it('puts a reversed range the right way round', () => {
+    const { value } = posting({ ...paid, salaryFrom: '95000', salaryTo: '80000' }).baseSalary;
+    expect([value.minValue, value.maxValue]).toEqual([80000, 95000]);
   });
 
   it.each([
@@ -191,17 +207,31 @@ describe('job-schema bundle: organisation, dates and address', () => {
 
   it('falls back to the advertiser logo and ignores a value that is not a URL', () => {
     expect(posting({ ...JOB, advertiserImageURL: 'https://cdn.example.com/advertiser.png' }).hiringOrganization.logo).toBe('https://cdn.example.com/advertiser.png');
-    expect(posting({ ...JOB, advertiserImageURL: 'null' }).hiringOrganization).not.toHaveProperty('logo');
+    expect(posting({ ...JOB, advertiserImageURL: 'images/logo.png' }).hiringOrganization).not.toHaveProperty('logo');
   });
 
-  it('keeps only the date of datePosted', () => {
-    expect(posting(JOB).datePosted).toBe('2026-11-05');
+  it.each([
+    ['2026-11-05T00:38:19.567', '2026-11-05'],
+    ['2026-11-05 00:38:19', '2026-11-05'],
+    ['2026-11-05', '2026-11-05'],
+    ['09-Nov-2026', '2026-11-09'],
+    ['9 November 2026', '2026-11-09'],
+  ])('datePosted %s -> %s', (datePosted, expected) => {
+    expect(posting({ ...JOB, datePosted }).datePosted).toBe(expected);
   });
 
-  it('adds validThrough only for an ISO date', () => {
+  it.each(['05/11/2026', '2026-13-45', '31-Feb-2026', 'yesterday', null])('leaves out the unreadable datePosted %s', (datePosted) => {
+    expect(posting({ ...JOB, datePosted })).not.toHaveProperty('datePosted');
+  });
+
+  it('adds validThrough as an ISO date-time, and only when it can be read', () => {
     expect(posting(JOB)).not.toHaveProperty('validThrough');
     expect(posting({ ...JOB, validThrough: '2026-12-01T00:00:00' }).validThrough).toBe('2026-12-01T00:00:00');
-    expect(posting({ ...JOB, validThrough: '01-Dec-2026' })).not.toHaveProperty('validThrough');
+    expect(posting({ ...JOB, validThrough: '2026-12-01 10:00:00' }).validThrough).toBe('2026-12-01T10:00:00');
+    expect(posting({ ...JOB, validThrough: '2026-12-01T10:00:00+11:00' }).validThrough).toBe('2026-12-01T10:00:00+11:00');
+    expect(posting({ ...JOB, validThrough: '01-Dec-2026' }).validThrough).toBe('2026-12-01');
+    expect(posting({ ...JOB, validThrough: '2026-12-01 at noon' })).not.toHaveProperty('validThrough');
+    expect(posting({ ...JOB, validThrough: '01/12/2026' })).not.toHaveProperty('validThrough');
   });
 
   it('sends region, postcode and a two-letter country', () => {
@@ -234,6 +264,8 @@ describe('job-schema bundle: organisation, dates and address', () => {
     ['USA', 'US'],
     ['nz', 'NZ'],
     ['Atlantis', 'Atlantis'],
+    // Not a country, and not a key the lookup may answer from Object.prototype.
+    ['constructor', 'constructor'],
   ])('country %s -> %s', (country, expected) => {
     expect(posting({ ...JOB, country }).jobLocation.address.addressCountry).toBe(expected);
   });
@@ -264,5 +296,87 @@ describe('job-schema bundle: editor label', () => {
 
   it('shows in the editor even when the page has no job', () => {
     expect(mount({}, { inEditor: true }).querySelector('.smSetUp')).not.toBeNull();
+  });
+});
+
+// The HTML tab is what a reader that runs no scripts gets. Its {{#if}} blocks drop
+// whole properties, so every combination has to leave the commas right.
+describe('job-schema HTML tab', () => {
+  const TEMPLATE = readFileSync(join(here, 'content.hbs'), 'utf8');
+  const OPTIONAL = ['advertiserImageURL', 'siteUri', 'salaryFrom'];
+  const combos = [0, 1, 2, 3, 4, 5, 6, 7].map((bits) => OPTIONAL.filter((_, i) => bits & (1 << i)));
+
+  // Duda renders this with Handlebars; the two constructs the template uses are enough here.
+  function render(present: string[]) {
+    return TEMPLATE.replace(/\{\{#if (\w+)\}\}([\s\S]*?)\{\{\/if\}\}/g, (_, key, body) => (present.includes(key) ? body : '')).replace(
+      /\{\{(\w+)\}\}/g,
+      'x',
+    );
+  }
+
+  it('guards exactly the optional values', () => {
+    expect([...TEMPLATE.matchAll(/\{\{#if (\w+)\}\}/g)].map((m) => m[1]).sort()).toEqual([...OPTIONAL].sort());
+  });
+
+  it.each(combos)('is valid JSON with [%s] present', (...present) => {
+    const block = render(present).match(/<script[^>]*>([\s\S]*?)<\/script>/)![1];
+    const out = JSON.parse(block);
+    expect(out['@type']).toBe('JobPosting');
+    expect('logo' in out.hiringOrganization).toBe(present.includes('advertiserImageURL'));
+    expect('sameAs' in out.hiringOrganization).toBe(present.includes('siteUri'));
+    expect('baseSalary' in out).toBe(present.includes('salaryFrom'));
+    expect(out.jobLocation.address.addressRegion).toBe('x');
+  });
+
+  it('does not render the editor label', () => {
+    expect(TEMPLATE).not.toContain('smSetUp');
+  });
+});
+
+// The stubs are the only JS left in Duda. A failed load must leave the page as it was
+// and say so; a quiet failure leaves the old block in place with nothing to find it by.
+describe.each(['duda-paste-jsdelivr.js', 'duda-paste.js'])('job-schema %s', (file) => {
+  const STUB = readFileSync(join(here, file), 'utf8');
+  const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  function paste() {
+    const win = window as unknown as Win;
+    win.document.head.innerHTML = '';
+    win.document.body.innerHTML = `<div id="widget">${STATIC_BLOCK}</div>`;
+    delete win.ShazammeWidget;
+    const element = win.document.getElementById('widget')! as HTMLElement;
+    new Function('element', 'data', 'api', STUB)(element, { config: JOB, inEditor: false }, undefined);
+    const loader = win.document.head.querySelector('script') as unknown as Record<string, any>;
+    return { win, element, loader };
+  }
+
+  it('rebuilds the block once the bundle has loaded', async () => {
+    const { win, element, loader } = paste();
+    expect(loader.src).toMatch(/\/job-schema\/(0\.1\.0\/)?widget\.min\.js$/);
+    win.eval(BUNDLE);
+    loader.onload();
+    await flush();
+    expect(JSON.parse(scriptText(element)).title).toBe('Financial Operations Analyst');
+  });
+
+  it('warns and leaves the page alone when the bundle cannot be fetched', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { element, loader } = paste();
+    loader.onerror(new Event('error'));
+    await flush();
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0][0])).toContain('[job-schema]');
+    expect(JSON.parse(scriptText(element)).title).toBe('static');
+    warn.mockRestore();
+  });
+
+  it('warns when the file loads but registers no widget', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { loader } = paste();
+    loader.onload();
+    await flush();
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0][1])).toContain('did not register');
+    warn.mockRestore();
   });
 });

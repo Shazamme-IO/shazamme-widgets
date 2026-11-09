@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build cd7a8f3d27cb. Registers window.ShazammeWidget["<name>"].
+ * Build 63500cc73f18. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -75,7 +75,7 @@ var __shazWidgetExport = (() => {
     }
     var EDITOR_LABEL = "SCHEMA MARKUP ( This text will only show on the editor. )";
     var EMPLOYMENT_TYPES = ["FULL_TIME", "PART_TIME", "CONTRACTOR", "TEMPORARY", "INTERN", "VOLUNTEER", "PER_DIEM", "OTHER"];
-    var ISO_DATE = /^\d{4}-\d{2}-\d{2}/;
+    var MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
     var COUNTRY_CODES = {
       "afghanistan": "AF",
       "albania": "AL",
@@ -312,10 +312,11 @@ var __shazWidgetExport = (() => {
       if (EMPLOYMENT_TYPES.indexOf(asEnum) > -1) {
         return asEnum;
       }
-      var t = s.toLowerCase();
+      var t = s.replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase();
       var partTime = /\bpart\b/.test(t);
+      var permanent = /\bperm|\bdirect (hire|placement)\b/.test(t) && !/\bnon[\s-]?perm/.test(t);
       var types = [];
-      if (/\bfull\b/.test(t) || /\bperm/.test(t) && !partTime) {
+      if (/\bfull\b/.test(t) || permanent && !partTime) {
         types.push("FULL_TIME");
       }
       if (partTime) {
@@ -362,7 +363,31 @@ var __shazWidgetExport = (() => {
       if (s.length === 2) {
         return s.toUpperCase();
       }
-      return COUNTRY_CODES[s.toLowerCase()] || s;
+      var key = s.toLowerCase();
+      return Object.prototype.hasOwnProperty.call(COUNTRY_CODES, key) ? COUNTRY_CODES[key] : s;
+    }
+    function isoDateTime(v) {
+      var s = str(v).replace(/^(\d{4}-\d{2}-\d{2}) (?=\d{2}:)/, "$1T");
+      var iso = /^(\d{4})-(\d{2})-(\d{2})(T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?)?$/.exec(s);
+      if (iso) {
+        return isCalendarDate(+iso[1], +iso[2], +iso[3]) ? s : "";
+      }
+      var named = /^(\d{1,2})[-\s]([A-Za-z]{3})[a-z]*[-\s](\d{4})$/.exec(s);
+      if (!named) {
+        return "";
+      }
+      var month = MONTHS.indexOf(named[2].toLowerCase()) + 1;
+      if (!month || !isCalendarDate(+named[3], month, +named[1])) {
+        return "";
+      }
+      return named[3] + "-" + pad2(month) + "-" + pad2(+named[1]);
+    }
+    function isCalendarDate(y, m, d) {
+      var date = new Date(Date.UTC(y, m - 1, d));
+      return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d;
+    }
+    function pad2(n) {
+      return (n < 10 ? "0" : "") + n;
     }
     function baseSalary() {
       var min = amount(cfg.salaryFrom);
@@ -376,15 +401,17 @@ var __shazWidgetExport = (() => {
       if (min && max && min !== max) {
         value.minValue = Math.min(min, max);
         value.maxValue = Math.max(min, max);
+      } else if (min && max) {
+        value.value = min;
+      } else if (min) {
+        value.minValue = min;
       } else {
-        value.value = min || max;
+        value.maxValue = max;
       }
       return { "@type": "MonetaryAmount", currency, value };
     }
     function buildPosting(title2) {
       var orgName = str(cfg.companyName) || str(cfg.advertiserName);
-      var posted = str(cfg.datePosted);
-      var validThrough = str(cfg.validThrough);
       var jobId = str(cfg.jobID);
       var address = compact({
         streetAddress: streetAddress(cfg.address),
@@ -410,8 +437,8 @@ var __shazWidgetExport = (() => {
           logo: httpUrl(cfg.companyLogo) || httpUrl(cfg.advertiserImageURL)
         }) : null,
         employmentType: employmentType(cfg.worktype),
-        datePosted: posted.indexOf("T") > -1 ? posted.split("T")[0] : posted,
-        validThrough: ISO_DATE.test(validThrough) ? validThrough : "",
+        datePosted: isoDateTime(cfg.datePosted).slice(0, 10),
+        validThrough: isoDateTime(cfg.validThrough),
         jobLocation: hasAddress ? { "@type": "Place", address: Object.assign({ "@type": "PostalAddress" }, address) } : null,
         baseSalary: baseSalary()
       };
@@ -427,11 +454,14 @@ var __shazWidgetExport = (() => {
       }
       label.style.display = "block";
     }
+    var script = host.querySelector("script.jobSchema");
     var title = str(cfg.jobTitle);
     if (!title) {
+      if (script) {
+        script.parentNode.removeChild(script);
+      }
       return;
     }
-    var script = host.querySelector("script.jobSchema");
     if (!script) {
       script = document.createElement("script");
       script.type = "application/ld+json";

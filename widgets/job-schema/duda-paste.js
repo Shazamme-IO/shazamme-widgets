@@ -15,11 +15,16 @@
 (function () {
   var NAME = "job-schema";
   var BUNDLE = "https://sdk.shazamme.io/js/widget/" + NAME + "/widget.min.js";
-  function bundle() { return new Promise(function (res) {
+  function bundle() { return new Promise(function (res, rej) {
     if (window.ShazammeWidget && window.ShazammeWidget[NAME]) return res();
-    var s = document.createElement("script"); s.src = BUNDLE; s.onload = res; document.head.appendChild(s);
+    var s = document.createElement("script"); s.src = BUNDLE; s.onload = res; s.onerror = rej; document.head.appendChild(s);
   }); }
   bundle().then(function () {
-    window.ShazammeWidget[NAME]({ element: element, data: data, $: window.jQuery || window.$, shazamme: undefined });
+    var run = window.ShazammeWidget && window.ShazammeWidget[NAME];
+    if (!run) throw new Error("bundle loaded but did not register " + NAME);
+    run({ element: element, data: data, $: window.jQuery || window.$, shazamme: undefined });
+  }).catch(function (e) {
+    // The page keeps the HTML tab's block. Say so: a schema that quietly stays wrong is found weeks later in Search Console.
+    console.warn("[job-schema] JSON-LD not rebuilt, bundle " + BUNDLE, e);
   });
 })();

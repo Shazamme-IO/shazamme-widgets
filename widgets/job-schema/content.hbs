@@ -12,7 +12,7 @@
   "hiringOrganization" : {
     "@type": "Organization",
     {{#if advertiserImageURL}}"logo": "{{advertiserImageURL}}",{{/if}}
-    "sameAs": "{{siteUri}}",
+    {{#if siteUri}}"sameAs": "{{siteUri}}",{{/if}}
     "name": "{{advertiserName}}"
   },
   "industry": "{{category}}",
