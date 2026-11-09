@@ -384,8 +384,8 @@ describe('job-schema HTML tab', () => {
   });
 
   it.each(combos)('is valid JSON with [%s] present', (...present) => {
-    const block = render(present).match(/<script[^>]*>([\s\S]*?)<\/script>/)![1];
-    const out = JSON.parse(block);
+    const block = new DOMParser().parseFromString(render(present), 'text/html').querySelector('script.jobSchema')!;
+    const out = JSON.parse(block.textContent!);
     expect(out['@type']).toBe('JobPosting');
     expect('logo' in out.hiringOrganization).toBe(present.includes('advertiserImageURL'));
     expect('sameAs' in out.hiringOrganization).toBe(present.includes('siteUri'));
