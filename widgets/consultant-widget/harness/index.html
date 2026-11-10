@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Consultant Widget Harness</title>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<link rel="stylesheet" href="../widget.css" />
+<style>
+  body { margin: 0; font-family: system-ui, sans-serif; background: #eef1f5; }
+  #toolbar { position: sticky; top: 0; z-index: 9999; display: flex; gap: 6px; flex-wrap: wrap;
+    padding: 10px 14px; background: #0F1729; color: #F8FAFC; align-items: center; }
+  #toolbar a { color: #F8FAFC; text-decoration: none; padding: 6px 10px; border: 1px solid #334; border-radius: 6px; font-size: 13px; }
+  #toolbar a.active { background: #5048E5; border-color: #5048E5; }
+  #toolbar .sep { opacity: .4; }
+  /* Simulated "page div" the widget lives in, so we can see if it respects boundaries */
+  #page { max-width: 1100px; margin: 24px auto; padding: 20px; background: #fff;
+    border: 2px dashed #c33; border-radius: 8px; }
+  #below { max-width: 1100px; margin: 0 auto 60px; padding: 20px; background: #d8f5d8;
+    border: 2px solid #2a7; border-radius: 8px; text-align:center; font-weight:600; }
+  .widget-boundary-note { font-size:12px; color:#c33; margin: 0 auto 6px; max-width:1100px; }
+</style>
+</head>
+<body>
+<div id="toolbar">
+  <strong>Layout:</strong>
+  <a href="?layout=layout_1&slides=1" data-l="slider">Slider (L1)</a>
+  <a href="?layout=layout_1&slides=0" data-l="grid">Grid (L1)</a>
+  <a href="?layout=layout_2" data-l="slideout">Slide-out (L2)</a>
+  <a href="?layout=layout_3" data-l="flip">Flip (L3)</a>
+  <a href="?layout=layout_4" data-l="popup">Popup (L4)</a>
+  <span class="sep">|</span>
+  <strong>Cols:</strong>
+  <a href="#" data-col="column-two">2</a>
+  <a href="#" data-col="column-three">3</a>
+  <a href="#" data-col="column-four">4</a>
+  <a href="#" data-col="column-six">6</a>
+  <a href="#" data-col="column-eight">8</a>
+</div>
+
+<div class="widget-boundary-note">Red dashed box = the containing page div (widget must stay inside it). Green box = content below (slide-out must not overlap it).</div>
+<div id="page">
+  <!-- widget.html container, tokens resolved -->
+  <div class="consultant-content" data-rel="consultant-list"
+       style="--shaz-column-gap: 20px;--shaz-row-gap: 20px; font-size: 16px;"></div>
+</div>
+<div id="below">▼ Content that lives BELOW the widget on the page ▼</div>
+
+<script>
+/* ---------- Duda environment mocks ---------- */
+const qs = new URLSearchParams(location.search);
+const LAYOUT = qs.get('layout') || 'layout_1';
+const USE_SLIDES = qs.get('slides') === '1';
+const GRID = qs.get('col') || 'column-three';
+
+const element = document.querySelector('[data-rel=consultant-list]').parentElement; // widget root
+window.element = element;
+
+// Minimal config mirroring the Duda "Content" tab. Tweak here to reproduce states.
+const data = {
+  inEditor: false,
+  device: 'desktop',
+  siteId: 'HARNESS',
+  page: 'home',
+  config: {
+    Consultant_Layouts: LAYOUT,
+    useSlides: USE_SLIDES,
+    gridSize: GRID,
+    // slider
+    slideType: 'slide', slideDirection: 'ltr',
+    slidePerPage: '3', slidePerPageTablet: '2',
+    slideAutoPlay: false, slideInterval: '3', slideShowPages: true,
+    slideHeight: null, slideWidth: null,
+    showSlideArrows: true, slideArrow: '<i class="fa-solid fa-chevron-right"></i>',
+    slideGap: '16',
+    // toggles ON so we can see everything
+    toggleConsultantImage: true, toggleConsultantName: true, toggleConsultantTitle: true,
+    toggleLocationAll: true, toggleLocationIcon: true, toggleLocationCity: true,
+    toggleConsultantShortBio: true,
+    toggleConsultantCategoryAll: true, toggleConsultantCategory: true, toggleConsultantCategoryIcon: false,
+    toggleConsultantCategorySeparator: true, textSeparatorAll: '|',
+    toggleCustomRule: true, customRuleStyle: 'solid',
+    toggleConsultantEmailAll: true, toggleConsultantEmail: true, toggleConsultantEmailIcon: true,
+    toggleConsultantPhoneAll: true, toggleConsultantPhone: true, toggleConsultantPhoneIcon: true,
+    toggleConsultantMobileAll: true, toggleConsultantMobile: true, toggleConsultantMobileIcon: true,
+    toggleConsultanSocialIconsAll: true, toggleConsultanSocialIconsLinkedin: true, toggleConsultanSocialIconsFacebook: true,
+    toggleCustomField1: false, toggleCustomField2: false,
+    customField1Text: 'Custom 1', customField2Text: 'Custom 2',
+    toggleButtonsAll: true, toggleButtonA: true, toggleButtonsB: true,
+    buttonAText: 'Contact', buttonBText: 'Read Bio',
+    buttonFlexDirection: 'row', stackedButtonAlignment: 'flex-start', sideBySideButtonAlignment: 'flex-start',
+    // overlay
+    toggleShowOverlay: true, gradientDegreeAngle: '180deg', gradientColorPick: '#0b1f3a',
+    gradientPercentColor: '90', cardShadowColor: '#00000055', showShadowDefaultCard: true,
+    // icons
+    faIconLocation: 'fa-solid fa-location-dot', faIconEmail: 'fa-solid fa-envelope',
+    faIconPhone: 'fa-solid fa-phone', faIconMobilePhone: 'fa-solid fa-mobile',
+    faIconLinkedin: 'fa-brands fa-linkedin', faIconFacebook: 'fa-brands fa-facebook',
+    faIconCategory: 'fa-solid fa-tag', faIconModalPopup: 'fa-solid fa-circle-info',
+    faIconModalClose: 'fa-solid fa-xmark',
+    // slideout
+    slideOutActionText: 'Read Bio', slideOutOpenCloseIcon: 'fa-solid fa-plus',
+    // misc
+    newTab: false, consultantPage: 'consultant', debugMode: false,
+  }
+};
+window.data = data;
+
+// Long + short bios to force uneven card heights (reproduces row-equalization bug)
+const BIO_LONG = 'Seasoned advisor with over fifteen years guiding executive teams through transformation. '.repeat(4);
+const BIO_SHORT = 'Short bio.';
+
+function mkConsultant(id, first, last, title, city, bio) {
+  return {
+    page_item_url: 'https://example.com/team/' + first.toLowerCase(),
+    data: {
+      consultantID: id, firstName: first, lastName: ' ' + last,
+      positionTitle: title, businessLocation2: city, classification2: 'Strategy, Finance',
+      fullDescription: bio, email: first.toLowerCase() + '@example.com',
+      phone: '+61 2 1234 5678', mobile: '+61 400 123 456',
+      photoURL: 'https://i.pravatar.cc/300?img=' + id,
+      consultantURL: 'https://example.com/team/' + first.toLowerCase(),
+      businessLocation: JSON.stringify([{ city: city }]),
+      classification: JSON.stringify([{ name: 'Strategy' }]),
+    }
+  };
+}
+const CONSULTANTS = [
+  mkConsultant(1, 'Ava', 'Chen', 'Managing Partner', 'Sydney', BIO_LONG),
+  mkConsultant(2, 'Ben', 'Ortiz', 'Senior Consultant', 'Melbourne', BIO_SHORT),
+  mkConsultant(3, 'Cara', 'Singh', 'Principal', 'Brisbane', BIO_LONG),
+  mkConsultant(4, 'Dan', 'Wolfe', 'Associate', 'Perth', BIO_SHORT),
+  mkConsultant(5, 'Eve', 'Marsh', 'Director', 'Adelaide', BIO_LONG),
+  mkConsultant(6, 'Finn', 'Reyes', 'Consultant', 'Hobart', BIO_SHORT),
+];
+
+// shazamme SDK mock
+window.shazamme = {
+  ready: () => Promise.resolve(),
+  register: (name, d) => d,
+  fetch: () => Promise.resolve(JSON.parse(JSON.stringify(CONSULTANTS))),
+  script: (src) => new Promise((res, rej) => {
+    const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  }),
+  style: (href) => new Promise((res) => {
+    const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; l.onload = res; l.onerror = res;
+    document.head.appendChild(l);
+  }),
+};
+
+// dmAPI mock
+window.dmAPI = { runOnReady: (name, cb) => cb() };
+
+// Prevent the real SDK loader from clobbering our mock
+jQuery.getScript = (src, ok) => { if (typeof ok === 'function') ok(); return { done: () => {} }; };
+
+// Highlight active toolbar buttons + wire column switcher
+document.querySelectorAll('#toolbar a[data-col]').forEach(a => {
+  a.addEventListener('click', e => { e.preventDefault();
+    const u = new URLSearchParams(location.search); u.set('col', a.dataset.col); location.search = u.toString(); });
+});
+</script>
+
+<!-- fontawesome for icons -->
+<script src="https://kit.fontawesome.com/6aeaeb21af.js" crossorigin="anonymous"></script>
+<!-- the REAL widget under test -->
+<script src="../widget.js"></script>
+</body>
+</html>
