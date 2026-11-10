@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 8694c3f8b396. Registers window.ShazammeWidget["<name>"].
+ * Build 12b9153265e3. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -335,11 +335,12 @@ var __shazWidgetExport = (() => {
     }
     var PORTRAIT_STYLE_ID = "shm-consultant-portrait-default";
     function ensurePortraitStyle() {
-      if (document.getElementById(PORTRAIT_STYLE_ID)) return;
+      var head2 = document.head || document.getElementsByTagName("head")[0];
+      if (!head2 || document.getElementById(PORTRAIT_STYLE_ID)) return;
       var portraitStyle = document.createElement("style");
       portraitStyle.id = PORTRAIT_STYLE_ID;
       portraitStyle.textContent = ".consultList-consultImg{border-radius:50%}";
-      document.head.insertBefore(portraitStyle, document.head.firstChild);
+      head2.insertBefore(portraitStyle, head2.firstChild);
     }
     ensurePortraitStyle();
     var FLUID_MIN_CARD = 220;

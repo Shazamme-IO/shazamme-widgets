@@ -316,11 +316,12 @@ if(itemLayout!="newslider")
 var PORTRAIT_STYLE_ID = 'shm-consultant-portrait-default';
 
 function ensurePortraitStyle(){
-    if (document.getElementById(PORTRAIT_STYLE_ID)) return;
+    var head = document.head || document.getElementsByTagName('head')[0];
+    if (!head || document.getElementById(PORTRAIT_STYLE_ID)) return;
     var portraitStyle = document.createElement('style');
     portraitStyle.id = PORTRAIT_STYLE_ID;
     portraitStyle.textContent = '.consultList-consultImg{border-radius:50%}';
-    document.head.insertBefore(portraitStyle, document.head.firstChild);
+    head.insertBefore(portraitStyle, head.firstChild);
 }
 
 ensurePortraitStyle();

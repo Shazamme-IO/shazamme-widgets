@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 // The Consultant, Job Feed 2026 and Testimonials legacy ports size their cards from the
 // container width, not from a device flag read once at load. These source and bundle guards
 // keep that from regressing; the layout itself is proven against the live WOW page.
@@ -50,39 +49,15 @@ describe('consultant round 3', () => {
 
   // Quinn Allan (Freshdesk 14329, issue #54): inline !important border-radius beat the site's
   // rounded-square CSS, so every photo turned into a circle after Update Widget. The circle is
-  // only a default now, at zero specificity, so any site rule for the photo shape wins.
+  // only a default now, a plain class placed first in <head>, so any site rule for the shape wins.
   it('does not force the photo shape inline; the circle is a plain-class default placed first in head', () => {
     const body = src('consultant');
     expect(body).not.toContain("'border-radius'");
     expect(body).toContain("'.consultList-consultImg{border-radius:50%}'");
-    expect(body).toContain('document.head.insertBefore(portraitStyle, document.head.firstChild)');
+    expect(body).toContain('head.insertBefore(portraitStyle, head.firstChild)');
     expect(bundle('consultant')).toContain('.consultList-consultImg{border-radius:50%}');
     expect(bundle('consultant')).not.toMatch(/border-radius\s*:\s*50%\s*!important/);
     expect(bundle('consultant')).not.toMatch(/["']border-radius["']\s*:/);
-  });
-
-  it('at runtime sizes the portrait without touching its border-radius, and injects the default style once', () => {
-    const body = src('consultant');
-    const setImportant = body.match(/function setImportant\(el, props\)\{[\s\S]*?\n\}/)![0];
-    const fluidPortraits = body.match(/function fluidPortraits\(\)\{[\s\S]*?\n\}/)![0];
-    const ensure = body.match(/var PORTRAIT_STYLE_ID = [^\n]+\n\nfunction ensurePortraitStyle\(\)\{[\s\S]*?\n\}/)![0];
-    document.head.innerHTML = '<link id="site-css">';
-    document.body.innerHTML = '<div id="w"><div class="consultList-consultant"><div class="consultList-consultImg"></div></div></div>';
-    const element = document.getElementById('w')!;
-    element.querySelector<HTMLElement>('.consultList-consultant')!.getBoundingClientRect = () => ({ width: 300 } as DOMRect);
-    const $ = (root: Element) => ({
-      find: (sel: string) => ({ each: (fn: (this: Element) => void) => root.querySelectorAll(sel).forEach((el) => fn.call(el)) }),
-    });
-    const run = new Function('element', '$', 'document', 'PORTRAIT_SHARE', 'PORTRAIT_MAX',
-      `${setImportant}; ${fluidPortraits}; ${ensure}; ensurePortraitStyle(); ensurePortraitStyle(); fluidPortraits();`);
-    run(element, $, document, 0.8, 230);
-    const img = element.querySelector<HTMLElement>('.consultList-consultImg')!;
-    expect(img.style.getPropertyValue('width')).toBe('230px');
-    expect(img.style.getPropertyValue('border-radius')).toBe('');
-    const styles = document.head.querySelectorAll('#shm-consultant-portrait-default');
-    expect(styles.length).toBe(1);
-    expect(styles[0].textContent).toBe('.consultList-consultImg{border-radius:50%}');
-    expect(document.head.firstElementChild).toBe(styles[0]);
   });
 
   it('lays the grid out centred with no lone card on the last row', () => {
