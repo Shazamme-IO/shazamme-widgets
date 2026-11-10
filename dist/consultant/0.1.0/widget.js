@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build c991210da2fe. Registers window.ShazammeWidget["<name>"].
+ * Build 931a9eb717cd. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -333,6 +333,9 @@ var __shazWidgetExport = (() => {
       style.innerText = ".clsbottomSlider{margin:0!important;}";
       document.head.appendChild(style);
     }
+    var portraitStyle = document.createElement("style");
+    portraitStyle.innerText = ":where(.consultList-consultImg){border-radius:50%}";
+    document.head.appendChild(portraitStyle);
     var FLUID_MIN_CARD = 220;
     var FLUID_FALLBACK_COLUMNS = 3;
     function oneLine(text) {
@@ -372,7 +375,7 @@ var __shazWidgetExport = (() => {
         if (!cardWidth) return;
         var size = Math.round(Math.min(PORTRAIT_MAX, cardWidth * PORTRAIT_SHARE)) + "px";
         $(this).find(".consultList-consultImg").each(function() {
-          setImportant(this, { "width": size, "height": size, "max-width": "none", "aspect-ratio": "1 / 1", "border-radius": "50%", "margin-left": "auto", "margin-right": "auto", "overflow": "hidden" });
+          setImportant(this, { "width": size, "height": size, "max-width": "none", "aspect-ratio": "1 / 1", "margin-left": "auto", "margin-right": "auto", "overflow": "hidden" });
         });
       });
     }

@@ -41,11 +41,21 @@ describe('consultant', () => {
 });
 
 describe('consultant round 3', () => {
-  it('draws every portrait as a circle sized from its card, in every layout', () => {
+  it('sizes every portrait from its card, in every layout', () => {
     const body = src('consultant');
     expect(body).toContain('function fluidPortraits()');
-    expect(body).toContain("'border-radius': '50%'");
     expect(body.match(/fluidPortraits\(\)/g)!.length).toBeGreaterThanOrEqual(4);
+  });
+
+  // Quinn Allan (Freshdesk 14329, issue #54): inline !important border-radius beat the site's
+  // rounded-square CSS, so every photo turned into a circle after Update Widget. The circle is
+  // only a default now, at zero specificity, so any site rule for the photo shape wins.
+  it('does not force the photo shape inline; the circle is a zero-specificity default', () => {
+    const body = src('consultant');
+    expect(body).not.toContain("'border-radius'");
+    expect(body).toContain(':where(.consultList-consultImg){border-radius:50%}');
+    expect(bundle('consultant')).toContain(':where(.consultList-consultImg){border-radius:50%}');
+    expect(bundle('consultant')).not.toContain('border-radius:50%!important');
   });
 
   it('lays the grid out centred with no lone card on the last row', () => {

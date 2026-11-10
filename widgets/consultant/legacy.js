@@ -310,6 +310,12 @@ if(itemLayout!="newslider")
     document.head.appendChild(style);
 }
 
+// Default photo shape. :where() has zero specificity, so any site CSS rule for the portrait
+// (rounded squares, squares, a different radius) wins over it.
+var portraitStyle = document.createElement('style');
+portraitStyle.innerText = ':where(.consultList-consultImg){border-radius:50%}';
+document.head.appendChild(portraitStyle);
+
 var FLUID_MIN_CARD = 220;
 var FLUID_FALLBACK_COLUMNS = 3;
 
@@ -359,7 +365,9 @@ function fluidPortraits(){
         if (!cardWidth) return;
         var size = Math.round(Math.min(PORTRAIT_MAX, cardWidth * PORTRAIT_SHARE)) + 'px';
         $(this).find('.consultList-consultImg').each(function(){
-            setImportant(this, { 'width': size, 'height': size, 'max-width': 'none', 'aspect-ratio': '1 / 1', 'border-radius': '50%', 'margin-left': 'auto', 'margin-right': 'auto', 'overflow': 'hidden' });
+            // Shape is not forced inline: the circle is a zero-specificity default (see the
+            // :where rule below) so a site's own border-radius CSS still applies after Update Widget.
+            setImportant(this, { 'width': size, 'height': size, 'max-width': 'none', 'aspect-ratio': '1 / 1', 'margin-left': 'auto', 'margin-right': 'auto', 'overflow': 'hidden' });
         });
     });
 }
