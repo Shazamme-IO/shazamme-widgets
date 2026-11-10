@@ -310,11 +310,20 @@ if(itemLayout!="newslider")
     document.head.appendChild(style);
 }
 
-// Default photo shape. :where() has zero specificity, so any site CSS rule for the portrait
-// (rounded squares, squares, a different radius) wins over it.
-var portraitStyle = document.createElement('style');
-portraitStyle.innerText = ':where(.consultList-consultImg){border-radius:50%}';
-document.head.appendChild(portraitStyle);
+// Default photo shape: a circle. The rule is a single class and goes in FIRST in <head>, so any
+// site or widget-CSS-tab rule for the portrait (rounded squares, squares, another radius) wins by
+// specificity or by source order. Injected once per page, however many consultant widgets run.
+var PORTRAIT_STYLE_ID = 'shm-consultant-portrait-default';
+
+function ensurePortraitStyle(){
+    if (document.getElementById(PORTRAIT_STYLE_ID)) return;
+    var portraitStyle = document.createElement('style');
+    portraitStyle.id = PORTRAIT_STYLE_ID;
+    portraitStyle.textContent = '.consultList-consultImg{border-radius:50%}';
+    document.head.insertBefore(portraitStyle, document.head.firstChild);
+}
+
+ensurePortraitStyle();
 
 var FLUID_MIN_CARD = 220;
 var FLUID_FALLBACK_COLUMNS = 3;
@@ -365,8 +374,8 @@ function fluidPortraits(){
         if (!cardWidth) return;
         var size = Math.round(Math.min(PORTRAIT_MAX, cardWidth * PORTRAIT_SHARE)) + 'px';
         $(this).find('.consultList-consultImg').each(function(){
-            // Shape is not forced inline: the circle is a zero-specificity default (see the
-            // :where rule below) so a site's own border-radius CSS still applies after Update Widget.
+            // No border-radius here: the shape is only a default (ensurePortraitStyle, above),
+            // so a site's own border-radius CSS still applies after Update Widget.
             setImportant(this, { 'width': size, 'height': size, 'max-width': 'none', 'aspect-ratio': '1 / 1', 'margin-left': 'auto', 'margin-right': 'auto', 'overflow': 'hidden' });
         });
     });
