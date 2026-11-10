@@ -50,14 +50,15 @@ describe('consultant round 3', () => {
   // Quinn Allan (Freshdesk 14329, issue #54): inline !important border-radius beat the site's
   // rounded-square CSS, so every photo turned into a circle after Update Widget. The circle is
   // only a default now, a plain class placed first in <head>, so any site rule for the shape wins.
-  it('does not force the photo shape inline; the circle is a plain-class default placed first in head', () => {
+  it('does not force the photo shape inline; the circle is a single-class default placed first in head', () => {
     const body = src('consultant');
     expect(body).not.toContain("'border-radius'");
-    expect(body).toContain("'.consultList-consultImg{border-radius:50%}'");
+    expect(body).toContain("'{border-radius:50%}'");
     expect(body).toContain('head.insertBefore(portraitStyle, head.firstChild)');
-    expect(bundle('consultant')).toContain('.consultList-consultImg{border-radius:50%}');
-    expect(bundle('consultant')).not.toMatch(/border-radius\s*:\s*50%\s*!important/);
+    expect(bundle('consultant')).toContain('{border-radius:50%}');
+    expect(bundle('consultant')).not.toMatch(/border-radius[^;}"'`]*!important/);
     expect(bundle('consultant')).not.toMatch(/["']border-radius["']\s*:/);
+    expect(bundle('consultant')).not.toMatch(/borderRadius/);
   });
 
   it('lays the grid out centred with no lone card on the last row', () => {

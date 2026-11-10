@@ -1,5 +1,5 @@
 // LAST UPDATED: 2026-11-10 18:16 AEDT (07:16 UTC) (v0.1.43)
-// Change: Photo shape is no longer forced inline (Freshdesk 14329 / issue #54). The circle is a zero-specificity default, so site CSS for rounded squares or squares applies again after Update Widget. Sizing, grid and centring from v0.1.40 unchanged.
+// Change: Photo shape is no longer forced inline (Freshdesk 14329 / issue #54). The circle is only a low-priority default stylesheet rule, so site CSS for rounded squares or squares applies again after Update Widget. Sizing, grid and centring from v0.1.40 unchanged.
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
 // existing widget JS.

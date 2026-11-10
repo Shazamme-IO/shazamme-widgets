@@ -310,21 +310,21 @@ if(itemLayout!="newslider")
     document.head.appendChild(style);
 }
 
-// Default photo shape: a circle. The rule is a single class and goes in FIRST in <head>, so any
-// site or widget-CSS-tab rule for the portrait (rounded squares, squares, another radius) wins by
-// specificity or by source order. Injected once per page, however many consultant widgets run.
+// Default photo shape for the portraits fluidPortraits() sizes: a circle. One single-class rule,
+// inserted FIRST in <head>, so any site or widget-CSS-tab rule for the portrait (rounded squares,
+// squares, another radius) wins by specificity or by source order. Layouts fluidPortraits() does
+// not touch are not affected. Re-checked on every fit, so it survives a cleared <head>.
 var PORTRAIT_STYLE_ID = 'shm-consultant-portrait-default';
+var PORTRAIT_CLASS = 'shm-portrait';
 
 function ensurePortraitStyle(){
     var head = document.head || document.getElementsByTagName('head')[0];
     if (!head || document.getElementById(PORTRAIT_STYLE_ID)) return;
     var portraitStyle = document.createElement('style');
     portraitStyle.id = PORTRAIT_STYLE_ID;
-    portraitStyle.textContent = '.consultList-consultImg{border-radius:50%}';
+    portraitStyle.textContent = '.' + PORTRAIT_CLASS + '{border-radius:50%}';
     head.insertBefore(portraitStyle, head.firstChild);
 }
-
-ensurePortraitStyle();
 
 var FLUID_MIN_CARD = 220;
 var FLUID_FALLBACK_COLUMNS = 3;
@@ -370,6 +370,7 @@ var PORTRAIT_SHARE = 0.8;
 var PORTRAIT_MAX = 230;
 
 function fluidPortraits(){
+    ensurePortraitStyle();
     $(element).find('.consultList-consultant').each(function(){
         var cardWidth = this.getBoundingClientRect().width;
         if (!cardWidth) return;
@@ -377,6 +378,7 @@ function fluidPortraits(){
         $(this).find('.consultList-consultImg').each(function(){
             // No border-radius here: the shape is only a default (ensurePortraitStyle, above),
             // so a site's own border-radius CSS still applies after Update Widget.
+            this.classList.add(PORTRAIT_CLASS);
             setImportant(this, { 'width': size, 'height': size, 'max-width': 'none', 'aspect-ratio': '1 / 1', 'margin-left': 'auto', 'margin-right': 'auto', 'overflow': 'hidden' });
         });
     });
