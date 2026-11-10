@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build c991210da2fe. Registers window.ShazammeWidget["<name>"].
+ * Build df3e4e981354. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -333,6 +333,16 @@ var __shazWidgetExport = (() => {
       style.innerText = ".clsbottomSlider{margin:0!important;}";
       document.head.appendChild(style);
     }
+    var PORTRAIT_STYLE_ID = "shm-consultant-portrait-default";
+    var PORTRAIT_CLASS = "shm-portrait";
+    function ensurePortraitStyle() {
+      var head2 = document.head || document.getElementsByTagName("head")[0];
+      if (!head2 || document.getElementById(PORTRAIT_STYLE_ID)) return;
+      var portraitStyle = document.createElement("style");
+      portraitStyle.id = PORTRAIT_STYLE_ID;
+      portraitStyle.textContent = "." + PORTRAIT_CLASS + "{border-radius:50%}";
+      head2.insertBefore(portraitStyle, head2.firstChild);
+    }
     var FLUID_MIN_CARD = 220;
     var FLUID_FALLBACK_COLUMNS = 3;
     function oneLine(text) {
@@ -367,12 +377,14 @@ var __shazWidgetExport = (() => {
     var PORTRAIT_SHARE = 0.8;
     var PORTRAIT_MAX = 230;
     function fluidPortraits() {
+      ensurePortraitStyle();
       $(element).find(".consultList-consultant").each(function() {
         var cardWidth = this.getBoundingClientRect().width;
         if (!cardWidth) return;
         var size = Math.round(Math.min(PORTRAIT_MAX, cardWidth * PORTRAIT_SHARE)) + "px";
         $(this).find(".consultList-consultImg").each(function() {
-          setImportant(this, { "width": size, "height": size, "max-width": "none", "aspect-ratio": "1 / 1", "border-radius": "50%", "margin-left": "auto", "margin-right": "auto", "overflow": "hidden" });
+          this.classList.add(PORTRAIT_CLASS);
+          setImportant(this, { "width": size, "height": size, "max-width": "none", "aspect-ratio": "1 / 1", "margin-left": "auto", "margin-right": "auto", "overflow": "hidden" });
         });
       });
     }

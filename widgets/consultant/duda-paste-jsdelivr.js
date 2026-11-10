@@ -1,5 +1,5 @@
-// LAST UPDATED: 2026-11-06 12:59 AEDT (v0.1.40)
-// Change: Round 3: portrait is always a circle sized from its card (never the 57px square), card pins and left offsets from site CSS overridden so single cards centre, grid layout is 4-5 up and centred with no lone last card, wrapper follows content.
+// LAST UPDATED: 2026-11-10 18:16 AEDT (07:16 UTC) (v0.1.43)
+// Change: Photo shape is no longer forced inline (Freshdesk 14329 / issue #54). The circle is only a low-priority default stylesheet rule, so site CSS for rounded squares or squares applies again after Update Widget. Sizing, grid and centring from v0.1.40 unchanged.
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
 // existing widget JS.
@@ -16,7 +16,7 @@
 // ===========================================================================
 (function () {
   var NAME = "consultant";
-  var TAG = "v0.1.40";
+  var TAG = "v0.1.43";
   var BUNDLE = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" + TAG + "/dist/" + NAME + "/0.1.0/widget.min.js";
   var SDK = "https://sdk.shazamme.io/js/shazamme-1.0.3.min.js";
   window.__shazSDKPromise = window.__shazSDKPromise || new Promise(function (res) {
