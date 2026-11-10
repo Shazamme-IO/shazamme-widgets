@@ -22,7 +22,7 @@ describe('consultant portrait shape', () => {
       find: (sel: string) => ({ each: (fn: (this: Element) => void) => root.querySelectorAll(sel).forEach((el) => fn.call(el)) }),
     });
     const run = new Function('element', '$', 'document', 'PORTRAIT_SHARE', 'PORTRAIT_MAX',
-      `${setImportant}; ${fluidPortraits}; ${ensure}; ensurePortraitStyle(); ensurePortraitStyle(); fluidPortraits();`);
+      `var fluid = true; ${setImportant}; ${fluidPortraits}; ${ensure}; ensurePortraitStyle(); ensurePortraitStyle(); fluidPortraits();`);
     run(element, $, document, 0.8, 230);
     const img = element.querySelector<HTMLElement>('.consultList-consultImg')!;
     expect(img.style.getPropertyValue('width')).toBe('230px');

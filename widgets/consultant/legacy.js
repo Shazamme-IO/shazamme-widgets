@@ -303,6 +303,20 @@ let city = data.config.city ? data.config.city :"";
 let SearchKeys = data.config.searchKeywords ? data.config.searchKeywords :"";
 let dudaAlias = data.siteId;//60564add
 
+// Container-fluid layout (columns from the container width, portrait sizing, wrapper growth,
+// slider refit, <br> flattening) was built for the WOW rebuild. It overrides a site's own
+// widget-CSS layout with inline !important, so it is OPT-IN (issue #56): the widget setting
+// fluidLayout, or one of the WOW sites until their widget carries the setting. Every other
+// site keeps the layout its CSS tabs define, as before v0.1.40.
+var FLUID_SITES = ['0682872f', 'b40871c0'];
+function isFluidLayout(data){
+    var flag = data && data.config ? data.config.fluidLayout : undefined;
+    if (flag === true || flag === 'true') return true;
+    if (flag === false || flag === 'false') return false;
+    return !!data && FLUID_SITES.indexOf(String(data.siteId)) !== -1;
+}
+var fluid = isFluidLayout(data);
+
 if(itemLayout!="newslider")
 {
     var style = document.createElement('style')
@@ -331,6 +345,12 @@ var FLUID_FALLBACK_COLUMNS = 3;
 
 function oneLine(text){
     return String(text == null ? '' : text).replace(/<br\s*\/?>/gi, ' ').replace(/\s+/g, ' ').trim();
+}
+
+// Names, titles and locations: flattened to one line only for the fluid layout; otherwise the
+// CMS text (including any <br>) renders as it always did.
+function label(text){
+    return fluid ? oneLine(text) : (text == null ? '' : text);
 }
 
 function fluidColumns(){
@@ -370,6 +390,7 @@ var PORTRAIT_SHARE = 0.8;
 var PORTRAIT_MAX = 230;
 
 function fluidPortraits(){
+    if (!fluid) return;
     ensurePortraitStyle();
     $(element).find('.consultList-consultant').each(function(){
         var cardWidth = this.getBoundingClientRect().width;
@@ -390,7 +411,7 @@ var GRID_MIN_CARD = 240;
 var GRID_MAX_COLUMNS = 5;
 
 function fluidGrid(){
-    if (layout != 'grid' || itemLayout == 'newslider') return;
+    if (!fluid || layout != 'grid' || itemLayout == 'newslider') return;
     var wrap = $(element).find('.consultList-consultantWrap');
     var cards = wrap.children('.consultList-consultant');
     var count = cards.length;
@@ -410,6 +431,7 @@ function fluidGrid(){
 // Duda gives the widget's wrapper a fixed pixel height. Follow the real content so
 // the section grows with it and nothing placed below overlaps.
 function growWrapper(){
+    if (!fluid) return;
     var wrapper = element.closest ? element.closest('.widget-wrapper') : null;
     if (!wrapper) return;
     wrapper.style.setProperty('height', 'auto', 'important');
@@ -418,11 +440,10 @@ function growWrapper(){
 }
 
 function slider(){
-    // The site collapses every .slick-slider to one visible slide below 1025px; the second
-    // class is the opt-out those rules exclude with :not().
-    $(element).find(".consultList-consultantWrap").addClass('shm-fluid-slider main-review-slider-container').slick({
+    var wrap = $(element).find(".consultList-consultantWrap");
+    var options = {
         dots: dotsPagination,
-        slidesToShow: fluidColumns(),
+        slidesToShow: fluid ? fluidColumns() : slidesToShow,
         centerMode: false,
         infinite: infinite,
         arrows: arrows,
@@ -430,9 +451,20 @@ function slider(){
         autoplay: autoplay,
         prevArrow: '<i class="fas fa-chevron-left slick-prev"></i>',
         nextArrow: '<i class="fas fa-chevron-right slick-next"></i>'
-    }).on('setPosition', function (event, slick) {
+    };
+    if (!fluid) {
+        // As before v0.1.40: one slide below 800px, wrap height from the slide track.
+        options.responsive = [{ breakpoint: 800, settings: { slidesToShow: 1 } }];
+        wrap.slick(options).on('setPosition', function (event, slick) {
+            wrap.css('height', slick.$slideTrack.height() + 'px');
+        });
+        return;
+    }
+    // The site collapses every .slick-slider to one visible slide below 1025px; the second
+    // class is the opt-out those rules exclude with :not().
+    wrap.addClass('shm-fluid-slider main-review-slider-container').slick(options).on('setPosition', function (event, slick) {
         fluidCards(slick);
-        $(element).find('.consultList-consultantWrap').css('height', Math.max(slick.$slideTrack.height(), slick.$list.outerHeight()) + 'px');
+        wrap.css('height', Math.max(slick.$slideTrack.height(), slick.$list.outerHeight()) + 'px');
         growWrapper();
     });
 }
@@ -449,7 +481,7 @@ function refitSlider(){
     }
 }
 
-if (typeof ResizeObserver !== 'undefined') {
+if (fluid && typeof ResizeObserver !== 'undefined') {
     if (element.__shmConsultantObserver) element.__shmConsultantObserver.disconnect();
     element.__shmConsultantObserver = new ResizeObserver(function(){ refitSlider(); });
     element.__shmConsultantObserver.observe(element);
@@ -618,12 +650,12 @@ function Create(){
                         </a>
                         <a href="${link}" target="${newTab}" class="consultList-consultDetails" style="text-decoration:none"><div class="consultList-consultDetails">
                             <div class="consultList-consultName">
-                                ${oneLine(`${i.firstName} ${i.lastName}`)}
+                                ${label(`${i.firstName} ${i.lastName}`)}
                             </div>
                             <div class="consultList-consultPos">
                                 ${i.positionTitle ? oneLine(i.positionTitle) :"N/A"}
                             </div>
-                            ${ShowLoc && i.businessLocation2 ? `<div class="consultList-consultLoc">${oneLine(i.businessLocation2)}</div>` :''}
+                            ${ShowLoc && i.businessLocation2 ? `<div class="consultList-consultLoc">${label(i.businessLocation2)}</div>` :''}
                         </div>
                         </a>
                     </div>
@@ -637,12 +669,12 @@ function Create(){
                             <img src="${i.photoURL ? i.photoURL :"https://shazamme.io/Job-Listing/src/img/profile-placeholder.png?fit=1000%2C1000&ssl=1"}" alt="" loading="lazy">
                             <div class="consultList-consultDetails-new">
                                 <div class="consultList-consultName-new">
-                                    ${oneLine(`${i.firstName} ${i.lastName}`)}
+                                    ${label(`${i.firstName} ${i.lastName}`)}
                                 </div>
                                 <div class="consultList-consultPos-new">
                                     ${i.positionTitle ? oneLine(i.positionTitle) :"N/A"}
                                 </div>
-                                ${ShowLoc && i.businessLocation2 ? `<div class="consultList-consultLoc-new">${oneLine(i.businessLocation2)}</div>` :''}
+                                ${ShowLoc && i.businessLocation2 ? `<div class="consultList-consultLoc-new">${label(i.businessLocation2)}</div>` :''}
                             </div>
                             <div class="consultList-Contact-ContainerIcons consultList-ContactCompact">
                                 ${showPhone && i.phone ? `<a href="tel:${i.phone}"><i class="fas fa-phone-square"></i></a>` :''}
@@ -669,12 +701,12 @@ function Create(){
                             <div class="consultList-consultDetails-new2">
                                 <div class="consultList-consultDetails-new2-hover">
                                     <div class="consultList-consultName-new2">
-                                        ${oneLine(`${i.firstName} ${i.lastName}`)}
+                                        ${label(`${i.firstName} ${i.lastName}`)}
                                     </div>
                                     <div class="consultList-consultPos-new2">
                                         ${i.positionTitle ? oneLine(i.positionTitle) :"N/A"}
                                     </div>
-                                    ${ShowLoc && i.businessLocation2 ? `<div class="consultList-consultLoc-new2">${oneLine(i.businessLocation2)}</div>` :''}
+                                    ${ShowLoc && i.businessLocation2 ? `<div class="consultList-consultLoc-new2">${label(i.businessLocation2)}</div>` :''}
                                 </div>
                             </div>
                         </div>
@@ -696,12 +728,12 @@ function Create(){
                             </a>
                             <div class="consultList-consultImg-bottom-part">
                                 <div class="consultList-consultName">
-                                    ${oneLine(`${i.firstName} ${i.lastName}`)}
+                                    ${label(`${i.firstName} ${i.lastName}`)}
                                 </div>
                                 <div class="consultList-consultPos">
                                     ${i.positionTitle ? oneLine(i.positionTitle) :"N/A"}
                                 </div>
-                                ${ShowLoc && i.businessLocation2 ? `<div class="consultList-consultLoc">${oneLine(i.businessLocation2)}</div>` :''}
+                                ${ShowLoc && i.businessLocation2 ? `<div class="consultList-consultLoc">${label(i.businessLocation2)}</div>` :''}
                                 <div class="consultList-Contact-Container">
                                     ${showPhone ? isPhone :''}
                                     ${showMobile ? isMobile :''}
@@ -745,12 +777,12 @@ function Create(){
                         </a>
                         <a href="${link}" target="${newTab}" class="consultList-consultDetails" style="text-decoration:none"><div class="consultList-consultDetails">
                             <div class="consultList-consultName">
-                                ${oneLine(`${i.firstName} ${i.lastName}`)}
+                                ${label(`${i.firstName} ${i.lastName}`)}
                             </div>
                             <div class="consultList-consultPos">
                                 ${i.positionTitle ? oneLine(i.positionTitle) :"N/A"}
                             </div>
-                            ${ShowLoc && i.businessLocation2 ? `<div class="consultList-consultLoc">${oneLine(i.businessLocation2)}</div>` :''}
+                            ${ShowLoc && i.businessLocation2 ? `<div class="consultList-consultLoc">${label(i.businessLocation2)}</div>` :''}
 
                         </div>
                         </a>
@@ -763,9 +795,9 @@ function Create(){
                 <div class="col-sm-12 clsTileDiv">
                     <div class="col-sm-12 clsTile">
                         <div class="col-sm-9 clsDescDiv">
-                            <p class="con-Title">${oneLine(`${i.firstName} ${i.lastName}`)}</p>
+                            <p class="con-Title">${label(`${i.firstName} ${i.lastName}`)}</p>
                             <p class="con-Desg">${i.positionTitle ? oneLine(i.positionTitle) :"N/A"}</p>
-                            ${ShowLoc && i.businessLocation2 ? `<p class="con-Loc">${oneLine(i.businessLocation2)}</p>` :''}
+                            ${ShowLoc && i.businessLocation2 ? `<p class="con-Loc">${label(i.businessLocation2)}</p>` :''}
                             <p class="con-Desc">${i.shortDescription? i.shortDescription:' '}</p>
                             <a href="${link}" target="${newTab}" class="clsbtnViewDetails"><span class="text">View more</span></a>
                         </div>

@@ -25,10 +25,22 @@ describe.each(['consultant', 'job-feed-2026', 'testimonials'])('%s is container-
 });
 
 describe('consultant', () => {
-  it('no longer collapses to one slide at a fixed 800px viewport breakpoint', () => {
+  it('with fluid layout on, sizes slides from the container instead of the fixed 800px breakpoint; off, keeps the breakpoint', () => {
     const slider = src('consultant').match(/function slider\(\)\{[\s\S]*?\n\}/)![0];
-    expect(slider).not.toContain('responsive');
-    expect(src('consultant')).toContain('fluidColumns()');
+    expect(slider).toContain('fluid ? fluidColumns() : slidesToShow');
+    expect(slider).toContain('breakpoint: 800');
+    expect(slider).toMatch(/if \(!fluid\)[\s\S]*responsive/);
+  });
+
+  it('only installs the ResizeObserver, the wrapper growth and the inline card overrides when fluid layout is on', () => {
+    const body = src('consultant');
+    expect(body).toContain('var fluid = isFluidLayout(data);');
+    expect(body).toMatch(/function fluidGrid\(\)\{\n\s*if \(!fluid/);
+    expect(body).toMatch(/function fluidPortraits\(\)\{\n\s*if \(!fluid/);
+    expect(body).toMatch(/function growWrapper\(\)\{\n\s*if \(!fluid/);
+    expect(body).toContain("if (fluid && typeof ResizeObserver !== 'undefined')");
+    expect(body).toContain('fluid ? oneLine(text)');
+    expect(body).not.toMatch(/\$\{oneLine\(/);
   });
 
   it('turns <br> in names and titles into spaces so they wrap with the card', () => {
