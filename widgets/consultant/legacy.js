@@ -310,9 +310,11 @@ let dudaAlias = data.siteId;//60564add
 // site keeps the layout its CSS tabs define, as before v0.1.40.
 var FLUID_SITES = ['0682872f', 'b40871c0'];
 function isFluidLayout(data){
-    var flag = data && data.config ? data.config.fluidLayout : undefined;
-    if (flag === true || flag === 'true') return true;
-    if (flag === false || flag === 'false') return false;
+    var raw = data && data.config ? data.config.fluidLayout : undefined;
+    // Duda hands settings over as strings; accept the usual spellings of a checkbox value.
+    var flag = raw == null ? '' : String(raw).trim().toLowerCase();
+    if (flag === 'true' || flag === '1') return true;
+    if (flag === 'false' || flag === '0') return false;
     return !!data && FLUID_SITES.indexOf(String(data.siteId)) !== -1;
 }
 var fluid = isFluidLayout(data);
@@ -653,7 +655,7 @@ function Create(){
                                 ${label(`${i.firstName} ${i.lastName}`)}
                             </div>
                             <div class="consultList-consultPos">
-                                ${i.positionTitle ? oneLine(i.positionTitle) :"N/A"}
+                                ${i.positionTitle ? label(i.positionTitle) :"N/A"}
                             </div>
                             ${ShowLoc && i.businessLocation2 ? `<div class="consultList-consultLoc">${label(i.businessLocation2)}</div>` :''}
                         </div>
@@ -672,7 +674,7 @@ function Create(){
                                     ${label(`${i.firstName} ${i.lastName}`)}
                                 </div>
                                 <div class="consultList-consultPos-new">
-                                    ${i.positionTitle ? oneLine(i.positionTitle) :"N/A"}
+                                    ${i.positionTitle ? label(i.positionTitle) :"N/A"}
                                 </div>
                                 ${ShowLoc && i.businessLocation2 ? `<div class="consultList-consultLoc-new">${label(i.businessLocation2)}</div>` :''}
                             </div>
@@ -704,7 +706,7 @@ function Create(){
                                         ${label(`${i.firstName} ${i.lastName}`)}
                                     </div>
                                     <div class="consultList-consultPos-new2">
-                                        ${i.positionTitle ? oneLine(i.positionTitle) :"N/A"}
+                                        ${i.positionTitle ? label(i.positionTitle) :"N/A"}
                                     </div>
                                     ${ShowLoc && i.businessLocation2 ? `<div class="consultList-consultLoc-new2">${label(i.businessLocation2)}</div>` :''}
                                 </div>
@@ -731,7 +733,7 @@ function Create(){
                                     ${label(`${i.firstName} ${i.lastName}`)}
                                 </div>
                                 <div class="consultList-consultPos">
-                                    ${i.positionTitle ? oneLine(i.positionTitle) :"N/A"}
+                                    ${i.positionTitle ? label(i.positionTitle) :"N/A"}
                                 </div>
                                 ${ShowLoc && i.businessLocation2 ? `<div class="consultList-consultLoc">${label(i.businessLocation2)}</div>` :''}
                                 <div class="consultList-Contact-Container">
@@ -780,7 +782,7 @@ function Create(){
                                 ${label(`${i.firstName} ${i.lastName}`)}
                             </div>
                             <div class="consultList-consultPos">
-                                ${i.positionTitle ? oneLine(i.positionTitle) :"N/A"}
+                                ${i.positionTitle ? label(i.positionTitle) :"N/A"}
                             </div>
                             ${ShowLoc && i.businessLocation2 ? `<div class="consultList-consultLoc">${label(i.businessLocation2)}</div>` :''}
 
@@ -796,7 +798,7 @@ function Create(){
                     <div class="col-sm-12 clsTile">
                         <div class="col-sm-9 clsDescDiv">
                             <p class="con-Title">${label(`${i.firstName} ${i.lastName}`)}</p>
-                            <p class="con-Desg">${i.positionTitle ? oneLine(i.positionTitle) :"N/A"}</p>
+                            <p class="con-Desg">${i.positionTitle ? label(i.positionTitle) :"N/A"}</p>
                             ${ShowLoc && i.businessLocation2 ? `<p class="con-Loc">${label(i.businessLocation2)}</p>` :''}
                             <p class="con-Desc">${i.shortDescription? i.shortDescription:' '}</p>
                             <a href="${link}" target="${newTab}" class="clsbtnViewDetails"><span class="text">View more</span></a>

@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 8924e65d3031. Registers window.ShazammeWidget["<name>"].
+ * Build 6b394b883d91. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -330,9 +330,10 @@ var __shazWidgetExport = (() => {
     let dudaAlias = data.siteId;
     var FLUID_SITES = ["0682872f", "b40871c0"];
     function isFluidLayout(data2) {
-      var flag = data2 && data2.config ? data2.config.fluidLayout : void 0;
-      if (flag === true || flag === "true") return true;
-      if (flag === false || flag === "false") return false;
+      var raw = data2 && data2.config ? data2.config.fluidLayout : void 0;
+      var flag = raw == null ? "" : String(raw).trim().toLowerCase();
+      if (flag === "true" || flag === "1") return true;
+      if (flag === "false" || flag === "0") return false;
       return !!data2 && FLUID_SITES.indexOf(String(data2.siteId)) !== -1;
     }
     var fluid = isFluidLayout(data);
@@ -600,7 +601,7 @@ var __shazWidgetExport = (() => {
                                 ${label(`${i.firstName} ${i.lastName}`)}
                             </div>
                             <div class="consultList-consultPos">
-                                ${i.positionTitle ? oneLine(i.positionTitle) : "N/A"}
+                                ${i.positionTitle ? label(i.positionTitle) : "N/A"}
                             </div>
                             ${ShowLoc && i.businessLocation2 ? `<div class="consultList-consultLoc">${label(i.businessLocation2)}</div>` : ""}
                         </div>
@@ -619,7 +620,7 @@ var __shazWidgetExport = (() => {
                                     ${label(`${i.firstName} ${i.lastName}`)}
                                 </div>
                                 <div class="consultList-consultPos-new">
-                                    ${i.positionTitle ? oneLine(i.positionTitle) : "N/A"}
+                                    ${i.positionTitle ? label(i.positionTitle) : "N/A"}
                                 </div>
                                 ${ShowLoc && i.businessLocation2 ? `<div class="consultList-consultLoc-new">${label(i.businessLocation2)}</div>` : ""}
                             </div>
@@ -650,7 +651,7 @@ var __shazWidgetExport = (() => {
                                         ${label(`${i.firstName} ${i.lastName}`)}
                                     </div>
                                     <div class="consultList-consultPos-new2">
-                                        ${i.positionTitle ? oneLine(i.positionTitle) : "N/A"}
+                                        ${i.positionTitle ? label(i.positionTitle) : "N/A"}
                                     </div>
                                     ${ShowLoc && i.businessLocation2 ? `<div class="consultList-consultLoc-new2">${label(i.businessLocation2)}</div>` : ""}
                                 </div>
@@ -675,7 +676,7 @@ var __shazWidgetExport = (() => {
                                     ${label(`${i.firstName} ${i.lastName}`)}
                                 </div>
                                 <div class="consultList-consultPos">
-                                    ${i.positionTitle ? oneLine(i.positionTitle) : "N/A"}
+                                    ${i.positionTitle ? label(i.positionTitle) : "N/A"}
                                 </div>
                                 ${ShowLoc && i.businessLocation2 ? `<div class="consultList-consultLoc">${label(i.businessLocation2)}</div>` : ""}
                                 <div class="consultList-Contact-Container">
@@ -723,7 +724,7 @@ var __shazWidgetExport = (() => {
                                 ${label(`${i.firstName} ${i.lastName}`)}
                             </div>
                             <div class="consultList-consultPos">
-                                ${i.positionTitle ? oneLine(i.positionTitle) : "N/A"}
+                                ${i.positionTitle ? label(i.positionTitle) : "N/A"}
                             </div>
                             ${ShowLoc && i.businessLocation2 ? `<div class="consultList-consultLoc">${label(i.businessLocation2)}</div>` : ""}
 
@@ -737,7 +738,7 @@ var __shazWidgetExport = (() => {
                     <div class="col-sm-12 clsTile">
                         <div class="col-sm-9 clsDescDiv">
                             <p class="con-Title">${label(`${i.firstName} ${i.lastName}`)}</p>
-                            <p class="con-Desg">${i.positionTitle ? oneLine(i.positionTitle) : "N/A"}</p>
+                            <p class="con-Desg">${i.positionTitle ? label(i.positionTitle) : "N/A"}</p>
                             ${ShowLoc && i.businessLocation2 ? `<p class="con-Loc">${label(i.businessLocation2)}</p>` : ""}
                             <p class="con-Desc">${i.shortDescription ? i.shortDescription : " "}</p>
                             <a href="${link2}" target="${newTab}" class="clsbtnViewDetails"><span class="text">View more</span></a>

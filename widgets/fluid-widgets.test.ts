@@ -40,7 +40,35 @@ describe('consultant', () => {
     expect(body).toMatch(/function growWrapper\(\)\{\n\s*if \(!fluid/);
     expect(body).toContain("if (fluid && typeof ResizeObserver !== 'undefined')");
     expect(body).toContain('fluid ? oneLine(text)');
-    expect(body).not.toMatch(/\$\{oneLine\(/);
+    // oneLine is reachable only through label(): its definition and the one call inside label.
+    expect(body.match(/\boneLine\(/g)!.length).toBe(2);
+    expect(body).not.toMatch(/oneLine\(i\./);
+  });
+
+  it.each([
+    [false, { responsive: true, fluidClass: false, slidesToShow: 3, height: '300px' }],
+    [true, { responsive: false, fluidClass: true, slidesToShow: 4, height: '320px' }],
+  ])('slider() with fluid=%s builds the matching Slick options and setPosition handler', (fluid, want) => {
+    const slider = src('consultant').match(/function slider\(\)\{[\s\S]*?\n\}/)![0];
+    const calls: string[] = [];
+    let options: Record<string, unknown> = {};
+    let onSetPosition: ((e: unknown, slick: unknown) => void) | null = null;
+    const wrap = {
+      addClass: (c: string) => { calls.push('addClass:' + c); return wrap; },
+      slick: (o: Record<string, unknown>) => { options = o; return wrap; },
+      on: (_e: string, h: (e: unknown, slick: unknown) => void) => { onSetPosition = h; return wrap; },
+      css: (k: string, v: string) => { calls.push(`css:${k}=${v}`); return wrap; },
+    };
+    const $ = () => ({ find: () => wrap });
+    new Function('$', 'element', 'fluid', 'slidesToShow', 'dotsPagination', 'infinite', 'arrows', 'autoplay', 'fluidColumns', 'fluidCards', 'growWrapper',
+      `${slider}; slider();`)($, {}, fluid, 3, true, false, true, false, () => 4, () => calls.push('fluidCards'), () => calls.push('growWrapper'));
+    expect('responsive' in options).toBe(want.responsive);
+    expect(options.slidesToShow).toBe(want.slidesToShow);
+    expect(calls.some((c) => c.startsWith('addClass:shm-fluid-slider'))).toBe(want.fluidClass);
+    onSetPosition!(null, { $slideTrack: { height: () => 300 }, $list: { outerHeight: () => 320 } });
+    expect(calls).toContain(`css:height=${want.height}`);
+    expect(calls.includes('fluidCards')).toBe(fluid);
+    expect(calls.includes('growWrapper')).toBe(fluid);
   });
 
   it('turns <br> in names and titles into spaces so they wrap with the card', () => {
