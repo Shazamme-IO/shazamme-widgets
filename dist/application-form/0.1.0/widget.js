@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build d98156c71ce7. Registers window.ShazammeWidget["<name>"].
+ * Build 6ed39320ef8a. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -209,7 +209,7 @@ var __shazWidgetExport = (() => {
         return;
       }
       $('<style id="shm-apply-loader-style"></style>').text(
-        ".submitApplicationBtn .loaderSpinner{display:none}.submitApplicationBtn.shm-submitting .applyText{display:none!important}.submitApplicationBtn.shm-submitting .loaderSpinner{display:inline-block;font-family:inherit}.submitApplicationBtn.shm-submitting{pointer-events:none;opacity:.8;cursor:progress}.submitApplicationBtn.shm-submitting .loaderSpinner i{display:inline-block;width:1em;height:1em;margin-right:.5em;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-.15em;animation:shmApplySpin .7s linear infinite}.submitApplicationBtn.shm-submitting .loaderSpinner i::before{content:none}@keyframes shmApplySpin{to{transform:rotate(360deg)}}"
+        ".submitApplicationBtn .loaderSpinner{display:none}.submitApplicationBtn.shm-submitting .applyText{display:none!important}.submitApplicationBtn.shm-submitting .loaderSpinner{display:inline-block;font-family:inherit}.submitApplicationBtn.shm-submitting{pointer-events:none;opacity:.8;cursor:progress}.submitApplicationBtn.shm-submitting .loaderSpinner i{display:inline-block;width:1em;height:1em;margin-right:.5em;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-.15em;animation:shmApplySpin .7s linear infinite}.submitApplicationBtn.shm-submitting .loaderSpinner i::before{content:none}.shm-field-error{color:#c62828;margin-top:8px;white-space:pre-line}@keyframes shmApplySpin{to{transform:rotate(360deg)}}"
       ).appendTo(document.head);
     }
     function setSubmitting(on) {
@@ -280,13 +280,13 @@ ${offer}` : base;
       if (!isAllowedResumeFile(file)) {
         clearUpload(type);
         $(input).val("");
-        rejectUpload(input, resumeTypeWarning(type));
+        rejectUpload(input, resumeTypeWarning(type), data.config.resumeTypeTitle || "File not supported");
         return false;
       }
       if (file.size > maxUploadSize) {
         clearUpload(type);
         $(input).val("");
-        rejectUpload(input, data.config.resumeSizeWarning || `Error! File too large, Should not exceed ${data.config.maxUploadSize || ""}mb`);
+        rejectUpload(input, data.config.resumeSizeWarning || `Error! File too large, Should not exceed ${data.config.maxUploadSize || ""}mb`, data.config.resumeSizeTitle || "File too large");
         return false;
       }
       const radio = type == "resume" ? $("input[type=radio][name=uploadTypeResume][value=uploadResume]") : $("input[type=radio][name=uploadTypeCover][value=uploadCover]");
@@ -311,26 +311,24 @@ ${offer}` : base;
     }
     function showFieldError(input, message) {
       const field = $(input);
-      let line = field.parent().find(".label-hint.shm-field-error");
+      const key = field.attr("id") || field.attr("name") || "file";
+      let line = field.parent().children(`.shm-field-error[data-for="${key}"]`);
       if (!message) {
         line.remove();
         return;
       }
       if (!line.length) {
-        line = $('<div class="label-hint shm-field-error" role="alert" style="color:#c62828;margin-top:8px"></div>').appendTo(field.parent());
+        line = $('<div class="label-hint shm-field-error" role="alert"></div>').attr("data-for", key).appendTo(field.parent());
       }
       line.text(message);
     }
-    function rejectUpload(input, message) {
+    function rejectUpload(input, message, title) {
       var _a, _b, _c;
-      showFieldError(input, message.split("\n")[0]);
+      showFieldError(input, message);
       const dialog = (_c = (_b = (_a = window.shazamme) == null ? void 0 : _a.bag) == null ? void 0 : _b.call(_a, "site-config")) == null ? void 0 : _c.alertDialog;
       if (typeof dialog === "function") {
-        try {
-          dialog({ title: data.config.resumeTypeTitle || "File not supported", message });
-          return;
-        } catch (err) {
-        }
+        dialog({ title, message });
+        return;
       }
       alert(message);
     }
@@ -388,9 +386,9 @@ ${offer}` : base;
         }).appendTo(box);
       }
       anchor.after(row);
-      const uploadRow = el.find(".nativeApplyNowContainer").first();
-      (uploadRow.length ? uploadRow : anchor).after(box);
-      matchInputStyle(box.find("textarea"), el.find("input#firstName, input#lastName, input#emailAddress, input[type=text]").filter(":visible").first());
+      const uploadRow = anchor.closest(".nativeApplyNowContainer");
+      (uploadRow.length ? uploadRow : row).after(box);
+      matchInputStyle(box.find("textarea"), el.find("input#firstName, input#lastName, input#emailAddress").first());
     }
     function matchInputStyle(textarea, input) {
       if (!input.length) {
@@ -422,11 +420,8 @@ ${offer}` : base;
         "font-family",
         "font-size",
         "font-weight",
-        "line-height",
         "color",
-        "background-color",
-        "box-shadow",
-        "outline-color"
+        "background-color"
       ].forEach((prop) => {
         copy[prop] = from.getPropertyValue(prop);
       });
@@ -482,6 +477,7 @@ Typed by the candidate on the website, ${(/* @__PURE__ */ new Date()).toLocaleDa
       const wasUploading = shouldUploadResume;
       isTypingResume = this.value == "typeResume";
       shouldUploadResume = this.value == "uploadResume";
+      showFieldError($(element).find("input#resume").get(0), "");
       if (!shouldUploadResume) {
         clearUpload("resume");
       } else if (!wasUploading) {

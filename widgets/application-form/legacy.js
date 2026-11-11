@@ -188,6 +188,7 @@ function installApplyLoader() {
             '.submitApplicationBtn.shm-submitting{pointer-events:none;opacity:.8;cursor:progress}' +
             '.submitApplicationBtn.shm-submitting .loaderSpinner i{display:inline-block;width:1em;height:1em;margin-right:.5em;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-.15em;animation:shmApplySpin .7s linear infinite}' +
             '.submitApplicationBtn.shm-submitting .loaderSpinner i::before{content:none}' +
+            '.shm-field-error{color:#c62828;margin-top:8px;white-space:pre-line}' +
             '@keyframes shmApplySpin{to{transform:rotate(360deg)}}'
         )
         .appendTo(document.head);
@@ -292,7 +293,7 @@ function acceptUpload(input, type) {
     if (!isAllowedResumeFile(file)) {
         clearUpload(type);
         $(input).val('');
-        rejectUpload(input, resumeTypeWarning(type));
+        rejectUpload(input, resumeTypeWarning(type), data.config.resumeTypeTitle || 'File not supported');
 
         return false;
     }
@@ -300,7 +301,7 @@ function acceptUpload(input, type) {
     if (file.size > maxUploadSize) {
         clearUpload(type);
         $(input).val('');
-        rejectUpload(input, data.config.resumeSizeWarning || `Error! File too large, Should not exceed ${data.config.maxUploadSize || ''}mb`);
+        rejectUpload(input, data.config.resumeSizeWarning || `Error! File too large, Should not exceed ${data.config.maxUploadSize || ''}mb`, data.config.resumeSizeTitle || 'File too large');
 
         return false;
     }
@@ -339,7 +340,8 @@ function rereadResumeInput() {
 // editor preview blocks alert()); cleared on the next pick.
 function showFieldError(input, message) {
     const field = $(input);
-    let line = field.parent().find('.label-hint.shm-field-error');
+    const key = field.attr('id') || field.attr('name') || 'file';
+    let line = field.parent().children(`.shm-field-error[data-for="${key}"]`);
 
     if (!message) {
         line.remove();
@@ -348,25 +350,21 @@ function showFieldError(input, message) {
     }
 
     if (!line.length) {
-        line = $('<div class="label-hint shm-field-error" role="alert" style="color:#c62828;margin-top:8px"></div>').appendTo(field.parent());
+        line = $('<div class="label-hint shm-field-error" role="alert"></div>').attr('data-for', key).appendTo(field.parent());
     }
 
     line.text(message);
 }
 
-function rejectUpload(input, message) {
-    showFieldError(input, message.split('\n')[0]);
+function rejectUpload(input, message, title) {
+    showFieldError(input, message);
 
     const dialog = window.shazamme?.bag?.('site-config')?.alertDialog;
 
     if (typeof dialog === 'function') {
-        try {
-            dialog({ title: data.config.resumeTypeTitle || 'File not supported', message });
+        dialog({ title, message });
 
-            return;
-        } catch (err) {
-            // fall through to alert()
-        }
+        return;
     }
 
     alert(message);
@@ -459,10 +457,10 @@ function setupTypedResume() {
 
     // The upload column is half the form on desktop; the box goes below the
     // whole upload row at full width, styled like the form's own text inputs.
-    const uploadRow = el.find('.nativeApplyNowContainer').first();
+    const uploadRow = anchor.closest('.nativeApplyNowContainer');
 
-    (uploadRow.length ? uploadRow : anchor).after(box);
-    matchInputStyle(box.find('textarea'), el.find('input#firstName, input#lastName, input#emailAddress, input[type=text]').filter(':visible').first());
+    (uploadRow.length ? uploadRow : row).after(box);
+    matchInputStyle(box.find('textarea'), el.find('input#firstName, input#lastName, input#emailAddress').first());
 }
 
 function matchInputStyle(textarea, input) {
@@ -476,8 +474,8 @@ function matchInputStyle(textarea, input) {
     ['border-top-width', 'border-top-style', 'border-top-color', 'border-right-width', 'border-right-style', 'border-right-color',
      'border-bottom-width', 'border-bottom-style', 'border-bottom-color', 'border-left-width', 'border-left-style', 'border-left-color',
      'border-top-left-radius', 'border-top-right-radius', 'border-bottom-left-radius', 'border-bottom-right-radius',
-     'padding-top', 'padding-right', 'padding-bottom', 'padding-left', 'font-family', 'font-size', 'font-weight', 'line-height',
-     'color', 'background-color', 'box-shadow', 'outline-color'].forEach( prop => {
+     'padding-top', 'padding-right', 'padding-bottom', 'padding-left', 'font-family', 'font-size', 'font-weight',
+     'color', 'background-color'].forEach( prop => {
         copy[prop] = from.getPropertyValue(prop);
     });
 
@@ -552,6 +550,8 @@ $('input[type=radio][name=uploadTypeResume]').change(function(){
 
     isTypingResume = this.value == 'typeResume';
     shouldUploadResume = this.value == 'uploadResume';
+
+    showFieldError($(element).find('input#resume').get(0), '');
 
     if (!shouldUploadResume) {
         // Leaving upload mode: the chosen file must not ride along with a typed or existing resume.
