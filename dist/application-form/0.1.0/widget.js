@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 6ed39320ef8a. Registers window.ShazammeWidget["<name>"].
+ * Build 2b562497a55d. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -209,7 +209,7 @@ var __shazWidgetExport = (() => {
         return;
       }
       $('<style id="shm-apply-loader-style"></style>').text(
-        ".submitApplicationBtn .loaderSpinner{display:none}.submitApplicationBtn.shm-submitting .applyText{display:none!important}.submitApplicationBtn.shm-submitting .loaderSpinner{display:inline-block;font-family:inherit}.submitApplicationBtn.shm-submitting{pointer-events:none;opacity:.8;cursor:progress}.submitApplicationBtn.shm-submitting .loaderSpinner i{display:inline-block;width:1em;height:1em;margin-right:.5em;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-.15em;animation:shmApplySpin .7s linear infinite}.submitApplicationBtn.shm-submitting .loaderSpinner i::before{content:none}.shm-field-error{color:#c62828;margin-top:8px;white-space:pre-line}@keyframes shmApplySpin{to{transform:rotate(360deg)}}"
+        ".submitApplicationBtn .loaderSpinner{display:none}.submitApplicationBtn.shm-submitting .applyText{display:none!important}.submitApplicationBtn.shm-submitting .loaderSpinner{display:inline-block;font-family:inherit}.submitApplicationBtn.shm-submitting{pointer-events:none;opacity:.8;cursor:progress}.submitApplicationBtn.shm-submitting .loaderSpinner i{display:inline-block;width:1em;height:1em;margin-right:.5em;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-.15em;animation:shmApplySpin .7s linear infinite}.submitApplicationBtn.shm-submitting .loaderSpinner i::before{content:none}@keyframes shmApplySpin{to{transform:rotate(360deg)}}"
       ).appendTo(document.head);
     }
     function setSubmitting(on) {
@@ -286,7 +286,7 @@ ${offer}` : base;
       if (file.size > maxUploadSize) {
         clearUpload(type);
         $(input).val("");
-        rejectUpload(input, data.config.resumeSizeWarning || `Error! File too large, Should not exceed ${data.config.maxUploadSize || ""}mb`, data.config.resumeSizeTitle || "File too large");
+        rejectUpload(input, (type == "cover" ? data.config.coverSizeWarning : data.config.resumeSizeWarning) || `Error! File too large, Should not exceed ${data.config.maxUploadSize || ""}mb`, data.config.resumeSizeTitle || "File too large");
         return false;
       }
       const radio = type == "resume" ? $("input[type=radio][name=uploadTypeResume][value=uploadResume]") : $("input[type=radio][name=uploadTypeCover][value=uploadCover]");
@@ -310,15 +310,19 @@ ${offer}` : base;
       }
     }
     function showFieldError(input, message) {
+      if (!document.getElementById("shm-field-error-style")) {
+        $('<style id="shm-field-error-style"></style>').text(".shm-field-error{display:block;width:100%;color:#c62828;margin:8px 0 0;white-space:pre-line}").appendTo(document.head);
+      }
       const field = $(input);
       const key = field.attr("id") || field.attr("name") || "file";
-      let line = field.parent().children(`.shm-field-error[data-for="${key}"]`);
+      const holder = field.parent();
+      let line = holder.next(".shm-field-error").filter((_, e) => e.getAttribute("data-for") === key);
       if (!message) {
         line.remove();
         return;
       }
       if (!line.length) {
-        line = $('<div class="label-hint shm-field-error" role="alert"></div>').attr("data-for", key).appendTo(field.parent());
+        line = $('<div class="label-hint shm-field-error" role="alert"></div>').attr("data-for", key).insertAfter(holder);
       }
       line.text(message);
     }
@@ -391,44 +395,27 @@ ${offer}` : base;
       matchInputStyle(box.find("textarea"), el.find("input#firstName, input#lastName, input#emailAddress").first());
     }
     function matchInputStyle(textarea, input) {
-      if (!input.length) {
+      textarea.css({ border: "1px solid #cfcfcf", "border-radius": "6px", padding: "10px 12px", "font-size": "16px", "line-height": "1.5", background: "#fff", color: "inherit" });
+      if (!input.length || !input.get(0).offsetParent) {
         return;
       }
       const from = window.getComputedStyle(input.get(0));
-      const copy = {};
-      [
-        "border-top-width",
-        "border-top-style",
-        "border-top-color",
-        "border-right-width",
-        "border-right-style",
-        "border-right-color",
-        "border-bottom-width",
-        "border-bottom-style",
-        "border-bottom-color",
-        "border-left-width",
-        "border-left-style",
-        "border-left-color",
-        "border-top-left-radius",
-        "border-top-right-radius",
-        "border-bottom-left-radius",
-        "border-bottom-right-radius",
-        "padding-top",
-        "padding-right",
-        "padding-bottom",
-        "padding-left",
-        "font-family",
-        "font-size",
-        "font-weight",
-        "color",
-        "background-color"
-      ].forEach((prop) => {
-        copy[prop] = from.getPropertyValue(prop);
-      });
-      ["border-top-left-radius", "border-top-right-radius", "border-bottom-left-radius", "border-bottom-right-radius"].forEach((prop) => {
-        copy[prop] = `${Math.min(parseFloat(copy[prop]) || 0, 8)}px`;
-      });
-      textarea.css(copy);
+      const sides = ["top", "right", "bottom", "left"];
+      const corners = ["top-left", "top-right", "bottom-left", "bottom-right"];
+      if (!/solid|double|dashed/.test(from.getPropertyValue("border-top-style"))) {
+        return;
+      }
+      const copied = Object.fromEntries([
+        ...sides.flatMap((side) => ["width", "style", "color"].map((part) => [`border-${side}-${part}`, from.getPropertyValue(`border-${side}-${part}`)])),
+        ...sides.map((side) => [`padding-${side}`, from.getPropertyValue(`padding-${side}`)]),
+        ...corners.map((corner) => [`border-${corner}-radius`, `${Math.min(parseFloat(from.getPropertyValue(`border-${corner}-radius`)) || 0, 8)}px`]),
+        ["font-family", from.getPropertyValue("font-family")],
+        ["font-weight", from.getPropertyValue("font-weight")],
+        ["font-size", `${Math.max(parseFloat(from.getPropertyValue("font-size")) || 16, 16)}px`],
+        ["color", from.getPropertyValue("color")],
+        ["background-color", from.getPropertyValue("background-color")]
+      ]);
+      textarea.css(copied);
     }
     function sanitizeTypedResume(value) {
       return String(value || "").replace(/\r\n?/g, "\n").replace(/[^\P{Cc}\n\t]|[‪-‮⁦-⁩]/gu, "").trim().slice(0, TYPED_RESUME_MAX_CHARS);
