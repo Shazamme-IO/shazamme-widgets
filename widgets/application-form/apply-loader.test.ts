@@ -30,7 +30,7 @@ describe('apply button loader', () => {
     const fn = body('function installApplyLoader() {');
     expect(fn).toContain("document.getElementById('shm-apply-loader-style')");
     expect(fn).toContain('.submitApplicationBtn .loaderSpinner{display:none}');
-    expect(fn).toContain('.submitApplicationBtn.shm-submitting .applyText{display:none}');
+    expect(fn).toContain('.submitApplicationBtn.shm-submitting .applyText{display:none!important}');
     expect(fn).toContain('.submitApplicationBtn.shm-submitting .loaderSpinner{display:inline-block');
     expect(fn).toContain('@keyframes shmApplySpin');
   });

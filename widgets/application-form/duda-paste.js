@@ -1,3 +1,5 @@
+// LAST UPDATED: 2026-11-11 16:33 AEDT (05:33 UTC) — Job Application (application-form) moved to the external bundle.
+// Resume file-type check + typed resume (Freshdesk 14215) and the apply-button loader ship from git -> CDN; this paste never changes.
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
 // existing widget JS.
@@ -18,11 +20,16 @@
     if (window.shazamme) return res();
     var s = document.createElement("script"); s.src = SDK; s.onload = res; document.head.appendChild(s);
   });
-  function bundle() { return new Promise(function (res) {
+  function bundle() { return new Promise(function (res, rej) {
     if (window.ShazammeWidget && window.ShazammeWidget[NAME]) return res();
-    var s = document.createElement("script"); s.src = BUNDLE; s.onload = res; document.head.appendChild(s);
+    var s = document.createElement("script"); s.src = BUNDLE; s.onload = res; s.onerror = rej; document.head.appendChild(s);
   }); }
   Promise.all([window.__shazSDKPromise, bundle()]).then(function () {
-    window.ShazammeWidget[NAME]({ element: element, data: data, $: window.jQuery || window.$, shazamme: window.shazamme });
+    var run = window.ShazammeWidget && window.ShazammeWidget[NAME];
+    if (!run) throw new Error("bundle loaded but did not register " + NAME);
+    run({ element: element, data: data, $: window.jQuery || window.$, shazamme: window.shazamme });
+  }).catch(function (e) {
+    // The apply form is only delivered by this stub; a silent failure looks like an empty page.
+    console.warn("[" + NAME + "] widget not started, bundle " + BUNDLE, e);
   });
 })();

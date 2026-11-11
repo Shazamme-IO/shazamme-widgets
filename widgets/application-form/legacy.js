@@ -183,7 +183,7 @@ function installApplyLoader() {
     $('<style id="shm-apply-loader-style"></style>')
         .text(
             '.submitApplicationBtn .loaderSpinner{display:none}' +
-            '.submitApplicationBtn.shm-submitting .applyText{display:none}' +
+            '.submitApplicationBtn.shm-submitting .applyText{display:none!important}' +
             '.submitApplicationBtn.shm-submitting .loaderSpinner{display:inline-block;font-family:inherit}' +
             '.submitApplicationBtn.shm-submitting{pointer-events:none;opacity:.8;cursor:progress}' +
             '.submitApplicationBtn.shm-submitting .loaderSpinner i{display:inline-block;width:1em;height:1em;margin-right:.5em;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-.15em;animation:shmApplySpin .7s linear infinite}' +
@@ -201,11 +201,11 @@ function setSubmitting(on) {
         button.append('<span class="loaderSpinner"><i></i> Submitting application...</span>');
     }
 
-    const spinner = button.find('.loaderSpinner');
-    const label = data.config.submittingText || (/Submiting/.test(spinner.text()) ? 'Submitting application...' : '');
+    if (on) {
+        const spinner = button.find('.loaderSpinner');
+        const current = spinner.text().trim().replace(/^Submiting/, 'Submitting');
 
-    if (on && label) {
-        spinner.empty().append('<i></i> ').append(document.createTextNode(label));
+        spinner.empty().append('<i></i> ').append(document.createTextNode(data.config.submittingText || current || 'Submitting application...'));
     }
 
     button.toggleClass('shm-submitting', on);
@@ -1157,11 +1157,15 @@ const main = (w) => {
                 }
 
                 if (hasResumeFileElement && shouldUploadResume && !a.resumeFile) {
+                    setSubmitting(false);
+                    buttonAction("hide");
                     alert(data.config.warningResume || 'Please upload your resume');
                     return;
                 }
 
                 if (hasCoverFileElement && shouldUploadCover && !a.coverLetterFile) {
+                    setSubmitting(false);
+                    buttonAction("hide");
                     alert(data.config.warningCoverLetter || 'Please upload your cover letter, or tick the "I don\'t have cover letter"');
                     return;
                 }
@@ -1184,12 +1188,16 @@ const main = (w) => {
                 });
             }
 
-            shazamme.submit({
+            return shazamme.submit({
                 action: 'Apply Job',
                 dudaSiteID: data.siteId,
                 application: a,
                 candidate: u,
-            }).then( () => {
+            }).then( r => {
+                if (r && r.status === false) {
+                    return Promise.reject(new Error(r.message || 'Apply Job returned status false'));
+                }
+
                 buttonAction("stop");
 
                 action.clearKeys();
@@ -1214,14 +1222,25 @@ const main = (w) => {
                                 }
                             }
 
-                            data.config.redirectJobField.forEach( i => {
+                            (data.config.redirectJobField || []).forEach( i => {
                                 push(i.field);
                             });
 
                             window.location.href = `/${thankYouPage}?${query.join('&')}`;
+                        })
+                        .catch( () => {
+                            window.location.href = path;
                         });
                 } else {
                     window.location.href = path;
+                }
+            }).catch( err => {
+                setSubmitting(false);
+                buttonAction("hide");
+                alert(data.config.warningSubmitFailed || 'Sorry, your application could not be submitted. Please try again.');
+
+                if (w) {
+                    w.warn('apply failed', err);
                 }
             });
         }
@@ -1249,17 +1268,24 @@ const main = (w) => {
                         .catch( () => {
                             setSubmitting(false);
                         });
+                }).catch( () => {
+                    setSubmitting(false);
+                    buttonAction("hide");
                 });
             } else {
                 buttonAction("apply");
                 //register then login the candidate
                 register().then( u => {
-                    if (u) {
-                        loginFrom = "registrationForm";
+                    if (!u) {
+                        setSubmitting(false);
                         buttonAction("hide");
-
-                        apply(u);
+                        return;
                     }
+
+                    loginFrom = "registrationForm";
+                    buttonAction("hide");
+
+                    return apply(u);
                 }).catch( () => {
                     setSubmitting(false);
                     buttonAction("hide");
@@ -1267,6 +1293,9 @@ const main = (w) => {
 
                 return;
             }
+        }).catch( () => {
+            setSubmitting(false);
+            buttonAction("hide");
         });
     });
 

@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 07a559964bfa. Registers window.ShazammeWidget["<name>"].
+ * Build 20c3ee3f1e11. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -209,7 +209,7 @@ var __shazWidgetExport = (() => {
         return;
       }
       $('<style id="shm-apply-loader-style"></style>').text(
-        ".submitApplicationBtn .loaderSpinner{display:none}.submitApplicationBtn.shm-submitting .applyText{display:none}.submitApplicationBtn.shm-submitting .loaderSpinner{display:inline-block;font-family:inherit}.submitApplicationBtn.shm-submitting{pointer-events:none;opacity:.8;cursor:progress}.submitApplicationBtn.shm-submitting .loaderSpinner i{display:inline-block;width:1em;height:1em;margin-right:.5em;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-.15em;animation:shmApplySpin .7s linear infinite}.submitApplicationBtn.shm-submitting .loaderSpinner i::before{content:none}@keyframes shmApplySpin{to{transform:rotate(360deg)}}"
+        ".submitApplicationBtn .loaderSpinner{display:none}.submitApplicationBtn.shm-submitting .applyText{display:none!important}.submitApplicationBtn.shm-submitting .loaderSpinner{display:inline-block;font-family:inherit}.submitApplicationBtn.shm-submitting{pointer-events:none;opacity:.8;cursor:progress}.submitApplicationBtn.shm-submitting .loaderSpinner i{display:inline-block;width:1em;height:1em;margin-right:.5em;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-.15em;animation:shmApplySpin .7s linear infinite}.submitApplicationBtn.shm-submitting .loaderSpinner i::before{content:none}@keyframes shmApplySpin{to{transform:rotate(360deg)}}"
       ).appendTo(document.head);
     }
     function setSubmitting(on) {
@@ -218,10 +218,10 @@ var __shazWidgetExport = (() => {
       if (on && !button.find(".loaderSpinner").length) {
         button.append('<span class="loaderSpinner"><i></i> Submitting application...</span>');
       }
-      const spinner = button.find(".loaderSpinner");
-      const label = data.config.submittingText || (/Submiting/.test(spinner.text()) ? "Submitting application..." : "");
-      if (on && label) {
-        spinner.empty().append("<i></i> ").append(document.createTextNode(label));
+      if (on) {
+        const spinner = button.find(".loaderSpinner");
+        const current = spinner.text().trim().replace(/^Submiting/, "Submitting");
+        spinner.empty().append("<i></i> ").append(document.createTextNode(data.config.submittingText || current || "Submitting application..."));
       }
       button.toggleClass("shm-submitting", on);
       el.find(".fcLoader").toggleClass("fcLoadingSeek", on);
@@ -930,10 +930,14 @@ ${invalid.join("\n")}`);
               return;
             }
             if (hasResumeFileElement && shouldUploadResume && !a.resumeFile) {
+              setSubmitting(false);
+              buttonAction("hide");
               alert(data.config.warningResume || "Please upload your resume");
               return;
             }
             if (hasCoverFileElement && shouldUploadCover && !a.coverLetterFile) {
+              setSubmitting(false);
+              buttonAction("hide");
               alert(data.config.warningCoverLetter || `Please upload your cover letter, or tick the "I don't have cover letter"`);
               return;
             }
@@ -950,12 +954,15 @@ ${invalid.join("\n")}`);
               application: a
             });
           }
-          shazamme.submit({
+          return shazamme.submit({
             action: "Apply Job",
             dudaSiteID: data.siteId,
             application: a,
             candidate: u
-          }).then(() => {
+          }).then((r) => {
+            if (r && r.status === false) {
+              return Promise.reject(new Error(r.message || "Apply Job returned status false"));
+            }
             buttonAction("stop");
             action.clearKeys();
             let path = `/${thankYouPage}`;
@@ -972,13 +979,22 @@ ${invalid.join("\n")}`);
                     query.push(`${n}=${encodeURIComponent(v)}`);
                   }
                 };
-                data.config.redirectJobField.forEach((i) => {
+                (data.config.redirectJobField || []).forEach((i) => {
                   push(i.field);
                 });
                 window.location.href = `/${thankYouPage}?${query.join("&")}`;
+              }).catch(() => {
+                window.location.href = path;
               });
             } else {
               window.location.href = path;
+            }
+          }).catch((err) => {
+            setSubmitting(false);
+            buttonAction("hide");
+            alert(data.config.warningSubmitFailed || "Sorry, your application could not be submitted. Please try again.");
+            if (w) {
+              w.warn("apply failed", err);
             }
           });
         };
@@ -1000,21 +1016,30 @@ ${invalid.join("\n")}`);
               updateCandidate(u).then(() => apply(u.candidate)).catch(() => {
                 setSubmitting(false);
               });
+            }).catch(() => {
+              setSubmitting(false);
+              buttonAction("hide");
             });
           } else {
             buttonAction("apply");
             register().then((u2) => {
-              if (u2) {
-                loginFrom = "registrationForm";
+              if (!u2) {
+                setSubmitting(false);
                 buttonAction("hide");
-                apply(u2);
+                return;
               }
+              loginFrom = "registrationForm";
+              buttonAction("hide");
+              return apply(u2);
             }).catch(() => {
               setSubmitting(false);
               buttonAction("hide");
             });
             return;
           }
+        }).catch(() => {
+          setSubmitting(false);
+          buttonAction("hide");
         });
       });
       $(element).find(".eye").on("click", function() {
