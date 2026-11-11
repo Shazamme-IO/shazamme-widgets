@@ -300,7 +300,7 @@ function acceptUpload(input, type) {
     if (file.size > maxUploadSize) {
         clearUpload(type);
         $(input).val('');
-        rejectUpload(input, (type == "cover" ? data.config.coverSizeWarning : data.config.resumeSizeWarning) || `Error! File too large, Should not exceed ${data.config.maxUploadSize || ''}mb`, data.config.resumeSizeTitle || 'File too large');
+        rejectUpload(input, (type == "cover" && data.config.coverSizeWarning) || data.config.resumeSizeWarning || `Error! File too large, Should not exceed ${data.config.maxUploadSize || ''}mb`, data.config.resumeSizeTitle || 'File too large');
 
         return false;
     }
@@ -364,18 +364,28 @@ function showFieldError(input, message) {
     line.text(message);
 }
 
-function rejectUpload(input, message, title) {
-    showFieldError(input, message);
-
+// Site-config's alertDialog builds a detached element; the caller must append
+// it. Message is escaped (it is interpolated as HTML there) with line breaks kept.
+function notify(message, title) {
     const dialog = window.shazamme?.bag?.('site-config')?.alertDialog;
 
     if (typeof dialog === 'function') {
-        dialog({ title, message });
+        const html = $('<div></div>').text(message).html().replace(/\n/g, '<br>');
+        const el = dialog({ title, message: html });
 
-        return;
+        if (el && typeof el.appendTo === 'function') {
+            el.appendTo($(element));
+
+            return;
+        }
     }
 
     alert(message);
+}
+
+function rejectUpload(input, message, title) {
+    showFieldError(input, message);
+    notify(message, title);
 }
 
 function leaveTypedResume() {
@@ -385,6 +395,7 @@ function leaveTypedResume() {
 
     isTypingResume = false;
     shouldUploadResume = true;
+    showFieldError($(element).find('input#resume').get(0), '');
     $(element).find('#radioTypedResume').prop('checked', false);
     $(element).find('.typedResumeContainer').css('display', 'none');
     $('.fileUploadContainer').css('display', 'flex');
@@ -405,7 +416,7 @@ function existingResumeBlocked(candidate) {
 
     buttonAction("hide");
     setSubmitting(false);
-    alert(data.config.existingResumeWarning || `The resume saved on your profile is not in a supported format (${allowedListText()}). Please upload a new one.`);
+    notify(data.config.existingResumeWarning || `The resume saved on your profile is not in a supported format (${allowedListText()}). Please upload a new one.`, data.config.resumeTypeTitle || 'File not supported');
 
     return true;
 }
@@ -591,6 +602,8 @@ $(element).find("input#cover").on('change', function(){
 });
 
 $('input[type=radio][name=uploadTypeCover]').change(function(){
+    showFieldError($(element).find('input#cover').get(0), '');
+
     if (this.value == 'uploadCover'){
         $('.coverUploadContainer').css('display','flex');
         shouldUploadCover = true;

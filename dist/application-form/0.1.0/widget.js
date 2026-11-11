@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 2b562497a55d. Registers window.ShazammeWidget["<name>"].
+ * Build f51973b9acae. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -286,7 +286,7 @@ ${offer}` : base;
       if (file.size > maxUploadSize) {
         clearUpload(type);
         $(input).val("");
-        rejectUpload(input, (type == "cover" ? data.config.coverSizeWarning : data.config.resumeSizeWarning) || `Error! File too large, Should not exceed ${data.config.maxUploadSize || ""}mb`, data.config.resumeSizeTitle || "File too large");
+        rejectUpload(input, type == "cover" && data.config.coverSizeWarning || data.config.resumeSizeWarning || `Error! File too large, Should not exceed ${data.config.maxUploadSize || ""}mb`, data.config.resumeSizeTitle || "File too large");
         return false;
       }
       const radio = type == "resume" ? $("input[type=radio][name=uploadTypeResume][value=uploadResume]") : $("input[type=radio][name=uploadTypeCover][value=uploadCover]");
@@ -326,15 +326,22 @@ ${offer}` : base;
       }
       line.text(message);
     }
-    function rejectUpload(input, message, title) {
+    function notify(message, title) {
       var _a, _b, _c;
-      showFieldError(input, message);
       const dialog = (_c = (_b = (_a = window.shazamme) == null ? void 0 : _a.bag) == null ? void 0 : _b.call(_a, "site-config")) == null ? void 0 : _c.alertDialog;
       if (typeof dialog === "function") {
-        dialog({ title, message });
-        return;
+        const html = $("<div></div>").text(message).html().replace(/\n/g, "<br>");
+        const el = dialog({ title, message: html });
+        if (el && typeof el.appendTo === "function") {
+          el.appendTo($(element));
+          return;
+        }
       }
       alert(message);
+    }
+    function rejectUpload(input, message, title) {
+      showFieldError(input, message);
+      notify(message, title);
     }
     function leaveTypedResume() {
       if (!isTypingResume && shouldUploadResume) {
@@ -342,6 +349,7 @@ ${offer}` : base;
       }
       isTypingResume = false;
       shouldUploadResume = true;
+      showFieldError($(element).find("input#resume").get(0), "");
       $(element).find("#radioTypedResume").prop("checked", false);
       $(element).find(".typedResumeContainer").css("display", "none");
       $(".fileUploadContainer").css("display", "flex");
@@ -356,7 +364,7 @@ ${offer}` : base;
       }
       buttonAction("hide");
       setSubmitting(false);
-      alert(data.config.existingResumeWarning || `The resume saved on your profile is not in a supported format (${allowedListText()}). Please upload a new one.`);
+      notify(data.config.existingResumeWarning || `The resume saved on your profile is not in a supported format (${allowedListText()}). Please upload a new one.`, data.config.resumeTypeTitle || "File not supported");
       return true;
     }
     function setupTypedResume() {
@@ -484,6 +492,7 @@ Typed by the candidate on the website, ${(/* @__PURE__ */ new Date()).toLocaleDa
       acceptUpload(this, "cover");
     });
     $("input[type=radio][name=uploadTypeCover]").change(function() {
+      showFieldError($(element).find("input#cover").get(0), "");
       if (this.value == "uploadCover") {
         $(".coverUploadContainer").css("display", "flex");
         shouldUploadCover = true;
