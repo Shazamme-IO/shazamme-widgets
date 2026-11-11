@@ -283,22 +283,24 @@ function clearUpload(type) {
 function acceptUpload(input, type) {
     const file = input.files?.[0];
 
+    showFieldError(input, '');
+
     if (!file) {
         return false;
     }
 
     if (!isAllowedResumeFile(file)) {
         clearUpload(type);
-        alert(resumeTypeWarning(type));
         $(input).val('');
+        rejectUpload(input, resumeTypeWarning(type), data.config.resumeTypeTitle || 'File not supported');
 
         return false;
     }
 
     if (file.size > maxUploadSize) {
         clearUpload(type);
-        alert( data.config.resumeSizeWarning || `Error! File too large, Should not exceed ${data.config.maxUploadSize || ''}mb`);
         $(input).val('');
+        rejectUpload(input, (type == "cover" && data.config.coverSizeWarning) || data.config.resumeSizeWarning || `Error! File too large, Should not exceed ${data.config.maxUploadSize || ''}mb`, data.config.resumeSizeTitle || 'File too large');
 
         return false;
     }
@@ -333,6 +335,59 @@ function rereadResumeInput() {
     }
 }
 
+// A red line under the field, visible even where popups are blocked (Duda's
+// editor preview blocks alert()); cleared on the next pick.
+function showFieldError(input, message) {
+    if (!document.getElementById('shm-field-error-style')) {
+        $('<style id="shm-field-error-style"></style>')
+            .text('.label-hint.shm-field-error{display:block;width:100%;color:#c62828;margin:8px 0 0;white-space:pre-line}')
+            .appendTo(document.head);
+    }
+
+    // The line sits after the input's container, so it is full width and below
+    // the field whatever the container's flex direction.
+    const field = $(input);
+    const key = field.attr('id') || field.attr('name') || 'file';
+    const holder = field.parent();
+    let line = holder.next('.shm-field-error').filter( (_, e) => e.getAttribute('data-for') === key );
+
+    if (!message) {
+        line.remove();
+
+        return;
+    }
+
+    if (!line.length) {
+        line = $('<div class="label-hint shm-field-error" role="alert"></div>').attr('data-for', key).insertAfter(holder);
+    }
+
+    line.text(message);
+}
+
+// Site-config's alertDialog builds a detached element; the caller must append
+// it. Message is escaped (it is interpolated as HTML there) with line breaks kept.
+function notify(message, title) {
+    const dialog = window.shazamme?.bag?.('site-config')?.alertDialog;
+
+    if (typeof dialog === 'function') {
+        const escape = text => $('<div></div>').text(text).html();
+        const el = dialog({ title: escape(title), message: escape(message).replace(/\n/g, '<br>') });
+
+        if (el && typeof el.appendTo === 'function') {
+            el.appendTo($(element));
+
+            return;
+        }
+    }
+
+    alert(message);
+}
+
+function rejectUpload(input, message, title) {
+    showFieldError(input, message);
+    notify(message, title);
+}
+
 function leaveTypedResume() {
     if (!isTypingResume && shouldUploadResume) {
         return;
@@ -340,6 +395,7 @@ function leaveTypedResume() {
 
     isTypingResume = false;
     shouldUploadResume = true;
+    showFieldError($(element).find('input#resume').get(0), '');
     $(element).find('#radioTypedResume').prop('checked', false);
     $(element).find('.typedResumeContainer').css('display', 'none');
     $('.fileUploadContainer').css('display', 'flex');
@@ -360,7 +416,8 @@ function existingResumeBlocked(candidate) {
 
     buttonAction("hide");
     setSubmitting(false);
-    alert(data.config.existingResumeWarning || `The resume saved on your profile is not in a supported format (${allowedListText()}). Please upload a new one.`);
+    showFieldError($(element).find('input#resume').get(0), data.config.existingResumeWarning || `The resume saved on your profile is not in a supported format (${allowedListText()}). Please upload a new one.`);
+    notify(data.config.existingResumeWarning || `The resume saved on your profile is not in a supported format (${allowedListText()}). Please upload a new one.`, data.config.resumeTypeTitle || 'File not supported');
 
     return true;
 }
@@ -382,29 +439,20 @@ function setupTypedResume() {
     }
 
     const row = $(
-        '<div class="radioBtnContainer typedResume">' +
+        '<div class="radioBtnContainer typedResume" style="margin-top:16px">' +
             '<div class="shmApplyRadio"><input type="radio" id="radioTypedResume" name="uploadTypeResume" value="typeResume"/> <label for="radioTypedResume"></label></div>' +
-            '<div class="typedResumeContainer" style="display:none;flex-direction:column">' +
-                '<textarea id="resumeText" rows="12" autocomplete="off" spellcheck="true" style="width:100%;box-sizing:border-box;font-family:inherit;font-size:inherit;padding:10px;resize:vertical"></textarea>' +
-                '<div class="label-hint typedResume"></div>' +
-            '</div>' +
+        '</div>'
+    );
+    const box = $(
+        '<div class="typedResumeContainer" style="display:none;flex-direction:column;width:100%;box-sizing:border-box;margin:0 0 16px">' +
+            '<textarea id="resumeText" rows="12" autocomplete="off" spellcheck="true" style="width:100%;box-sizing:border-box;min-height:220px;resize:vertical;font-family:inherit"></textarea>' +
+            '<div class="label-hint typedResume"></div>' +
         '</div>'
     );
 
     row.find('label').text(data.config.typedResumeLabelText || 'Type your resume');
-
-    if (!radioRow.length) {
-        // No "Upload a Resume" radio to switch back with: offer a link instead.
-        $('<a href="#" class="typedResumeBack" style="display:block;margin-top:8px"></a>')
-            .text(data.config.typedResumeBackText || 'Upload a file instead')
-            .on('click', e => {
-                e.preventDefault();
-                leaveTypedResume();
-            })
-            .appendTo(row.find('.typedResumeContainer'));
-    }
-    row.find('.label-hint').text(data.config.typedResumeHint || `Type your work history, skills and qualifications (at least ${TYPED_RESUME_MIN_CHARS} characters). Pasting is not allowed.`);
-    row.find('textarea')
+    box.find('.label-hint').text(data.config.typedResumeHint || `Type your work history, skills and qualifications (at least ${TYPED_RESUME_MIN_CHARS} characters). Pasting is not allowed.`);
+    box.find('textarea')
         .attr('maxlength', TYPED_RESUME_MAX_CHARS)
         .attr('placeholder', data.config.typedResumePlaceholder || 'Type your resume here. Pasting is not allowed.')
         .on('paste drop dragover', e => e.preventDefault())
@@ -414,7 +462,55 @@ function setupTypedResume() {
             }
         });
 
+    if (!radioRow.length) {
+        // No "Upload a Resume" radio to switch back with: offer a link instead.
+        $('<a href="#" class="typedResumeBack" style="display:block;margin-top:8px"></a>')
+            .text(data.config.typedResumeBackText || 'Upload a file instead')
+            .on('click', e => {
+                e.preventDefault();
+                leaveTypedResume();
+            })
+            .appendTo(box);
+    }
+
     anchor.after(row);
+
+    // The upload column is half the form on desktop; the box goes below the
+    // whole upload row at full width, styled like the form's own text inputs.
+    const uploadRow = anchor.closest('.nativeApplyNowContainer');
+
+    (uploadRow.length ? uploadRow : row).after(box);
+    matchInputStyle(box.find('textarea'), el.find('input#firstName, input#lastName, input#emailAddress').first());
+}
+
+function matchInputStyle(textarea, input) {
+    // Readable defaults first; a 16px floor stops iOS zooming into the box on focus.
+    textarea.css({ border: '1px solid #cfcfcf', 'border-radius': '6px', padding: '10px 12px', 'font-size': '16px', 'line-height': '1.5', background: '#fff', color: 'inherit' });
+
+    if (!input.length || !input.get(0).offsetParent) {
+        return;
+    }
+
+    const from = window.getComputedStyle(input.get(0));
+    const sides = ['top', 'right', 'bottom', 'left'];
+    const corners = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+
+    if (!/solid|double|dashed/.test(from.getPropertyValue('border-top-style'))) {
+        return;
+    }
+
+    const copied = Object.fromEntries([
+        ...sides.flatMap( side => ['width', 'style', 'color'].map( part => [`border-${side}-${part}`, from.getPropertyValue(`border-${side}-${part}`)] ) ),
+        ...sides.map( side => [`padding-${side}`, from.getPropertyValue(`padding-${side}`)] ),
+        ...corners.map( corner => [`border-${corner}-radius`, `${Math.min(parseFloat(from.getPropertyValue(`border-${corner}-radius`)) || 0, 8)}px`] ),
+        ['font-family', from.getPropertyValue('font-family')],
+        ['font-weight', from.getPropertyValue('font-weight')],
+        ['font-size', `${Math.max(parseFloat(from.getPropertyValue('font-size')) || 16, 16)}px`],
+        ['color', from.getPropertyValue('color')],
+        ['background-color', from.getPropertyValue('background-color')],
+    ]);
+
+    textarea.css(copied);
 }
 
 function sanitizeTypedResume(value) {
@@ -481,6 +577,8 @@ $('input[type=radio][name=uploadTypeResume]').change(function(){
     isTypingResume = this.value == 'typeResume';
     shouldUploadResume = this.value == 'uploadResume';
 
+    showFieldError($(element).find('input#resume').get(0), '');
+
     if (!shouldUploadResume) {
         // Leaving upload mode: the chosen file must not ride along with a typed or existing resume.
         clearUpload('resume');
@@ -505,6 +603,8 @@ $(element).find("input#cover").on('change', function(){
 });
 
 $('input[type=radio][name=uploadTypeCover]').change(function(){
+    showFieldError($(element).find('input#cover').get(0), '');
+
     if (this.value == 'uploadCover'){
         $('.coverUploadContainer').css('display','flex');
         shouldUploadCover = true;

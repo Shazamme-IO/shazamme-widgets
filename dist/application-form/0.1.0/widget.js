@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 20c3ee3f1e11. Registers window.ShazammeWidget["<name>"].
+ * Build 6eac75dcfeb9. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -273,19 +273,20 @@ ${offer}` : base;
     function acceptUpload(input, type) {
       var _a;
       const file = (_a = input.files) == null ? void 0 : _a[0];
+      showFieldError(input, "");
       if (!file) {
         return false;
       }
       if (!isAllowedResumeFile(file)) {
         clearUpload(type);
-        alert(resumeTypeWarning(type));
         $(input).val("");
+        rejectUpload(input, resumeTypeWarning(type), data.config.resumeTypeTitle || "File not supported");
         return false;
       }
       if (file.size > maxUploadSize) {
         clearUpload(type);
-        alert(data.config.resumeSizeWarning || `Error! File too large, Should not exceed ${data.config.maxUploadSize || ""}mb`);
         $(input).val("");
+        rejectUpload(input, type == "cover" && data.config.coverSizeWarning || data.config.resumeSizeWarning || `Error! File too large, Should not exceed ${data.config.maxUploadSize || ""}mb`, data.config.resumeSizeTitle || "File too large");
         return false;
       }
       const radio = type == "resume" ? $("input[type=radio][name=uploadTypeResume][value=uploadResume]") : $("input[type=radio][name=uploadTypeCover][value=uploadCover]");
@@ -308,12 +309,47 @@ ${offer}` : base;
         convertBinaryString(input, "resume");
       }
     }
+    function showFieldError(input, message) {
+      if (!document.getElementById("shm-field-error-style")) {
+        $('<style id="shm-field-error-style"></style>').text(".label-hint.shm-field-error{display:block;width:100%;color:#c62828;margin:8px 0 0;white-space:pre-line}").appendTo(document.head);
+      }
+      const field = $(input);
+      const key = field.attr("id") || field.attr("name") || "file";
+      const holder = field.parent();
+      let line = holder.next(".shm-field-error").filter((_, e) => e.getAttribute("data-for") === key);
+      if (!message) {
+        line.remove();
+        return;
+      }
+      if (!line.length) {
+        line = $('<div class="label-hint shm-field-error" role="alert"></div>').attr("data-for", key).insertAfter(holder);
+      }
+      line.text(message);
+    }
+    function notify(message, title) {
+      var _a, _b, _c;
+      const dialog = (_c = (_b = (_a = window.shazamme) == null ? void 0 : _a.bag) == null ? void 0 : _b.call(_a, "site-config")) == null ? void 0 : _c.alertDialog;
+      if (typeof dialog === "function") {
+        const escape = (text) => $("<div></div>").text(text).html();
+        const el = dialog({ title: escape(title), message: escape(message).replace(/\n/g, "<br>") });
+        if (el && typeof el.appendTo === "function") {
+          el.appendTo($(element));
+          return;
+        }
+      }
+      alert(message);
+    }
+    function rejectUpload(input, message, title) {
+      showFieldError(input, message);
+      notify(message, title);
+    }
     function leaveTypedResume() {
       if (!isTypingResume && shouldUploadResume) {
         return;
       }
       isTypingResume = false;
       shouldUploadResume = true;
+      showFieldError($(element).find("input#resume").get(0), "");
       $(element).find("#radioTypedResume").prop("checked", false);
       $(element).find(".typedResumeContainer").css("display", "none");
       $(".fileUploadContainer").css("display", "flex");
@@ -328,7 +364,8 @@ ${offer}` : base;
       }
       buttonAction("hide");
       setSubmitting(false);
-      alert(data.config.existingResumeWarning || `The resume saved on your profile is not in a supported format (${allowedListText()}). Please upload a new one.`);
+      showFieldError($(element).find("input#resume").get(0), data.config.existingResumeWarning || `The resume saved on your profile is not in a supported format (${allowedListText()}). Please upload a new one.`);
+      notify(data.config.existingResumeWarning || `The resume saved on your profile is not in a supported format (${allowedListText()}). Please upload a new one.`, data.config.resumeTypeTitle || "File not supported");
       return true;
     }
     function setupTypedResume() {
@@ -342,23 +379,52 @@ ${offer}` : base;
         return;
       }
       const row = $(
-        '<div class="radioBtnContainer typedResume"><div class="shmApplyRadio"><input type="radio" id="radioTypedResume" name="uploadTypeResume" value="typeResume"/> <label for="radioTypedResume"></label></div><div class="typedResumeContainer" style="display:none;flex-direction:column"><textarea id="resumeText" rows="12" autocomplete="off" spellcheck="true" style="width:100%;box-sizing:border-box;font-family:inherit;font-size:inherit;padding:10px;resize:vertical"></textarea><div class="label-hint typedResume"></div></div></div>'
+        '<div class="radioBtnContainer typedResume" style="margin-top:16px"><div class="shmApplyRadio"><input type="radio" id="radioTypedResume" name="uploadTypeResume" value="typeResume"/> <label for="radioTypedResume"></label></div></div>'
+      );
+      const box = $(
+        '<div class="typedResumeContainer" style="display:none;flex-direction:column;width:100%;box-sizing:border-box;margin:0 0 16px"><textarea id="resumeText" rows="12" autocomplete="off" spellcheck="true" style="width:100%;box-sizing:border-box;min-height:220px;resize:vertical;font-family:inherit"></textarea><div class="label-hint typedResume"></div></div>'
       );
       row.find("label").text(data.config.typedResumeLabelText || "Type your resume");
-      if (!radioRow.length) {
-        $('<a href="#" class="typedResumeBack" style="display:block;margin-top:8px"></a>').text(data.config.typedResumeBackText || "Upload a file instead").on("click", (e) => {
-          e.preventDefault();
-          leaveTypedResume();
-        }).appendTo(row.find(".typedResumeContainer"));
-      }
-      row.find(".label-hint").text(data.config.typedResumeHint || `Type your work history, skills and qualifications (at least ${TYPED_RESUME_MIN_CHARS} characters). Pasting is not allowed.`);
-      row.find("textarea").attr("maxlength", TYPED_RESUME_MAX_CHARS).attr("placeholder", data.config.typedResumePlaceholder || "Type your resume here. Pasting is not allowed.").on("paste drop dragover", (e) => e.preventDefault()).on("beforeinput", (e) => {
+      box.find(".label-hint").text(data.config.typedResumeHint || `Type your work history, skills and qualifications (at least ${TYPED_RESUME_MIN_CHARS} characters). Pasting is not allowed.`);
+      box.find("textarea").attr("maxlength", TYPED_RESUME_MAX_CHARS).attr("placeholder", data.config.typedResumePlaceholder || "Type your resume here. Pasting is not allowed.").on("paste drop dragover", (e) => e.preventDefault()).on("beforeinput", (e) => {
         var _a;
         if (/insertFromPaste|insertFromDrop|insertFromYank/.test(((_a = e.originalEvent) == null ? void 0 : _a.inputType) || "")) {
           e.preventDefault();
         }
       });
+      if (!radioRow.length) {
+        $('<a href="#" class="typedResumeBack" style="display:block;margin-top:8px"></a>').text(data.config.typedResumeBackText || "Upload a file instead").on("click", (e) => {
+          e.preventDefault();
+          leaveTypedResume();
+        }).appendTo(box);
+      }
       anchor.after(row);
+      const uploadRow = anchor.closest(".nativeApplyNowContainer");
+      (uploadRow.length ? uploadRow : row).after(box);
+      matchInputStyle(box.find("textarea"), el.find("input#firstName, input#lastName, input#emailAddress").first());
+    }
+    function matchInputStyle(textarea, input) {
+      textarea.css({ border: "1px solid #cfcfcf", "border-radius": "6px", padding: "10px 12px", "font-size": "16px", "line-height": "1.5", background: "#fff", color: "inherit" });
+      if (!input.length || !input.get(0).offsetParent) {
+        return;
+      }
+      const from = window.getComputedStyle(input.get(0));
+      const sides = ["top", "right", "bottom", "left"];
+      const corners = ["top-left", "top-right", "bottom-left", "bottom-right"];
+      if (!/solid|double|dashed/.test(from.getPropertyValue("border-top-style"))) {
+        return;
+      }
+      const copied = Object.fromEntries([
+        ...sides.flatMap((side) => ["width", "style", "color"].map((part) => [`border-${side}-${part}`, from.getPropertyValue(`border-${side}-${part}`)])),
+        ...sides.map((side) => [`padding-${side}`, from.getPropertyValue(`padding-${side}`)]),
+        ...corners.map((corner) => [`border-${corner}-radius`, `${Math.min(parseFloat(from.getPropertyValue(`border-${corner}-radius`)) || 0, 8)}px`]),
+        ["font-family", from.getPropertyValue("font-family")],
+        ["font-weight", from.getPropertyValue("font-weight")],
+        ["font-size", `${Math.max(parseFloat(from.getPropertyValue("font-size")) || 16, 16)}px`],
+        ["color", from.getPropertyValue("color")],
+        ["background-color", from.getPropertyValue("background-color")]
+      ]);
+      textarea.css(copied);
     }
     function sanitizeTypedResume(value) {
       return String(value || "").replace(/\r\n?/g, "\n").replace(/[^\P{Cc}\n\t]|[‪-‮⁦-⁩]/gu, "").trim().slice(0, TYPED_RESUME_MAX_CHARS);
@@ -407,6 +473,7 @@ Typed by the candidate on the website, ${(/* @__PURE__ */ new Date()).toLocaleDa
       const wasUploading = shouldUploadResume;
       isTypingResume = this.value == "typeResume";
       shouldUploadResume = this.value == "uploadResume";
+      showFieldError($(element).find("input#resume").get(0), "");
       if (!shouldUploadResume) {
         clearUpload("resume");
       } else if (!wasUploading) {
@@ -426,6 +493,7 @@ Typed by the candidate on the website, ${(/* @__PURE__ */ new Date()).toLocaleDa
       acceptUpload(this, "cover");
     });
     $("input[type=radio][name=uploadTypeCover]").change(function() {
+      showFieldError($(element).find("input#cover").get(0), "");
       if (this.value == "uploadCover") {
         $(".coverUploadContainer").css("display", "flex");
         shouldUploadCover = true;
