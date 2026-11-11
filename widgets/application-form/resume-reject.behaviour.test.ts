@@ -49,7 +49,7 @@ describe('rejected resume file', () => {
     const line = document.querySelector('.fileUploadContainer + .shm-field-error') as HTMLElement;
     expect(line.textContent).toBe('Not supported.\n\nTry typing it.');
     expect(line.getAttribute('data-for')).toBe('resume');
-    expect(document.getElementById('shm-field-error-style')?.textContent).toContain('white-space:pre-line');
+    expect(document.getElementById('shm-field-error-style')?.textContent).toContain('.label-hint.shm-field-error{display:block;width:100%;color:#c62828');
     api.show(input, '');
     expect(document.querySelector('.shm-field-error')).toBeNull();
   });

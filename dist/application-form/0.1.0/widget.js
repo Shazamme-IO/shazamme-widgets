@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build f51973b9acae. Registers window.ShazammeWidget["<name>"].
+ * Build 6eac75dcfeb9. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -311,7 +311,7 @@ ${offer}` : base;
     }
     function showFieldError(input, message) {
       if (!document.getElementById("shm-field-error-style")) {
-        $('<style id="shm-field-error-style"></style>').text(".shm-field-error{display:block;width:100%;color:#c62828;margin:8px 0 0;white-space:pre-line}").appendTo(document.head);
+        $('<style id="shm-field-error-style"></style>').text(".label-hint.shm-field-error{display:block;width:100%;color:#c62828;margin:8px 0 0;white-space:pre-line}").appendTo(document.head);
       }
       const field = $(input);
       const key = field.attr("id") || field.attr("name") || "file";
@@ -330,8 +330,8 @@ ${offer}` : base;
       var _a, _b, _c;
       const dialog = (_c = (_b = (_a = window.shazamme) == null ? void 0 : _a.bag) == null ? void 0 : _b.call(_a, "site-config")) == null ? void 0 : _c.alertDialog;
       if (typeof dialog === "function") {
-        const html = $("<div></div>").text(message).html().replace(/\n/g, "<br>");
-        const el = dialog({ title, message: html });
+        const escape = (text) => $("<div></div>").text(text).html();
+        const el = dialog({ title: escape(title), message: escape(message).replace(/\n/g, "<br>") });
         if (el && typeof el.appendTo === "function") {
           el.appendTo($(element));
           return;
@@ -364,6 +364,7 @@ ${offer}` : base;
       }
       buttonAction("hide");
       setSubmitting(false);
+      showFieldError($(element).find("input#resume").get(0), data.config.existingResumeWarning || `The resume saved on your profile is not in a supported format (${allowedListText()}). Please upload a new one.`);
       notify(data.config.existingResumeWarning || `The resume saved on your profile is not in a supported format (${allowedListText()}). Please upload a new one.`, data.config.resumeTypeTitle || "File not supported");
       return true;
     }

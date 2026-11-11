@@ -340,7 +340,7 @@ function rereadResumeInput() {
 function showFieldError(input, message) {
     if (!document.getElementById('shm-field-error-style')) {
         $('<style id="shm-field-error-style"></style>')
-            .text('.shm-field-error{display:block;width:100%;color:#c62828;margin:8px 0 0;white-space:pre-line}')
+            .text('.label-hint.shm-field-error{display:block;width:100%;color:#c62828;margin:8px 0 0;white-space:pre-line}')
             .appendTo(document.head);
     }
 
@@ -370,8 +370,8 @@ function notify(message, title) {
     const dialog = window.shazamme?.bag?.('site-config')?.alertDialog;
 
     if (typeof dialog === 'function') {
-        const html = $('<div></div>').text(message).html().replace(/\n/g, '<br>');
-        const el = dialog({ title, message: html });
+        const escape = text => $('<div></div>').text(text).html();
+        const el = dialog({ title: escape(title), message: escape(message).replace(/\n/g, '<br>') });
 
         if (el && typeof el.appendTo === 'function') {
             el.appendTo($(element));
@@ -416,6 +416,7 @@ function existingResumeBlocked(candidate) {
 
     buttonAction("hide");
     setSubmitting(false);
+    showFieldError($(element).find('input#resume').get(0), data.config.existingResumeWarning || `The resume saved on your profile is not in a supported format (${allowedListText()}). Please upload a new one.`);
     notify(data.config.existingResumeWarning || `The resume saved on your profile is not in a supported format (${allowedListText()}). Please upload a new one.`, data.config.resumeTypeTitle || 'File not supported');
 
     return true;
