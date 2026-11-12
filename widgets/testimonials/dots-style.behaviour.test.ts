@@ -199,7 +199,9 @@ describe('testimonials floorHeight', () => {
     const card = direct.firstElementChild as HTMLElement;
     card.getBoundingClientRect = () => ({ height: card.style.display === 'none' ? 0 : 250 } as DOMRect);
     expect(runner()(direct)).toBe(0);
-    expect(card.getAttribute('style')).toBe('height: auto !important;');
+    expect(card.style.getPropertyValue('height')).toBe('auto');
+    expect(card.style.getPropertyPriority('height')).toBe('important');
+    expect(card.style.getPropertyValue('display')).toBe('');
     expect(runner()(document.querySelector('.slick-slide.empty')!)).toBe(0);
   });
 
