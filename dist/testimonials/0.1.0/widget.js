@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 54d12fcb175a. Registers window.ShazammeWidget["<name>"].
+ * Build 603208e30fe3. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -184,8 +184,7 @@ var __shazWidgetExport = (() => {
         var card = this.querySelector(".shmTestimonial-comments");
         if (!card) return;
         for (var holder = card.parentElement; holder && holder !== this; holder = holder.parentElement) {
-          setImportant(holder, { "width": "100%", "padding-left": "0", "padding-right": "0", "margin-left": "0", "margin-right": "0", "box-sizing": "border-box", "display": "block" });
-          if (holder.parentElement !== this) setImportant(holder, { "height": "auto" });
+          setImportant(holder, { "width": "100%", "padding-left": "0", "padding-right": "0", "margin-left": "0", "margin-right": "0", "box-sizing": "border-box", "display": "block", "height": "auto" });
         }
         setImportant(card, { "width": "100%", "max-width": "none", "margin-left": "0", "margin-right": "0", "display": "block", "box-sizing": "border-box", "min-height": "0", "height": "auto" });
       });
@@ -195,16 +194,27 @@ var __shazWidgetExport = (() => {
         $(this).wrap('<div class="shm-slide"></div>');
       });
     }
+    function saveInline(el, props) {
+      return props.map(function(prop) {
+        return { el, prop, value: el.style.getPropertyValue(prop), priority: el.style.getPropertyPriority(prop) };
+      });
+    }
+    function restoreInline(saved) {
+      for (var i = 0; i < saved.length; i++) {
+        if (saved[i].value) saved[i].el.style.setProperty(saved[i].prop, saved[i].value, saved[i].priority);
+        else saved[i].el.style.removeProperty(saved[i].prop);
+      }
+    }
     function floorHeight(slide) {
       var holder = slide && slide.firstElementChild;
       var card = slide && slide.querySelector(".shmTestimonial-comments");
       if (!holder || !card) return 0;
-      var prev = card.style.getPropertyValue("display");
-      var prevPriority = card.style.getPropertyPriority("display");
+      var saved = saveInline(card, ["display"]).concat(saveInline(holder, ["height", "min-height"]));
+      holder.style.removeProperty("height");
+      holder.style.removeProperty("min-height");
       card.style.setProperty("display", "none", "important");
       var floor = Math.ceil(holder.getBoundingClientRect().height);
-      if (prev) card.style.setProperty("display", prev, prevPriority);
-      else card.style.removeProperty("display");
+      restoreInline(saved);
       return floor;
     }
     function windowCards(slick, first) {

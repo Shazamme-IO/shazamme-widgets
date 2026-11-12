@@ -153,21 +153,45 @@ describe('testimonials ensureDotsStyle', () => {
 
 describe('testimonials floorHeight', () => {
   function runner() {
-    const start = src.indexOf('function floorHeight(slide)');
-    const end = src.indexOf('\n}\n', start) + 3;
+    const start = src.indexOf('function saveInline(el, props)');
+    const end = src.indexOf('\n}\n', src.indexOf('function floorHeight(slide)')) + 3;
     expect(start).toBeGreaterThan(-1);
     return new Function('slide', `${src.slice(start, end)}\nreturn floorHeight(slide);`) as (s: Element | null) => number;
   }
 
-  // jsdom has no layout: the holder reports the site px height only while the card is display none.
+  // jsdom has no layout: the holder reports the site px height only while the card is display none
+  // and no inline height or min-height overrides the site rule (an inline height:auto reads as the
+  // card height, 0 when the card is hidden).
   function slideWith(holderPx: number) {
     document.body.innerHTML = '<div class="slick-slide"><div class="holder"><div class="shm-slide"><div class="shmTestimonial-comments">text</div></div></div></div>';
     const slide = document.querySelector('.slick-slide')!;
     const holder = slide.firstElementChild as HTMLElement;
     const card = slide.querySelector('.shmTestimonial-comments') as HTMLElement;
-    holder.getBoundingClientRect = () => ({ height: card.style.display === 'none' ? holderPx : 300 } as DOMRect);
-    return { slide, card };
+    holder.getBoundingClientRect = () => {
+      const hidden = card.style.display === 'none';
+      if (holder.style.height === 'auto') return { height: hidden ? 0 : 300 } as DOMRect;
+      if (holder.style.minHeight) return { height: Math.max(parseFloat(holder.style.minHeight), hidden ? holderPx : 300) } as DOMRect;
+      return { height: hidden ? holderPx : 300 } as DOMRect;
+    };
+    return { slide, card, holder };
   }
+
+  it('lifts the inline height:auto and min-height this widget puts on the holder while it measures, then puts them back', () => {
+    const { slide, holder } = slideWith(400);
+    holder.style.setProperty('height', 'auto', 'important');
+    holder.style.setProperty('min-height', '600px', 'important');
+    expect(runner()(slide)).toBe(400);
+    expect(holder.style.getPropertyValue('height')).toBe('auto');
+    expect(holder.style.getPropertyPriority('height')).toBe('important');
+    expect(holder.style.getPropertyValue('min-height')).toBe('600px');
+    expect(holder.style.getPropertyPriority('min-height')).toBe('important');
+  });
+
+  it('leaves no inline height behind on a holder that had none', () => {
+    const { slide, holder } = slideWith(400);
+    expect(runner()(slide)).toBe(400);
+    expect(holder.getAttribute('style')).toBeNull();
+  });
 
   it('reads the holder height with the card hidden and puts the card back exactly as it was', () => {
     const { slide, card } = slideWith(490);

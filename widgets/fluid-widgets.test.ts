@@ -127,7 +127,8 @@ describe('testimonials: container height is a floor, dots are CSS shapes (12 Nov
     const fluid = body.slice(body.indexOf('function fluidSlides(slick)'), body.indexOf('\n}\n', body.indexOf('function fluidSlides(slick)')));
     expect(fluid).toContain("'display': 'block' });");
     expect(fluid).not.toContain("'display': 'flex' });");
-    expect(fluid).toContain("if (holder.parentElement !== this) setImportant(holder, { 'height': 'auto' });");
+    expect(fluid).toContain("'display': 'block', 'height': 'auto' });");
+    expect(fluid).not.toContain('holder.parentElement !== this');
   });
 
   it('the wrapper floor is cleared before it is measured so it can shrink again', () => {

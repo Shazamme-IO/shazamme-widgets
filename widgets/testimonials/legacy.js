@@ -130,13 +130,14 @@ function fluidSlides(slick){
         setImportant(this, { 'width': slot + 'px', 'max-width': 'none', 'margin-left': '0', 'margin-right': '0', 'padding-left': side + 'px', 'padding-right': side + 'px', 'box-sizing': 'border-box', 'height': 'auto', 'display': 'flex', 'align-items': 'flex-start' });
         var card = this.querySelector('.shmTestimonial-comments');
         if (!card) return;
-        // Holders are plain blocks: a flex holder would stretch or squash the card to the
-        // Design tab container height, which is a floor, not a fixed height. The outer holder
-        // (.slick-slide > div) carries that px height from the site CSS, so it keeps its own
-        // height; inner holders follow their content.
+        // Holders are plain blocks that follow their content: a flex holder would stretch or
+        // squash the card to the Design tab container height, and a holder pinned at that px
+        // height would hide a longer card behind it. The outer holder (.slick-slide > div)
+        // carries that px height from the site CSS; floorHeight() reads it as the floor, the
+        // card gets it as a min-height, and the holder grows with the card so Slick's own
+        // adaptive height (which measures the slide) agrees with the list size set here.
         for (var holder = card.parentElement; holder && holder !== this; holder = holder.parentElement) {
-            setImportant(holder, { 'width': '100%', 'padding-left': '0', 'padding-right': '0', 'margin-left': '0', 'margin-right': '0', 'box-sizing': 'border-box', 'display': 'block' });
-            if (holder.parentElement !== this) setImportant(holder, { 'height': 'auto' });
+            setImportant(holder, { 'width': '100%', 'padding-left': '0', 'padding-right': '0', 'margin-left': '0', 'margin-right': '0', 'box-sizing': 'border-box', 'display': 'block', 'height': 'auto' });
         }
         // Site CSS pins a 415px min-height on the card; the card should fit its text.
         // fitHeights() then equalises the cards that are on screen together and applies the floor.
@@ -155,19 +156,31 @@ function wrapCards(slider){
 // Slides are found by Slick's own index (clones carry one too), so the window is right when the
 // slider is about to wrap.
 // The Design tab "Testimonials Container Height" is a px height the site CSS puts on
-// .slick-slide > div. With the card hidden the holder shows that height alone (0 when none is
-// set), so this reads the floor without parsing stylesheets. One slide is enough: the setting
-// is the same for every slide.
+// .slick-slide > div. With the card hidden, and the inline height:auto this widget puts on the
+// holder lifted for the measurement, the holder shows that height alone (0 when none is set),
+// so this reads the floor without parsing stylesheets. One slide is enough: the setting is the
+// same for every slide. Everything touched is put back exactly as it was.
+function saveInline(el, props){
+    return props.map(function(prop){ return { el: el, prop: prop, value: el.style.getPropertyValue(prop), priority: el.style.getPropertyPriority(prop) }; });
+}
+
+function restoreInline(saved){
+    for (var i = 0; i < saved.length; i++) {
+        if (saved[i].value) saved[i].el.style.setProperty(saved[i].prop, saved[i].value, saved[i].priority);
+        else saved[i].el.style.removeProperty(saved[i].prop);
+    }
+}
+
 function floorHeight(slide){
     var holder = slide && slide.firstElementChild;
     var card = slide && slide.querySelector('.shmTestimonial-comments');
     if (!holder || !card) return 0;
-    var prev = card.style.getPropertyValue('display');
-    var prevPriority = card.style.getPropertyPriority('display');
+    var saved = saveInline(card, ['display']).concat(saveInline(holder, ['height', 'min-height']));
+    holder.style.removeProperty('height');
+    holder.style.removeProperty('min-height');
     card.style.setProperty('display', 'none', 'important');
     var floor = Math.ceil(holder.getBoundingClientRect().height);
-    if (prev) card.style.setProperty('display', prev, prevPriority);
-    else card.style.removeProperty('display');
+    restoreInline(saved);
     return floor;
 }
 
