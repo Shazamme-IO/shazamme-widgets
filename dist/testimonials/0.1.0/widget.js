@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build cd06bde4e925. Registers window.ShazammeWidget["<name>"].
+ * Build 36a7ecfefb8d. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -214,20 +214,36 @@ var __shazWidgetExport = (() => {
       var listPadding = parseFloat(listStyle.paddingTop) + parseFloat(listStyle.paddingBottom);
       setImportant(list, { "height": tallest + listPadding + "px" });
     }
+    var DOTS_SHAPED_CLASS = "shm-dots-shaped";
+    var DOT_GLYPHS = /[\u2014\u25CB\u25CF\u25A1\u25A0]/;
+    function dotsShowGlyph(ul) {
+      var btn = ul.querySelector("li button");
+      if (!btn) return false;
+      if (getComputedStyle(ul).display === "none" || getComputedStyle(btn).display === "none") return false;
+      var before = getComputedStyle(btn, "::before");
+      return DOT_GLYPHS.test(before.content || "") && parseFloat(before.fontSize) > 0;
+    }
+    function shapeDots() {
+      var lists = element.querySelectorAll('ul[class^="slideTwo-dots"]');
+      for (var i = 0; i < lists.length; i++) {
+        lists[i].classList.remove(DOTS_SHAPED_CLASS);
+        if (dotsShowGlyph(lists[i])) lists[i].classList.add(DOTS_SHAPED_CLASS);
+      }
+    }
     var DOTS_STYLE_ID = "shm-testimonials-dots-style";
     var DOTS_STYLE = [
-      '.shmTestimonial ul[class^="slideTwo-dots"] li button{position:relative!important;display:inline-block!important;width:24px!important;height:24px!important;min-width:24px!important;padding:0!important;border:0!important;background:transparent!important;text-indent:-9999px!important;cursor:pointer}',
+      ".shmTestimonial ul.shm-dots-shaped li button{position:relative!important;width:24px!important;height:24px!important;min-width:24px!important;padding:0!important;border:0!important;background:transparent!important;text-indent:-9999px!important;cursor:pointer}",
       // The shape is all border and padding round a 0x0 content box, and the background is
       // clipped to that content box: a Design tab background-color on the old glyph box (which
       // outranks these rules by specificity) can no longer paint anything. Only a site rule that
       // writes the `background` shorthand would reset the clip. The fill is an inset shadow,
       // which paints over the padding. The button is a 24px hit area with no overflow clip, so
       // a large Design tab font-size still shows the whole shape.
-      '.shmTestimonial ul[class^="slideTwo-dots"] li button::before{content:""!important;position:absolute!important;top:50%!important;left:50%!important;transform:translate(-50%,-50%)!important;box-sizing:content-box!important;width:0!important;height:0!important;padding:.2em!important;line-height:0!important;text-indent:0!important;border:2px solid currentColor!important;border-radius:0!important;background-color:transparent!important;background-image:none!important;background-clip:content-box!important;opacity:1}',
-      ".shmTestimonial ul.slideTwo-dotsl2 li button::before{border-radius:50%!important}",
-      ".shmTestimonial ul.slideTwo-dots li button::before{padding:.06em .4em!important;border:0!important;box-shadow:inset 0 0 0 1em currentColor!important;opacity:.5}",
-      '.shmTestimonial ul[class^="slideTwo-dots"] li.slick-active button::before{box-shadow:inset 0 0 0 1em currentColor!important;opacity:1}',
-      '.shmTestimonial ul[class^="slideTwo-dots"] li button:focus-visible{outline:2px solid currentColor!important;outline-offset:2px!important}'
+      '.shmTestimonial ul.shm-dots-shaped li button::before{content:""!important;position:absolute!important;top:50%!important;left:50%!important;transform:translate(-50%,-50%)!important;box-sizing:content-box!important;width:0!important;height:0!important;padding:.2em!important;line-height:0!important;text-indent:0!important;border:2px solid currentColor!important;border-radius:0!important;background-color:transparent!important;background-image:none!important;background-clip:content-box!important;opacity:1}',
+      ".shmTestimonial ul.shm-dots-shaped.slideTwo-dotsl2 li button::before{border-radius:50%!important}",
+      ".shmTestimonial ul.shm-dots-shaped.slideTwo-dots li button::before{padding:.06em .4em!important;border:0!important;box-shadow:inset 0 0 0 1em currentColor!important;opacity:.5}",
+      ".shmTestimonial ul.shm-dots-shaped li.slick-active button::before{box-shadow:inset 0 0 0 1em currentColor!important;opacity:1}",
+      ".shmTestimonial ul.shm-dots-shaped li button:focus-visible{outline:2px solid currentColor!important;outline-offset:2px!important}"
     ].join("");
     function ensureDotsStyle() {
       var head2 = document.head || document.getElementsByTagName("head")[0];
@@ -280,6 +296,8 @@ var __shazWidgetExport = (() => {
         growWrapper();
       });
       $(element).find(".shmTestimonial-comments").addClass("shmTestimonial-commentsSlider");
+      $(element).find(".shmTestimonial").on("reInit", shapeDots);
+      shapeDots();
       watchSlider();
     }
     function settleSlider(track) {

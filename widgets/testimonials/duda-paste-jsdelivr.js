@@ -1,5 +1,5 @@
-// LAST UPDATED: 2026-11-12 12:00 AEDT (v0.1.47)
-// Change: Slider dots are CSS shapes (lines, dots, squares) in the Design tab colour and size, not font glyphs with a painted box behind them; carries the Quinn pass 2 card fit (#50) so the cards fill the Testimonials Container Height, all the same.
+// LAST UPDATED: 2026-11-12 13:20 AEDT (v0.1.48)
+// Change: Slider dots are reshaped only where a glyph dot is visibly rendering; sites that hide or restyle their dots (font-size 0, display none) keep them as they were. Carries v0.1.47 (CSS-shape dots, cards fill the Testimonials Container Height).
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
 // existing widget JS.
@@ -16,7 +16,7 @@
 // ===========================================================================
 (function () {
   var NAME = "testimonials";
-  var TAG = "v0.1.47";
+  var TAG = "v0.1.48";
   var BUNDLE = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" + TAG + "/dist/" + NAME + "/0.1.0/widget.min.js";
   var SDK = "https://sdk.shazamme.io/js/shazamme-1.0.3.min.js";
   window.__shazSDKPromise = window.__shazSDKPromise || new Promise(function (res) {

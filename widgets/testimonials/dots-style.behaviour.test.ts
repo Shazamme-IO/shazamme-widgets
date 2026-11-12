@@ -43,12 +43,14 @@ describe('testimonials ensureDotsStyle', () => {
 
   it('replaces the glyph with an empty box for every dot layout the widget can pick', () => {
     const { css } = install();
-    expect(css).toContain('ul[class^="slideTwo-dots"] li button::before{content:""!important');
-    expect(css).toContain('ul.slideTwo-dotsl2 li button::before{border-radius:50%');
-    expect(css).toContain('ul.slideTwo-dots li button::before{padding:.06em .4em');
+    expect(css).toContain('ul.shm-dots-shaped li button::before{content:""!important');
+    expect(css).toContain('ul.shm-dots-shaped.slideTwo-dotsl2 li button::before{border-radius:50%');
+    expect(css).toContain('ul.shm-dots-shaped.slideTwo-dots li button::before{padding:.06em .4em');
     expect(css).toContain('width:0!important;height:0!important;padding:.2em!important');
     expect(css).toContain('background-clip:content-box!important');
     expect(css).toContain('li button{position:relative!important');
+    expect(css).not.toContain('display:inline-block!important');
+    expect(css.match(/\.shmTestimonial ul/g)!.length).toBe(css.match(/\.shmTestimonial ul\.shm-dots-shaped/g)!.length);
     expect(css).toContain('text-indent:-9999px!important');
     expect(css).not.toContain('overflow:hidden');
     expect(css).toContain('background-color:transparent!important;background-image:none!important;background-clip:content-box!important');
@@ -61,6 +63,32 @@ describe('testimonials ensureDotsStyle', () => {
     expect(css).toContain('border:2px solid currentColor');
     expect(css).not.toMatch(/#[0-9a-f]{3,6}\b/i);
     expect(css).not.toMatch(/font-size|rgb/);
+  });
+
+  it('shapes only a list whose glyph is visibly rendering, and re-checks on reInit', () => {
+    const start = src.indexOf('var DOTS_SHAPED_CLASS =');
+    const end = src.indexOf('\n}\n', src.indexOf('function shapeDots()', start)) + 3;
+    expect(start).toBeGreaterThan(-1);
+    const body = src.slice(start, end);
+    document.body.innerHTML = '<div id="w"><div class="shmTestimonial"><ul class="slideTwo-dotsl2"><li><button>1</button></li></ul><ul class="slideTwo-dots"><li><button>1</button></li></ul><ul class="slideTwo-dotsl3"><li><button>1</button></li></ul></div></div>';
+    const [glyph, hidden, custom] = Array.from(document.querySelectorAll('ul'));
+    const before = new Map<Element, { content: string; fontSize: string }>([
+      [glyph, { content: '"●"', fontSize: '20px' }],
+      [hidden, { content: '"—"', fontSize: '0px' }],
+      [custom, { content: '""', fontSize: '20px' }],
+    ]);
+    const fakeComputed = (el: Element, pseudo?: string) => {
+      if (pseudo === '::before') return before.get(el.closest('ul')!)!;
+      return { display: 'block' };
+    };
+    const run = new Function('element', 'getComputedStyle', `${body}\nshapeDots();`) as (e: Element, g: unknown) => void;
+    run(document.getElementById('w')!, fakeComputed);
+    expect(glyph.classList.contains('shm-dots-shaped')).toBe(true);
+    expect(hidden.classList.contains('shm-dots-shaped')).toBe(false);
+    expect(custom.classList.contains('shm-dots-shaped')).toBe(false);
+    const slider = src.slice(src.indexOf('function slider(){'));
+    expect(slider).toContain(".on('reInit', shapeDots)");
+    expect(slider.indexOf('shapeDots();')).toBeGreaterThan(slider.indexOf('.slick({'));
   });
 
   it('is installed before the slider is built', () => {
