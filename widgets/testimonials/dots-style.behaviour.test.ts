@@ -65,30 +65,65 @@ describe('testimonials ensureDotsStyle', () => {
     expect(css).not.toMatch(/font-size|rgb/);
   });
 
-  it('shapes only a list whose glyph is visibly rendering, and re-checks on reInit', () => {
+  function shapeDotsRunner() {
     const start = src.indexOf('var DOTS_SHAPED_CLASS =');
     const end = src.indexOf('\n}\n', src.indexOf('function shapeDots()', start)) + 3;
     expect(start).toBeGreaterThan(-1);
-    const body = src.slice(start, end);
-    document.body.innerHTML = '<div id="w"><div class="shmTestimonial"><ul class="slideTwo-dotsl2"><li><button>1</button></li></ul><ul class="slideTwo-dots"><li><button>1</button></li></ul><ul class="slideTwo-dotsl3"><li><button>1</button></li></ul></div></div>';
-    const [glyph, hidden, custom] = Array.from(document.querySelectorAll('ul'));
-    const before = new Map<Element, { content: string; fontSize: string }>([
-      [glyph, { content: '"●"', fontSize: '20px' }],
-      [hidden, { content: '"—"', fontSize: '0px' }],
-      [custom, { content: '""', fontSize: '20px' }],
-    ]);
-    const fakeComputed = (el: Element, pseudo?: string) => {
-      if (pseudo === '::before') return before.get(el.closest('ul')!)!;
-      return { display: 'block' };
+    return new Function('element', 'getComputedStyle', `${src.slice(start, end)}\nshapeDots();`) as (e: Element, g: unknown) => void;
+  }
+
+  type Style = { content?: string; fontSize?: string; display?: string; visibility?: string; opacity?: string };
+  const VISIBLE: Style = { display: 'block', visibility: 'visible', opacity: '1' };
+
+  // One list per case; `styles` gives the ul, button and ::before computed styles the stub returns.
+  function run(cases: Record<string, { ul?: Style; btn?: Style; before: Style }>) {
+    document.body.innerHTML = `<div id="w"><div class="shmTestimonial">${Object.keys(cases).map((k) => `<ul class="slideTwo-dotsl2" data-case="${k}"><li><button>1</button></li></ul>`).join('')}</div></div>`;
+    const fake = (el: Element, pseudo?: string): Style => {
+      const c = cases[el.closest('ul')!.getAttribute('data-case')!];
+      if (pseudo === '::before') return { ...VISIBLE, fontSize: '20px', ...c.before };
+      return { ...VISIBLE, ...(el.tagName === 'UL' ? c.ul : c.btn) };
     };
-    const run = new Function('element', 'getComputedStyle', `${body}\nshapeDots();`) as (e: Element, g: unknown) => void;
-    run(document.getElementById('w')!, fakeComputed);
-    expect(glyph.classList.contains('shm-dots-shaped')).toBe(true);
-    expect(hidden.classList.contains('shm-dots-shaped')).toBe(false);
-    expect(custom.classList.contains('shm-dots-shaped')).toBe(false);
+    shapeDotsRunner()(document.getElementById('w')!, fake);
+    return Object.fromEntries(Object.keys(cases).map((k) => [k, document.querySelector(`[data-case="${k}"]`)!.classList.contains('shm-dots-shaped')]));
+  }
+
+  it('shapes a list for each of the five glyphs the CSS tab draws', () => {
+    expect(run({ dash: { before: { content: '"—"' } }, circle: { before: { content: '"○"' } }, disc: { before: { content: '"●"' } }, square: { before: { content: '"□"' } }, block: { before: { content: '"■"' } } }))
+      .toEqual({ dash: true, circle: true, disc: true, square: true, block: true });
+  });
+
+  it('leaves alone a list whose dots are hidden or drawn by the site', () => {
+    expect(run({
+      fontSizeZero: { before: { content: '"●"', fontSize: '0px' } },
+      custom: { before: { content: '""' } },
+      noContent: { before: { content: 'none' } },
+      ulNone: { ul: { display: 'none' }, before: { content: '"●"' } },
+      btnNone: { btn: { display: 'none' }, before: { content: '"●"' } },
+      btnInvisible: { btn: { visibility: 'hidden' }, before: { content: '"●"' } },
+      btnTransparent: { btn: { opacity: '0' }, before: { content: '"●"' } },
+      beforeInvisible: { before: { content: '"●"', visibility: 'hidden' } },
+      beforeTransparent: { before: { content: '"●"', opacity: '0' } },
+    })).toEqual({ fontSizeZero: false, custom: false, noContent: false, ulNone: false, btnNone: false, btnInvisible: false, btnTransparent: false, beforeInvisible: false, beforeTransparent: false });
+  });
+
+  it('re-evaluates on every run: a list keeps its class while the glyph shows and loses it when hidden', () => {
+    const cases: Record<string, { before: Style }> = { a: { before: { content: '"●"' } } };
+    expect(run(cases)).toEqual({ a: true });
+    const ul = document.querySelector('[data-case="a"]')!;
+    const fake = (el: Element, pseudo?: string): Style => (pseudo === '::before' ? { ...VISIBLE, fontSize: '20px', content: '"●"' } : VISIBLE);
+    shapeDotsRunner()(document.getElementById('w')!, fake);
+    expect(ul.classList.contains('shm-dots-shaped')).toBe(true);
+    const hiddenNow = (el: Element, pseudo?: string): Style => (pseudo === '::before' ? { ...VISIBLE, fontSize: '0px', content: '"●"' } : VISIBLE);
+    shapeDotsRunner()(document.getElementById('w')!, hiddenNow);
+    expect(ul.classList.contains('shm-dots-shaped')).toBe(false);
+  });
+
+  it('is bound once to reInit, runs after init and on every refit', () => {
     const slider = src.slice(src.indexOf('function slider(){'));
-    expect(slider).toContain(".on('reInit', shapeDots)");
+    expect(slider).toContain(".off('reInit.shmDots').on('reInit.shmDots', shapeDots)");
     expect(slider.indexOf('shapeDots();')).toBeGreaterThan(slider.indexOf('.slick({'));
+    const refit = src.slice(src.indexOf('function refitSlider(){'), src.indexOf('\n}\n', src.indexOf('function refitSlider(){')));
+    expect(refit).toContain('shapeDots();');
   });
 
   it('is installed before the slider is built', () => {

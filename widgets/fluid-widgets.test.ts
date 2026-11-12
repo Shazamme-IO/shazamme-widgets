@@ -105,6 +105,17 @@ describe('Quinn pass 2 (WOW, 6 Nov 2026)', () => {
     expect(body).not.toContain("slick.$slides.css('height'");
   });
 
+  it('testimonials: the container height is a floor, read from the holder with the card hidden, never a flex squash', () => {
+    const body = src('testimonials');
+    expect(body).toContain('function floorHeight(slide)');
+    expect(body).toContain("card.style.setProperty('display', 'none', 'important')");
+    expect(body).toContain('tallest = Math.max(tallest, floor)');
+    const fluid = body.slice(body.indexOf('function fluidSlides(slick)'), body.indexOf('\n}\n', body.indexOf('function fluidSlides(slick)')));
+    expect(fluid).toContain("'display': 'block' });");
+    expect(fluid).not.toContain("'display': 'flex' });");
+    expect(fluid).toContain("if (holder.parentElement !== this) setImportant(holder, { 'height': 'auto' });");
+  });
+
   it('testimonials: the wrapper floor is cleared before it is measured so it can shrink again', () => {
     const grow = src('testimonials').match(/function growWrapper\(\)\{[\s\S]*?\n\}/)![0];
     expect(grow.indexOf("'min-height', '0px'")).toBeGreaterThan(-1);
