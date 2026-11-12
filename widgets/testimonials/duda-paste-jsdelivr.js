@@ -1,5 +1,5 @@
 // LAST UPDATED: 2026-11-12 12:00 AEDT (v0.1.47)
-// Change: Slider dots are CSS shapes (lines, dots, squares) in the Design tab colour and size, not font glyphs with a painted box behind them; includes v0.1.41 (cards fill the Testimonials Container Height, all the same).
+// Change: Slider dots are CSS shapes (lines, dots, squares) in the Design tab colour and size, not font glyphs with a painted box behind them; carries the Quinn pass 2 card fit (#50) so the cards fill the Testimonials Container Height, all the same.
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
 // existing widget JS.

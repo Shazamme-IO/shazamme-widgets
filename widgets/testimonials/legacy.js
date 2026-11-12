@@ -176,13 +176,16 @@ function fitHeights(slick, first){
 // source order against the widget CSS at equal specificity.
 var DOTS_STYLE_ID = 'shm-testimonials-dots-style';
 var DOTS_STYLE = [
-    '.shmTestimonial ul[class^="slideTwo-dots"] li button{position:relative!important;display:inline-block!important;width:24px!important;height:24px!important;min-width:24px!important;padding:0!important;border:0!important;background:transparent!important;overflow:hidden!important;cursor:pointer}',
+    '.shmTestimonial ul[class^="slideTwo-dots"] li button{position:relative!important;display:inline-block!important;width:24px!important;height:24px!important;min-width:24px!important;padding:0!important;border:0!important;background:transparent!important;text-indent:-9999px!important;cursor:pointer}',
     // The shape is all border and padding round a 0x0 content box, and the background is
-    // clipped to that content box: a Design tab background colour on the old glyph box can no
-    // longer paint anything. The fill is an inset shadow, which paints over the padding.
-    '.shmTestimonial ul[class^="slideTwo-dots"] li button::before{content:""!important;position:absolute!important;top:50%!important;left:50%!important;transform:translate(-50%,-50%)!important;box-sizing:content-box!important;width:0!important;height:0!important;padding:.2em!important;line-height:0!important;text-indent:0!important;border:2px solid currentColor!important;border-radius:0!important;background-clip:content-box!important;opacity:1}',
+    // clipped to that content box: a Design tab background-color on the old glyph box (which
+    // outranks these rules by specificity) can no longer paint anything. Only a site rule that
+    // writes the `background` shorthand would reset the clip. The fill is an inset shadow,
+    // which paints over the padding. The button is a 24px hit area with no overflow clip, so
+    // a large Design tab font-size still shows the whole shape.
+    '.shmTestimonial ul[class^="slideTwo-dots"] li button::before{content:""!important;position:absolute!important;top:50%!important;left:50%!important;transform:translate(-50%,-50%)!important;box-sizing:content-box!important;width:0!important;height:0!important;padding:.2em!important;line-height:0!important;text-indent:0!important;border:2px solid currentColor!important;border-radius:0!important;background-color:transparent!important;background-image:none!important;background-clip:content-box!important;opacity:1}',
     '.shmTestimonial ul.slideTwo-dotsl2 li button::before{border-radius:50%!important}',
-    '.shmTestimonial ul.slideTwo-dots li button::before{padding:.06em .4em!important;border:0!important;box-shadow:inset 0 0 0 1em currentColor!important;opacity:.35}',
+    '.shmTestimonial ul.slideTwo-dots li button::before{padding:.06em .4em!important;border:0!important;box-shadow:inset 0 0 0 1em currentColor!important;opacity:.5}',
     '.shmTestimonial ul[class^="slideTwo-dots"] li.slick-active button::before{box-shadow:inset 0 0 0 1em currentColor!important;opacity:1}',
     '.shmTestimonial ul[class^="slideTwo-dots"] li button:focus-visible{outline:2px solid currentColor!important;outline-offset:2px!important}'
 ].join('');

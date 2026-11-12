@@ -17,7 +17,14 @@ function install(): { css: string; id: string } {
   const fn = src.indexOf('function ensureDotsStyle()', start);
   expect(start, 'DOTS_STYLE_ID not found').toBeGreaterThan(-1);
   expect(fn, 'ensureDotsStyle not found').toBeGreaterThan(start);
-  const body = src.slice(start, src.indexOf('\n}\n', fn) + 3);
+  // Walk the braces to the end of ensureDotsStyle, so a nested block cannot cut the slice short.
+  let depth = 0;
+  let end = fn;
+  for (let i = src.indexOf('{', fn); i < src.length; i++) {
+    if (src[i] === '{') depth++;
+    else if (src[i] === '}' && --depth === 0) { end = i + 1; break; }
+  }
+  const body = src.slice(start, end);
   const run = new Function('document', `${body}\nensureDotsStyle();\nreturn { css: DOTS_STYLE, id: DOTS_STYLE_ID };`) as (d: Document) => { css: string; id: string };
   return run(document);
 }
@@ -41,6 +48,10 @@ describe('testimonials ensureDotsStyle', () => {
     expect(css).toContain('ul.slideTwo-dots li button::before{padding:.06em .4em');
     expect(css).toContain('width:0!important;height:0!important;padding:.2em!important');
     expect(css).toContain('background-clip:content-box!important');
+    expect(css).toContain('li button{position:relative!important');
+    expect(css).toContain('text-indent:-9999px!important');
+    expect(css).not.toContain('overflow:hidden');
+    expect(css).toContain('background-color:transparent!important;background-image:none!important;background-clip:content-box!important');
     expect(css).toContain('li.slick-active button::before{box-shadow:inset 0 0 0 1em currentColor');
     expect(document.querySelector('style')!.textContent).toBe(css);
   });
