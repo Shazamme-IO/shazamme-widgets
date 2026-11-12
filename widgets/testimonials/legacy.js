@@ -316,7 +316,11 @@ var DOTS_STYLE = [
     '.shmTestimonial ul.shm-dots-shaped.slideTwo-dotsl2 li button::before{border-radius:50%!important}',
     '.shmTestimonial ul.shm-dots-shaped.slideTwo-dots li button::before{padding:.06em .4em!important;border:0!important;box-shadow:inset 0 0 0 1em currentColor!important;opacity:.5}',
     '.shmTestimonial ul.shm-dots-shaped li.slick-active button::before{box-shadow:inset 0 0 0 1em currentColor!important;opacity:1}',
-    '.shmTestimonial ul.shm-dots-shaped li button:focus-visible{outline:2px solid currentColor!important;outline-offset:2px!important}'
+    // A 24px hit area and focus ring, out of flow so the row keeps its pitch: the button itself
+    // is near zero wide and the dash shape is only a couple of px tall.
+    '.shmTestimonial ul.shm-dots-shaped li button::after{content:""!important;position:absolute!important;top:50%!important;left:50%!important;width:24px!important;height:24px!important;transform:translate(-50%,-50%)!important;background:transparent!important;border:0!important}',
+    '.shmTestimonial ul.shm-dots-shaped li button:focus-visible{outline:none!important}',
+    '.shmTestimonial ul.shm-dots-shaped li button:focus-visible::after{outline:2px solid currentColor!important;outline-offset:2px!important}'
 ].join('');
 
 function ensureDotsStyle(){
