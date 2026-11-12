@@ -226,7 +226,7 @@ describe('testimonials adaptive height', () => {
     expect(start, name).toBeGreaterThan(-1);
     return src.slice(start, src.indexOf('\n}\n', start) + 3);
   }
-  const body = ['floorHeight', 'windowCards', 'visibleHeight', 'sizeList', 'fitAdaptive'].map(fn).join('\n');
+  const body = ['saveInline', 'restoreInline', 'floorHeight', 'windowCards', 'visibleHeight', 'sizeList', 'fitAdaptive'].map(fn).join('\n');
   const run = new Function('slick', 'first', 'setImportant', 'getComputedStyle', `${body}\nfitAdaptive(slick, first);`) as (slick: unknown, first: number, set: unknown, gcs: unknown) => void;
 
   // cards: text height per slide index; floor: holder height with the card hidden; top: where each card
