@@ -108,3 +108,39 @@ describe('testimonials', () => {
     expect(src('testimonials')).toContain('slidesToShow: fluidColumns()');
   });
 });
+
+describe('testimonials: container height is a floor, dots are CSS shapes (12 Nov 2026)', () => {
+  it('cards fit their text and the slider is as tall as the cards on screen', () => {
+    const body = src('testimonials');
+    expect(body).toContain('function fitHeights(slick, first)');
+    expect(body).toContain("'min-height': '0'");
+    expect(body).toContain('data-slick-index');
+    expect(body).not.toContain("slick.$slides.css('height'");
+  });
+
+  it('the container height is a floor, read from the holder with the card hidden, never a flex squash', () => {
+    const body = src('testimonials');
+    expect(body).toContain('function floorHeight(slide)');
+    expect(body).toContain("card.style.setProperty('display', 'none', 'important')");
+    expect(body).toContain('return Math.max(tallest, floorHeight(cards.length ? cards[0].slide : null));');
+    expect(body).toContain('function fitAdaptive(slick, first)');
+    const fluid = body.slice(body.indexOf('function fluidSlides(slick)'), body.indexOf('\n}\n', body.indexOf('function fluidSlides(slick)')));
+    expect(fluid).not.toContain("'display': 'flex' });");
+    expect(fluid).toContain("'display': 'block', 'height': 'auto' });");
+    expect(fluid).not.toContain('holder.parentElement !== this');
+  });
+
+  it('the wrapper floor is cleared before it is measured so it can shrink again', () => {
+    const grow = src('testimonials').match(/function growWrapper\(\)\{[\s\S]*?\n\}/)![0];
+    expect(grow.indexOf("'min-height', '0px'")).toBeGreaterThan(-1);
+    expect(grow.indexOf("'min-height', '0px'")).toBeLessThan(grow.indexOf('contentHeight'));
+  });
+
+  it('dots are reshaped only where a glyph dot is visibly rendering, by one injected stylesheet', () => {
+    const body = src('testimonials');
+    expect(body).toContain("var DOTS_STYLE_ID = 'shm-testimonials-dots-style';");
+    expect(body).toContain('function dotsShowGlyph(ul)');
+    expect(body).toContain('function shapeDots()');
+    expect(bundle('testimonials')).toContain('shm-dots-shaped');
+  });
+});
