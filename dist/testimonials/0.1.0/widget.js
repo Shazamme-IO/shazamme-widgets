@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 603208e30fe3. Registers window.ShazammeWidget["<name>"].
+ * Build 9b763c30fff9. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -210,12 +210,14 @@ var __shazWidgetExport = (() => {
       var card = slide && slide.querySelector(".shmTestimonial-comments");
       if (!holder || !card) return 0;
       var saved = saveInline(card, ["display"]).concat(saveInline(holder, ["height", "min-height"]));
-      holder.style.removeProperty("height");
-      holder.style.removeProperty("min-height");
-      card.style.setProperty("display", "none", "important");
-      var floor = Math.ceil(holder.getBoundingClientRect().height);
-      restoreInline(saved);
-      return floor;
+      try {
+        holder.style.removeProperty("height");
+        holder.style.removeProperty("min-height");
+        card.style.setProperty("display", "none", "important");
+        return Math.ceil(holder.getBoundingClientRect().height);
+      } finally {
+        restoreInline(saved);
+      }
     }
     function windowCards(slick, first) {
       var visible = slick.options.slidesToShow;

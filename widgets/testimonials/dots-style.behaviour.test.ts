@@ -193,6 +193,16 @@ describe('testimonials floorHeight', () => {
     expect(holder.getAttribute('style')).toBeNull();
   });
 
+  it('returns 0 and touches nothing when the card is the slide\'s direct child or the slide is empty', () => {
+    document.body.innerHTML = '<div class="slick-slide"><div class="shmTestimonial-comments" style="height: auto !important;">text</div></div><div class="slick-slide empty"></div>';
+    const direct = document.querySelector('.slick-slide')!;
+    const card = direct.firstElementChild as HTMLElement;
+    card.getBoundingClientRect = () => ({ height: card.style.display === 'none' ? 0 : 250 } as DOMRect);
+    expect(runner()(direct)).toBe(0);
+    expect(card.getAttribute('style')).toBe('height: auto !important;');
+    expect(runner()(document.querySelector('.slick-slide.empty')!)).toBe(0);
+  });
+
   it('reads the holder height with the card hidden and puts the card back exactly as it was', () => {
     const { slide, card } = slideWith(490);
     card.style.setProperty('display', 'block', 'important');

@@ -176,12 +176,14 @@ function floorHeight(slide){
     var card = slide && slide.querySelector('.shmTestimonial-comments');
     if (!holder || !card) return 0;
     var saved = saveInline(card, ['display']).concat(saveInline(holder, ['height', 'min-height']));
-    holder.style.removeProperty('height');
-    holder.style.removeProperty('min-height');
-    card.style.setProperty('display', 'none', 'important');
-    var floor = Math.ceil(holder.getBoundingClientRect().height);
-    restoreInline(saved);
-    return floor;
+    try {
+        holder.style.removeProperty('height');
+        holder.style.removeProperty('min-height');
+        card.style.setProperty('display', 'none', 'important');
+        return Math.ceil(holder.getBoundingClientRect().height);
+    } finally {
+        restoreInline(saved);
+    }
 }
 
 // The cards Slick shows for window `first`: found by Slick's own index (clones carry one too),
