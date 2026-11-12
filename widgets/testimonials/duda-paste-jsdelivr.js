@@ -1,5 +1,5 @@
-// LAST UPDATED: 2026-11-06 18:30 AEDT (v0.1.41)
-// Change: Quinn pass 2: cards fit their text (no 415px floor), cards on screen share the tallest one's height, wrapper shrinks again when content does (no empty band under the card).
+// LAST UPDATED: 2026-11-12 12:00 AEDT (v0.1.47)
+// Change: Slider dots are CSS shapes (lines, dots, squares) in the Design tab colour and size, not font glyphs with a painted box behind them; carries the Quinn pass 2 card fit (#50) so the cards fill the Testimonials Container Height, all the same.
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
 // existing widget JS.
@@ -16,7 +16,7 @@
 // ===========================================================================
 (function () {
   var NAME = "testimonials";
-  var TAG = "v0.1.41";
+  var TAG = "v0.1.47";
   var BUNDLE = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" + TAG + "/dist/" + NAME + "/0.1.0/widget.min.js";
   var SDK = "https://sdk.shazamme.io/js/shazamme-1.0.3.min.js";
   window.__shazSDKPromise = window.__shazSDKPromise || new Promise(function (res) {
