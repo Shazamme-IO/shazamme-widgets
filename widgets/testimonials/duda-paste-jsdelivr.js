@@ -1,5 +1,5 @@
-// LAST UPDATED: 2026-11-12 13:20 AEDT (v0.1.48)
-// Change: Slider dots are reshaped only where a glyph dot is visibly rendering; sites that hide or restyle their dots (font-size 0, display none) keep them as they were. Carries v0.1.47 (CSS-shape dots, cards fill the Testimonials Container Height).
+// LAST UPDATED: 2026-11-12 14:05 AEDT (v0.1.49)
+// Change: The Testimonials Container Height is a floor again, not a fixed height: a testimonial longer than it gets its full card, and cards on screen together share the tallest height. Dots hidden with visibility or opacity stay hidden; the glyph check re-runs when a hidden section is shown. Carries v0.1.48 and v0.1.47.
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
 // existing widget JS.
@@ -16,7 +16,7 @@
 // ===========================================================================
 (function () {
   var NAME = "testimonials";
-  var TAG = "v0.1.48";
+  var TAG = "v0.1.49";
   var BUNDLE = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" + TAG + "/dist/" + NAME + "/0.1.0/widget.min.js";
   var SDK = "https://sdk.shazamme.io/js/shazamme-1.0.3.min.js";
   window.__shazSDKPromise = window.__shazSDKPromise || new Promise(function (res) {

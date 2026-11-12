@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 36a7ecfefb8d. Registers window.ShazammeWidget["<name>"].
+ * Build 583780f023e1. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -184,7 +184,8 @@ var __shazWidgetExport = (() => {
         var card = this.querySelector(".shmTestimonial-comments");
         if (!card) return;
         for (var holder = card.parentElement; holder && holder !== this; holder = holder.parentElement) {
-          setImportant(holder, { "width": "100%", "padding-left": "0", "padding-right": "0", "margin-left": "0", "margin-right": "0", "box-sizing": "border-box", "display": "flex" });
+          setImportant(holder, { "width": "100%", "padding-left": "0", "padding-right": "0", "margin-left": "0", "margin-right": "0", "box-sizing": "border-box", "display": "block" });
+          if (holder.parentElement !== this) setImportant(holder, { "height": "auto" });
         }
         setImportant(card, { "width": "100%", "max-width": "none", "margin-left": "0", "margin-right": "0", "display": "block", "box-sizing": "border-box", "min-height": "0", "height": "auto" });
       });
@@ -194,6 +195,17 @@ var __shazWidgetExport = (() => {
         $(this).wrap('<div class="shm-slide"></div>');
       });
     }
+    function floorHeight(slide) {
+      var holder = slide && slide.firstElementChild;
+      var card = slide && slide.querySelector(".shmTestimonial-comments");
+      if (!holder || !card) return 0;
+      var prev = card.style.getPropertyValue("display");
+      var prevPriority = card.style.getPropertyPriority("display");
+      card.style.setProperty("display", "none", "important");
+      var floor = Math.ceil(holder.getBoundingClientRect().height);
+      card.style.setProperty("display", prev || "block", prevPriority || "important");
+      return floor;
+    }
     function fitHeights(slick, first) {
       var visible = slick.options.slidesToShow;
       var cards = slick.$slideTrack.find(".shmTestimonial-comments");
@@ -201,10 +213,15 @@ var __shazWidgetExport = (() => {
         setImportant(this, { "min-height": "0" });
       });
       var tallest = 0;
+      var floor = -1;
       for (var i = first; i < first + visible; i++) {
-        var card = slick.$slideTrack.children('[data-slick-index="' + i + '"]').find(".shmTestimonial-comments")[0];
-        if (card) tallest = Math.max(tallest, Math.ceil(card.getBoundingClientRect().height));
+        var slide = slick.$slideTrack.children('[data-slick-index="' + i + '"]')[0];
+        var card = slide && slide.querySelector(".shmTestimonial-comments");
+        if (!card) continue;
+        if (floor < 0) floor = floorHeight(slide);
+        tallest = Math.max(tallest, Math.ceil(card.getBoundingClientRect().height));
       }
+      tallest = Math.max(tallest, floor);
       if (!tallest) return;
       cards.each(function() {
         setImportant(this, { "min-height": tallest + "px" });
@@ -216,12 +233,16 @@ var __shazWidgetExport = (() => {
     }
     var DOTS_SHAPED_CLASS = "shm-dots-shaped";
     var DOT_GLYPHS = /[\u2014\u25CB\u25CF\u25A1\u25A0]/;
+    function isHidden(el) {
+      var cs = getComputedStyle(el);
+      return cs.display === "none" || cs.visibility === "hidden" || parseFloat(cs.opacity) === 0;
+    }
     function dotsShowGlyph(ul) {
       var btn = ul.querySelector("li button");
       if (!btn) return false;
-      if (getComputedStyle(ul).display === "none" || getComputedStyle(btn).display === "none") return false;
+      if (isHidden(ul) || isHidden(btn)) return false;
       var before = getComputedStyle(btn, "::before");
-      return DOT_GLYPHS.test(before.content || "") && parseFloat(before.fontSize) > 0;
+      return DOT_GLYPHS.test(before.content || "") && parseFloat(before.fontSize) > 0 && before.visibility !== "hidden" && parseFloat(before.opacity) !== 0;
     }
     function shapeDots() {
       var lists = element.querySelectorAll('ul[class^="slideTwo-dots"]');
@@ -296,7 +317,7 @@ var __shazWidgetExport = (() => {
         growWrapper();
       });
       $(element).find(".shmTestimonial-comments").addClass("shmTestimonial-commentsSlider");
-      $(element).find(".shmTestimonial").on("reInit", shapeDots);
+      $(element).find(".shmTestimonial").off("reInit.shmDots").on("reInit.shmDots", shapeDots);
       shapeDots();
       watchSlider();
     }
@@ -320,6 +341,7 @@ var __shazWidgetExport = (() => {
         track.slick("setPosition");
       }
       settleSlider(track);
+      shapeDots();
       clearTimeout(refitTimer);
       refitTimer = setTimeout(function() {
         settleSlider(track);

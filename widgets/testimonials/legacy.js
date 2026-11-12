@@ -130,11 +130,16 @@ function fluidSlides(slick){
         setImportant(this, { 'width': slot + 'px', 'max-width': 'none', 'margin-left': '0', 'margin-right': '0', 'padding-left': side + 'px', 'padding-right': side + 'px', 'box-sizing': 'border-box', 'height': 'auto', 'display': 'flex', 'align-items': 'flex-start' });
         var card = this.querySelector('.shmTestimonial-comments');
         if (!card) return;
+        // Holders are plain blocks: a flex holder would stretch or squash the card to the
+        // Design tab container height, which is a floor, not a fixed height. The outer holder
+        // (.slick-slide > div) carries that px height from the site CSS, so it keeps its own
+        // height; inner holders follow their content.
         for (var holder = card.parentElement; holder && holder !== this; holder = holder.parentElement) {
-            setImportant(holder, { 'width': '100%', 'padding-left': '0', 'padding-right': '0', 'margin-left': '0', 'margin-right': '0', 'box-sizing': 'border-box', 'display': 'flex' });
+            setImportant(holder, { 'width': '100%', 'padding-left': '0', 'padding-right': '0', 'margin-left': '0', 'margin-right': '0', 'box-sizing': 'border-box', 'display': 'block' });
+            if (holder.parentElement !== this) setImportant(holder, { 'height': 'auto' });
         }
         // Site CSS pins a 415px min-height on the card; the card should fit its text.
-        // fitHeights() then equalises the cards that are on screen together.
+        // fitHeights() then equalises the cards that are on screen together and applies the floor.
         setImportant(card, { 'width': '100%', 'max-width': 'none', 'margin-left': '0', 'margin-right': '0', 'display': 'block', 'box-sizing': 'border-box', 'min-height': '0', 'height': 'auto' });
     });
 }
@@ -147,18 +152,40 @@ function wrapCards(slider){
     });
 }
 
-// Cards on screen together share the height of the tallest of them; the slider is exactly that
-// tall, so there is no empty band under short testimonials. Slides are found by Slick's own
-// index (clones carry one too), so the window is right when the slider is about to wrap.
+// Slides are found by Slick's own index (clones carry one too), so the window is right when the
+// slider is about to wrap.
+// The Design tab "Testimonials Container Height" is a px height the site CSS puts on
+// .slick-slide > div. With the card hidden the holder shows that height alone (0 when none is
+// set), so this reads the floor without parsing stylesheets. One slide is enough: the setting
+// is the same for every slide.
+function floorHeight(slide){
+    var holder = slide && slide.firstElementChild;
+    var card = slide && slide.querySelector('.shmTestimonial-comments');
+    if (!holder || !card) return 0;
+    var prev = card.style.getPropertyValue('display');
+    var prevPriority = card.style.getPropertyPriority('display');
+    card.style.setProperty('display', 'none', 'important');
+    var floor = Math.ceil(holder.getBoundingClientRect().height);
+    card.style.setProperty('display', prev || 'block', prevPriority || 'important');
+    return floor;
+}
+
+// Cards on screen together share one height: the tallest of their texts, or the Design tab
+// container height when that is taller. A long testimonial always gets its full height.
 function fitHeights(slick, first){
     var visible = slick.options.slidesToShow;
     var cards = slick.$slideTrack.find('.shmTestimonial-comments');
     cards.each(function(){ setImportant(this, { 'min-height': '0' }); });
     var tallest = 0;
+    var floor = -1;
     for (var i = first; i < first + visible; i++) {
-        var card = slick.$slideTrack.children('[data-slick-index="' + i + '"]').find('.shmTestimonial-comments')[0];
-        if (card) tallest = Math.max(tallest, Math.ceil(card.getBoundingClientRect().height));
+        var slide = slick.$slideTrack.children('[data-slick-index="' + i + '"]')[0];
+        var card = slide && slide.querySelector('.shmTestimonial-comments');
+        if (!card) continue;
+        if (floor < 0) floor = floorHeight(slide);
+        tallest = Math.max(tallest, Math.ceil(card.getBoundingClientRect().height));
     }
+    tallest = Math.max(tallest, floor);
     if (!tallest) return;
     cards.each(function(){ setImportant(this, { 'min-height': tallest + 'px' }); });
     var list = slick.$list[0];
@@ -181,14 +208,21 @@ function fitHeights(slick, first){
 var DOTS_SHAPED_CLASS = 'shm-dots-shaped';
 var DOT_GLYPHS = /[\u2014\u25CB\u25CF\u25A1\u25A0]/;
 
+function isHidden(el){
+    var cs = getComputedStyle(el);
+    return cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) === 0;
+}
+
 function dotsShowGlyph(ul){
     var btn = ul.querySelector('li button');
     if (!btn) return false;
-    if (getComputedStyle(ul).display === 'none' || getComputedStyle(btn).display === 'none') return false;
+    if (isHidden(ul) || isHidden(btn)) return false;
     var before = getComputedStyle(btn, '::before');
-    return DOT_GLYPHS.test(before.content || '') && parseFloat(before.fontSize) > 0;
+    return DOT_GLYPHS.test(before.content || '') && parseFloat(before.fontSize) > 0 && before.visibility !== 'hidden' && parseFloat(before.opacity) !== 0;
 }
 
+// Runs after init, on every reInit (Slick rebuilds the list) and on every refit (a widget that
+// initialised inside a hidden section reads no glyph until the section is shown).
 function shapeDots(){
     var lists = element.querySelectorAll('ul[class^="slideTwo-dots"]');
     for (var i = 0; i < lists.length; i++) {
@@ -272,7 +306,7 @@ function slider(){
         growWrapper();
     });
     $(element).find(".shmTestimonial-comments").addClass("shmTestimonial-commentsSlider");
-    $(element).find(".shmTestimonial").on('reInit', shapeDots);
+    $(element).find(".shmTestimonial").off('reInit.shmDots').on('reInit.shmDots', shapeDots);
     shapeDots();
     watchSlider();
 }
@@ -301,6 +335,7 @@ function refitSlider(){
         track.slick('setPosition');
     }
     settleSlider(track);
+    shapeDots();
     clearTimeout(refitTimer);
     refitTimer = setTimeout(function(){
         settleSlider(track);
