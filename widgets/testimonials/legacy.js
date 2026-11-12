@@ -127,13 +127,20 @@ function fluidSlides(slick){
     var cardWidth = Math.max(0, Math.min(slot - gap, single ? FLUID_SINGLE_CARD_MAX : slot - gap));
     var side = Math.max(0, Math.floor((slot - cardWidth) / 2));
     slick.$slideTrack.children('.slick-slide').each(function(){
-        setImportant(this, { 'width': slot + 'px', 'max-width': 'none', 'margin-left': '0', 'margin-right': '0', 'padding-left': side + 'px', 'padding-right': side + 'px', 'box-sizing': 'border-box' });
+        setImportant(this, { 'width': slot + 'px', 'max-width': 'none', 'margin-left': '0', 'margin-right': '0', 'padding-left': side + 'px', 'padding-right': side + 'px', 'box-sizing': 'border-box', 'height': 'auto', 'display': 'flex', 'align-items': 'flex-start' });
         var card = this.querySelector('.shmTestimonial-comments');
         if (!card) return;
+        // Holders are plain blocks: a flex holder would stretch or squash the card to the
+        // Design tab container height, which is a floor, not a fixed height. The outer holder
+        // (.slick-slide > div) carries that px height from the site CSS, so it keeps its own
+        // height; inner holders follow their content.
         for (var holder = card.parentElement; holder && holder !== this; holder = holder.parentElement) {
-            setImportant(holder, { 'width': '100%', 'padding-left': '0', 'padding-right': '0', 'margin-left': '0', 'margin-right': '0', 'box-sizing': 'border-box' });
+            setImportant(holder, { 'width': '100%', 'padding-left': '0', 'padding-right': '0', 'margin-left': '0', 'margin-right': '0', 'box-sizing': 'border-box', 'display': 'block' });
+            if (holder.parentElement !== this) setImportant(holder, { 'height': 'auto' });
         }
-        setImportant(card, { 'width': '100%', 'max-width': 'none', 'margin-left': '0', 'margin-right': '0', 'display': 'block', 'box-sizing': 'border-box' });
+        // Site CSS pins a 415px min-height on the card; the card should fit its text.
+        // fitHeights() then equalises the cards that are on screen together and applies the floor.
+        setImportant(card, { 'width': '100%', 'max-width': 'none', 'margin-left': '0', 'margin-right': '0', 'display': 'block', 'box-sizing': 'border-box', 'min-height': '0', 'height': 'auto' });
     });
 }
 
@@ -145,6 +152,149 @@ function wrapCards(slider){
     });
 }
 
+// Slides are found by Slick's own index (clones carry one too), so the window is right when the
+// slider is about to wrap.
+// The Design tab "Testimonials Container Height" is a px height the site CSS puts on
+// .slick-slide > div. With the card hidden the holder shows that height alone (0 when none is
+// set), so this reads the floor without parsing stylesheets. One slide is enough: the setting
+// is the same for every slide.
+function floorHeight(slide){
+    var holder = slide && slide.firstElementChild;
+    var card = slide && slide.querySelector('.shmTestimonial-comments');
+    if (!holder || !card) return 0;
+    var prev = card.style.getPropertyValue('display');
+    var prevPriority = card.style.getPropertyPriority('display');
+    card.style.setProperty('display', 'none', 'important');
+    var floor = Math.ceil(holder.getBoundingClientRect().height);
+    if (prev) card.style.setProperty('display', prev, prevPriority);
+    else card.style.removeProperty('display');
+    return floor;
+}
+
+// The cards Slick shows for window `first`: found by Slick's own index (clones carry one too),
+// so the window is right when the slider is about to wrap.
+function windowCards(slick, first){
+    var visible = slick.options.slidesToShow;
+    var out = [];
+    for (var i = first; i < first + visible; i++) {
+        var slide = slick.$slideTrack.children('[data-slick-index="' + i + '"]')[0];
+        var card = slide && slide.querySelector('.shmTestimonial-comments');
+        if (card) out.push({ slide: slide, card: card });
+    }
+    return out;
+}
+
+// The height the cards on screen together need: the tallest of their texts, or the Design tab
+// container height when that is taller. The floor is read once, after the cards, so hiding a
+// card forces one extra layout, not two.
+function visibleHeight(slick, cards){
+    var tallest = 0;
+    for (var i = 0; i < cards.length; i++) tallest = Math.max(tallest, Math.ceil(cards[i].card.getBoundingClientRect().height));
+    return Math.max(tallest, floorHeight(cards.length ? cards[0].slide : null));
+}
+
+// Fixed height mode: every card gets the visible height as a floor, so the cards on screen
+// together match and a long testimonial always gets its full card.
+function fitHeights(slick, first){
+    var cards = slick.$slideTrack.find('.shmTestimonial-comments');
+    cards.each(function(){ setImportant(this, { 'min-height': '0' }); });
+    var shown = windowCards(slick, first);
+    var tallest = visibleHeight(slick, shown);
+    if (!tallest) return;
+    cards.each(function(){ setImportant(this, { 'min-height': tallest + 'px' }); });
+    sizeList(slick, shown);
+}
+
+// The list ends where the lowest card on screen ends. Measured from the card's real bottom, so
+// a card that sits below the top of the list (list padding, a slide padding, a card margin) is
+// never cut off. The list's own bottom padding is added when the box model counts it inside.
+function sizeList(slick, shown){
+    var list = slick.$list[0];
+    var listTop = list.getBoundingClientRect().top;
+    var bottom = 0;
+    for (var i = 0; i < shown.length; i++) bottom = Math.max(bottom, shown[i].card.getBoundingClientRect().bottom - listTop);
+    if (!bottom) return;
+    var listStyle = getComputedStyle(list);
+    var extra = listStyle.boxSizing === 'border-box' ? parseFloat(listStyle.paddingBottom) : -parseFloat(listStyle.paddingTop);
+    setImportant(list, { 'height': Math.ceil(bottom + extra) + 'px' });
+}
+
+// Adaptive height (every phone, and desktop when the config says so): the list follows the
+// cards on screen, never shorter than their text or the container height, so a long testimonial
+// is not cut off at the Design tab height. Called from beforeChange with the next index as
+// well, so the list is already the right size when Slick starts the slide.
+function fitAdaptive(slick, first){
+    // Clear every card first: a floor left over from an earlier window or a wider layout would
+    // be measured as text height and the list could only ever grow.
+    slick.$slideTrack.find('.shmTestimonial-comments').each(function(){ setImportant(this, { 'min-height': '0' }); });
+    var shown = windowCards(slick, first);
+    var floor = visibleHeight(slick, shown);
+    for (var i = 0; i < shown.length; i++) setImportant(shown[i].card, { 'min-height': floor + 'px' });
+    sizeList(slick, shown);
+}
+
+// The widget CSS tab draws the slider dots with font glyphs (— ○ ● □ ■) in a ::before box, so
+// what a visitor sees depends on which font their browser falls back to, and a Design tab
+// background colour on the glyph box paints a rectangle behind the glyph (the "outline" around
+// each dot). Draw the dots as CSS shapes instead. Colour, size and spacing still come from the
+// cascade: the shape is sized in em of the glyph rule's font-size, drawn in its currentColor,
+// and the li margins are untouched. One style element per page, appended last so it wins
+// source order against the widget CSS at equal specificity.
+//
+// Every rule is scoped to ul.shm-dots-shaped, which shapeDots() adds only where a glyph is
+// actually showing. A site that hides its dots (font-size 0 on the glyph, display none) or
+// draws its own keeps exactly what it had: enterprise.co.nz hides them with font-size 0.
+var DOTS_SHAPED_CLASS = 'shm-dots-shaped';
+var DOT_GLYPHS = /[\u2014\u25CB\u25CF\u25A1\u25A0]/;
+
+function isHidden(el){
+    var cs = getComputedStyle(el);
+    return cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) === 0;
+}
+
+function dotsShowGlyph(ul){
+    var btn = ul.querySelector('li button');
+    if (!btn) return false;
+    if (isHidden(ul) || isHidden(btn)) return false;
+    var before = getComputedStyle(btn, '::before');
+    return DOT_GLYPHS.test(before.content || '') && parseFloat(before.fontSize) > 0 && before.visibility !== 'hidden' && parseFloat(before.opacity) !== 0;
+}
+
+// Runs after init, on every reInit (Slick rebuilds the list) and on every refit (a widget that
+// initialised inside a hidden section reads no glyph until the section is shown).
+function shapeDots(){
+    var lists = element.querySelectorAll('ul[class^="slideTwo-dots"]');
+    for (var i = 0; i < lists.length; i++) {
+        lists[i].classList.remove(DOTS_SHAPED_CLASS);
+        if (dotsShowGlyph(lists[i])) lists[i].classList.add(DOTS_SHAPED_CLASS);
+    }
+}
+
+var DOTS_STYLE_ID = 'shm-testimonials-dots-style';
+var DOTS_STYLE = [
+    '.shmTestimonial ul.shm-dots-shaped li button{position:relative!important;width:24px!important;height:24px!important;min-width:24px!important;padding:0!important;border:0!important;background:transparent!important;text-indent:-9999px!important;cursor:pointer}',
+    // The shape is all border and padding round a 0x0 content box, and the background is
+    // clipped to that content box: a Design tab background-color on the old glyph box (which
+    // outranks these rules by specificity) can no longer paint anything. Only a site rule that
+    // writes the `background` shorthand would reset the clip. The fill is an inset shadow,
+    // which paints over the padding. The button is a 24px hit area with no overflow clip, so
+    // a large Design tab font-size still shows the whole shape.
+    '.shmTestimonial ul.shm-dots-shaped li button::before{content:""!important;position:absolute!important;top:50%!important;left:50%!important;transform:translate(-50%,-50%)!important;box-sizing:content-box!important;width:0!important;height:0!important;padding:.2em!important;line-height:0!important;text-indent:0!important;border:2px solid currentColor!important;border-radius:0!important;background-color:transparent!important;background-image:none!important;background-clip:content-box!important;opacity:1}',
+    '.shmTestimonial ul.shm-dots-shaped.slideTwo-dotsl2 li button::before{border-radius:50%!important}',
+    '.shmTestimonial ul.shm-dots-shaped.slideTwo-dots li button::before{padding:.06em .4em!important;border:0!important;box-shadow:inset 0 0 0 1em currentColor!important;opacity:.5}',
+    '.shmTestimonial ul.shm-dots-shaped li.slick-active button::before{box-shadow:inset 0 0 0 1em currentColor!important;opacity:1}',
+    '.shmTestimonial ul.shm-dots-shaped li button:focus-visible{outline:2px solid currentColor!important;outline-offset:2px!important}'
+].join('');
+
+function ensureDotsStyle(){
+    var head = document.head || document.getElementsByTagName('head')[0];
+    if (!head || document.getElementById(DOTS_STYLE_ID)) return;
+    var style = document.createElement('style');
+    style.id = DOTS_STYLE_ID;
+    style.textContent = DOTS_STYLE;
+    head.appendChild(style);
+}
+
 // Duda gives the widget's wrapper a fixed pixel height. Follow the real content so
 // the section grows with it and nothing placed below overlaps.
 function growWrapper(){
@@ -152,11 +302,16 @@ function growWrapper(){
     if (!wrapper) return;
     wrapper.style.setProperty('height', 'auto', 'important');
     // Ancestor groups can still squeeze the wrapper, so also floor it at the content height.
-    wrapper.style.setProperty('min-height', Math.ceil(element.scrollHeight) + 'px', 'important');
+    // Clear the old floor first so the wrapper shrinks again when the content does.
+    wrapper.style.setProperty('min-height', '0px', 'important');
+    var panel = element.querySelector('.shmTestimonialPanelMain') || element;
+    var contentHeight = panel.getBoundingClientRect().bottom - element.getBoundingClientRect().top;
+    wrapper.style.setProperty('min-height', Math.ceil(contentHeight) + 'px', 'important');
 }
 
 function slider(){
 
+    ensureDotsStyle();
     wrapCards($(element).find(".shmTestimonial"));
     $(element).find(".shmTestimonial").addClass('shm-fluid-slider main-review-slider-container').slick({
         dots: dotsPagination,
@@ -171,22 +326,23 @@ function slider(){
         autoplay: autoplay,
         prevArrow: '<i class="fas fa-chevron-left slick-prev"></i>',
         nextArrow: '<i class="fas fa-chevron-right slick-next"></i>',
+    }).on('beforeChange', function (event, slick, current, next) {
+        if(!adaptive) fitHeights(slick, next);
+        else fitAdaptive(slick, next);
+        growWrapper();
     }).on('setPosition', function (event, slick) {
         fluidSlides(slick);
+        setImportant(slick.$slideTrack[0], { 'display': 'flex', 'align-items': 'flex-start' });
         if(!adaptive){
-            slick.$slides.css('height', slick.$slideTrack.height() + 'px');
+            fitHeights(slick, slick.currentSlide);
         }else{
-            let newHeight = [];
-            $(element).find('.slick-active>div').each(function(){
-                newHeight.push($(this).outerHeight());
-            });
-            slick.$list.css('height',$(element).find('.slick-current>div').outerHeight() + 'px');
-
+            fitAdaptive(slick, slick.currentSlide);
         }
         growWrapper();
     });
-    $(element).find(".slick-list").css('height',$(element).find('.slick-current>div').outerHeight() + 'px');
     $(element).find(".shmTestimonial-comments").addClass("shmTestimonial-commentsSlider");
+    $(element).find(".shmTestimonial").off('reInit.shmDots').on('reInit.shmDots', shapeDots);
+    shapeDots();
     watchSlider();
 }
 
@@ -214,6 +370,7 @@ function refitSlider(){
         track.slick('setPosition');
     }
     settleSlider(track);
+    shapeDots();
     clearTimeout(refitTimer);
     refitTimer = setTimeout(function(){
         settleSlider(track);

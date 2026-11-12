@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 67e04b2427cd. Registers window.ShazammeWidget["<name>"].
+ * Build 0c67a0a185be. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -180,13 +180,14 @@ var __shazWidgetExport = (() => {
       var cardWidth = Math.max(0, Math.min(slot - gap, single ? FLUID_SINGLE_CARD_MAX : slot - gap));
       var side = Math.max(0, Math.floor((slot - cardWidth) / 2));
       slick.$slideTrack.children(".slick-slide").each(function() {
-        setImportant(this, { "width": slot + "px", "max-width": "none", "margin-left": "0", "margin-right": "0", "padding-left": side + "px", "padding-right": side + "px", "box-sizing": "border-box" });
+        setImportant(this, { "width": slot + "px", "max-width": "none", "margin-left": "0", "margin-right": "0", "padding-left": side + "px", "padding-right": side + "px", "box-sizing": "border-box", "height": "auto", "display": "flex", "align-items": "flex-start" });
         var card = this.querySelector(".shmTestimonial-comments");
         if (!card) return;
         for (var holder = card.parentElement; holder && holder !== this; holder = holder.parentElement) {
-          setImportant(holder, { "width": "100%", "padding-left": "0", "padding-right": "0", "margin-left": "0", "margin-right": "0", "box-sizing": "border-box" });
+          setImportant(holder, { "width": "100%", "padding-left": "0", "padding-right": "0", "margin-left": "0", "margin-right": "0", "box-sizing": "border-box", "display": "block" });
+          if (holder.parentElement !== this) setImportant(holder, { "height": "auto" });
         }
-        setImportant(card, { "width": "100%", "max-width": "none", "margin-left": "0", "margin-right": "0", "display": "block", "box-sizing": "border-box" });
+        setImportant(card, { "width": "100%", "max-width": "none", "margin-left": "0", "margin-right": "0", "display": "block", "box-sizing": "border-box", "min-height": "0", "height": "auto" });
       });
     }
     function wrapCards(slider2) {
@@ -194,13 +195,119 @@ var __shazWidgetExport = (() => {
         $(this).wrap('<div class="shm-slide"></div>');
       });
     }
+    function floorHeight(slide) {
+      var holder = slide && slide.firstElementChild;
+      var card = slide && slide.querySelector(".shmTestimonial-comments");
+      if (!holder || !card) return 0;
+      var prev = card.style.getPropertyValue("display");
+      var prevPriority = card.style.getPropertyPriority("display");
+      card.style.setProperty("display", "none", "important");
+      var floor = Math.ceil(holder.getBoundingClientRect().height);
+      if (prev) card.style.setProperty("display", prev, prevPriority);
+      else card.style.removeProperty("display");
+      return floor;
+    }
+    function windowCards(slick, first) {
+      var visible = slick.options.slidesToShow;
+      var out = [];
+      for (var i = first; i < first + visible; i++) {
+        var slide = slick.$slideTrack.children('[data-slick-index="' + i + '"]')[0];
+        var card = slide && slide.querySelector(".shmTestimonial-comments");
+        if (card) out.push({ slide, card });
+      }
+      return out;
+    }
+    function visibleHeight(slick, cards) {
+      var tallest = 0;
+      for (var i = 0; i < cards.length; i++) tallest = Math.max(tallest, Math.ceil(cards[i].card.getBoundingClientRect().height));
+      return Math.max(tallest, floorHeight(cards.length ? cards[0].slide : null));
+    }
+    function fitHeights(slick, first) {
+      var cards = slick.$slideTrack.find(".shmTestimonial-comments");
+      cards.each(function() {
+        setImportant(this, { "min-height": "0" });
+      });
+      var shown = windowCards(slick, first);
+      var tallest = visibleHeight(slick, shown);
+      if (!tallest) return;
+      cards.each(function() {
+        setImportant(this, { "min-height": tallest + "px" });
+      });
+      sizeList(slick, shown);
+    }
+    function sizeList(slick, shown) {
+      var list = slick.$list[0];
+      var listTop = list.getBoundingClientRect().top;
+      var bottom = 0;
+      for (var i = 0; i < shown.length; i++) bottom = Math.max(bottom, shown[i].card.getBoundingClientRect().bottom - listTop);
+      if (!bottom) return;
+      var listStyle = getComputedStyle(list);
+      var extra = listStyle.boxSizing === "border-box" ? parseFloat(listStyle.paddingBottom) : -parseFloat(listStyle.paddingTop);
+      setImportant(list, { "height": Math.ceil(bottom + extra) + "px" });
+    }
+    function fitAdaptive(slick, first) {
+      slick.$slideTrack.find(".shmTestimonial-comments").each(function() {
+        setImportant(this, { "min-height": "0" });
+      });
+      var shown = windowCards(slick, first);
+      var floor = visibleHeight(slick, shown);
+      for (var i = 0; i < shown.length; i++) setImportant(shown[i].card, { "min-height": floor + "px" });
+      sizeList(slick, shown);
+    }
+    var DOTS_SHAPED_CLASS = "shm-dots-shaped";
+    var DOT_GLYPHS = /[\u2014\u25CB\u25CF\u25A1\u25A0]/;
+    function isHidden(el) {
+      var cs = getComputedStyle(el);
+      return cs.display === "none" || cs.visibility === "hidden" || parseFloat(cs.opacity) === 0;
+    }
+    function dotsShowGlyph(ul) {
+      var btn = ul.querySelector("li button");
+      if (!btn) return false;
+      if (isHidden(ul) || isHidden(btn)) return false;
+      var before = getComputedStyle(btn, "::before");
+      return DOT_GLYPHS.test(before.content || "") && parseFloat(before.fontSize) > 0 && before.visibility !== "hidden" && parseFloat(before.opacity) !== 0;
+    }
+    function shapeDots() {
+      var lists = element.querySelectorAll('ul[class^="slideTwo-dots"]');
+      for (var i = 0; i < lists.length; i++) {
+        lists[i].classList.remove(DOTS_SHAPED_CLASS);
+        if (dotsShowGlyph(lists[i])) lists[i].classList.add(DOTS_SHAPED_CLASS);
+      }
+    }
+    var DOTS_STYLE_ID = "shm-testimonials-dots-style";
+    var DOTS_STYLE = [
+      ".shmTestimonial ul.shm-dots-shaped li button{position:relative!important;width:24px!important;height:24px!important;min-width:24px!important;padding:0!important;border:0!important;background:transparent!important;text-indent:-9999px!important;cursor:pointer}",
+      // The shape is all border and padding round a 0x0 content box, and the background is
+      // clipped to that content box: a Design tab background-color on the old glyph box (which
+      // outranks these rules by specificity) can no longer paint anything. Only a site rule that
+      // writes the `background` shorthand would reset the clip. The fill is an inset shadow,
+      // which paints over the padding. The button is a 24px hit area with no overflow clip, so
+      // a large Design tab font-size still shows the whole shape.
+      '.shmTestimonial ul.shm-dots-shaped li button::before{content:""!important;position:absolute!important;top:50%!important;left:50%!important;transform:translate(-50%,-50%)!important;box-sizing:content-box!important;width:0!important;height:0!important;padding:.2em!important;line-height:0!important;text-indent:0!important;border:2px solid currentColor!important;border-radius:0!important;background-color:transparent!important;background-image:none!important;background-clip:content-box!important;opacity:1}',
+      ".shmTestimonial ul.shm-dots-shaped.slideTwo-dotsl2 li button::before{border-radius:50%!important}",
+      ".shmTestimonial ul.shm-dots-shaped.slideTwo-dots li button::before{padding:.06em .4em!important;border:0!important;box-shadow:inset 0 0 0 1em currentColor!important;opacity:.5}",
+      ".shmTestimonial ul.shm-dots-shaped li.slick-active button::before{box-shadow:inset 0 0 0 1em currentColor!important;opacity:1}",
+      ".shmTestimonial ul.shm-dots-shaped li button:focus-visible{outline:2px solid currentColor!important;outline-offset:2px!important}"
+    ].join("");
+    function ensureDotsStyle() {
+      var head2 = document.head || document.getElementsByTagName("head")[0];
+      if (!head2 || document.getElementById(DOTS_STYLE_ID)) return;
+      var style = document.createElement("style");
+      style.id = DOTS_STYLE_ID;
+      style.textContent = DOTS_STYLE;
+      head2.appendChild(style);
+    }
     function growWrapper() {
       var wrapper = element.closest ? element.closest(".widget-wrapper") : null;
       if (!wrapper) return;
       wrapper.style.setProperty("height", "auto", "important");
-      wrapper.style.setProperty("min-height", Math.ceil(element.scrollHeight) + "px", "important");
+      wrapper.style.setProperty("min-height", "0px", "important");
+      var panel = element.querySelector(".shmTestimonialPanelMain") || element;
+      var contentHeight = panel.getBoundingClientRect().bottom - element.getBoundingClientRect().top;
+      wrapper.style.setProperty("min-height", Math.ceil(contentHeight) + "px", "important");
     }
     function slider() {
+      ensureDotsStyle();
       wrapCards($(element).find(".shmTestimonial"));
       $(element).find(".shmTestimonial").addClass("shm-fluid-slider main-review-slider-container").slick({
         dots: dotsPagination,
@@ -215,21 +322,23 @@ var __shazWidgetExport = (() => {
         autoplay,
         prevArrow: '<i class="fas fa-chevron-left slick-prev"></i>',
         nextArrow: '<i class="fas fa-chevron-right slick-next"></i>'
+      }).on("beforeChange", function(event, slick, current, next) {
+        if (!adaptive) fitHeights(slick, next);
+        else fitAdaptive(slick, next);
+        growWrapper();
       }).on("setPosition", function(event, slick) {
         fluidSlides(slick);
+        setImportant(slick.$slideTrack[0], { "display": "flex", "align-items": "flex-start" });
         if (!adaptive) {
-          slick.$slides.css("height", slick.$slideTrack.height() + "px");
+          fitHeights(slick, slick.currentSlide);
         } else {
-          let newHeight = [];
-          $(element).find(".slick-active>div").each(function() {
-            newHeight.push($(this).outerHeight());
-          });
-          slick.$list.css("height", $(element).find(".slick-current>div").outerHeight() + "px");
+          fitAdaptive(slick, slick.currentSlide);
         }
         growWrapper();
       });
-      $(element).find(".slick-list").css("height", $(element).find(".slick-current>div").outerHeight() + "px");
       $(element).find(".shmTestimonial-comments").addClass("shmTestimonial-commentsSlider");
+      $(element).find(".shmTestimonial").off("reInit.shmDots").on("reInit.shmDots", shapeDots);
+      shapeDots();
       watchSlider();
     }
     function settleSlider(track) {
@@ -252,6 +361,7 @@ var __shazWidgetExport = (() => {
         track.slick("setPosition");
       }
       settleSlider(track);
+      shapeDots();
       clearTimeout(refitTimer);
       refitTimer = setTimeout(function() {
         settleSlider(track);
