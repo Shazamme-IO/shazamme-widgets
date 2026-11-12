@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build bb10fa1b1867. Registers window.ShazammeWidget["<name>"].
+ * Build 0c67a0a185be. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -246,6 +246,9 @@ var __shazWidgetExport = (() => {
       setImportant(list, { "height": Math.ceil(bottom + extra) + "px" });
     }
     function fitAdaptive(slick, first) {
+      slick.$slideTrack.find(".shmTestimonial-comments").each(function() {
+        setImportant(this, { "min-height": "0" });
+      });
       var shown = windowCards(slick, first);
       var floor = visibleHeight(slick, shown);
       for (var i = 0; i < shown.length; i++) setImportant(shown[i].card, { "min-height": floor + "px" });

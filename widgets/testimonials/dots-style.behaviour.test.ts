@@ -202,7 +202,8 @@ describe('testimonials adaptive height', () => {
     });
     const list = document.querySelector('.slick-list') as HTMLElement;
     list.getBoundingClientRect = () => ({ top: 100 } as DOMRect);
-    const slick = { options: { slidesToShow }, $list: [list], $slideTrack: { children: (sel: string) => [document.querySelector(sel)].filter(Boolean) } };
+    const allCards = () => ({ each: (f: (this: Element) => void) => Array.from(document.querySelectorAll('.shmTestimonial-comments')).forEach((c) => f.call(c)) });
+    const slick = { options: { slidesToShow }, $list: [list], $slideTrack: { children: (sel: string) => [document.querySelector(sel)].filter(Boolean), find: allCards } };
     const setImportant = (el: Element, props: Record<string, string>) => {
       if (el.classList.contains('slick-list')) Object.assign(set, props);
       if (el.classList.contains('shmTestimonial-comments') && props['min-height']) minHeights[slides.indexOf(el.closest('.slick-slide') as HTMLElement)] = parseFloat(props['min-height']);
@@ -229,14 +230,32 @@ describe('testimonials adaptive height', () => {
     expect(set.height).toBe('468px');
   });
 
-  it('uses the lowest card of the window on a multi-column adaptive desktop', () => {
+  it('uses the lowest card of the window on a multi-column adaptive desktop, and shrinks again for a shorter window', () => {
     const { slick, set, setImportant, gcs } = fakeSlick([200, 340, 120], 0, 2);
     run(slick, 0, setImportant, gcs);
     expect(set.height).toBe('360px');
     run(slick, 1, setImportant, gcs);
     expect(set.height).toBe('360px');
     run(slick, 2, setImportant, gcs);
-    expect(set.height).toBe('360px');
+    expect(set.height).toBe('140px');
+  });
+
+  it('shrinks again on a single column when the next card is shorter', () => {
+    const { slick, set, setImportant, gcs } = fakeSlick([400, 150], 0, 1);
+    run(slick, 0, setImportant, gcs);
+    expect(set.height).toBe('420px');
+    run(slick, 1, setImportant, gcs);
+    expect(set.height).toBe('170px');
+  });
+
+  it('counts the bottom padding of a border-box list and not of a content-box one', () => {
+    const padded = () => ({ boxSizing: 'border-box', paddingTop: '20px', paddingBottom: '12px' });
+    const a = fakeSlick([300], 0, 1);
+    run(a.slick, 0, a.setImportant, padded);
+    expect(a.set.height).toBe('332px');
+    const b = fakeSlick([300], 0, 1, 'content-box');
+    run(b.slick, 0, b.setImportant, () => ({ boxSizing: 'content-box', paddingTop: '20px', paddingBottom: '12px' }));
+    expect(b.set.height).toBe('300px');
   });
 
   it('does not count the top padding twice for a content-box list', () => {

@@ -224,6 +224,9 @@ function sizeList(slick, shown){
 // is not cut off at the Design tab height. Called from beforeChange with the next index as
 // well, so the list is already the right size when Slick starts the slide.
 function fitAdaptive(slick, first){
+    // Clear every card first: a floor left over from an earlier window or a wider layout would
+    // be measured as text height and the list could only ever grow.
+    slick.$slideTrack.find('.shmTestimonial-comments').each(function(){ setImportant(this, { 'min-height': '0' }); });
     var shown = windowCards(slick, first);
     var floor = visibleHeight(slick, shown);
     for (var i = 0; i < shown.length; i++) setImportant(shown[i].card, { 'min-height': floor + 'px' });
