@@ -132,3 +132,52 @@ describe('testimonials ensureDotsStyle', () => {
     expect(slider.indexOf('ensureDotsStyle();')).toBeLessThan(slider.indexOf('.slick({'));
   });
 });
+
+describe('testimonials floorHeight', () => {
+  function runner() {
+    const start = src.indexOf('function floorHeight(slide)');
+    const end = src.indexOf('\n}\n', start) + 3;
+    expect(start).toBeGreaterThan(-1);
+    return new Function('slide', `${src.slice(start, end)}\nreturn floorHeight(slide);`) as (s: Element | null) => number;
+  }
+
+  // jsdom has no layout: the holder reports the site px height only while the card is display none.
+  function slideWith(holderPx: number) {
+    document.body.innerHTML = '<div class="slick-slide"><div class="holder"><div class="shm-slide"><div class="shmTestimonial-comments">text</div></div></div></div>';
+    const slide = document.querySelector('.slick-slide')!;
+    const holder = slide.firstElementChild as HTMLElement;
+    const card = slide.querySelector('.shmTestimonial-comments') as HTMLElement;
+    holder.getBoundingClientRect = () => ({ height: card.style.display === 'none' ? holderPx : 300 } as DOMRect);
+    return { slide, card };
+  }
+
+  it('reads the holder height with the card hidden and puts the card back exactly as it was', () => {
+    const { slide, card } = slideWith(490);
+    card.style.setProperty('display', 'block', 'important');
+    expect(runner()(slide)).toBe(490);
+    expect(card.style.getPropertyValue('display')).toBe('block');
+    expect(card.style.getPropertyPriority('display')).toBe('important');
+  });
+
+  it('leaves no inline display behind when the card had none', () => {
+    const { slide, card } = slideWith(0);
+    expect(runner()(slide)).toBe(0);
+    expect(card.style.getPropertyValue('display')).toBe('');
+  });
+
+  it('returns 0 without a slide, a holder or a card', () => {
+    expect(runner()(null)).toBe(0);
+    document.body.innerHTML = '<div class="slick-slide"></div>';
+    expect(runner()(document.querySelector('.slick-slide'))).toBe(0);
+  });
+
+  it('is the floor for both height modes', () => {
+    const fit = src.slice(src.indexOf('function fitHeights(slick, first)'), src.indexOf('\n}\n', src.indexOf('function fitHeights(slick, first)')));
+    expect(fit).toContain('tallest = Math.max(tallest, floorHeight(firstSlide))');
+    const adaptive = src.slice(src.indexOf('function fitAdaptive(slick)'), src.indexOf('\n}\n', src.indexOf('function fitAdaptive(slick)')));
+    expect(adaptive).toContain('Math.max(Math.ceil(card.getBoundingClientRect().height), floorHeight(slide))');
+    const handler = src.slice(src.indexOf(".on('setPosition'"), src.indexOf('growWrapper();', src.indexOf(".on('setPosition'")));
+    expect(handler).toContain('fitAdaptive(slick);');
+    expect(handler).not.toContain("'.slick-current>div'");
+  });
+});

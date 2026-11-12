@@ -166,7 +166,8 @@ function floorHeight(slide){
     var prevPriority = card.style.getPropertyPriority('display');
     card.style.setProperty('display', 'none', 'important');
     var floor = Math.ceil(holder.getBoundingClientRect().height);
-    card.style.setProperty('display', prev || 'block', prevPriority || 'important');
+    if (prev) card.style.setProperty('display', prev, prevPriority);
+    else card.style.removeProperty('display');
     return floor;
 }
 
@@ -177,21 +178,37 @@ function fitHeights(slick, first){
     var cards = slick.$slideTrack.find('.shmTestimonial-comments');
     cards.each(function(){ setImportant(this, { 'min-height': '0' }); });
     var tallest = 0;
-    var floor = -1;
+    var firstSlide = null;
     for (var i = first; i < first + visible; i++) {
         var slide = slick.$slideTrack.children('[data-slick-index="' + i + '"]')[0];
         var card = slide && slide.querySelector('.shmTestimonial-comments');
         if (!card) continue;
-        if (floor < 0) floor = floorHeight(slide);
+        if (!firstSlide) firstSlide = slide;
         tallest = Math.max(tallest, Math.ceil(card.getBoundingClientRect().height));
     }
-    tallest = Math.max(tallest, floor);
+    // Read the floor after the cards, so hiding a card forces one extra layout, not two.
+    tallest = Math.max(tallest, floorHeight(firstSlide));
     if (!tallest) return;
     cards.each(function(){ setImportant(this, { 'min-height': tallest + 'px' }); });
+    sizeList(slick, tallest);
+}
+
+function sizeList(slick, cardHeight){
     var list = slick.$list[0];
     var listStyle = getComputedStyle(list);
     var listPadding = parseFloat(listStyle.paddingTop) + parseFloat(listStyle.paddingBottom);
-    setImportant(list, { 'height': (tallest + listPadding) + 'px' });
+    setImportant(list, { 'height': (cardHeight + listPadding) + 'px' });
+}
+
+// Adaptive height (every mobile device, and desktop when the config says so): the list follows
+// the current card, never shorter than its text or the container height, so a long testimonial
+// is not cut off at the Design tab height.
+function fitAdaptive(slick){
+    var slide = slick.$slideTrack.children('.slick-current')[0];
+    var card = slide && slide.querySelector('.shmTestimonial-comments');
+    if (!card) return;
+    var h = Math.max(Math.ceil(card.getBoundingClientRect().height), floorHeight(slide));
+    if (h) sizeList(slick, h);
 }
 
 // The widget CSS tab draws the slider dots with font glyphs (— ○ ● □ ■) in a ::before box, so
@@ -296,12 +313,7 @@ function slider(){
         if(!adaptive){
             fitHeights(slick, slick.currentSlide);
         }else{
-            let newHeight = [];
-            $(element).find('.slick-active>div').each(function(){
-                newHeight.push($(this).outerHeight());
-            });
-            slick.$list.css('height',$(element).find('.slick-current>div').outerHeight() + 'px');
-
+            fitAdaptive(slick);
         }
         growWrapper();
     });
