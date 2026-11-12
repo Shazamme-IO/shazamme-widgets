@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 0c67a0a185be. Registers window.ShazammeWidget["<name>"].
+ * Build 54d12fcb175a. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -242,7 +242,10 @@ var __shazWidgetExport = (() => {
       for (var i = 0; i < shown.length; i++) bottom = Math.max(bottom, shown[i].card.getBoundingClientRect().bottom - listTop);
       if (!bottom) return;
       var listStyle = getComputedStyle(list);
-      var extra = listStyle.boxSizing === "border-box" ? parseFloat(listStyle.paddingBottom) : -parseFloat(listStyle.paddingTop);
+      var px = function(v) {
+        return parseFloat(v) || 0;
+      };
+      var extra = listStyle.boxSizing === "border-box" ? px(listStyle.paddingBottom) + px(listStyle.borderBottomWidth) : -(px(listStyle.paddingTop) + px(listStyle.borderTopWidth));
       setImportant(list, { "height": Math.ceil(bottom + extra) + "px" });
     }
     function fitAdaptive(slick, first) {
@@ -260,15 +263,22 @@ var __shazWidgetExport = (() => {
       var cs = getComputedStyle(el);
       return cs.display === "none" || cs.visibility === "hidden" || parseFloat(cs.opacity) === 0;
     }
+    function isTransparent(color) {
+      if (!color || color === "transparent") return true;
+      var m = /^rgba?\(([^)]*)\)$/.exec(color);
+      if (!m) return false;
+      var parts = m[1].split(/\s*[,\/]\s*|\s+/).filter(Boolean);
+      return parts.length === 4 && parseFloat(parts[3]) === 0;
+    }
     function dotsShowGlyph(ul) {
       var btn = ul.querySelector("li button");
       if (!btn) return false;
       if (isHidden(ul) || isHidden(btn)) return false;
       var before = getComputedStyle(btn, "::before");
-      return DOT_GLYPHS.test(before.content || "") && parseFloat(before.fontSize) > 0 && before.visibility !== "hidden" && parseFloat(before.opacity) !== 0;
+      return DOT_GLYPHS.test(before.content || "") && parseFloat(before.fontSize) > 0 && before.visibility !== "hidden" && parseFloat(before.opacity) !== 0 && !isTransparent(before.color);
     }
     function shapeDots() {
-      var lists = element.querySelectorAll('ul[class^="slideTwo-dots"]');
+      var lists = element.querySelectorAll('ul[class*="slideTwo-dots"]');
       for (var i = 0; i < lists.length; i++) {
         lists[i].classList.remove(DOTS_SHAPED_CLASS);
         if (dotsShowGlyph(lists[i])) lists[i].classList.add(DOTS_SHAPED_CLASS);

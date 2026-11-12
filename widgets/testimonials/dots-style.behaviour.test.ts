@@ -72,7 +72,7 @@ describe('testimonials ensureDotsStyle', () => {
     return new Function('element', 'getComputedStyle', `${src.slice(start, end)}\nshapeDots();`) as (e: Element, g: unknown) => void;
   }
 
-  type Style = { content?: string; fontSize?: string; display?: string; visibility?: string; opacity?: string };
+  type Style = { content?: string; fontSize?: string; display?: string; visibility?: string; opacity?: string; color?: string };
   const VISIBLE: Style = { display: 'block', visibility: 'visible', opacity: '1' };
 
   // One list per case; `styles` gives the ul, button and ::before computed styles the stub returns.
@@ -80,7 +80,7 @@ describe('testimonials ensureDotsStyle', () => {
     document.body.innerHTML = `<div id="w"><div class="shmTestimonial">${Object.keys(cases).map((k) => `<ul class="slideTwo-dotsl2" data-case="${k}"><li><button>1</button></li></ul>`).join('')}</div></div>`;
     const fake = (el: Element, pseudo?: string): Style => {
       const c = cases[el.closest('ul')!.getAttribute('data-case')!];
-      if (pseudo === '::before') return { ...VISIBLE, fontSize: '20px', ...c.before };
+      if (pseudo === '::before') return { ...VISIBLE, fontSize: '20px', color: 'rgb(51, 51, 51)', ...c.before };
       return { ...VISIBLE, ...(el.tagName === 'UL' ? c.ul : c.btn) };
     };
     shapeDotsRunner()(document.getElementById('w')!, fake);
@@ -103,17 +103,35 @@ describe('testimonials ensureDotsStyle', () => {
       btnTransparent: { btn: { opacity: '0' }, before: { content: '"●"' } },
       beforeInvisible: { before: { content: '"●"', visibility: 'hidden' } },
       beforeTransparent: { before: { content: '"●"', opacity: '0' } },
-    })).toEqual({ fontSizeZero: false, custom: false, noContent: false, ulNone: false, btnNone: false, btnInvisible: false, btnTransparent: false, beforeInvisible: false, beforeTransparent: false });
+      beforeClearColor: { before: { content: '"●"', color: 'rgba(0, 0, 0, 0)' } },
+      beforeTransparentKeyword: { before: { content: '"●"', color: 'transparent' } },
+      beforeSlashAlphaZero: { before: { content: '"●"', color: 'rgb(0 0 0 / 0)' } },
+    })).toEqual({ fontSizeZero: false, custom: false, noContent: false, ulNone: false, btnNone: false, btnInvisible: false, btnTransparent: false, beforeInvisible: false, beforeTransparent: false, beforeClearColor: false, beforeTransparentKeyword: false, beforeSlashAlphaZero: false });
+  });
+
+  it('still shapes a glyph drawn in a colour with any alpha above zero', () => {
+    expect(run({
+      rgb: { before: { content: '"●"', color: 'rgb(255, 0, 0)' } },
+      rgbaHalf: { before: { content: '"●"', color: 'rgba(255, 0, 0, 0.5)' } },
+      slashAlpha: { before: { content: '"●"', color: 'rgb(255 0 0 / 0.4)' } },
+    })).toEqual({ rgb: true, rgbaHalf: true, slashAlpha: true });
+  });
+
+  it('finds the dots list even when another class is placed before the Slick dots class', () => {
+    document.body.innerHTML = '<div id="w"><div class="shmTestimonial"><ul class="site-dots slideTwo-dotsl2" data-case="x"><li><button>1</button></li></ul></div></div>';
+    const fake = (el: Element, pseudo?: string): Style => (pseudo === '::before' ? { ...VISIBLE, fontSize: '20px', color: 'rgb(0, 0, 0)', content: '"●"' } : VISIBLE);
+    shapeDotsRunner()(document.getElementById('w')!, fake);
+    expect(document.querySelector('[data-case="x"]')!.classList.contains('shm-dots-shaped')).toBe(true);
   });
 
   it('re-evaluates on every run: a list keeps its class while the glyph shows and loses it when hidden', () => {
     const cases: Record<string, { before: Style }> = { a: { before: { content: '"●"' } } };
     expect(run(cases)).toEqual({ a: true });
     const ul = document.querySelector('[data-case="a"]')!;
-    const fake = (el: Element, pseudo?: string): Style => (pseudo === '::before' ? { ...VISIBLE, fontSize: '20px', content: '"●"' } : VISIBLE);
+    const fake = (el: Element, pseudo?: string): Style => (pseudo === '::before' ? { ...VISIBLE, fontSize: '20px', color: 'rgb(0, 0, 0)', content: '"●"' } : VISIBLE);
     shapeDotsRunner()(document.getElementById('w')!, fake);
     expect(ul.classList.contains('shm-dots-shaped')).toBe(true);
-    const hiddenNow = (el: Element, pseudo?: string): Style => (pseudo === '::before' ? { ...VISIBLE, fontSize: '0px', content: '"●"' } : VISIBLE);
+    const hiddenNow = (el: Element, pseudo?: string): Style => (pseudo === '::before' ? { ...VISIBLE, fontSize: '0px', color: 'rgb(0, 0, 0)', content: '"●"' } : VISIBLE);
     shapeDotsRunner()(document.getElementById('w')!, hiddenNow);
     expect(ul.classList.contains('shm-dots-shaped')).toBe(false);
   });
@@ -262,6 +280,18 @@ describe('testimonials adaptive height', () => {
     const { slick, set, setImportant, gcs } = fakeSlick([300], 0, 1, 'content-box');
     run(slick, 0, setImportant, gcs);
     expect(set.height).toBe('300px');
+  });
+
+  it('counts the list border the same way as its padding, and treats a missing width as zero', () => {
+    const a = fakeSlick([300], 0, 1);
+    run(a.slick, 0, a.setImportant, () => ({ boxSizing: 'border-box', paddingTop: '20px', paddingBottom: '12px', borderBottomWidth: '2px' }));
+    expect(a.set.height).toBe('334px');
+    const b = fakeSlick([300], 0, 1, 'content-box');
+    run(b.slick, 0, b.setImportant, () => ({ boxSizing: 'content-box', paddingTop: '20px', borderTopWidth: '3px', paddingBottom: '12px' }));
+    expect(b.set.height).toBe('297px');
+    const c = fakeSlick([300], 0, 1);
+    run(c.slick, 0, c.setImportant, () => ({ boxSizing: 'border-box', paddingTop: '20px', paddingBottom: '12px' }));
+    expect(c.set.height).toBe('332px');
   });
 
   it('leaves the list alone when there is no card in the window', () => {

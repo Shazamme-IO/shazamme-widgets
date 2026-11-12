@@ -207,7 +207,8 @@ function fitHeights(slick, first){
 
 // The list ends where the lowest card on screen ends. Measured from the card's real bottom, so
 // a card that sits below the top of the list (list padding, a slide padding, a card margin) is
-// never cut off. The list's own bottom padding is added when the box model counts it inside.
+// never cut off. The list's own bottom padding and border are added when the box model counts
+// them inside, and the top padding and border taken off when it does not.
 function sizeList(slick, shown){
     var list = slick.$list[0];
     var listTop = list.getBoundingClientRect().top;
@@ -215,7 +216,10 @@ function sizeList(slick, shown){
     for (var i = 0; i < shown.length; i++) bottom = Math.max(bottom, shown[i].card.getBoundingClientRect().bottom - listTop);
     if (!bottom) return;
     var listStyle = getComputedStyle(list);
-    var extra = listStyle.boxSizing === 'border-box' ? parseFloat(listStyle.paddingBottom) : -parseFloat(listStyle.paddingTop);
+    var px = function(v){ return parseFloat(v) || 0; };
+    var extra = listStyle.boxSizing === 'border-box'
+        ? px(listStyle.paddingBottom) + px(listStyle.borderBottomWidth)
+        : -(px(listStyle.paddingTop) + px(listStyle.borderTopWidth));
     setImportant(list, { 'height': Math.ceil(bottom + extra) + 'px' });
 }
 
@@ -252,18 +256,28 @@ function isHidden(el){
     return cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) === 0;
 }
 
+// A glyph in a fully transparent colour is not showing either: a site that draws its dots with
+// the button's own background or border and hides the glyph with color:transparent keeps them.
+function isTransparent(color){
+    if (!color || color === 'transparent') return true;
+    var m = /^rgba?\(([^)]*)\)$/.exec(color);
+    if (!m) return false;
+    var parts = m[1].split(/\s*[,\/]\s*|\s+/).filter(Boolean);
+    return parts.length === 4 && parseFloat(parts[3]) === 0;
+}
+
 function dotsShowGlyph(ul){
     var btn = ul.querySelector('li button');
     if (!btn) return false;
     if (isHidden(ul) || isHidden(btn)) return false;
     var before = getComputedStyle(btn, '::before');
-    return DOT_GLYPHS.test(before.content || '') && parseFloat(before.fontSize) > 0 && before.visibility !== 'hidden' && parseFloat(before.opacity) !== 0;
+    return DOT_GLYPHS.test(before.content || '') && parseFloat(before.fontSize) > 0 && before.visibility !== 'hidden' && parseFloat(before.opacity) !== 0 && !isTransparent(before.color);
 }
 
 // Runs after init, on every reInit (Slick rebuilds the list) and on every refit (a widget that
 // initialised inside a hidden section reads no glyph until the section is shown).
 function shapeDots(){
-    var lists = element.querySelectorAll('ul[class^="slideTwo-dots"]');
+    var lists = element.querySelectorAll('ul[class*="slideTwo-dots"]');
     for (var i = 0; i < lists.length; i++) {
         lists[i].classList.remove(DOTS_SHAPED_CLASS);
         if (dotsShowGlyph(lists[i])) lists[i].classList.add(DOTS_SHAPED_CLASS);
