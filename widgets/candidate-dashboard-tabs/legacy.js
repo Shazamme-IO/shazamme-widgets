@@ -338,11 +338,15 @@ function UX() {
         `;
     }
 
+    // The file name is user-chosen and the type label is read back from the DOM, and
+    // both are interpolated into markup: escape them so neither can inject HTML.
+    const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
     this.candidateFileEl = (f) => {
         return `
-            <div class="grid-entry entry-candidate-file" data-rel="item-candidate-file" data-id="${f.data.candidateFileID}">
-                <a href="${f.data.fileUri}" target="_blank" class="link-title column-left">${f.data.candidateFileName}</a>
-                <span class="text-type column">${f.data.type || ''}</span>
+            <div class="grid-entry entry-candidate-file" data-rel="item-candidate-file" data-id="${esc(f.data.candidateFileID)}">
+                <a href="${esc(f.data.fileUri)}" target="_blank" class="link-title column-left">${esc(f.data.candidateFileName)}</a>
+                <span class="text-type column">${esc(f.data.type || '')}</span>
                 <div class="section-actions column-right">
                     <i class="button-delete far fa-trash-alt" data-rel="button-delete"></i>
                 </div>
