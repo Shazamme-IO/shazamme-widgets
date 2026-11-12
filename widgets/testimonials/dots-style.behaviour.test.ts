@@ -178,54 +178,68 @@ describe('testimonials floorHeight', () => {
 });
 
 describe('testimonials adaptive height', () => {
-  // Runs the real floorHeight, visibleHeight, sizeList and fitAdaptive against a fake Slick.
+  // Runs the real floorHeight, windowCards, visibleHeight, sizeList and fitAdaptive against a fake Slick.
   function fn(name: string) {
     const start = src.indexOf(`function ${name}(`);
     expect(start, name).toBeGreaterThan(-1);
     return src.slice(start, src.indexOf('\n}\n', start) + 3);
   }
-  const body = ['floorHeight', 'visibleHeight', 'sizeList', 'fitAdaptive'].map(fn).join('\n');
+  const body = ['floorHeight', 'windowCards', 'visibleHeight', 'sizeList', 'fitAdaptive'].map(fn).join('\n');
   const run = new Function('slick', 'first', 'setImportant', 'getComputedStyle', `${body}\nfitAdaptive(slick, first);`) as (slick: unknown, first: number, set: unknown, gcs: unknown) => void;
 
-  // cards: text height per slide index; floor: holder height with the card hidden.
-  function fakeSlick(cards: number[], floor: number, slidesToShow: number, listBox = 'border-box') {
+  // cards: text height per slide index; floor: holder height with the card hidden; top: where each card
+  // starts below the list top (list padding plus any slide padding or card margin).
+  function fakeSlick(cards: number[], floor: number, slidesToShow: number, listBox = 'border-box', top = 20) {
     document.body.innerHTML = `<div class="slick-list">${cards.map((_, i) => `<div class="slick-slide" data-slick-index="${i}"><div class="holder"><div class="shmTestimonial-comments">t</div></div></div>`).join('')}</div>`;
     const slides = Array.from(document.querySelectorAll('.slick-slide')) as HTMLElement[];
+    const set: Record<string, string> = {};
+    const minHeights: number[] = [];
     slides.forEach((s, i) => {
       const card = s.querySelector('.shmTestimonial-comments') as HTMLElement;
-      card.getBoundingClientRect = () => ({ height: cards[i] } as DOMRect);
-      (s.firstElementChild as HTMLElement).getBoundingClientRect = () => ({ height: card.style.display === 'none' ? floor : Math.max(cards[i], floor) } as DOMRect);
+      const h = () => Math.max(cards[i], minHeights[i] || 0);
+      card.getBoundingClientRect = () => ({ height: h(), top: 100 + top, bottom: 100 + top + h() } as DOMRect);
+      (s.firstElementChild as HTMLElement).getBoundingClientRect = () => ({ height: card.style.display === 'none' ? floor : Math.max(h(), floor) } as DOMRect);
     });
-    const set: Record<string, string> = {};
-    const slick = { options: { slidesToShow }, $list: [document.querySelector('.slick-list')], $slideTrack: { children: (sel: string) => [document.querySelector(sel)].filter(Boolean) } };
-    const setImportant = (el: Element, props: Record<string, string>) => { if (el.classList.contains('slick-list')) Object.assign(set, props); };
+    const list = document.querySelector('.slick-list') as HTMLElement;
+    list.getBoundingClientRect = () => ({ top: 100 } as DOMRect);
+    const slick = { options: { slidesToShow }, $list: [list], $slideTrack: { children: (sel: string) => [document.querySelector(sel)].filter(Boolean) } };
+    const setImportant = (el: Element, props: Record<string, string>) => {
+      if (el.classList.contains('slick-list')) Object.assign(set, props);
+      if (el.classList.contains('shmTestimonial-comments') && props['min-height']) minHeights[slides.indexOf(el.closest('.slick-slide') as HTMLElement)] = parseFloat(props['min-height']);
+    };
     const gcs = () => ({ boxSizing: listBox, paddingTop: '20px', paddingBottom: '0px' });
     return { slick, set, setImportant, gcs };
   }
 
-  it('sizes the list to the card plus its padding when the card is taller than the floor', () => {
+  it('ends the list at the card bottom when the card is taller than the floor', () => {
     const { slick, set, setImportant, gcs } = fakeSlick([359], 190, 1);
     run(slick, 0, setImportant, gcs);
     expect(set.height).toBe('379px');
   });
 
-  it('sizes the list to the floor when that is taller than the card', () => {
+  it('raises the card to the floor and ends the list there when the floor is taller', () => {
     const { slick, set, setImportant, gcs } = fakeSlick([200], 490, 1);
     run(slick, 0, setImportant, gcs);
     expect(set.height).toBe('510px');
   });
 
-  it('uses the tallest card of the window on a multi-column adaptive desktop', () => {
+  it('allows for a card that starts below the list padding', () => {
+    const { slick, set, setImportant, gcs } = fakeSlick([418], 0, 1, 'border-box', 50);
+    run(slick, 0, setImportant, gcs);
+    expect(set.height).toBe('468px');
+  });
+
+  it('uses the lowest card of the window on a multi-column adaptive desktop', () => {
     const { slick, set, setImportant, gcs } = fakeSlick([200, 340, 120], 0, 2);
     run(slick, 0, setImportant, gcs);
     expect(set.height).toBe('360px');
     run(slick, 1, setImportant, gcs);
     expect(set.height).toBe('360px');
     run(slick, 2, setImportant, gcs);
-    expect(set.height).toBe('140px');
+    expect(set.height).toBe('360px');
   });
 
-  it('does not count the padding for a content-box list', () => {
+  it('does not count the top padding twice for a content-box list', () => {
     const { slick, set, setImportant, gcs } = fakeSlick([300], 0, 1, 'content-box');
     run(slick, 0, setImportant, gcs);
     expect(set.height).toBe('300px');
@@ -242,6 +256,7 @@ describe('testimonials adaptive height', () => {
     expect(slider).toContain('else fitAdaptive(slick, next);');
     expect(slider).toContain('fitAdaptive(slick, slick.currentSlide);');
     expect(slider).not.toContain("'.slick-current>div'");
-    expect(fn('fitHeights')).toContain('visibleHeight(slick, first)');
+    expect(fn('fitHeights')).toContain('visibleHeight(slick, shown)');
+    expect(fn('fitHeights')).toContain('sizeList(slick, shown)');
   });
 });

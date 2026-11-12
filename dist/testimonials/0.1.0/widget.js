@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build c610205a0f52. Registers window.ShazammeWidget["<name>"].
+ * Build bb10fa1b1867. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -207,40 +207,49 @@ var __shazWidgetExport = (() => {
       else card.style.removeProperty("display");
       return floor;
     }
-    function visibleHeight(slick, first) {
+    function windowCards(slick, first) {
       var visible = slick.options.slidesToShow;
-      var tallest = 0;
-      var firstSlide = null;
+      var out = [];
       for (var i = first; i < first + visible; i++) {
         var slide = slick.$slideTrack.children('[data-slick-index="' + i + '"]')[0];
         var card = slide && slide.querySelector(".shmTestimonial-comments");
-        if (!card) continue;
-        if (!firstSlide) firstSlide = slide;
-        tallest = Math.max(tallest, Math.ceil(card.getBoundingClientRect().height));
+        if (card) out.push({ slide, card });
       }
-      return Math.max(tallest, floorHeight(firstSlide));
+      return out;
+    }
+    function visibleHeight(slick, cards) {
+      var tallest = 0;
+      for (var i = 0; i < cards.length; i++) tallest = Math.max(tallest, Math.ceil(cards[i].card.getBoundingClientRect().height));
+      return Math.max(tallest, floorHeight(cards.length ? cards[0].slide : null));
     }
     function fitHeights(slick, first) {
       var cards = slick.$slideTrack.find(".shmTestimonial-comments");
       cards.each(function() {
         setImportant(this, { "min-height": "0" });
       });
-      var tallest = visibleHeight(slick, first);
+      var shown = windowCards(slick, first);
+      var tallest = visibleHeight(slick, shown);
       if (!tallest) return;
       cards.each(function() {
         setImportant(this, { "min-height": tallest + "px" });
       });
-      sizeList(slick, tallest);
+      sizeList(slick, shown);
     }
-    function sizeList(slick, cardHeight) {
+    function sizeList(slick, shown) {
       var list = slick.$list[0];
+      var listTop = list.getBoundingClientRect().top;
+      var bottom = 0;
+      for (var i = 0; i < shown.length; i++) bottom = Math.max(bottom, shown[i].card.getBoundingClientRect().bottom - listTop);
+      if (!bottom) return;
       var listStyle = getComputedStyle(list);
-      var listPadding = listStyle.boxSizing === "border-box" ? parseFloat(listStyle.paddingTop) + parseFloat(listStyle.paddingBottom) : 0;
-      setImportant(list, { "height": cardHeight + listPadding + "px" });
+      var extra = listStyle.boxSizing === "border-box" ? parseFloat(listStyle.paddingBottom) : -parseFloat(listStyle.paddingTop);
+      setImportant(list, { "height": Math.ceil(bottom + extra) + "px" });
     }
     function fitAdaptive(slick, first) {
-      var h = visibleHeight(slick, first);
-      if (h) sizeList(slick, h);
+      var shown = windowCards(slick, first);
+      var floor = visibleHeight(slick, shown);
+      for (var i = 0; i < shown.length; i++) setImportant(shown[i].card, { "min-height": floor + "px" });
+      sizeList(slick, shown);
     }
     var DOTS_SHAPED_CLASS = "shm-dots-shaped";
     var DOT_GLYPHS = /[\u2014\u25CB\u25CF\u25A1\u25A0]/;

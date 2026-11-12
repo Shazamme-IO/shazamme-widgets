@@ -171,22 +171,26 @@ function floorHeight(slide){
     return floor;
 }
 
-// The height the cards on screen together need: the tallest of their texts, or the Design tab
-// container height when that is taller. Slides are found by Slick's own index (clones carry one
-// too), so the window is right when the slider is about to wrap. The floor is read once, after
-// the cards, so hiding a card forces one extra layout, not two.
-function visibleHeight(slick, first){
+// The cards Slick shows for window `first`: found by Slick's own index (clones carry one too),
+// so the window is right when the slider is about to wrap.
+function windowCards(slick, first){
     var visible = slick.options.slidesToShow;
-    var tallest = 0;
-    var firstSlide = null;
+    var out = [];
     for (var i = first; i < first + visible; i++) {
         var slide = slick.$slideTrack.children('[data-slick-index="' + i + '"]')[0];
         var card = slide && slide.querySelector('.shmTestimonial-comments');
-        if (!card) continue;
-        if (!firstSlide) firstSlide = slide;
-        tallest = Math.max(tallest, Math.ceil(card.getBoundingClientRect().height));
+        if (card) out.push({ slide: slide, card: card });
     }
-    return Math.max(tallest, floorHeight(firstSlide));
+    return out;
+}
+
+// The height the cards on screen together need: the tallest of their texts, or the Design tab
+// container height when that is taller. The floor is read once, after the cards, so hiding a
+// card forces one extra layout, not two.
+function visibleHeight(slick, cards){
+    var tallest = 0;
+    for (var i = 0; i < cards.length; i++) tallest = Math.max(tallest, Math.ceil(cards[i].card.getBoundingClientRect().height));
+    return Math.max(tallest, floorHeight(cards.length ? cards[0].slide : null));
 }
 
 // Fixed height mode: every card gets the visible height as a floor, so the cards on screen
@@ -194,19 +198,25 @@ function visibleHeight(slick, first){
 function fitHeights(slick, first){
     var cards = slick.$slideTrack.find('.shmTestimonial-comments');
     cards.each(function(){ setImportant(this, { 'min-height': '0' }); });
-    var tallest = visibleHeight(slick, first);
+    var shown = windowCards(slick, first);
+    var tallest = visibleHeight(slick, shown);
     if (!tallest) return;
     cards.each(function(){ setImportant(this, { 'min-height': tallest + 'px' }); });
-    sizeList(slick, tallest);
+    sizeList(slick, shown);
 }
 
-// The list shows exactly `cardHeight` of card; its own padding is added only when the box
-// model counts it inside the height.
-function sizeList(slick, cardHeight){
+// The list ends where the lowest card on screen ends. Measured from the card's real bottom, so
+// a card that sits below the top of the list (list padding, a slide padding, a card margin) is
+// never cut off. The list's own bottom padding is added when the box model counts it inside.
+function sizeList(slick, shown){
     var list = slick.$list[0];
+    var listTop = list.getBoundingClientRect().top;
+    var bottom = 0;
+    for (var i = 0; i < shown.length; i++) bottom = Math.max(bottom, shown[i].card.getBoundingClientRect().bottom - listTop);
+    if (!bottom) return;
     var listStyle = getComputedStyle(list);
-    var listPadding = listStyle.boxSizing === 'border-box' ? parseFloat(listStyle.paddingTop) + parseFloat(listStyle.paddingBottom) : 0;
-    setImportant(list, { 'height': (cardHeight + listPadding) + 'px' });
+    var extra = listStyle.boxSizing === 'border-box' ? parseFloat(listStyle.paddingBottom) : -parseFloat(listStyle.paddingTop);
+    setImportant(list, { 'height': Math.ceil(bottom + extra) + 'px' });
 }
 
 // Adaptive height (every phone, and desktop when the config says so): the list follows the
@@ -214,8 +224,10 @@ function sizeList(slick, cardHeight){
 // is not cut off at the Design tab height. Called from beforeChange with the next index as
 // well, so the list is already the right size when Slick starts the slide.
 function fitAdaptive(slick, first){
-    var h = visibleHeight(slick, first);
-    if (h) sizeList(slick, h);
+    var shown = windowCards(slick, first);
+    var floor = visibleHeight(slick, shown);
+    for (var i = 0; i < shown.length; i++) setImportant(shown[i].card, { 'min-height': floor + 'px' });
+    sizeList(slick, shown);
 }
 
 // The widget CSS tab draws the slider dots with font glyphs (— ○ ● □ ■) in a ::before box, so
