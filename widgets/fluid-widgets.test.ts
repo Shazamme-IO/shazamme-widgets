@@ -109,8 +109,8 @@ describe('Quinn pass 2 (WOW, 6 Nov 2026)', () => {
     const body = src('testimonials');
     expect(body).toContain('function floorHeight(slide)');
     expect(body).toContain("card.style.setProperty('display', 'none', 'important')");
-    expect(body).toContain('tallest = Math.max(tallest, floorHeight(firstSlide))');
-    expect(body).toContain('function fitAdaptive(slick)');
+    expect(body).toContain('return Math.max(tallest, floorHeight(firstSlide));');
+    expect(body).toContain('function fitAdaptive(slick, first)');
     const fluid = body.slice(body.indexOf('function fluidSlides(slick)'), body.indexOf('\n}\n', body.indexOf('function fluidSlides(slick)')));
     expect(fluid).toContain("'display': 'block' });");
     expect(fluid).not.toContain("'display': 'flex' });");

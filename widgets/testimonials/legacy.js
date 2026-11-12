@@ -171,12 +171,12 @@ function floorHeight(slide){
     return floor;
 }
 
-// Cards on screen together share one height: the tallest of their texts, or the Design tab
-// container height when that is taller. A long testimonial always gets its full height.
-function fitHeights(slick, first){
+// The height the cards on screen together need: the tallest of their texts, or the Design tab
+// container height when that is taller. Slides are found by Slick's own index (clones carry one
+// too), so the window is right when the slider is about to wrap. The floor is read once, after
+// the cards, so hiding a card forces one extra layout, not two.
+function visibleHeight(slick, first){
     var visible = slick.options.slidesToShow;
-    var cards = slick.$slideTrack.find('.shmTestimonial-comments');
-    cards.each(function(){ setImportant(this, { 'min-height': '0' }); });
     var tallest = 0;
     var firstSlide = null;
     for (var i = first; i < first + visible; i++) {
@@ -186,28 +186,35 @@ function fitHeights(slick, first){
         if (!firstSlide) firstSlide = slide;
         tallest = Math.max(tallest, Math.ceil(card.getBoundingClientRect().height));
     }
-    // Read the floor after the cards, so hiding a card forces one extra layout, not two.
-    tallest = Math.max(tallest, floorHeight(firstSlide));
+    return Math.max(tallest, floorHeight(firstSlide));
+}
+
+// Fixed height mode: every card gets the visible height as a floor, so the cards on screen
+// together match and a long testimonial always gets its full card.
+function fitHeights(slick, first){
+    var cards = slick.$slideTrack.find('.shmTestimonial-comments');
+    cards.each(function(){ setImportant(this, { 'min-height': '0' }); });
+    var tallest = visibleHeight(slick, first);
     if (!tallest) return;
     cards.each(function(){ setImportant(this, { 'min-height': tallest + 'px' }); });
     sizeList(slick, tallest);
 }
 
+// The list shows exactly `cardHeight` of card; its own padding is added only when the box
+// model counts it inside the height.
 function sizeList(slick, cardHeight){
     var list = slick.$list[0];
     var listStyle = getComputedStyle(list);
-    var listPadding = parseFloat(listStyle.paddingTop) + parseFloat(listStyle.paddingBottom);
+    var listPadding = listStyle.boxSizing === 'border-box' ? parseFloat(listStyle.paddingTop) + parseFloat(listStyle.paddingBottom) : 0;
     setImportant(list, { 'height': (cardHeight + listPadding) + 'px' });
 }
 
-// Adaptive height (every mobile device, and desktop when the config says so): the list follows
-// the current card, never shorter than its text or the container height, so a long testimonial
-// is not cut off at the Design tab height.
-function fitAdaptive(slick){
-    var slide = slick.$slideTrack.children('.slick-current')[0];
-    var card = slide && slide.querySelector('.shmTestimonial-comments');
-    if (!card) return;
-    var h = Math.max(Math.ceil(card.getBoundingClientRect().height), floorHeight(slide));
+// Adaptive height (every phone, and desktop when the config says so): the list follows the
+// cards on screen, never shorter than their text or the container height, so a long testimonial
+// is not cut off at the Design tab height. Called from beforeChange with the next index as
+// well, so the list is already the right size when Slick starts the slide.
+function fitAdaptive(slick, first){
+    var h = visibleHeight(slick, first);
     if (h) sizeList(slick, h);
 }
 
@@ -306,6 +313,7 @@ function slider(){
         nextArrow: '<i class="fas fa-chevron-right slick-next"></i>',
     }).on('beforeChange', function (event, slick, current, next) {
         if(!adaptive) fitHeights(slick, next);
+        else fitAdaptive(slick, next);
         growWrapper();
     }).on('setPosition', function (event, slick) {
         fluidSlides(slick);
@@ -313,7 +321,7 @@ function slider(){
         if(!adaptive){
             fitHeights(slick, slick.currentSlide);
         }else{
-            fitAdaptive(slick);
+            fitAdaptive(slick, slick.currentSlide);
         }
         growWrapper();
     });

@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build de80a018e220. Registers window.ShazammeWidget["<name>"].
+ * Build c610205a0f52. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -207,12 +207,8 @@ var __shazWidgetExport = (() => {
       else card.style.removeProperty("display");
       return floor;
     }
-    function fitHeights(slick, first) {
+    function visibleHeight(slick, first) {
       var visible = slick.options.slidesToShow;
-      var cards = slick.$slideTrack.find(".shmTestimonial-comments");
-      cards.each(function() {
-        setImportant(this, { "min-height": "0" });
-      });
       var tallest = 0;
       var firstSlide = null;
       for (var i = first; i < first + visible; i++) {
@@ -222,7 +218,14 @@ var __shazWidgetExport = (() => {
         if (!firstSlide) firstSlide = slide;
         tallest = Math.max(tallest, Math.ceil(card.getBoundingClientRect().height));
       }
-      tallest = Math.max(tallest, floorHeight(firstSlide));
+      return Math.max(tallest, floorHeight(firstSlide));
+    }
+    function fitHeights(slick, first) {
+      var cards = slick.$slideTrack.find(".shmTestimonial-comments");
+      cards.each(function() {
+        setImportant(this, { "min-height": "0" });
+      });
+      var tallest = visibleHeight(slick, first);
       if (!tallest) return;
       cards.each(function() {
         setImportant(this, { "min-height": tallest + "px" });
@@ -232,14 +235,11 @@ var __shazWidgetExport = (() => {
     function sizeList(slick, cardHeight) {
       var list = slick.$list[0];
       var listStyle = getComputedStyle(list);
-      var listPadding = parseFloat(listStyle.paddingTop) + parseFloat(listStyle.paddingBottom);
+      var listPadding = listStyle.boxSizing === "border-box" ? parseFloat(listStyle.paddingTop) + parseFloat(listStyle.paddingBottom) : 0;
       setImportant(list, { "height": cardHeight + listPadding + "px" });
     }
-    function fitAdaptive(slick) {
-      var slide = slick.$slideTrack.children(".slick-current")[0];
-      var card = slide && slide.querySelector(".shmTestimonial-comments");
-      if (!card) return;
-      var h = Math.max(Math.ceil(card.getBoundingClientRect().height), floorHeight(slide));
+    function fitAdaptive(slick, first) {
+      var h = visibleHeight(slick, first);
       if (h) sizeList(slick, h);
     }
     var DOTS_SHAPED_CLASS = "shm-dots-shaped";
@@ -312,6 +312,7 @@ var __shazWidgetExport = (() => {
         nextArrow: '<i class="fas fa-chevron-right slick-next"></i>'
       }).on("beforeChange", function(event, slick, current, next) {
         if (!adaptive) fitHeights(slick, next);
+        else fitAdaptive(slick, next);
         growWrapper();
       }).on("setPosition", function(event, slick) {
         fluidSlides(slick);
@@ -319,7 +320,7 @@ var __shazWidgetExport = (() => {
         if (!adaptive) {
           fitHeights(slick, slick.currentSlide);
         } else {
-          fitAdaptive(slick);
+          fitAdaptive(slick, slick.currentSlide);
         }
         growWrapper();
       });

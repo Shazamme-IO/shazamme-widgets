@@ -171,13 +171,77 @@ describe('testimonials floorHeight', () => {
     expect(runner()(document.querySelector('.slick-slide'))).toBe(0);
   });
 
-  it('is the floor for both height modes', () => {
-    const fit = src.slice(src.indexOf('function fitHeights(slick, first)'), src.indexOf('\n}\n', src.indexOf('function fitHeights(slick, first)')));
-    expect(fit).toContain('tallest = Math.max(tallest, floorHeight(firstSlide))');
-    const adaptive = src.slice(src.indexOf('function fitAdaptive(slick)'), src.indexOf('\n}\n', src.indexOf('function fitAdaptive(slick)')));
-    expect(adaptive).toContain('Math.max(Math.ceil(card.getBoundingClientRect().height), floorHeight(slide))');
-    const handler = src.slice(src.indexOf(".on('setPosition'"), src.indexOf('growWrapper();', src.indexOf(".on('setPosition'")));
-    expect(handler).toContain('fitAdaptive(slick);');
-    expect(handler).not.toContain("'.slick-current>div'");
+  it('returns 0 for a slide with a holder but no card', () => {
+    document.body.innerHTML = '<div class="slick-slide"><div class="holder"></div></div>';
+    expect(runner()(document.querySelector('.slick-slide'))).toBe(0);
+  });
+});
+
+describe('testimonials adaptive height', () => {
+  // Runs the real floorHeight, visibleHeight, sizeList and fitAdaptive against a fake Slick.
+  function fn(name: string) {
+    const start = src.indexOf(`function ${name}(`);
+    expect(start, name).toBeGreaterThan(-1);
+    return src.slice(start, src.indexOf('\n}\n', start) + 3);
+  }
+  const body = ['floorHeight', 'visibleHeight', 'sizeList', 'fitAdaptive'].map(fn).join('\n');
+  const run = new Function('slick', 'first', 'setImportant', 'getComputedStyle', `${body}\nfitAdaptive(slick, first);`) as (slick: unknown, first: number, set: unknown, gcs: unknown) => void;
+
+  // cards: text height per slide index; floor: holder height with the card hidden.
+  function fakeSlick(cards: number[], floor: number, slidesToShow: number, listBox = 'border-box') {
+    document.body.innerHTML = `<div class="slick-list">${cards.map((_, i) => `<div class="slick-slide" data-slick-index="${i}"><div class="holder"><div class="shmTestimonial-comments">t</div></div></div>`).join('')}</div>`;
+    const slides = Array.from(document.querySelectorAll('.slick-slide')) as HTMLElement[];
+    slides.forEach((s, i) => {
+      const card = s.querySelector('.shmTestimonial-comments') as HTMLElement;
+      card.getBoundingClientRect = () => ({ height: cards[i] } as DOMRect);
+      (s.firstElementChild as HTMLElement).getBoundingClientRect = () => ({ height: card.style.display === 'none' ? floor : Math.max(cards[i], floor) } as DOMRect);
+    });
+    const set: Record<string, string> = {};
+    const slick = { options: { slidesToShow }, $list: [document.querySelector('.slick-list')], $slideTrack: { children: (sel: string) => [document.querySelector(sel)].filter(Boolean) } };
+    const setImportant = (el: Element, props: Record<string, string>) => { if (el.classList.contains('slick-list')) Object.assign(set, props); };
+    const gcs = () => ({ boxSizing: listBox, paddingTop: '20px', paddingBottom: '0px' });
+    return { slick, set, setImportant, gcs };
+  }
+
+  it('sizes the list to the card plus its padding when the card is taller than the floor', () => {
+    const { slick, set, setImportant, gcs } = fakeSlick([359], 190, 1);
+    run(slick, 0, setImportant, gcs);
+    expect(set.height).toBe('379px');
+  });
+
+  it('sizes the list to the floor when that is taller than the card', () => {
+    const { slick, set, setImportant, gcs } = fakeSlick([200], 490, 1);
+    run(slick, 0, setImportant, gcs);
+    expect(set.height).toBe('510px');
+  });
+
+  it('uses the tallest card of the window on a multi-column adaptive desktop', () => {
+    const { slick, set, setImportant, gcs } = fakeSlick([200, 340, 120], 0, 2);
+    run(slick, 0, setImportant, gcs);
+    expect(set.height).toBe('360px');
+    run(slick, 1, setImportant, gcs);
+    expect(set.height).toBe('360px');
+    run(slick, 2, setImportant, gcs);
+    expect(set.height).toBe('140px');
+  });
+
+  it('does not count the padding for a content-box list', () => {
+    const { slick, set, setImportant, gcs } = fakeSlick([300], 0, 1, 'content-box');
+    run(slick, 0, setImportant, gcs);
+    expect(set.height).toBe('300px');
+  });
+
+  it('leaves the list alone when there is no card in the window', () => {
+    const { slick, set, setImportant, gcs } = fakeSlick([], 0, 1);
+    run(slick, 5, setImportant, gcs);
+    expect(set.height).toBeUndefined();
+  });
+
+  it('is wired to beforeChange and setPosition in adaptive mode, and the fixed mode shares the window measure', () => {
+    const slider = src.slice(src.indexOf('function slider(){'));
+    expect(slider).toContain('else fitAdaptive(slick, next);');
+    expect(slider).toContain('fitAdaptive(slick, slick.currentSlide);');
+    expect(slider).not.toContain("'.slick-current>div'");
+    expect(fn('fitHeights')).toContain('visibleHeight(slick, first)');
   });
 });
