@@ -66,6 +66,11 @@ describe('testimonials ensureDotsStyle', () => {
     expect(css).not.toMatch(/font-size|rgb/);
   });
 
+  it('puts 24px between the cards and the dot row, only on lists it shapes', () => {
+    const { css } = install();
+    expect(css).toContain('.shmTestimonial ul.shm-dots-shaped{margin-top:24px!important}');
+  });
+
   it('leaves the dot button its own size so a long row keeps its pitch, and gives it an out-of-flow hit area', () => {
     const { css } = install();
     const button = css.match(/li button\{[^}]*\}/)![0];

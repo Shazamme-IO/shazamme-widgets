@@ -373,6 +373,8 @@ var DOTS_STYLE = [
     '.shmTestimonial ul.shm-dots-shaped li button::after{content:""!important;position:absolute!important;top:50%!important;left:50%!important;width:24px!important;height:24px!important;transform:translate(-50%,-50%)!important;background:transparent!important;border:0!important}',
     '.shmTestimonial ul.shm-dots-shaped li button:focus-visible{outline:none!important}',
     '.shmTestimonial ul.shm-dots-shaped li button:focus-visible::after{outline:2px solid currentColor!important;outline-offset:2px!important}',
+    // Breathing room between the cards and the dot row; the CSS tab pins the row's margin to 0.
+    '.shmTestimonial ul.shm-dots-shaped{margin-top:24px!important}',
     // Edge dots of the window are drawn smaller to show there are more slides beyond them.
     '.shmTestimonial ul.shm-dots-shaped li.shm-dot-edge button::before{transform:translate(-50%,-50%) scale(.6)!important}',
     '.shmTestimonial ul[class*="slideTwo-dots"]:not(.shm-dots-shaped) li.shm-dot-edge button{opacity:.5!important}'
