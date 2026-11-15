@@ -50,7 +50,8 @@ describe('testimonials ensureDotsStyle', () => {
     expect(css).toContain('background-clip:content-box!important');
     expect(css).toContain('li button{position:relative!important');
     expect(css).not.toContain('display:inline-block!important');
-    expect(css.match(/\.shmTestimonial ul/g)!.length).toBe(css.match(/\.shmTestimonial ul\.shm-dots-shaped/g)!.length);
+    // Every rule is scoped to the shaped list, except the one that dims a window-edge glyph dot.
+    expect(css.match(/\.shmTestimonial ul/g)!.length).toBe(css.match(/\.shmTestimonial ul\.shm-dots-shaped/g)!.length + css.match(/\.shmTestimonial ul\[class\*="slideTwo-dots"\]:not\(\.shm-dots-shaped\) li\.shm-dot-edge/g)!.length);
     expect(css).toContain('text-indent:-9999px!important');
     expect(css).not.toContain('overflow:hidden');
     expect(css).toContain('background-color:transparent!important;background-image:none!important;background-clip:content-box!important');
@@ -147,7 +148,7 @@ describe('testimonials ensureDotsStyle', () => {
 
   it('is bound once to reInit, runs after init and on every refit', () => {
     const slider = src.slice(src.indexOf('function slider(){'));
-    expect(slider).toContain(".off('reInit.shmDots').on('reInit.shmDots', shapeDots)");
+    expect(slider).toContain(".off('reInit.shmDots afterChange.shmDots').on('reInit.shmDots afterChange.shmDots', function(){ shapeDots(); windowDots(); })");
     expect(slider.indexOf('shapeDots();')).toBeGreaterThan(slider.indexOf('.slick({'));
     const refit = src.slice(src.indexOf('function refitSlider(){'), src.indexOf('\n}\n', src.indexOf('function refitSlider(){')));
     expect(refit).toContain('shapeDots();');
@@ -157,6 +158,51 @@ describe('testimonials ensureDotsStyle', () => {
     const slider = src.slice(src.indexOf('function slider(){'));
     expect(slider.indexOf('ensureDotsStyle();')).toBeGreaterThan(-1);
     expect(slider.indexOf('ensureDotsStyle();')).toBeLessThan(slider.indexOf('.slick({'));
+  });
+});
+
+describe('testimonials windowDots', () => {
+  function runner() {
+    const start = src.indexOf('var DOTS_WINDOW = 7;');
+    const end = src.indexOf('\n}\n', src.indexOf('function windowDots()', start)) + 3;
+    expect(start).toBeGreaterThan(-1);
+    return new Function('element', `${src.slice(start, end)}\nwindowDots();`) as (e: Element) => void;
+  }
+  function dots(n: number, active: number) {
+    document.body.innerHTML = `<div id="w"><ul class="slideTwo-dotsl3">${Array.from({ length: n }, (_, i) => `<li${i === active ? ' class="slick-active"' : ''}><button>${i + 1}</button></li>`).join('')}</ul></div>`;
+    runner()(document.getElementById('w')!);
+    const lis = Array.from(document.querySelectorAll('li'));
+    return { shown: lis.map((l, i) => (l.style.display === 'none' ? null : i)).filter((i) => i !== null), edges: lis.map((l, i) => (l.classList.contains('shm-dot-edge') ? i : null)).filter((i) => i !== null) };
+  }
+
+  it('shows every dot when there are seven or fewer, with no edge marks', () => {
+    expect(dots(6, 2)).toEqual({ shown: [0, 1, 2, 3, 4, 5], edges: [] });
+    expect(dots(7, 6)).toEqual({ shown: [0, 1, 2, 3, 4, 5, 6], edges: [] });
+  });
+
+  it('shows a seven-dot window that follows the active dot, marking the edge dots that have more beyond', () => {
+    expect(dots(34, 0)).toEqual({ shown: [0, 1, 2, 3, 4, 5, 6], edges: [6] });
+    expect(dots(34, 10)).toEqual({ shown: [7, 8, 9, 10, 11, 12, 13], edges: [7, 13] });
+    expect(dots(34, 33)).toEqual({ shown: [27, 28, 29, 30, 31, 32, 33], edges: [27] });
+  });
+
+  it('reopens dots that an earlier window hid, and clears stale edge marks', () => {
+    dots(34, 10);
+    runner()(document.getElementById('w')!);
+    const lis = Array.from(document.querySelectorAll('li'));
+    lis[10].classList.remove('slick-active'); lis[0].classList.add('slick-active');
+    runner()(document.getElementById('w')!);
+    expect(lis.map((l, i) => (l.style.display === 'none' ? null : i)).filter((i) => i !== null)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    expect(lis.filter((l) => l.classList.contains('shm-dot-edge')).map((l) => lis.indexOf(l))).toEqual([6]);
+    expect(lis[0].getAttribute('style')).toBe('');
+  });
+
+  it('runs after init, after every slide change and on every refit', () => {
+    const slider = src.slice(src.indexOf('function slider(){'));
+    expect(slider).toContain("on('reInit.shmDots afterChange.shmDots', function(){ shapeDots(); windowDots(); })");
+    expect(slider.indexOf('windowDots();')).toBeGreaterThan(slider.indexOf('shapeDots();'));
+    const refit = src.slice(src.indexOf('function refitSlider(){'), src.indexOf('\n}\n', src.indexOf('function refitSlider(){')));
+    expect(refit).toContain('windowDots();');
   });
 });
 

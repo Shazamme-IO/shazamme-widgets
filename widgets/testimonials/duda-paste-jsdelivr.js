@@ -1,5 +1,5 @@
-// LAST UPDATED: 2026-11-12 20:27 AEDT (v0.1.54)
-// Change: Dots keep the width and spacing the Design tab gives them (v0.1.53 forced 24px buttons and wrapped NGO's 34 dots onto two rows). Carries v0.1.53.
+// LAST UPDATED: 2026-11-16 09:42 AEDT (v0.1.55)
+// Change: At most seven slider dots show at once, a window that follows the active dot, with smaller edge dots where more slides lie beyond. Carries v0.1.54.
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
 // existing widget JS.
@@ -16,7 +16,7 @@
 // ===========================================================================
 (function () {
   var NAME = "testimonials";
-  var TAG = "v0.1.54";
+  var TAG = "v0.1.55";
   var BUNDLE = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" + TAG + "/dist/" + NAME + "/0.1.0/widget.min.js";
   var SDK = "https://sdk.shazamme.io/js/shazamme-1.0.3.min.js";
   window.__shazSDKPromise = window.__shazSDKPromise || new Promise(function (res) {

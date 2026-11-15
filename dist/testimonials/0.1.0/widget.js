@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 1287fa5a78cf. Registers window.ShazammeWidget["<name>"].
+ * Build 39ef969255ac. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -296,6 +296,25 @@ var __shazWidgetExport = (() => {
         if (dotsShowGlyph(lists[i])) lists[i].classList.add(DOTS_SHAPED_CLASS);
       }
     }
+    var DOTS_WINDOW = 7;
+    var DOT_EDGE_CLASS = "shm-dot-edge";
+    function windowDots() {
+      var lists = element.querySelectorAll('ul[class*="slideTwo-dots"]');
+      for (var l = 0; l < lists.length; l++) {
+        var items = lists[l].querySelectorAll("li");
+        var active = 0;
+        for (var i = 0; i < items.length; i++) if (items[i].classList.contains("slick-active")) active = i;
+        var start = items.length <= DOTS_WINDOW ? 0 : Math.max(0, Math.min(active - Math.floor(DOTS_WINDOW / 2), items.length - DOTS_WINDOW));
+        var end = Math.min(items.length, start + DOTS_WINDOW);
+        for (var j = 0; j < items.length; j++) {
+          var shown = j >= start && j < end;
+          if (shown) items[j].style.removeProperty("display");
+          else items[j].style.setProperty("display", "none", "important");
+          var edge = shown && (j === start && start > 0 || j === end - 1 && end < items.length);
+          items[j].classList.toggle(DOT_EDGE_CLASS, edge);
+        }
+      }
+    }
     var DOTS_STYLE_ID = "shm-testimonials-dots-style";
     var DOTS_STYLE = [
       // The button keeps exactly the width, height and spacing the cascade gave it with the
@@ -317,7 +336,10 @@ var __shazWidgetExport = (() => {
       // is near zero wide and the dash shape is only a couple of px tall.
       '.shmTestimonial ul.shm-dots-shaped li button::after{content:""!important;position:absolute!important;top:50%!important;left:50%!important;width:24px!important;height:24px!important;transform:translate(-50%,-50%)!important;background:transparent!important;border:0!important}',
       ".shmTestimonial ul.shm-dots-shaped li button:focus-visible{outline:none!important}",
-      ".shmTestimonial ul.shm-dots-shaped li button:focus-visible::after{outline:2px solid currentColor!important;outline-offset:2px!important}"
+      ".shmTestimonial ul.shm-dots-shaped li button:focus-visible::after{outline:2px solid currentColor!important;outline-offset:2px!important}",
+      // Edge dots of the window are drawn smaller to show there are more slides beyond them.
+      ".shmTestimonial ul.shm-dots-shaped li.shm-dot-edge button::before{transform:translate(-50%,-50%) scale(.6)!important}",
+      '.shmTestimonial ul[class*="slideTwo-dots"]:not(.shm-dots-shaped) li.shm-dot-edge button{opacity:.5!important}'
     ].join("");
     function ensureDotsStyle() {
       var head2 = document.head || document.getElementsByTagName("head")[0];
@@ -367,8 +389,12 @@ var __shazWidgetExport = (() => {
         growWrapper();
       });
       $(element).find(".shmTestimonial-comments").addClass("shmTestimonial-commentsSlider");
-      $(element).find(".shmTestimonial").off("reInit.shmDots").on("reInit.shmDots", shapeDots);
+      $(element).find(".shmTestimonial").off("reInit.shmDots afterChange.shmDots").on("reInit.shmDots afterChange.shmDots", function() {
+        shapeDots();
+        windowDots();
+      });
       shapeDots();
+      windowDots();
       watchSlider();
     }
     function settleSlider(track) {
@@ -392,6 +418,7 @@ var __shazWidgetExport = (() => {
       }
       settleSlider(track);
       shapeDots();
+      windowDots();
       clearTimeout(refitTimer);
       refitTimer = setTimeout(function() {
         settleSlider(track);
