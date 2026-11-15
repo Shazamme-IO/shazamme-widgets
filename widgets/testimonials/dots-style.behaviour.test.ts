@@ -50,7 +50,8 @@ describe('testimonials ensureDotsStyle', () => {
     expect(css).toContain('background-clip:content-box!important');
     expect(css).toContain('li button{position:relative!important');
     expect(css).not.toContain('display:inline-block!important');
-    expect(css.match(/\.shmTestimonial ul/g)!.length).toBe(css.match(/\.shmTestimonial ul\.shm-dots-shaped/g)!.length);
+    // Every rule is scoped to the shaped list, except the one that dims a window-edge glyph dot.
+    expect(css.match(/\.shmTestimonial ul/g)!.length).toBe(css.match(/\.shmTestimonial ul\.shm-dots-shaped/g)!.length + css.match(/\.shmTestimonial ul\[class\*="slideTwo-dots"\]:not\(\.shm-dots-shaped\) li\.shm-dot-edge/g)!.length);
     expect(css).toContain('text-indent:-9999px!important');
     expect(css).not.toContain('overflow:hidden');
     expect(css).toContain('background-color:transparent!important;background-image:none!important;background-clip:content-box!important');
@@ -133,6 +134,17 @@ describe('testimonials ensureDotsStyle', () => {
     expect(document.querySelector('[data-case="x"]')!.classList.contains('shm-dots-shaped')).toBe(true);
   });
 
+  it('probes a dot the window shows, not a hidden one', () => {
+    document.body.innerHTML = '<div id="w"><div class="shmTestimonial"><ul class="slideTwo-dotsl2" data-case="x"><li style="display:none"><button>1</button></li><li><button>2</button></li></ul></div></div>';
+    const fake = (el: Element, pseudo?: string): Style => {
+      if (el.tagName === 'LI') return { ...VISIBLE, display: (el as HTMLElement).style.display || 'inline-block' };
+      if (pseudo === '::before') return el.closest('li') === document.querySelector('li') ? { ...VISIBLE, fontSize: '20px', color: 'rgb(0, 0, 0)', content: 'none' } : { ...VISIBLE, fontSize: '20px', color: 'rgb(0, 0, 0)', content: '"●"' };
+      return VISIBLE;
+    };
+    shapeDotsRunner()(document.getElementById('w')!, fake);
+    expect(document.querySelector('[data-case="x"]')!.classList.contains('shm-dots-shaped')).toBe(true);
+  });
+
   it('re-evaluates on every run: a list keeps its class while the glyph shows and loses it when hidden', () => {
     const cases: Record<string, { before: Style }> = { a: { before: { content: '"●"' } } };
     expect(run(cases)).toEqual({ a: true });
@@ -147,16 +159,105 @@ describe('testimonials ensureDotsStyle', () => {
 
   it('is bound once to reInit, runs after init and on every refit', () => {
     const slider = src.slice(src.indexOf('function slider(){'));
-    expect(slider).toContain(".off('reInit.shmDots').on('reInit.shmDots', shapeDots)");
+    expect(slider).toContain(".off('reInit.shmDots afterChange.shmDots').on('reInit.shmDots afterChange.shmDots', function(){ windowDots(); shapeDots(); })");
     expect(slider.indexOf('shapeDots();')).toBeGreaterThan(slider.indexOf('.slick({'));
     const refit = src.slice(src.indexOf('function refitSlider(){'), src.indexOf('\n}\n', src.indexOf('function refitSlider(){')));
     expect(refit).toContain('shapeDots();');
+    expect(refit.indexOf('windowDots();')).toBeLessThan(refit.indexOf('shapeDots();'));
   });
 
   it('is installed before the slider is built', () => {
     const slider = src.slice(src.indexOf('function slider(){'));
     expect(slider.indexOf('ensureDotsStyle();')).toBeGreaterThan(-1);
     expect(slider.indexOf('ensureDotsStyle();')).toBeLessThan(slider.indexOf('.slick({'));
+  });
+});
+
+describe('testimonials windowDots', () => {
+  function runner() {
+    const start = src.indexOf('var DOTS_WINDOW = 7;');
+    const end = src.indexOf('\n}\n', src.indexOf('function dotForSlide(slick, next)', start)) + 3;
+    expect(start).toBeGreaterThan(-1);
+    return new Function('element', 'activeDot', `${src.slice(start, end)}\nwindowDots(activeDot);`) as (e: Element, a?: number) => void;
+  }
+  function dotFor() {
+    const start = src.indexOf('function dotForSlide(slick, next)');
+    return new Function('slick', 'next', `${src.slice(start, src.indexOf('\n}\n', start) + 3)}\nreturn dotForSlide(slick, next);`) as (s: unknown, n: number) => number;
+  }
+  function dots(n: number, active: number) {
+    document.body.innerHTML = `<div id="w"><ul class="slideTwo-dotsl3">${Array.from({ length: n }, (_, i) => `<li${i === active ? ' class="slick-active"' : ''}><button>${i + 1}</button></li>`).join('')}</ul></div>`;
+    runner()(document.getElementById('w')!);
+    const lis = Array.from(document.querySelectorAll('li'));
+    return { shown: lis.map((l, i) => (l.style.display === 'none' ? null : i)).filter((i) => i !== null), edges: lis.map((l, i) => (l.classList.contains('shm-dot-edge') ? i : null)).filter((i) => i !== null) };
+  }
+
+  it('shows every dot when there are seven or fewer, with no edge marks', () => {
+    expect(dots(6, 2)).toEqual({ shown: [0, 1, 2, 3, 4, 5], edges: [] });
+    expect(dots(7, 6)).toEqual({ shown: [0, 1, 2, 3, 4, 5, 6], edges: [] });
+  });
+
+  it('shows a seven-dot window that follows the active dot, marking the edge dots that have more beyond', () => {
+    expect(dots(34, 0)).toEqual({ shown: [0, 1, 2, 3, 4, 5, 6], edges: [6] });
+    expect(dots(34, 10)).toEqual({ shown: [7, 8, 9, 10, 11, 12, 13], edges: [7, 13] });
+    expect(dots(34, 33)).toEqual({ shown: [27, 28, 29, 30, 31, 32, 33], edges: [27] });
+  });
+
+  it('reopens dots that an earlier window hid, and clears stale edge marks', () => {
+    dots(34, 10);
+    runner()(document.getElementById('w')!);
+    const lis = Array.from(document.querySelectorAll('li'));
+    lis[10].classList.remove('slick-active'); lis[0].classList.add('slick-active');
+    runner()(document.getElementById('w')!);
+    expect(lis.map((l, i) => (l.style.display === 'none' ? null : i)).filter((i) => i !== null)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    expect(lis.filter((l) => l.classList.contains('shm-dot-edge')).map((l) => lis.indexOf(l))).toEqual([6]);
+    expect(lis[0].getAttribute('style')).toBe('');
+  });
+
+  it('centres on the dot it is given, clamped to the list, so beforeChange can move the window early', () => {
+    document.body.innerHTML = `<div id="w"><ul class="slideTwo-dotsl3">${Array.from({ length: 34 }, (_, i) => `<li${i === 33 ? ' class="slick-active"' : ''}><button>${i + 1}</button></li>`).join('')}</ul></div>`;
+    runner()(document.getElementById('w')!, 0);
+    const lis = Array.from(document.querySelectorAll('li'));
+    expect(lis.map((l, i) => (l.style.display === 'none' ? null : i)).filter((i) => i !== null)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    runner()(document.getElementById('w')!, 99);
+    expect(lis.map((l, i) => (l.style.display === 'none' ? null : i)).filter((i) => i !== null)).toEqual([27, 28, 29, 30, 31, 32, 33]);
+  });
+
+  it('ignores a non-finite target and keeps centring on the active dot', () => {
+    document.body.innerHTML = `<div id="w"><ul class="slideTwo-dotsl3">${Array.from({ length: 34 }, (_, i) => `<li${i === 20 ? ' class="slick-active"' : ''}><button>${i + 1}</button></li>`).join('')}</ul></div>`;
+    runner()(document.getElementById('w')!, NaN);
+    const lis = Array.from(document.querySelectorAll('li'));
+    expect(lis.map((l, i) => (l.style.display === 'none' ? null : i)).filter((i) => i !== null)).toEqual([17, 18, 19, 20, 21, 22, 23]);
+  });
+
+  it('maps the slide Slick is heading for to its dot, wrapping past either end', () => {
+    const slick = { slideCount: 34, options: { slidesToScroll: 1 } };
+    expect(dotFor()(slick, 12)).toBe(12);
+    expect(dotFor()(slick, 34)).toBe(0);
+    expect(dotFor()(slick, -1)).toBe(33);
+    expect(dotFor()({ slideCount: 9, options: { slidesToScroll: 2 } }, 7)).toBe(3);
+    expect(dotFor()({ slideCount: 9, options: { slidesToScroll: 2 } }, -2)).toBe(4);
+  });
+
+  it('shows again only the dots it hid, and hands focus from a dot it hides to the active dot', () => {
+    document.body.innerHTML = `<div id="w"><ul class="slideTwo-dotsl3">${Array.from({ length: 34 }, (_, i) => `<li${i === 20 ? ' class="slick-active"' : ''}${i === 1 ? ' style="display: flex;"' : ''}><button>${i + 1}</button></li>`).join('')}</ul></div>`;
+    const lis = Array.from(document.querySelectorAll('li'));
+    (lis[20].querySelector('button') as HTMLElement).focus();
+    runner()(document.getElementById('w')!);
+    expect(lis[1].style.display).toBe('none');
+    lis[20].classList.remove('slick-active'); lis[0].classList.add('slick-active');
+    runner()(document.getElementById('w')!);
+    expect(lis[1].style.display).toBe('flex');
+    expect(lis[1].hasAttribute('data-shm-dot-hidden')).toBe(false);
+    expect(document.activeElement).toBe(lis[0].querySelector('button'));
+  });
+
+  it('runs before the shaping after init, on every slide change, early on beforeChange, and on every refit', () => {
+    const slider = src.slice(src.indexOf('function slider(){'));
+    expect(slider).toContain("on('reInit.shmDots afterChange.shmDots', function(){ windowDots(); shapeDots(); })");
+    expect(slider).toContain('try { windowDots(dotForSlide(slick, next)); } catch (e) {}');
+    expect(slider.indexOf('windowDots();')).toBeLessThan(slider.indexOf('shapeDots();'));
+    const refit = src.slice(src.indexOf('function refitSlider(){'), src.indexOf('\n}\n', src.indexOf('function refitSlider(){')));
+    expect(refit).toContain('windowDots();');
   });
 });
 
@@ -241,13 +342,13 @@ describe('testimonials floorHeight', () => {
 });
 
 describe('testimonials adaptive height', () => {
-  // Runs the real floorHeight, windowCards, visibleHeight, sizeList and fitAdaptive against a fake Slick.
+  // Runs the real floorHeight, windowCards, deckHeight, sizeList, fitHeights and fitAdaptive against a fake Slick.
   function fn(name: string) {
     const start = src.indexOf(`function ${name}(`);
     expect(start, name).toBeGreaterThan(-1);
     return src.slice(start, src.indexOf('\n}\n', start) + 3);
   }
-  const body = ['saveInline', 'restoreInline', 'floorHeight', 'windowCards', 'visibleHeight', 'sizeList', 'fitAdaptive'].map(fn).join('\n');
+  const body = ['saveInline', 'restoreInline', 'floorHeight', 'windowCards', 'deckHeight', 'fitHeights', 'sizeList', 'fitAdaptive'].map(fn).join('\n');
   const run = new Function('slick', 'first', 'setImportant', 'getComputedStyle', `${body}\nfitAdaptive(slick, first);`) as (slick: unknown, first: number, set: unknown, gcs: unknown) => void;
 
   // cards: text height per slide index; floor: holder height with the card hidden; top: where each card
@@ -293,22 +394,55 @@ describe('testimonials adaptive height', () => {
     expect(set.height).toBe('468px');
   });
 
-  it('uses the lowest card of the window on a multi-column adaptive desktop, and shrinks again for a shorter window', () => {
+  it('holds one height on every window of a multi-column slider: the tallest card in the set', () => {
     const { slick, set, setImportant, gcs } = fakeSlick([200, 340, 120], 0, 2);
-    run(slick, 0, setImportant, gcs);
-    expect(set.height).toBe('360px');
-    run(slick, 1, setImportant, gcs);
-    expect(set.height).toBe('360px');
-    run(slick, 2, setImportant, gcs);
-    expect(set.height).toBe('140px');
+    for (const first of [0, 1, 2]) {
+      run(slick, first, setImportant, gcs);
+      expect(set.height).toBe('360px');
+    }
   });
 
-  it('shrinks again on a single column when the next card is shorter', () => {
-    const { slick, set, setImportant, gcs } = fakeSlick([400, 150], 0, 1);
-    run(slick, 0, setImportant, gcs);
-    expect(set.height).toBe('420px');
+  it('holds one height on every slide of a single-column slider, so a phone slider never jumps', () => {
+    const { slick, set, setImportant, gcs } = fakeSlick([400, 150, 260], 0, 1);
+    for (const first of [0, 1, 2, 1]) {
+      run(slick, first, setImportant, gcs);
+      expect(set.height).toBe('420px');
+    }
+  });
+
+  it('uses the Design tab height for every slide when it is taller than every card', () => {
+    const { slick, set, setImportant, gcs } = fakeSlick([200, 150], 490, 1);
     run(slick, 1, setImportant, gcs);
-    expect(set.height).toBe('170px');
+    expect(set.height).toBe('510px');
+  });
+
+  it('gives every card the deck height but leaves the list alone when the window has no card', () => {
+    const { slick, set, setImportant, gcs } = fakeSlick([300, 200], 0, 1);
+    run(slick, 9, setImportant, gcs);
+    expect(set.height).toBeUndefined();
+    const heights = Array.from(document.querySelectorAll('.shmTestimonial-comments')).map((c) => Math.round(c.getBoundingClientRect().height));
+    expect(heights).toEqual([300, 300]);
+  });
+
+  it('writes nothing when the slider has no cards at all', () => {
+    const { slick, set, setImportant, gcs } = fakeSlick([], 490, 1);
+    run(slick, 0, setImportant, gcs);
+    expect(set).toEqual({});
+  });
+
+  it('refits when a slider image finishes loading late', () => {
+    const watch = src.slice(src.indexOf('function watchSlider(){'), src.indexOf('\n}\n', src.indexOf('function watchSlider(){')));
+    expect(watch).toContain("$(element).find('.shmTestimonial img').each(function(){");
+    expect(watch).toContain("if (!this.complete) $(this).one('load.shmFit', refitSlider);");
+  });
+
+  it('can shrink again when the tallest card gets shorter, for example after a wider layout', () => {
+    const cards = [400, 150];
+    const { slick, set, setImportant, gcs } = fakeSlick(cards, 0, 1);
+    run(slick, 0, setImportant, gcs);
+    cards[0] = 300;
+    run(slick, 0, setImportant, gcs);
+    expect(set.height).toBe('320px');
   });
 
   it('counts the bottom padding of a border-box list and not of a content-box one', () => {
@@ -350,7 +484,8 @@ describe('testimonials adaptive height', () => {
     expect(slider).toContain('else fitAdaptive(slick, next);');
     expect(slider).toContain('fitAdaptive(slick, slick.currentSlide);');
     expect(slider).not.toContain("'.slick-current>div'");
-    expect(fn('fitHeights')).toContain('visibleHeight(slick, shown)');
+    expect(fn('fitHeights')).toContain('deckHeight(slick, shown)');
+    expect(fn('fitAdaptive')).toContain('fitHeights(slick, first);');
     expect(fn('fitHeights')).toContain('sizeList(slick, shown)');
   });
 });

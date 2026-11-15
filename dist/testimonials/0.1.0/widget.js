@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 1287fa5a78cf. Registers window.ShazammeWidget["<name>"].
+ * Build 0efc19538446. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -229,10 +229,12 @@ var __shazWidgetExport = (() => {
       }
       return out;
     }
-    function visibleHeight(slick, cards) {
+    function deckHeight(slick, shown) {
       var tallest = 0;
-      for (var i = 0; i < cards.length; i++) tallest = Math.max(tallest, Math.ceil(cards[i].card.getBoundingClientRect().height));
-      return Math.max(tallest, floorHeight(cards.length ? cards[0].slide : null));
+      slick.$slideTrack.find(".shmTestimonial-comments").each(function() {
+        tallest = Math.max(tallest, Math.ceil(this.getBoundingClientRect().height));
+      });
+      return Math.max(tallest, floorHeight(shown.length ? shown[0].slide : null));
     }
     function fitHeights(slick, first) {
       var cards = slick.$slideTrack.find(".shmTestimonial-comments");
@@ -240,7 +242,7 @@ var __shazWidgetExport = (() => {
         setImportant(this, { "min-height": "0" });
       });
       var shown = windowCards(slick, first);
-      var tallest = visibleHeight(slick, shown);
+      var tallest = deckHeight(slick, shown);
       if (!tallest) return;
       cards.each(function() {
         setImportant(this, { "min-height": tallest + "px" });
@@ -261,13 +263,7 @@ var __shazWidgetExport = (() => {
       setImportant(list, { "height": Math.ceil(bottom + extra) + "px" });
     }
     function fitAdaptive(slick, first) {
-      slick.$slideTrack.find(".shmTestimonial-comments").each(function() {
-        setImportant(this, { "min-height": "0" });
-      });
-      var shown = windowCards(slick, first);
-      var floor = visibleHeight(slick, shown);
-      for (var i = 0; i < shown.length; i++) setImportant(shown[i].card, { "min-height": floor + "px" });
-      sizeList(slick, shown);
+      fitHeights(slick, first);
     }
     var DOTS_SHAPED_CLASS = "shm-dots-shaped";
     var DOT_GLYPHS = /[\u2014\u25CB\u25CF\u25A1\u25A0]/;
@@ -283,7 +279,9 @@ var __shazWidgetExport = (() => {
       return parts.length === 4 && parseFloat(parts[3]) === 0;
     }
     function dotsShowGlyph(ul) {
-      var btn = ul.querySelector("li button");
+      var btn = null;
+      var items = ul.querySelectorAll("li");
+      for (var i = 0; i < items.length && !btn; i++) if (!isHidden(items[i])) btn = items[i].querySelector("button");
       if (!btn) return false;
       if (isHidden(ul) || isHidden(btn)) return false;
       var before = getComputedStyle(btn, "::before");
@@ -295,6 +293,51 @@ var __shazWidgetExport = (() => {
         lists[i].classList.remove(DOTS_SHAPED_CLASS);
         if (dotsShowGlyph(lists[i])) lists[i].classList.add(DOTS_SHAPED_CLASS);
       }
+    }
+    var DOTS_WINDOW = 7;
+    var DOT_EDGE_CLASS = "shm-dot-edge";
+    var DOT_HIDDEN_ATTR = "data-shm-dot-hidden";
+    function windowDots(activeDot) {
+      var lists = element.querySelectorAll('ul[class*="slideTwo-dots"]');
+      for (var l = 0; l < lists.length; l++) {
+        var items = lists[l].querySelectorAll("li");
+        var active = 0;
+        if (typeof activeDot === "number" && isFinite(activeDot) && items.length) active = Math.max(0, Math.min(items.length - 1, activeDot));
+        else for (var i = 0; i < items.length; i++) if (items[i].classList.contains("slick-active")) active = i;
+        var start = items.length <= DOTS_WINDOW ? 0 : Math.max(0, Math.min(active - Math.floor(DOTS_WINDOW / 2), items.length - DOTS_WINDOW));
+        var end = Math.min(items.length, start + DOTS_WINDOW);
+        for (var j = 0; j < items.length; j++) {
+          var shown = j >= start && j < end;
+          if (shown) {
+            if (items[j].hasAttribute(DOT_HIDDEN_ATTR)) {
+              var prev = items[j].getAttribute(DOT_HIDDEN_ATTR).split("|");
+              if (prev[0]) items[j].style.setProperty("display", prev[0], prev[1] || "");
+              else items[j].style.removeProperty("display");
+              items[j].removeAttribute(DOT_HIDDEN_ATTR);
+            }
+          } else if (!items[j].hasAttribute(DOT_HIDDEN_ATTR)) {
+            if (document.activeElement && items[j].contains(document.activeElement)) {
+              var target = items[active] && items[active].querySelector("button");
+              try {
+                if (target) target.focus({ preventScroll: true });
+                else if (document.activeElement.blur) document.activeElement.blur();
+              } catch (e) {
+              }
+            }
+            items[j].setAttribute(DOT_HIDDEN_ATTR, items[j].style.getPropertyValue("display") + "|" + items[j].style.getPropertyPriority("display"));
+            items[j].style.setProperty("display", "none", "important");
+          }
+          var edge = shown && (j === start && start > 0 || j === end - 1 && end < items.length);
+          items[j].classList.toggle(DOT_EDGE_CLASS, edge);
+        }
+      }
+    }
+    function dotForSlide(slick, next) {
+      var count = slick.slideCount || 0;
+      var step = slick.options.slidesToScroll || 1;
+      if (next < 0) return Math.ceil(count / step) - 1;
+      if (next >= count) return 0;
+      return Math.floor(next / step);
     }
     var DOTS_STYLE_ID = "shm-testimonials-dots-style";
     var DOTS_STYLE = [
@@ -317,7 +360,10 @@ var __shazWidgetExport = (() => {
       // is near zero wide and the dash shape is only a couple of px tall.
       '.shmTestimonial ul.shm-dots-shaped li button::after{content:""!important;position:absolute!important;top:50%!important;left:50%!important;width:24px!important;height:24px!important;transform:translate(-50%,-50%)!important;background:transparent!important;border:0!important}',
       ".shmTestimonial ul.shm-dots-shaped li button:focus-visible{outline:none!important}",
-      ".shmTestimonial ul.shm-dots-shaped li button:focus-visible::after{outline:2px solid currentColor!important;outline-offset:2px!important}"
+      ".shmTestimonial ul.shm-dots-shaped li button:focus-visible::after{outline:2px solid currentColor!important;outline-offset:2px!important}",
+      // Edge dots of the window are drawn smaller to show there are more slides beyond them.
+      ".shmTestimonial ul.shm-dots-shaped li.shm-dot-edge button::before{transform:translate(-50%,-50%) scale(.6)!important}",
+      '.shmTestimonial ul[class*="slideTwo-dots"]:not(.shm-dots-shaped) li.shm-dot-edge button{opacity:.5!important}'
     ].join("");
     function ensureDotsStyle() {
       var head2 = document.head || document.getElementsByTagName("head")[0];
@@ -356,6 +402,10 @@ var __shazWidgetExport = (() => {
         if (!adaptive) fitHeights(slick, next);
         else fitAdaptive(slick, next);
         growWrapper();
+        try {
+          windowDots(dotForSlide(slick, next));
+        } catch (e) {
+        }
       }).on("setPosition", function(event, slick) {
         fluidSlides(slick);
         setImportant(slick.$slideTrack[0], { "display": "flex", "align-items": "flex-start" });
@@ -367,7 +417,11 @@ var __shazWidgetExport = (() => {
         growWrapper();
       });
       $(element).find(".shmTestimonial-comments").addClass("shmTestimonial-commentsSlider");
-      $(element).find(".shmTestimonial").off("reInit.shmDots").on("reInit.shmDots", shapeDots);
+      $(element).find(".shmTestimonial").off("reInit.shmDots afterChange.shmDots").on("reInit.shmDots afterChange.shmDots", function() {
+        windowDots();
+        shapeDots();
+      });
+      windowDots();
       shapeDots();
       watchSlider();
     }
@@ -391,6 +445,7 @@ var __shazWidgetExport = (() => {
         track.slick("setPosition");
       }
       settleSlider(track);
+      windowDots();
       shapeDots();
       clearTimeout(refitTimer);
       refitTimer = setTimeout(function() {
@@ -409,6 +464,9 @@ var __shazWidgetExport = (() => {
     function watchSlider() {
       $(element).find(".shmTestimonial").each(function() {
         if (typeof ResizeObserver !== "undefined" && element.__shmTestimonialsObserver) element.__shmTestimonialsObserver.observe(this);
+      });
+      $(element).find(".shmTestimonial img").each(function() {
+        if (!this.complete) $(this).one("load.shmFit", refitSlider);
       });
       setTimeout(refitSlider, LATE_REFIT_MS);
     }

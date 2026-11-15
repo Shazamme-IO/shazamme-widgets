@@ -199,22 +199,24 @@ function windowCards(slick, first){
     return out;
 }
 
-// The height the cards on screen together need: the tallest of their texts, or the Design tab
-// container height when that is taller. The floor is read once, after the cards, so hiding a
+// One height for the whole slider: the tallest testimonial in the set, or the Design tab
+// container height when that is taller. Every slide gets it, so the slider never changes
+// height as it moves, on any device. The floor is read once, after the cards, so hiding a
 // card forces one extra layout, not two.
-function visibleHeight(slick, cards){
+function deckHeight(slick, shown){
     var tallest = 0;
-    for (var i = 0; i < cards.length; i++) tallest = Math.max(tallest, Math.ceil(cards[i].card.getBoundingClientRect().height));
-    return Math.max(tallest, floorHeight(cards.length ? cards[0].slide : null));
+    slick.$slideTrack.find('.shmTestimonial-comments').each(function(){ tallest = Math.max(tallest, Math.ceil(this.getBoundingClientRect().height)); });
+    return Math.max(tallest, floorHeight(shown.length ? shown[0].slide : null));
 }
 
-// Fixed height mode: every card gets the visible height as a floor, so the cards on screen
-// together match and a long testimonial always gets its full card.
+// Every card gets the slider height as a floor, so all cards match and a long testimonial
+// always gets its full card. Cards are cleared first: a floor left over from an earlier, wider
+// layout would be measured as text height and the slider could only ever grow.
 function fitHeights(slick, first){
     var cards = slick.$slideTrack.find('.shmTestimonial-comments');
     cards.each(function(){ setImportant(this, { 'min-height': '0' }); });
     var shown = windowCards(slick, first);
-    var tallest = visibleHeight(slick, shown);
+    var tallest = deckHeight(slick, shown);
     if (!tallest) return;
     cards.each(function(){ setImportant(this, { 'min-height': tallest + 'px' }); });
     sizeList(slick, shown);
@@ -238,18 +240,11 @@ function sizeList(slick, shown){
     setImportant(list, { 'height': Math.ceil(bottom + extra) + 'px' });
 }
 
-// Adaptive height (every phone, and desktop when the config says so): the list follows the
-// cards on screen, never shorter than their text or the container height, so a long testimonial
-// is not cut off at the Design tab height. Called from beforeChange with the next index as
-// well, so the list is already the right size when Slick starts the slide.
+// Adaptive height (every phone, and desktop when the config says so) used to follow each card's
+// text, so the slider jumped as it moved. It now holds the same fixed height as the other mode;
+// Slick's own adaptive animation then always lands on that height.
 function fitAdaptive(slick, first){
-    // Clear every card first: a floor left over from an earlier window or a wider layout would
-    // be measured as text height and the list could only ever grow.
-    slick.$slideTrack.find('.shmTestimonial-comments').each(function(){ setImportant(this, { 'min-height': '0' }); });
-    var shown = windowCards(slick, first);
-    var floor = visibleHeight(slick, shown);
-    for (var i = 0; i < shown.length; i++) setImportant(shown[i].card, { 'min-height': floor + 'px' });
-    sizeList(slick, shown);
+    fitHeights(slick, first);
 }
 
 // The widget CSS tab draws the slider dots with font glyphs (— ○ ● □ ■) in a ::before box, so
@@ -281,8 +276,11 @@ function isTransparent(color){
     return parts.length === 4 && parseFloat(parts[3]) === 0;
 }
 
+// Probed on a dot the window shows: a hidden dot's pseudo-element has no rendered style.
 function dotsShowGlyph(ul){
-    var btn = ul.querySelector('li button');
+    var btn = null;
+    var items = ul.querySelectorAll('li');
+    for (var i = 0; i < items.length && !btn; i++) if (!isHidden(items[i])) btn = items[i].querySelector('button');
     if (!btn) return false;
     if (isHidden(ul) || isHidden(btn)) return false;
     var before = getComputedStyle(btn, '::before');
@@ -297,6 +295,60 @@ function shapeDots(){
         lists[i].classList.remove(DOTS_SHAPED_CLASS);
         if (dotsShowGlyph(lists[i])) lists[i].classList.add(DOTS_SHAPED_CLASS);
     }
+}
+
+// A slider with many testimonials gets one dot per slide from Slick, so NGO's 34 dots filled a
+// whole row. Only DOTS_WINDOW dots show at once, a window that follows the active dot, and the
+// window's edge dots are drawn smaller where more slides lie beyond them.
+var DOTS_WINDOW = 7;
+var DOT_EDGE_CLASS = 'shm-dot-edge';
+var DOT_HIDDEN_ATTR = 'data-shm-dot-hidden';
+
+// `activeDot` names the dot to centre on; without it the dot Slick marks active is used. The
+// beforeChange hook passes the dot the slide is heading for, so the window has already moved
+// when the scroll starts (a wrap from the last slide to the first would otherwise hide the
+// active dot for the whole animation). Only dots this code hid are shown again, and a dot
+// holding keyboard focus hands it to the active dot before it is hidden.
+function windowDots(activeDot){
+    var lists = element.querySelectorAll('ul[class*="slideTwo-dots"]');
+    for (var l = 0; l < lists.length; l++) {
+        var items = lists[l].querySelectorAll('li');
+        var active = 0;
+        if (typeof activeDot === 'number' && isFinite(activeDot) && items.length) active = Math.max(0, Math.min(items.length - 1, activeDot));
+        else for (var i = 0; i < items.length; i++) if (items[i].classList.contains('slick-active')) active = i;
+        var start = items.length <= DOTS_WINDOW ? 0 : Math.max(0, Math.min(active - Math.floor(DOTS_WINDOW / 2), items.length - DOTS_WINDOW));
+        var end = Math.min(items.length, start + DOTS_WINDOW);
+        for (var j = 0; j < items.length; j++) {
+            var shown = j >= start && j < end;
+            if (shown) {
+                if (items[j].hasAttribute(DOT_HIDDEN_ATTR)) {
+                    var prev = items[j].getAttribute(DOT_HIDDEN_ATTR).split('|');
+                    if (prev[0]) items[j].style.setProperty('display', prev[0], prev[1] || '');
+                    else items[j].style.removeProperty('display');
+                    items[j].removeAttribute(DOT_HIDDEN_ATTR);
+                }
+            } else if (!items[j].hasAttribute(DOT_HIDDEN_ATTR)) {
+                if (document.activeElement && items[j].contains(document.activeElement)) {
+                    var target = items[active] && items[active].querySelector('button');
+                    try { if (target) target.focus({ preventScroll: true }); else if (document.activeElement.blur) document.activeElement.blur(); } catch (e) {}
+                }
+                items[j].setAttribute(DOT_HIDDEN_ATTR, items[j].style.getPropertyValue('display') + '|' + items[j].style.getPropertyPriority('display'));
+                items[j].style.setProperty('display', 'none', 'important');
+            }
+            var edge = shown && ((j === start && start > 0) || (j === end - 1 && end < items.length));
+            items[j].classList.toggle(DOT_EDGE_CLASS, edge);
+        }
+    }
+}
+
+// The dot Slick will mark active for slide `next`, the way Slick's updateDots counts them;
+// `next` can be past either end when the slider wraps.
+function dotForSlide(slick, next){
+    var count = slick.slideCount || 0;
+    var step = slick.options.slidesToScroll || 1;
+    if (next < 0) return Math.ceil(count / step) - 1;
+    if (next >= count) return 0;
+    return Math.floor(next / step);
 }
 
 var DOTS_STYLE_ID = 'shm-testimonials-dots-style';
@@ -320,7 +372,10 @@ var DOTS_STYLE = [
     // is near zero wide and the dash shape is only a couple of px tall.
     '.shmTestimonial ul.shm-dots-shaped li button::after{content:""!important;position:absolute!important;top:50%!important;left:50%!important;width:24px!important;height:24px!important;transform:translate(-50%,-50%)!important;background:transparent!important;border:0!important}',
     '.shmTestimonial ul.shm-dots-shaped li button:focus-visible{outline:none!important}',
-    '.shmTestimonial ul.shm-dots-shaped li button:focus-visible::after{outline:2px solid currentColor!important;outline-offset:2px!important}'
+    '.shmTestimonial ul.shm-dots-shaped li button:focus-visible::after{outline:2px solid currentColor!important;outline-offset:2px!important}',
+    // Edge dots of the window are drawn smaller to show there are more slides beyond them.
+    '.shmTestimonial ul.shm-dots-shaped li.shm-dot-edge button::before{transform:translate(-50%,-50%) scale(.6)!important}',
+    '.shmTestimonial ul[class*="slideTwo-dots"]:not(.shm-dots-shaped) li.shm-dot-edge button{opacity:.5!important}'
 ].join('');
 
 function ensureDotsStyle(){
@@ -367,6 +422,9 @@ function slider(){
         if(!adaptive) fitHeights(slick, next);
         else fitAdaptive(slick, next);
         growWrapper();
+        // Dot cosmetics must never throw here: Slick has already set `animating` and would freeze.
+        // afterChange runs windowDots() again, so a failure only delays the window.
+        try { windowDots(dotForSlide(slick, next)); } catch (e) {}
     }).on('setPosition', function (event, slick) {
         fluidSlides(slick);
         setImportant(slick.$slideTrack[0], { 'display': 'flex', 'align-items': 'flex-start' });
@@ -378,7 +436,8 @@ function slider(){
         growWrapper();
     });
     $(element).find(".shmTestimonial-comments").addClass("shmTestimonial-commentsSlider");
-    $(element).find(".shmTestimonial").off('reInit.shmDots').on('reInit.shmDots', shapeDots);
+    $(element).find(".shmTestimonial").off('reInit.shmDots afterChange.shmDots').on('reInit.shmDots afterChange.shmDots', function(){ windowDots(); shapeDots(); });
+    windowDots();
     shapeDots();
     watchSlider();
 }
@@ -407,6 +466,7 @@ function refitSlider(){
         track.slick('setPosition');
     }
     settleSlider(track);
+    windowDots();
     shapeDots();
     clearTimeout(refitTimer);
     refitTimer = setTimeout(function(){
@@ -428,6 +488,11 @@ var LATE_REFIT_MS = 800;
 function watchSlider(){
     $(element).find('.shmTestimonial').each(function(){
         if (typeof ResizeObserver !== 'undefined' && element.__shmTestimonialsObserver) element.__shmTestimonialsObserver.observe(this);
+    });
+    // The slider height is fixed and clips, so a card that grows late (an avatar or quote image
+    // loading) changes no observed box. Refit when any image in the slider finishes loading.
+    $(element).find('.shmTestimonial img').each(function(){
+        if (!this.complete) $(this).one('load.shmFit', refitSlider);
     });
     setTimeout(refitSlider, LATE_REFIT_MS);
 }
