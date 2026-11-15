@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 39ef969255ac. Registers window.ShazammeWidget["<name>"].
+ * Build 654a2af6ae7b. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -283,7 +283,9 @@ var __shazWidgetExport = (() => {
       return parts.length === 4 && parseFloat(parts[3]) === 0;
     }
     function dotsShowGlyph(ul) {
-      var btn = ul.querySelector("li button");
+      var btn = null;
+      var items = ul.querySelectorAll("li");
+      for (var i = 0; i < items.length && !btn; i++) if (!isHidden(items[i])) btn = items[i].querySelector("button");
       if (!btn) return false;
       if (isHidden(ul) || isHidden(btn)) return false;
       var before = getComputedStyle(btn, "::before");
@@ -298,22 +300,47 @@ var __shazWidgetExport = (() => {
     }
     var DOTS_WINDOW = 7;
     var DOT_EDGE_CLASS = "shm-dot-edge";
-    function windowDots() {
+    var DOT_HIDDEN_ATTR = "data-shm-dot-hidden";
+    function windowDots(activeDot) {
       var lists = element.querySelectorAll('ul[class*="slideTwo-dots"]');
       for (var l = 0; l < lists.length; l++) {
         var items = lists[l].querySelectorAll("li");
         var active = 0;
-        for (var i = 0; i < items.length; i++) if (items[i].classList.contains("slick-active")) active = i;
+        if (typeof activeDot === "number" && items.length) active = Math.max(0, Math.min(items.length - 1, activeDot));
+        else for (var i = 0; i < items.length; i++) if (items[i].classList.contains("slick-active")) active = i;
         var start = items.length <= DOTS_WINDOW ? 0 : Math.max(0, Math.min(active - Math.floor(DOTS_WINDOW / 2), items.length - DOTS_WINDOW));
         var end = Math.min(items.length, start + DOTS_WINDOW);
         for (var j = 0; j < items.length; j++) {
           var shown = j >= start && j < end;
-          if (shown) items[j].style.removeProperty("display");
-          else items[j].style.setProperty("display", "none", "important");
+          if (shown) {
+            if (items[j].hasAttribute(DOT_HIDDEN_ATTR)) {
+              var prev = items[j].getAttribute(DOT_HIDDEN_ATTR).split("|");
+              if (prev[0]) items[j].style.setProperty("display", prev[0], prev[1] || "");
+              else items[j].style.removeProperty("display");
+              items[j].removeAttribute(DOT_HIDDEN_ATTR);
+            }
+          } else if (!items[j].hasAttribute(DOT_HIDDEN_ATTR)) {
+            if (document.activeElement && items[j].contains(document.activeElement)) {
+              var target = items[active].querySelector("button");
+              try {
+                if (target) target.focus({ preventScroll: true });
+              } catch (e) {
+              }
+            }
+            items[j].setAttribute(DOT_HIDDEN_ATTR, items[j].style.getPropertyValue("display") + "|" + items[j].style.getPropertyPriority("display"));
+            items[j].style.setProperty("display", "none", "important");
+          }
           var edge = shown && (j === start && start > 0 || j === end - 1 && end < items.length);
           items[j].classList.toggle(DOT_EDGE_CLASS, edge);
         }
       }
+    }
+    function dotForSlide(slick, next) {
+      var count = slick.slideCount || 0;
+      var step = slick.options.slidesToScroll || 1;
+      if (next < 0) return Math.ceil(count / step) - 1;
+      if (next >= count) return 0;
+      return Math.floor(next / step);
     }
     var DOTS_STYLE_ID = "shm-testimonials-dots-style";
     var DOTS_STYLE = [
@@ -378,6 +405,7 @@ var __shazWidgetExport = (() => {
         if (!adaptive) fitHeights(slick, next);
         else fitAdaptive(slick, next);
         growWrapper();
+        windowDots(dotForSlide(slick, next));
       }).on("setPosition", function(event, slick) {
         fluidSlides(slick);
         setImportant(slick.$slideTrack[0], { "display": "flex", "align-items": "flex-start" });
@@ -390,11 +418,11 @@ var __shazWidgetExport = (() => {
       });
       $(element).find(".shmTestimonial-comments").addClass("shmTestimonial-commentsSlider");
       $(element).find(".shmTestimonial").off("reInit.shmDots afterChange.shmDots").on("reInit.shmDots afterChange.shmDots", function() {
-        shapeDots();
         windowDots();
+        shapeDots();
       });
-      shapeDots();
       windowDots();
+      shapeDots();
       watchSlider();
     }
     function settleSlider(track) {
@@ -417,8 +445,8 @@ var __shazWidgetExport = (() => {
         track.slick("setPosition");
       }
       settleSlider(track);
-      shapeDots();
       windowDots();
+      shapeDots();
       clearTimeout(refitTimer);
       refitTimer = setTimeout(function() {
         settleSlider(track);

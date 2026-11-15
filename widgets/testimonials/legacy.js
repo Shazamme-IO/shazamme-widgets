@@ -281,8 +281,11 @@ function isTransparent(color){
     return parts.length === 4 && parseFloat(parts[3]) === 0;
 }
 
+// Probed on a dot the window shows: a hidden dot's pseudo-element has no rendered style.
 function dotsShowGlyph(ul){
-    var btn = ul.querySelector('li button');
+    var btn = null;
+    var items = ul.querySelectorAll('li');
+    for (var i = 0; i < items.length && !btn; i++) if (!isHidden(items[i])) btn = items[i].querySelector('button');
     if (!btn) return false;
     if (isHidden(ul) || isHidden(btn)) return false;
     var before = getComputedStyle(btn, '::before');
@@ -304,23 +307,53 @@ function shapeDots(){
 // window's edge dots are drawn smaller where more slides lie beyond them.
 var DOTS_WINDOW = 7;
 var DOT_EDGE_CLASS = 'shm-dot-edge';
+var DOT_HIDDEN_ATTR = 'data-shm-dot-hidden';
 
-function windowDots(){
+// `activeDot` names the dot to centre on; without it the dot Slick marks active is used. The
+// beforeChange hook passes the dot the slide is heading for, so the window has already moved
+// when the scroll starts (a wrap from the last slide to the first would otherwise hide the
+// active dot for the whole animation). Only dots this code hid are shown again, and a dot
+// holding keyboard focus hands it to the active dot before it is hidden.
+function windowDots(activeDot){
     var lists = element.querySelectorAll('ul[class*="slideTwo-dots"]');
     for (var l = 0; l < lists.length; l++) {
         var items = lists[l].querySelectorAll('li');
         var active = 0;
-        for (var i = 0; i < items.length; i++) if (items[i].classList.contains('slick-active')) active = i;
+        if (typeof activeDot === 'number' && items.length) active = Math.max(0, Math.min(items.length - 1, activeDot));
+        else for (var i = 0; i < items.length; i++) if (items[i].classList.contains('slick-active')) active = i;
         var start = items.length <= DOTS_WINDOW ? 0 : Math.max(0, Math.min(active - Math.floor(DOTS_WINDOW / 2), items.length - DOTS_WINDOW));
         var end = Math.min(items.length, start + DOTS_WINDOW);
         for (var j = 0; j < items.length; j++) {
             var shown = j >= start && j < end;
-            if (shown) items[j].style.removeProperty('display');
-            else items[j].style.setProperty('display', 'none', 'important');
+            if (shown) {
+                if (items[j].hasAttribute(DOT_HIDDEN_ATTR)) {
+                    var prev = items[j].getAttribute(DOT_HIDDEN_ATTR).split('|');
+                    if (prev[0]) items[j].style.setProperty('display', prev[0], prev[1] || '');
+                    else items[j].style.removeProperty('display');
+                    items[j].removeAttribute(DOT_HIDDEN_ATTR);
+                }
+            } else if (!items[j].hasAttribute(DOT_HIDDEN_ATTR)) {
+                if (document.activeElement && items[j].contains(document.activeElement)) {
+                    var target = items[active].querySelector('button');
+                    try { if (target) target.focus({ preventScroll: true }); } catch (e) {}
+                }
+                items[j].setAttribute(DOT_HIDDEN_ATTR, items[j].style.getPropertyValue('display') + '|' + items[j].style.getPropertyPriority('display'));
+                items[j].style.setProperty('display', 'none', 'important');
+            }
             var edge = shown && ((j === start && start > 0) || (j === end - 1 && end < items.length));
             items[j].classList.toggle(DOT_EDGE_CLASS, edge);
         }
     }
+}
+
+// The dot Slick will mark active for slide `next`, the way Slick's updateDots counts them;
+// `next` can be past either end when the slider wraps.
+function dotForSlide(slick, next){
+    var count = slick.slideCount || 0;
+    var step = slick.options.slidesToScroll || 1;
+    if (next < 0) return Math.ceil(count / step) - 1;
+    if (next >= count) return 0;
+    return Math.floor(next / step);
 }
 
 var DOTS_STYLE_ID = 'shm-testimonials-dots-style';
@@ -394,6 +427,7 @@ function slider(){
         if(!adaptive) fitHeights(slick, next);
         else fitAdaptive(slick, next);
         growWrapper();
+        windowDots(dotForSlide(slick, next));
     }).on('setPosition', function (event, slick) {
         fluidSlides(slick);
         setImportant(slick.$slideTrack[0], { 'display': 'flex', 'align-items': 'flex-start' });
@@ -405,9 +439,9 @@ function slider(){
         growWrapper();
     });
     $(element).find(".shmTestimonial-comments").addClass("shmTestimonial-commentsSlider");
-    $(element).find(".shmTestimonial").off('reInit.shmDots afterChange.shmDots').on('reInit.shmDots afterChange.shmDots', function(){ shapeDots(); windowDots(); });
-    shapeDots();
+    $(element).find(".shmTestimonial").off('reInit.shmDots afterChange.shmDots').on('reInit.shmDots afterChange.shmDots', function(){ windowDots(); shapeDots(); });
     windowDots();
+    shapeDots();
     watchSlider();
 }
 
@@ -435,8 +469,8 @@ function refitSlider(){
         track.slick('setPosition');
     }
     settleSlider(track);
-    shapeDots();
     windowDots();
+    shapeDots();
     clearTimeout(refitTimer);
     refitTimer = setTimeout(function(){
         settleSlider(track);

@@ -134,6 +134,17 @@ describe('testimonials ensureDotsStyle', () => {
     expect(document.querySelector('[data-case="x"]')!.classList.contains('shm-dots-shaped')).toBe(true);
   });
 
+  it('probes a dot the window shows, not a hidden one', () => {
+    document.body.innerHTML = '<div id="w"><div class="shmTestimonial"><ul class="slideTwo-dotsl2" data-case="x"><li style="display:none"><button>1</button></li><li><button>2</button></li></ul></div></div>';
+    const fake = (el: Element, pseudo?: string): Style => {
+      if (el.tagName === 'LI') return { ...VISIBLE, display: (el as HTMLElement).style.display || 'inline-block' };
+      if (pseudo === '::before') return el.closest('li') === document.querySelector('li') ? { ...VISIBLE, fontSize: '20px', color: 'rgb(0, 0, 0)', content: 'none' } : { ...VISIBLE, fontSize: '20px', color: 'rgb(0, 0, 0)', content: '"●"' };
+      return VISIBLE;
+    };
+    shapeDotsRunner()(document.getElementById('w')!, fake);
+    expect(document.querySelector('[data-case="x"]')!.classList.contains('shm-dots-shaped')).toBe(true);
+  });
+
   it('re-evaluates on every run: a list keeps its class while the glyph shows and loses it when hidden', () => {
     const cases: Record<string, { before: Style }> = { a: { before: { content: '"●"' } } };
     expect(run(cases)).toEqual({ a: true });
@@ -148,10 +159,11 @@ describe('testimonials ensureDotsStyle', () => {
 
   it('is bound once to reInit, runs after init and on every refit', () => {
     const slider = src.slice(src.indexOf('function slider(){'));
-    expect(slider).toContain(".off('reInit.shmDots afterChange.shmDots').on('reInit.shmDots afterChange.shmDots', function(){ shapeDots(); windowDots(); })");
+    expect(slider).toContain(".off('reInit.shmDots afterChange.shmDots').on('reInit.shmDots afterChange.shmDots', function(){ windowDots(); shapeDots(); })");
     expect(slider.indexOf('shapeDots();')).toBeGreaterThan(slider.indexOf('.slick({'));
     const refit = src.slice(src.indexOf('function refitSlider(){'), src.indexOf('\n}\n', src.indexOf('function refitSlider(){')));
     expect(refit).toContain('shapeDots();');
+    expect(refit.indexOf('windowDots();')).toBeLessThan(refit.indexOf('shapeDots();'));
   });
 
   it('is installed before the slider is built', () => {
@@ -164,9 +176,13 @@ describe('testimonials ensureDotsStyle', () => {
 describe('testimonials windowDots', () => {
   function runner() {
     const start = src.indexOf('var DOTS_WINDOW = 7;');
-    const end = src.indexOf('\n}\n', src.indexOf('function windowDots()', start)) + 3;
+    const end = src.indexOf('\n}\n', src.indexOf('function dotForSlide(slick, next)', start)) + 3;
     expect(start).toBeGreaterThan(-1);
-    return new Function('element', `${src.slice(start, end)}\nwindowDots();`) as (e: Element) => void;
+    return new Function('element', 'activeDot', `${src.slice(start, end)}\nwindowDots(activeDot);`) as (e: Element, a?: number) => void;
+  }
+  function dotFor() {
+    const start = src.indexOf('function dotForSlide(slick, next)');
+    return new Function('slick', 'next', `${src.slice(start, src.indexOf('\n}\n', start) + 3)}\nreturn dotForSlide(slick, next);`) as (s: unknown, n: number) => number;
   }
   function dots(n: number, active: number) {
     document.body.innerHTML = `<div id="w"><ul class="slideTwo-dotsl3">${Array.from({ length: n }, (_, i) => `<li${i === active ? ' class="slick-active"' : ''}><button>${i + 1}</button></li>`).join('')}</ul></div>`;
@@ -197,10 +213,42 @@ describe('testimonials windowDots', () => {
     expect(lis[0].getAttribute('style')).toBe('');
   });
 
-  it('runs after init, after every slide change and on every refit', () => {
+  it('centres on the dot it is given, clamped to the list, so beforeChange can move the window early', () => {
+    document.body.innerHTML = `<div id="w"><ul class="slideTwo-dotsl3">${Array.from({ length: 34 }, (_, i) => `<li${i === 33 ? ' class="slick-active"' : ''}><button>${i + 1}</button></li>`).join('')}</ul></div>`;
+    runner()(document.getElementById('w')!, 0);
+    const lis = Array.from(document.querySelectorAll('li'));
+    expect(lis.map((l, i) => (l.style.display === 'none' ? null : i)).filter((i) => i !== null)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    runner()(document.getElementById('w')!, 99);
+    expect(lis.map((l, i) => (l.style.display === 'none' ? null : i)).filter((i) => i !== null)).toEqual([27, 28, 29, 30, 31, 32, 33]);
+  });
+
+  it('maps the slide Slick is heading for to its dot, wrapping past either end', () => {
+    const slick = { slideCount: 34, options: { slidesToScroll: 1 } };
+    expect(dotFor()(slick, 12)).toBe(12);
+    expect(dotFor()(slick, 34)).toBe(0);
+    expect(dotFor()(slick, -1)).toBe(33);
+    expect(dotFor()({ slideCount: 9, options: { slidesToScroll: 2 } }, 7)).toBe(3);
+    expect(dotFor()({ slideCount: 9, options: { slidesToScroll: 2 } }, -2)).toBe(4);
+  });
+
+  it('shows again only the dots it hid, and hands focus from a dot it hides to the active dot', () => {
+    document.body.innerHTML = `<div id="w"><ul class="slideTwo-dotsl3">${Array.from({ length: 34 }, (_, i) => `<li${i === 20 ? ' class="slick-active"' : ''}${i === 1 ? ' style="display: flex;"' : ''}><button>${i + 1}</button></li>`).join('')}</ul></div>`;
+    const lis = Array.from(document.querySelectorAll('li'));
+    (lis[20].querySelector('button') as HTMLElement).focus();
+    runner()(document.getElementById('w')!);
+    expect(lis[1].style.display).toBe('none');
+    lis[20].classList.remove('slick-active'); lis[0].classList.add('slick-active');
+    runner()(document.getElementById('w')!);
+    expect(lis[1].style.display).toBe('flex');
+    expect(lis[1].hasAttribute('data-shm-dot-hidden')).toBe(false);
+    expect(document.activeElement).toBe(lis[0].querySelector('button'));
+  });
+
+  it('runs before the shaping after init, on every slide change, early on beforeChange, and on every refit', () => {
     const slider = src.slice(src.indexOf('function slider(){'));
-    expect(slider).toContain("on('reInit.shmDots afterChange.shmDots', function(){ shapeDots(); windowDots(); })");
-    expect(slider.indexOf('windowDots();')).toBeGreaterThan(slider.indexOf('shapeDots();'));
+    expect(slider).toContain("on('reInit.shmDots afterChange.shmDots', function(){ windowDots(); shapeDots(); })");
+    expect(slider).toContain('windowDots(dotForSlide(slick, next));');
+    expect(slider.indexOf('windowDots();')).toBeLessThan(slider.indexOf('shapeDots();'));
     const refit = src.slice(src.indexOf('function refitSlider(){'), src.indexOf('\n}\n', src.indexOf('function refitSlider(){')));
     expect(refit).toContain('windowDots();');
   });
