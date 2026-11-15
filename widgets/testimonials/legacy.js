@@ -489,6 +489,11 @@ function watchSlider(){
     $(element).find('.shmTestimonial').each(function(){
         if (typeof ResizeObserver !== 'undefined' && element.__shmTestimonialsObserver) element.__shmTestimonialsObserver.observe(this);
     });
+    // The slider height is fixed and clips, so a card that grows late (an avatar or quote image
+    // loading) changes no observed box. Refit when any image in the slider finishes loading.
+    $(element).find('.shmTestimonial img').each(function(){
+        if (!this.complete) $(this).one('load.shmFit', refitSlider);
+    });
     setTimeout(refitSlider, LATE_REFIT_MS);
 }
 

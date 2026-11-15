@@ -416,6 +416,26 @@ describe('testimonials adaptive height', () => {
     expect(set.height).toBe('510px');
   });
 
+  it('gives every card the deck height but leaves the list alone when the window has no card', () => {
+    const { slick, set, setImportant, gcs } = fakeSlick([300, 200], 0, 1);
+    run(slick, 9, setImportant, gcs);
+    expect(set.height).toBeUndefined();
+    const heights = Array.from(document.querySelectorAll('.shmTestimonial-comments')).map((c) => Math.round(c.getBoundingClientRect().height));
+    expect(heights).toEqual([300, 300]);
+  });
+
+  it('writes nothing when the slider has no cards at all', () => {
+    const { slick, set, setImportant, gcs } = fakeSlick([], 490, 1);
+    run(slick, 0, setImportant, gcs);
+    expect(set).toEqual({});
+  });
+
+  it('refits when a slider image finishes loading late', () => {
+    const watch = src.slice(src.indexOf('function watchSlider(){'), src.indexOf('\n}\n', src.indexOf('function watchSlider(){')));
+    expect(watch).toContain("$(element).find('.shmTestimonial img').each(function(){");
+    expect(watch).toContain("if (!this.complete) $(this).one('load.shmFit', refitSlider);");
+  });
+
   it('can shrink again when the tallest card gets shorter, for example after a wider layout', () => {
     const cards = [400, 150];
     const { slick, set, setImportant, gcs } = fakeSlick(cards, 0, 1);

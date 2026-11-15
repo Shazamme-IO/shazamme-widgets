@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 86bb4c5f1a91. Registers window.ShazammeWidget["<name>"].
+ * Build 0efc19538446. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -464,6 +464,9 @@ var __shazWidgetExport = (() => {
     function watchSlider() {
       $(element).find(".shmTestimonial").each(function() {
         if (typeof ResizeObserver !== "undefined" && element.__shmTestimonialsObserver) element.__shmTestimonialsObserver.observe(this);
+      });
+      $(element).find(".shmTestimonial img").each(function() {
+        if (!this.complete) $(this).one("load.shmFit", refitSlider);
       });
       setTimeout(refitSlider, LATE_REFIT_MS);
     }

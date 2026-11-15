@@ -1,4 +1,4 @@
-// LAST UPDATED: 2026-11-16 09:42 AEDT (v0.1.55)
+// LAST UPDATED: 2026-11-16 10:08 AEDT (v0.1.55)
 // Change: Fixed height on every device: every slide is the tallest testimonial or the Design-tab height, whichever is taller, so the slider never jumps. At most seven slider dots, one centred row. Carries v0.1.54.
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
