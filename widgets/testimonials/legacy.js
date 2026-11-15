@@ -199,22 +199,24 @@ function windowCards(slick, first){
     return out;
 }
 
-// The height the cards on screen together need: the tallest of their texts, or the Design tab
-// container height when that is taller. The floor is read once, after the cards, so hiding a
+// One height for the whole slider: the tallest testimonial in the set, or the Design tab
+// container height when that is taller. Every slide gets it, so the slider never changes
+// height as it moves, on any device. The floor is read once, after the cards, so hiding a
 // card forces one extra layout, not two.
-function visibleHeight(slick, cards){
+function deckHeight(slick, shown){
     var tallest = 0;
-    for (var i = 0; i < cards.length; i++) tallest = Math.max(tallest, Math.ceil(cards[i].card.getBoundingClientRect().height));
-    return Math.max(tallest, floorHeight(cards.length ? cards[0].slide : null));
+    slick.$slideTrack.find('.shmTestimonial-comments').each(function(){ tallest = Math.max(tallest, Math.ceil(this.getBoundingClientRect().height)); });
+    return Math.max(tallest, floorHeight(shown.length ? shown[0].slide : null));
 }
 
-// Fixed height mode: every card gets the visible height as a floor, so the cards on screen
-// together match and a long testimonial always gets its full card.
+// Every card gets the slider height as a floor, so all cards match and a long testimonial
+// always gets its full card. Cards are cleared first: a floor left over from an earlier, wider
+// layout would be measured as text height and the slider could only ever grow.
 function fitHeights(slick, first){
     var cards = slick.$slideTrack.find('.shmTestimonial-comments');
     cards.each(function(){ setImportant(this, { 'min-height': '0' }); });
     var shown = windowCards(slick, first);
-    var tallest = visibleHeight(slick, shown);
+    var tallest = deckHeight(slick, shown);
     if (!tallest) return;
     cards.each(function(){ setImportant(this, { 'min-height': tallest + 'px' }); });
     sizeList(slick, shown);
@@ -238,18 +240,11 @@ function sizeList(slick, shown){
     setImportant(list, { 'height': Math.ceil(bottom + extra) + 'px' });
 }
 
-// Adaptive height (every phone, and desktop when the config says so): the list follows the
-// cards on screen, never shorter than their text or the container height, so a long testimonial
-// is not cut off at the Design tab height. Called from beforeChange with the next index as
-// well, so the list is already the right size when Slick starts the slide.
+// Adaptive height (every phone, and desktop when the config says so) used to follow each card's
+// text, so the slider jumped as it moved. It now holds the same fixed height as the other mode;
+// Slick's own adaptive animation then always lands on that height.
 function fitAdaptive(slick, first){
-    // Clear every card first: a floor left over from an earlier window or a wider layout would
-    // be measured as text height and the list could only ever grow.
-    slick.$slideTrack.find('.shmTestimonial-comments').each(function(){ setImportant(this, { 'min-height': '0' }); });
-    var shown = windowCards(slick, first);
-    var floor = visibleHeight(slick, shown);
-    for (var i = 0; i < shown.length; i++) setImportant(shown[i].card, { 'min-height': floor + 'px' });
-    sizeList(slick, shown);
+    fitHeights(slick, first);
 }
 
 // The widget CSS tab draws the slider dots with font glyphs (— ○ ● □ ■) in a ::before box, so

@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 2c160c3b72bc. Registers window.ShazammeWidget["<name>"].
+ * Build 86bb4c5f1a91. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -229,10 +229,12 @@ var __shazWidgetExport = (() => {
       }
       return out;
     }
-    function visibleHeight(slick, cards) {
+    function deckHeight(slick, shown) {
       var tallest = 0;
-      for (var i = 0; i < cards.length; i++) tallest = Math.max(tallest, Math.ceil(cards[i].card.getBoundingClientRect().height));
-      return Math.max(tallest, floorHeight(cards.length ? cards[0].slide : null));
+      slick.$slideTrack.find(".shmTestimonial-comments").each(function() {
+        tallest = Math.max(tallest, Math.ceil(this.getBoundingClientRect().height));
+      });
+      return Math.max(tallest, floorHeight(shown.length ? shown[0].slide : null));
     }
     function fitHeights(slick, first) {
       var cards = slick.$slideTrack.find(".shmTestimonial-comments");
@@ -240,7 +242,7 @@ var __shazWidgetExport = (() => {
         setImportant(this, { "min-height": "0" });
       });
       var shown = windowCards(slick, first);
-      var tallest = visibleHeight(slick, shown);
+      var tallest = deckHeight(slick, shown);
       if (!tallest) return;
       cards.each(function() {
         setImportant(this, { "min-height": tallest + "px" });
@@ -261,13 +263,7 @@ var __shazWidgetExport = (() => {
       setImportant(list, { "height": Math.ceil(bottom + extra) + "px" });
     }
     function fitAdaptive(slick, first) {
-      slick.$slideTrack.find(".shmTestimonial-comments").each(function() {
-        setImportant(this, { "min-height": "0" });
-      });
-      var shown = windowCards(slick, first);
-      var floor = visibleHeight(slick, shown);
-      for (var i = 0; i < shown.length; i++) setImportant(shown[i].card, { "min-height": floor + "px" });
-      sizeList(slick, shown);
+      fitHeights(slick, first);
     }
     var DOTS_SHAPED_CLASS = "shm-dots-shaped";
     var DOT_GLYPHS = /[\u2014\u25CB\u25CF\u25A1\u25A0]/;

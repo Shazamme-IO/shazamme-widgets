@@ -342,13 +342,13 @@ describe('testimonials floorHeight', () => {
 });
 
 describe('testimonials adaptive height', () => {
-  // Runs the real floorHeight, windowCards, visibleHeight, sizeList and fitAdaptive against a fake Slick.
+  // Runs the real floorHeight, windowCards, deckHeight, sizeList, fitHeights and fitAdaptive against a fake Slick.
   function fn(name: string) {
     const start = src.indexOf(`function ${name}(`);
     expect(start, name).toBeGreaterThan(-1);
     return src.slice(start, src.indexOf('\n}\n', start) + 3);
   }
-  const body = ['saveInline', 'restoreInline', 'floorHeight', 'windowCards', 'visibleHeight', 'sizeList', 'fitAdaptive'].map(fn).join('\n');
+  const body = ['saveInline', 'restoreInline', 'floorHeight', 'windowCards', 'deckHeight', 'fitHeights', 'sizeList', 'fitAdaptive'].map(fn).join('\n');
   const run = new Function('slick', 'first', 'setImportant', 'getComputedStyle', `${body}\nfitAdaptive(slick, first);`) as (slick: unknown, first: number, set: unknown, gcs: unknown) => void;
 
   // cards: text height per slide index; floor: holder height with the card hidden; top: where each card
@@ -394,22 +394,35 @@ describe('testimonials adaptive height', () => {
     expect(set.height).toBe('468px');
   });
 
-  it('uses the lowest card of the window on a multi-column adaptive desktop, and shrinks again for a shorter window', () => {
+  it('holds one height on every window of a multi-column slider: the tallest card in the set', () => {
     const { slick, set, setImportant, gcs } = fakeSlick([200, 340, 120], 0, 2);
-    run(slick, 0, setImportant, gcs);
-    expect(set.height).toBe('360px');
-    run(slick, 1, setImportant, gcs);
-    expect(set.height).toBe('360px');
-    run(slick, 2, setImportant, gcs);
-    expect(set.height).toBe('140px');
+    for (const first of [0, 1, 2]) {
+      run(slick, first, setImportant, gcs);
+      expect(set.height).toBe('360px');
+    }
   });
 
-  it('shrinks again on a single column when the next card is shorter', () => {
-    const { slick, set, setImportant, gcs } = fakeSlick([400, 150], 0, 1);
-    run(slick, 0, setImportant, gcs);
-    expect(set.height).toBe('420px');
+  it('holds one height on every slide of a single-column slider, so a phone slider never jumps', () => {
+    const { slick, set, setImportant, gcs } = fakeSlick([400, 150, 260], 0, 1);
+    for (const first of [0, 1, 2, 1]) {
+      run(slick, first, setImportant, gcs);
+      expect(set.height).toBe('420px');
+    }
+  });
+
+  it('uses the Design tab height for every slide when it is taller than every card', () => {
+    const { slick, set, setImportant, gcs } = fakeSlick([200, 150], 490, 1);
     run(slick, 1, setImportant, gcs);
-    expect(set.height).toBe('170px');
+    expect(set.height).toBe('510px');
+  });
+
+  it('can shrink again when the tallest card gets shorter, for example after a wider layout', () => {
+    const cards = [400, 150];
+    const { slick, set, setImportant, gcs } = fakeSlick(cards, 0, 1);
+    run(slick, 0, setImportant, gcs);
+    cards[0] = 300;
+    run(slick, 0, setImportant, gcs);
+    expect(set.height).toBe('320px');
   });
 
   it('counts the bottom padding of a border-box list and not of a content-box one', () => {
@@ -451,7 +464,8 @@ describe('testimonials adaptive height', () => {
     expect(slider).toContain('else fitAdaptive(slick, next);');
     expect(slider).toContain('fitAdaptive(slick, slick.currentSlide);');
     expect(slider).not.toContain("'.slick-current>div'");
-    expect(fn('fitHeights')).toContain('visibleHeight(slick, shown)');
+    expect(fn('fitHeights')).toContain('deckHeight(slick, shown)');
+    expect(fn('fitAdaptive')).toContain('fitHeights(slick, first);');
     expect(fn('fitHeights')).toContain('sizeList(slick, shown)');
   });
 });
