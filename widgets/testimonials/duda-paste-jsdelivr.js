@@ -1,5 +1,5 @@
-// LAST UPDATED: 2026-11-16 10:08 AEDT (v0.1.55)
-// Change: Fixed height on every device: every slide is the tallest testimonial or the Design-tab height, whichever is taller, so the slider never jumps. At most seven slider dots, one centred row. Carries v0.1.54.
+// LAST UPDATED: 2026-11-16 10:11 AEDT (v0.1.56)
+// Change: 24px of space between the cards and the dot row. Carries v0.1.55 (fixed height on every device, seven dots in one row).
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
 // existing widget JS.
@@ -16,7 +16,7 @@
 // ===========================================================================
 (function () {
   var NAME = "testimonials";
-  var TAG = "v0.1.55";
+  var TAG = "v0.1.56";
   var BUNDLE = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" + TAG + "/dist/" + NAME + "/0.1.0/widget.min.js";
   var SDK = "https://sdk.shazamme.io/js/shazamme-1.0.3.min.js";
   window.__shazSDKPromise = window.__shazSDKPromise || new Promise(function (res) {
