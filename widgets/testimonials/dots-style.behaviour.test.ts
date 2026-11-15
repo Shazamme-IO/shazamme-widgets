@@ -222,6 +222,13 @@ describe('testimonials windowDots', () => {
     expect(lis.map((l, i) => (l.style.display === 'none' ? null : i)).filter((i) => i !== null)).toEqual([27, 28, 29, 30, 31, 32, 33]);
   });
 
+  it('ignores a non-finite target and keeps centring on the active dot', () => {
+    document.body.innerHTML = `<div id="w"><ul class="slideTwo-dotsl3">${Array.from({ length: 34 }, (_, i) => `<li${i === 20 ? ' class="slick-active"' : ''}><button>${i + 1}</button></li>`).join('')}</ul></div>`;
+    runner()(document.getElementById('w')!, NaN);
+    const lis = Array.from(document.querySelectorAll('li'));
+    expect(lis.map((l, i) => (l.style.display === 'none' ? null : i)).filter((i) => i !== null)).toEqual([17, 18, 19, 20, 21, 22, 23]);
+  });
+
   it('maps the slide Slick is heading for to its dot, wrapping past either end', () => {
     const slick = { slideCount: 34, options: { slidesToScroll: 1 } };
     expect(dotFor()(slick, 12)).toBe(12);
@@ -247,7 +254,7 @@ describe('testimonials windowDots', () => {
   it('runs before the shaping after init, on every slide change, early on beforeChange, and on every refit', () => {
     const slider = src.slice(src.indexOf('function slider(){'));
     expect(slider).toContain("on('reInit.shmDots afterChange.shmDots', function(){ windowDots(); shapeDots(); })");
-    expect(slider).toContain('windowDots(dotForSlide(slick, next));');
+    expect(slider).toContain('try { windowDots(dotForSlide(slick, next)); } catch (e) {}');
     expect(slider.indexOf('windowDots();')).toBeLessThan(slider.indexOf('shapeDots();'));
     const refit = src.slice(src.indexOf('function refitSlider(){'), src.indexOf('\n}\n', src.indexOf('function refitSlider(){')));
     expect(refit).toContain('windowDots();');

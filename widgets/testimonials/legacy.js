@@ -319,7 +319,7 @@ function windowDots(activeDot){
     for (var l = 0; l < lists.length; l++) {
         var items = lists[l].querySelectorAll('li');
         var active = 0;
-        if (typeof activeDot === 'number' && items.length) active = Math.max(0, Math.min(items.length - 1, activeDot));
+        if (typeof activeDot === 'number' && isFinite(activeDot) && items.length) active = Math.max(0, Math.min(items.length - 1, activeDot));
         else for (var i = 0; i < items.length; i++) if (items[i].classList.contains('slick-active')) active = i;
         var start = items.length <= DOTS_WINDOW ? 0 : Math.max(0, Math.min(active - Math.floor(DOTS_WINDOW / 2), items.length - DOTS_WINDOW));
         var end = Math.min(items.length, start + DOTS_WINDOW);
@@ -334,8 +334,8 @@ function windowDots(activeDot){
                 }
             } else if (!items[j].hasAttribute(DOT_HIDDEN_ATTR)) {
                 if (document.activeElement && items[j].contains(document.activeElement)) {
-                    var target = items[active].querySelector('button');
-                    try { if (target) target.focus({ preventScroll: true }); } catch (e) {}
+                    var target = items[active] && items[active].querySelector('button');
+                    try { if (target) target.focus({ preventScroll: true }); else if (document.activeElement.blur) document.activeElement.blur(); } catch (e) {}
                 }
                 items[j].setAttribute(DOT_HIDDEN_ATTR, items[j].style.getPropertyValue('display') + '|' + items[j].style.getPropertyPriority('display'));
                 items[j].style.setProperty('display', 'none', 'important');
@@ -427,7 +427,7 @@ function slider(){
         if(!adaptive) fitHeights(slick, next);
         else fitAdaptive(slick, next);
         growWrapper();
-        windowDots(dotForSlide(slick, next));
+        try { windowDots(dotForSlide(slick, next)); } catch (e) {}
     }).on('setPosition', function (event, slick) {
         fluidSlides(slick);
         setImportant(slick.$slideTrack[0], { 'display': 'flex', 'align-items': 'flex-start' });
