@@ -427,6 +427,8 @@ function slider(){
         if(!adaptive) fitHeights(slick, next);
         else fitAdaptive(slick, next);
         growWrapper();
+        // Dot cosmetics must never throw here: Slick has already set `animating` and would freeze.
+        // afterChange runs windowDots() again, so a failure only delays the window.
         try { windowDots(dotForSlide(slick, next)); } catch (e) {}
     }).on('setPosition', function (event, slick) {
         fluidSlides(slick);
