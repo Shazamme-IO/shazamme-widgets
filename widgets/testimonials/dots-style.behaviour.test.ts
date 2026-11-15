@@ -65,6 +65,15 @@ describe('testimonials ensureDotsStyle', () => {
     expect(css).not.toMatch(/font-size|rgb/);
   });
 
+  it('leaves the dot button its own size so a long row keeps its pitch, and gives it an out-of-flow hit area', () => {
+    const { css } = install();
+    const button = css.match(/li button\{[^}]*\}/)![0];
+    expect(button).not.toMatch(/(^|;)(min-)?(width|height):/);
+    expect(button).toContain('overflow:visible!important');
+    expect(css).toMatch(/li button::after\{[^}]*position:absolute!important[^}]*width:24px!important[^}]*height:24px!important/);
+    expect(css).toContain('li button:focus-visible::after{outline:2px solid currentColor!important');
+  });
+
   function shapeDotsRunner() {
     const start = src.indexOf('var DOTS_SHAPED_CLASS =');
     const end = src.indexOf('\n}\n', src.indexOf('function shapeDots()', start)) + 3;
