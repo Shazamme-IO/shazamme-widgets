@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build c8e4d9deb67a. Registers window.ShazammeWidget["<name>"].
+ * Build b884c9e814be. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -69,13 +69,13 @@ var __shazWidgetExport = (() => {
     ensureScriptLoader();
     var data = ctx.data, element = ctx.element, $ = ctx.$ || window.jQuery || window.$, shazamme = ctx.shazamme || window.shazamme;
     var cfg = data && data.config || {};
+    if (typeof element.__shmFlipCardsCleanup === "function") {
+      element.__shmFlipCardsCleanup();
+    }
     var root = element.querySelector(".shm-flip-cards");
     var grid = root && root.querySelector(".shm-fc-grid");
     if (!root || !grid) {
       return;
-    }
-    if (typeof element.__shmFlipCardsCleanup === "function") {
-      element.__shmFlipCardsCleanup();
     }
     var HEADING_TAGS = ["h2", "h3", "h4", "h5", "p", "div"];
     var FLIP_STYLES = ["flip", "fade", "none"];
@@ -130,7 +130,7 @@ var __shazWidgetExport = (() => {
         return "";
       }
       if (/^[a-z][a-z0-9+.\-]*:/i.test(s)) {
-        return /^https?:/i.test(s) ? s : "";
+        return /^(https?|mailto|tel):/i.test(s) ? s : "";
       }
       return s;
     }
@@ -367,7 +367,7 @@ var __shazWidgetExport = (() => {
       });
       on(root, "pointerout", function(e) {
         var card = cardOf(e.target);
-        if (card && e.pointerType === "mouse" && !(e.relatedTarget && card.contains(e.relatedTarget))) {
+        if (card && hoverFlip && e.pointerType === "mouse" && !(e.relatedTarget && card.contains(e.relatedTarget))) {
           setFlipped(card, false);
         }
       });
@@ -389,7 +389,9 @@ var __shazWidgetExport = (() => {
         if (onLink) {
           e.preventDefault();
         }
-        if (flipped && pointerType === "mouse" && hoverFlip) {
+        var clickType = e.pointerType || (e.detail === 0 ? "synthetic" : pointerType);
+        pointerType = "synthetic";
+        if (flipped && clickType === "mouse" && hoverFlip) {
           return;
         }
         setFlipped(card, !flipped);

@@ -17,7 +17,7 @@
   var BUNDLE = "https://sdk.shazamme.io/js/widget/" + NAME + "/widget.min.js";
   function bundle() { return new Promise(function (res) {
     if (window.ShazammeWidget && window.ShazammeWidget[NAME]) return res();
-    var s = document.createElement("script"); s.src = BUNDLE; s.onload = res; document.head.appendChild(s);
+    var s = document.createElement("script"); s.src = BUNDLE; s.onload = res; s.onerror = function () { console.error("[" + NAME + "] could not load " + BUNDLE); }; document.head.appendChild(s);
   }); }
   bundle().then(function () {
     window.ShazammeWidget[NAME]({ element: element, data: data, $: window.jQuery || window.$, shazamme: undefined });
