@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 40d1465e0614. Registers window.ShazammeWidget["<name>"].
+ * Build 56edf0badbde. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -70,7 +70,6 @@ var __shazWidgetExport = (() => {
     var data = ctx.data, element = ctx.element, $ = ctx.$ || window.jQuery || window.$, shazamme = ctx.shazamme || window.shazamme;
     var TAX_CONFIG = {
       taxYear: "2026-27",
-      effectiveFrom: "2026-07-01",
       currency: "AUD",
       locale: "en-AU",
       weeksPerYear: 52,
@@ -85,8 +84,9 @@ var __shazWidgetExport = (() => {
         { upTo: 19e4, rate: 0.37 },
         { upTo: Infinity, rate: 0.45 }
       ],
-      // UNCONFIRMED for 2026-27: the ATO annual foreign resident table still ends at 2025-26 (0 to 135,000 at 30c,
-      // 37c to 190,000, 45c over). The 2026-27 weekly withholding table keeps the same 30c first band.
+      // UNCONFIRMED for 2026-27 (rechecked 16 Nov 2026): the ATO annual foreign resident table still ends at 2025-26
+      // (0 to 135,000 at 30c, 37c to 190,000, 45c over). The 1 July 2026 cut applies only to the resident first band, and
+      // the 2026-27 weekly withholding table keeps the same 30c first band.
       // https://www.ato.gov.au/tax-rates-and-codes/tax-rates-foreign-residents
       // https://www.ato.gov.au/tax-rates-and-codes/tax-table-weekly
       foreignResidentBands: [
@@ -107,7 +107,8 @@ var __shazWidgetExport = (() => {
       lito: { max: 700, firstEnd: 37500, firstRate: 0.05, midStart: 45e3, midValue: 325, midRate: 0.015, end: 66667 },
       // Medicare levy 2%: https://www.ato.gov.au/tax-rates-and-codes/tax-rates-australian-residents
       // Foreign residents do not pay it: https://www.ato.gov.au/tax-rates-and-codes/tax-rates-foreign-residents
-      // UNCONFIRMED for 2026-27: low-income thresholds are the 2025-26 figures (the ATO page has not published 2026-27).
+      // UNCONFIRMED for 2026-27 (rechecked 16 Nov 2026): 28,011 is the singles threshold announced in the 12 May 2026
+      // Budget; the ATO notes the measure was not yet law when it published the figure. Update if the final figure differs.
       // https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/medicare-levy/medicare-levy-reduction/medicare-levy-reduction-for-low-income-earners
       // The 10c phase-in rate is the ATO's published shade-in (not on the fetched page; consistent with upper = lower x 1.25).
       medicare: { rate: 0.02, lowerThreshold: 28011, upperThreshold: 35013, phaseInRate: 0.1 },
@@ -281,7 +282,7 @@ var __shazWidgetExport = (() => {
       errorHours: "Enter hours per week between 1 and 168.",
       errorDays: "Enter days per week between 1 and 7.",
       taxYearNote: "Based on {taxYear} tax rates.",
-      disclaimerText: "This calculator is a guide only. It estimates take-home pay from the standard {taxYear} Australian rates and does not allow for the Medicare levy surcharge, family or senior thresholds, other offsets, salary sacrifice, bonuses or other income. Your actual pay may differ. It is not tax or financial advice."
+      disclaimerText: "This calculator is a guide only. It estimates take-home pay from the standard {taxYear} Australian rates and does not allow for the Medicare levy surcharge, family or senior thresholds, other offsets, salary sacrifice, bonuses or other income. Your actual pay may differ. Some {taxYear} thresholds are still awaiting final legislation. It is not tax or financial advice."
     };
     var PERIODS = ["hourly", "daily", "weekly", "monthly", "annual"];
     var RESIDENCIES = ["resident", "foreign", "whm"];
@@ -372,7 +373,8 @@ var __shazWidgetExport = (() => {
     }
     periodEl.value = defaultPeriod;
     hoursEl.value = String(toNum(cfg.defaultHours, 38, 1, 168));
-    daysEl.value = String(toNum(cfg.defaultDays, 5, 1, 7));
+    var DEFAULT_DAYS = toNum(cfg.defaultDays, 5, 1, 7);
+    daysEl.value = String(DEFAULT_DAYS);
     var startAmount = toNum(cfg.defaultAmount, 0, 0, 1e9);
     amountEl.value = startAmount > 0 ? String(startAmount) : "";
     function showDisclaimer() {
@@ -383,10 +385,8 @@ var __shazWidgetExport = (() => {
     if (noteEl) {
       noteEl.textContent = text("taxYearNote");
     }
+    var MAX_AMOUNT = 1e9;
     var calculated = false;
-    function optionsOn() {
-      return showGroup;
-    }
     function readInputs() {
       var period = periodEl.value;
       return {
@@ -394,19 +394,19 @@ var __shazWidgetExport = (() => {
         period: PERIODS.indexOf(period) > -1 ? period : "annual",
         hours: parseFloat(hoursEl.value),
         days: parseFloat(daysEl.value),
-        residency: optionsOn() && showOpt.residency && residencyEl && RESIDENCIES.indexOf(residencyEl.value) > -1 ? residencyEl.value : "resident",
-        help: optionsOn() && showOpt.help && !!(helpEl && helpEl.checked),
-        superIncluded: optionsOn() && showOpt.superIncluded && !!(superIncludedEl && superIncludedEl.checked)
+        residency: showGroup && showOpt.residency && residencyEl && RESIDENCIES.indexOf(residencyEl.value) > -1 ? residencyEl.value : "resident",
+        help: showGroup && showOpt.help && !!(helpEl && helpEl.checked),
+        superIncluded: showGroup && showOpt.superIncluded && !!(superIncludedEl && superIncludedEl.checked)
       };
     }
     function validate(inp) {
-      if (!(inp.amount > 0)) {
+      if (!(inp.amount > 0 && inp.amount <= MAX_AMOUNT)) {
         return "errorAmount";
       }
       if (inp.period === "hourly" && !(inp.hours >= 1 && inp.hours <= 168)) {
         return "errorHours";
       }
-      if (!(inp.days >= 1 && inp.days <= 7)) {
+      if (inp.period === "daily" && !(inp.days >= 1 && inp.days <= 7)) {
         return "errorDays";
       }
       return "";
@@ -452,6 +452,9 @@ var __shazWidgetExport = (() => {
       }
       errorEl.hidden = true;
       errorEl.textContent = "";
+      if (!(inp.days >= 1 && inp.days <= 7)) {
+        inp.days = DEFAULT_DAYS;
+      }
       var annual = annualFromPay(inp.amount, inp.period, inp.hours, inp.days, TAX_CONFIG);
       render(inp, calculateAuTax({ annualAmount: annual, packageIncludesSuper: inp.superIncluded, residency: inp.residency, help: inp.help }, TAX_CONFIG));
       showDisclaimer();
@@ -467,28 +470,51 @@ var __shazWidgetExport = (() => {
     function onKey(ev) {
       if (ev.key === "Enter" && ev.target && ev.target.tagName === "INPUT" && ev.target.type !== "checkbox") {
         ev.preventDefault();
-        calculate();
+        flushInput();
       }
     }
-    function onChange() {
-      if (calculated) {
-        calculate();
+    var INPUT_DELAY = 300;
+    var inputTimer = null;
+    function flushInput() {
+      clearTimeout(inputTimer);
+      inputTimer = null;
+      calculate();
+    }
+    function onInput() {
+      if (!calculated) {
+        return;
       }
+      clearTimeout(inputTimer);
+      inputTimer = setTimeout(flushInput, INPUT_DELAY);
+    }
+    function onChange(ev) {
+      var t = ev.target;
+      if (!calculated || !t) {
+        return;
+      }
+      var isTextBox = t.tagName === "INPUT" && t.type !== "checkbox";
+      if (isTextBox && inputTimer === null) {
+        return;
+      }
+      flushInput();
     }
     root.addEventListener("click", onClick);
     root.addEventListener("keydown", onKey);
-    root.addEventListener("input", onChange);
+    root.addEventListener("input", onInput);
     root.addEventListener("change", onChange);
     root.__shmStop = function() {
       root.removeEventListener("click", onClick);
       root.removeEventListener("keydown", onKey);
-      root.removeEventListener("input", onChange);
+      clearTimeout(inputTimer);
+      root.removeEventListener("input", onInput);
       root.removeEventListener("change", onChange);
     };
+    resultsEl.hidden = true;
+    errorEl.hidden = true;
+    errorEl.textContent = "";
     if (amountEl.value) {
       calculate();
     }
-    root.classList.add("is-ready");
   }
   return __toCommonJS(salary_calculator_au_index_exports);
 })();
