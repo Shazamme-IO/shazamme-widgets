@@ -1,0 +1,102 @@
+<div class="shm-salary-uk" data-shm-salary>
+  <div class="shm-sc-card">
+    <h2 class="shm-sc-title" data-t="title">{{title}}</h2>
+    <p class="shm-sc-intro" data-t="intro">{{intro}}</p>
+
+    <div class="shm-sc-pay">
+      <h3 class="shm-sc-subtitle" data-t="payHeading">{{payHeading}}</h3>
+      <div class="shm-sc-grid">
+        <label class="shm-sc-field">
+          <span class="shm-sc-label" data-t="payAmountLabel">{{payAmountLabel}}</span>
+          <input class="shm-sc-input" type="number" inputmode="decimal" min="0" step="any" data-f="amount">
+        </label>
+        <label class="shm-sc-field">
+          <span class="shm-sc-label" data-t="payPeriodLabel">{{payPeriodLabel}}</span>
+          <select class="shm-sc-input" data-f="period">
+            <option value="hourly" data-t="periodHourly">{{periodHourly}}</option>
+            <option value="daily" data-t="periodDaily">{{periodDaily}}</option>
+            <option value="weekly" data-t="periodWeekly">{{periodWeekly}}</option>
+            <option value="monthly" data-t="periodMonthly">{{periodMonthly}}</option>
+            <option value="annual" data-t="periodAnnual" selected>{{periodAnnual}}</option>
+          </select>
+        </label>
+        <label class="shm-sc-field">
+          <span class="shm-sc-label" data-t="hoursLabel">{{hoursLabel}}</span>
+          <input class="shm-sc-input" type="number" inputmode="decimal" min="1" max="168" step="any" data-f="hours" value="37.5">
+        </label>
+        <label class="shm-sc-field">
+          <span class="shm-sc-label" data-t="daysLabel">{{daysLabel}}</span>
+          <input class="shm-sc-input" type="number" inputmode="decimal" min="1" max="7" step="any" data-f="days" value="5">
+        </label>
+      </div>
+    </div>
+
+    <fieldset class="shm-sc-options" data-shm-options>
+      <legend class="shm-sc-legend" data-t="taxOptionsTitle">{{taxOptionsTitle}}</legend>
+      <div class="shm-sc-opt" data-opt="scottish">
+        <label class="shm-sc-check">
+          <input type="checkbox" data-f="scottish">
+          <span class="shm-sc-checktext" data-t="scottishLabel">{{scottishLabel}}</span>
+        </label>
+      </div>
+      <div class="shm-sc-opt" data-opt="loan">
+        <label class="shm-sc-field">
+          <span class="shm-sc-label" data-t="studentLoanLabel">{{studentLoanLabel}}</span>
+          <select class="shm-sc-input" data-f="loan">
+            <option value="none" data-t="loanNone">{{loanNone}}</option>
+            <option value="plan1" data-t="loanPlan1">{{loanPlan1}}</option>
+            <option value="plan2" data-t="loanPlan2">{{loanPlan2}}</option>
+            <option value="plan4" data-t="loanPlan4">{{loanPlan4}}</option>
+            <option value="plan5" data-t="loanPlan5">{{loanPlan5}}</option>
+            <option value="postgrad" data-t="loanPostgrad">{{loanPostgrad}}</option>
+          </select>
+        </label>
+      </div>
+      <div class="shm-sc-opt" data-opt="pension">
+        <label class="shm-sc-field">
+          <span class="shm-sc-label" data-t="pensionLabel">{{pensionLabel}}</span>
+          <input class="shm-sc-input" type="number" inputmode="decimal" min="0" max="100" step="any" data-f="pension" value="0">
+        </label>
+        <span class="shm-sc-help" data-t="pensionHelp">{{pensionHelp}}</span>
+      </div>
+    </fieldset>
+
+    <p class="shm-sc-error" role="alert" data-shm-error hidden></p>
+    <button type="button" class="shm-sc-btn" data-shm-calc data-t="calcButton">{{calcButton}}</button>
+
+    <div class="shm-sc-results" data-shm-results aria-live="polite" hidden>
+      <h3 class="shm-sc-subtitle" data-t="resultsHeading">{{resultsHeading}}</h3>
+      <p class="shm-sc-tiles-heading" data-t="tilesHeading">{{tilesHeading}}</p>
+      <div class="shm-sc-tiles">
+        <div class="shm-sc-tile"><span class="shm-sc-tile-label" data-t="colYear">{{colYear}}</span><strong class="shm-sc-tile-value" data-tile="year"></strong></div>
+        <div class="shm-sc-tile"><span class="shm-sc-tile-label" data-t="colMonth">{{colMonth}}</span><strong class="shm-sc-tile-value" data-tile="month"></strong></div>
+        <div class="shm-sc-tile"><span class="shm-sc-tile-label" data-t="colWeek">{{colWeek}}</span><strong class="shm-sc-tile-value" data-tile="week"></strong></div>
+        <div class="shm-sc-tile"><span class="shm-sc-tile-label" data-t="colDay">{{colDay}}</span><strong class="shm-sc-tile-value" data-tile="day"></strong></div>
+      </div>
+      <div class="shm-sc-tablewrap">
+        <table class="shm-sc-table">
+          <thead>
+            <tr>
+              <td></td>
+              <th scope="col" data-t="colYear">{{colYear}}</th>
+              <th scope="col" data-t="colMonth">{{colMonth}}</th>
+              <th scope="col" data-t="colWeek">{{colWeek}}</th>
+              <th scope="col" data-t="colDay">{{colDay}}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr data-row="gross"><th scope="row" data-t="rowGross">{{rowGross}}</th><td data-col="year"></td><td data-col="month"></td><td data-col="week"></td><td data-col="day"></td></tr>
+            <tr data-row="pension"><th scope="row" data-t="rowPension">{{rowPension}}</th><td data-col="year"></td><td data-col="month"></td><td data-col="week"></td><td data-col="day"></td></tr>
+            <tr data-row="incomeTax"><th scope="row" data-t="rowIncomeTax">{{rowIncomeTax}}</th><td data-col="year"></td><td data-col="month"></td><td data-col="week"></td><td data-col="day"></td></tr>
+            <tr data-row="ni"><th scope="row" data-t="rowNI">{{rowNI}}</th><td data-col="year"></td><td data-col="month"></td><td data-col="week"></td><td data-col="day"></td></tr>
+            <tr data-row="studentLoan"><th scope="row" data-t="rowStudentLoan">{{rowStudentLoan}}</th><td data-col="year"></td><td data-col="month"></td><td data-col="week"></td><td data-col="day"></td></tr>
+            <tr data-row="net" class="shm-sc-total"><th scope="row" data-t="rowTakeHome">{{rowTakeHome}}</th><td data-col="year"></td><td data-col="month"></td><td data-col="week"></td><td data-col="day"></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <p class="shm-sc-note" data-shm-note data-t="taxYearNote">{{taxYearNote}}</p>
+    <p class="shm-sc-disclaimer" role="note" data-shm-disclaimer data-t="disclaimerText">{{disclaimerText}}</p>
+  </div>
+</div>

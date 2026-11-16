@@ -1,0 +1,2 @@
+.shm-salary-au .shm-sc-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.shm-salary-au .shm-sc-options { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }

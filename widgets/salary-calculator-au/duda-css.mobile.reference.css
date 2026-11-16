@@ -1,0 +1,7 @@
+.shm-salary-au .shm-sc-card { padding: 16px; }
+.shm-salary-au .shm-sc-title { font-size: 24px; }
+.shm-salary-au .shm-sc-grid { grid-template-columns: minmax(0, 1fr); }
+.shm-salary-au .shm-sc-btn { width: 100%; padding: 14px 24px; }
+.shm-salary-au .shm-sc-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.shm-salary-au .shm-sc-table { font-size: 13px; }
+.shm-salary-au .shm-sc-table th, .shm-salary-au .shm-sc-table td { padding: 8px 6px; }
