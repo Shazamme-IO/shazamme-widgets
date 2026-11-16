@@ -1,4 +1,4 @@
-// LAST UPDATED: 2026-11-11 16:34 AEDT (v0.1.45)
+// LAST UPDATED: 2026-11-11 17:27 AEDT (v0.1.46)
 // Change: Lead Form JS moved out of Widget Builder into the shazamme-widgets bundle; this stub replaces it. Bundle = live v144 + manual template id + screening plugin 1.0.10.
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
@@ -18,7 +18,7 @@
 // ===========================================================================
 (function () {
   var NAME = "lead-form";
-  var TAG = "v0.1.45";
+  var TAG = "v0.1.46";
   var BUNDLE = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" + TAG + "/dist/" + NAME + "/0.1.0/widget.min.js";
   var SDK = "https://sdk.shazamme.io/js/shazamme-1.0.3.min.js";
   window.__shazSDKPromise = window.__shazSDKPromise || new Promise(function (res) {
