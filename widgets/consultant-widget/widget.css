@@ -1,0 +1,817 @@
+a {
+  text-decoration: none;
+}
+
+.consultant-content {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+
+    &.grid {
+        display: grid;
+        grid-gap: var(--shaz-row-gap) var(--shaz-column-gap);
+        align-items: stretch;
+    }
+
+    /* minmax(0,1fr) lets tracks shrink so long content can't blow past the widget edge */
+    &.column-one    { grid-template-columns: minmax(0, 1fr); }
+    &.column-two    { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    &.column-three  { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    &.column-four   { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    &.column-five   { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    &.column-six    { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    &.column-seven  { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+    &.column-eight  { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+}
+
+/* Every grid item must be allowed to shrink below its content width */
+.consultant-content.grid > * { min-width: 0; }
+
+/* Responsive: as the widget narrows, collapse dense grids so cards keep a usable
+   width and never overflow the widget (also fixes horizontal resize in the editor). */
+@media (max-width: 1024px) {
+    .consultant-content.grid.column-five,
+    .consultant-content.grid.column-six,
+    .consultant-content.grid.column-seven,
+    .consultant-content.grid.column-eight {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+}
+@media (max-width: 768px) {
+    .consultant-content.grid {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+}
+@media (max-width: 480px) {
+    .consultant-content.grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ==========================================================================
+   IONIC FIXES
+   ========================================================================== */
+.ion-float-right {
+  float: right;
+}
+
+.ion-col {
+  padding: 0px;
+  margin: 0px;
+}
+
+.ion-row {
+  padding: 0px;
+  margin: 0px;
+}
+
+/* ==========================================================================
+   ACCORDION (Slideout Layout)
+   ========================================================================== */
+.accordion {
+  background-color: #ffffff;
+}
+
+.accordion .top {
+position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+    cursor: pointer;
+    background-color: #ffffff;
+}
+
+.accordion .top .text {
+  font-size: 1.25em;
+  font-weight: bold;
+  white-space: wrap;
+  color: #333333;
+}
+
+.accordion .top .text:hover, .accordion .top .text:focus  {
+  color: #000000;
+}
+
+.accordion .top img {
+  width: 2rem;
+  align-self: flex-start;
+  margin-bottom: 0.15rem;
+  margin-left: 1.5rem;
+}
+
+.accordion .top input[type=checkbox] {
+  position: absolute;
+  inset: 0;
+  appearance: none;
+  cursor: pointer;
+}
+
+.accordion .bottom {
+  padding-inline: 1.5rem;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.accordion .bottom .text {
+  margin-left: 0;
+  margin: 0;
+}
+
+.accordion.active .top i {
+  transform: rotateZ(45deg);
+}
+
+/* ==========================================================================
+   CARD CONTAINERS
+   ========================================================================== */
+/* Slideout Card */
+.container-slideout-card {
+  background-color: transparent;
+  transform: translateZ(0.1px);
+  border: inherit;
+  border-radius: inherit;
+  /* height stays auto so opening the accordion grows the card and pushes the
+     grid row (and the content below) down instead of overflowing it. */
+}
+
+.container-slideout-card-inner {
+  position: relative;
+  text-align: center;
+  /* flex column blockifies the inline <ion-row>/<ion-col> wrappers so the
+     accordion's height propagates up and the card actually grows on open. */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Default Card */
+.container-default-card {
+  background-color: none;
+  perspective: 1000px;
+  transition: all 1s;
+  transform: translateZ(0.1px);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  border-style: solid;
+  border-width: 0px;
+  border-color: #000000;
+  border-radius: 0px;
+  font-family: inherit;
+  color: white;
+  font-weight: normal;
+  line-height: 1.4;
+  height: 100%;
+}
+
+.container-default-card-inner {
+  position: relative;
+  text-align: center;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+}
+
+/* Flip Card — front & back share ONE grid cell, so the card sizes to the taller
+   face and never changes size on hover, and the back can't overflow its track. */
+.container-flip-card {
+  background-color: transparent;
+  perspective: 1000px;
+  border-radius: 0px;
+  height: 100%;
+}
+
+.container-flip-card-inner {
+  position: relative;
+  display: grid;
+  grid-template-areas: "flip";
+  text-align: center;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+  height: 100%;
+}
+
+.container-flip-card-front,
+.container-flip-card-back {
+  grid-area: flip;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.container-flip-card:hover .container-flip-card-inner {
+  transform: rotateY(180deg);
+}
+
+/* Card Overlay */
+.container-overlay, div.container-overlay {
+  z-index: 2;
+  top: 0;
+  left: 0;
+  right: 0;
+  border: none;
+  border-radius: 0px;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+}
+
+/* ==========================================================================
+   CARD FRONTS
+   ========================================================================== */
+  
+.container-default-card-front {
+    background-image: url("https://static9.depositphotos.com/1031174/1160/i/450/depositphotos_11602443-stock-photo-abstract-background.jpg");
+ background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  background-color: none;
+  border-style: solid;
+  border-width: 0px;
+  border-color: #000000;
+  border-radius: 0px;
+  width: 100%;
+  height: 100%;
+  font-family: inherit;
+  color: white;
+  font-weight: normal;
+  line-height: 1.4;
+  padding: 30px;
+  overflow: hidden;
+}
+
+.container-slideout-card-front {
+  background-image: url("https://static9.depositphotos.com/1031174/1160/i/450/depositphotos_11602443-stock-photo-abstract-background.jpg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  background-color: none;
+  border-style: solid;
+  border-width: 0px;
+  border-color: #000000;
+  border-radius: 0px;
+  font-family: inherit;
+  color: white;
+  font-weight: normal;
+  line-height: 1.4;
+  padding: 30px;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* Flip Card Front - Special Styling */
+
+.container-flip-card-front {
+  background-image: url("https://static9.depositphotos.com/1031174/1160/i/450/depositphotos_11602443-stock-photo-abstract-background.jpg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  border-style: solid;
+  border-width: 0px;
+  border-color: #000000;
+  border-radius: 0px;
+  font-family: inherit;
+  color: white;
+  font-weight: normal;
+  line-height: 1.4;
+  padding: 30px;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  overflow-y: auto;
+}
+
+/* Popup (layout_4) has no inner grid stack, so fill the card explicitly there */
+.layout_4 .container-flip-card-front {
+  height: 100%;
+}
+
+/* ==========================================================================
+   CARD OVERLAY (gradient) — pseudo-element replaces the fragile border-image hack
+   so it lays down consistently on default, slide-out and flip fronts and never
+   sits on top of the text.
+   ========================================================================== */
+.container-default-card-front,
+.container-slideout-card-front,
+.container-flip-card-front {
+  position: relative;
+}
+
+.container-default-card-front.has-overlay::before,
+.container-slideout-card-front.has-overlay::before,
+.container-flip-card-front.has-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(
+      var(--overlay-angle, 180deg),
+      #0003 10%,
+      var(--overlay-color, transparent) var(--overlay-stop, 90%));
+}
+
+/* ==========================================================================
+   CARD BACK (Flip Card Only)
+   ========================================================================== */
+.container-flip-card-back {
+  background-color: #2980b9;
+  color: white;
+  transform: rotateY(180deg);
+  border-style: solid;
+  border-width: 0px;
+  border-color: black;
+  border-radius: 0px;
+  padding: 30px;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  overflow-y: auto;
+}
+
+/* ==========================================================================
+   CONTENT ORDERING
+   ========================================================================== */
+.ordering-content-default-layout,
+.ordering-content-slideout-layout,
+.ordering-content-front,
+.ordering-content-back {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  position: relative;   /* sit above the overlay ::before */
+  z-index: 1;
+}
+
+/* Pin the buttons row to the bottom of the card (buttons sticky-to-bottom).
+   Slide-out buttons live inside the accordion, so they are intentionally excluded. */
+.ordering-content-default-layout > ion-row:has(.flex-container-consultant-buttons),
+.ordering-content-front > ion-row:has(.flex-container-consultant-buttons),
+.ordering-content-back > ion-row:has(.flex-container-consultant-buttons) {
+  margin-top: auto;
+}
+
+/* ==========================================================================
+   CONSULTANT IMAGE
+   ========================================================================== */
+.container-consultant-image-front {
+  display: flex;
+  flex-direction: row;
+  padding-bottom: 10px;
+  justify-content: center;
+}
+
+.consultant-image-front {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  border-radius: 50%;
+  border: 2px solid #fff;
+}
+
+/* ==========================================================================
+   CONSULTANT NAME
+   ========================================================================== */
+.flex-container-consultant-name {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  padding-bottom: 10px;
+}
+
+.flex-items-consultant-name {
+  font-size: 1.75em;
+  font-weight: bold;
+  font-family: inherit;
+  text-align: left;
+  line-height: normal;
+  padding-bottom: 0px;
+}
+
+/* ==========================================================================
+   CONSULTANT TITLE
+   ========================================================================== */
+.flex-container-consultant-title {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  padding-bottom: 10px;
+}
+
+.flex-items-consultant-title {
+  font-family: inherit;
+  text-align: left;
+  line-height: normal;
+  font-size: 1em;
+  font-weight: normal;
+  padding-bottom: 0px;
+}
+
+/* ==========================================================================
+   LOCATION
+   ========================================================================== */
+.flex-container-consultant-location {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding-bottom: 10px;
+  align-items: center;
+}
+
+.flex-items-icon-location {
+  font-size: 1.25em;
+  padding-right: 3px;
+}
+
+.svg-location-icon {
+  padding-right: 5px;
+  float: left;
+  font-size: 1.1em;
+}
+
+.svg-location-icon svg {
+  content: "";
+  display: block;
+  width: 1em;
+  height: 1em;
+  background: no-repeat;
+  background-size: contain;
+  -webkit-background-size: contain;
+  fill: white;
+}
+
+.flex-items-location-city,
+.flex-items-location-state,
+.flex-items-location-country {
+  font-family: inherit;
+  text-align: left;
+  line-height: normal;
+  font-size: 1em;
+  font-weight: normal;
+  padding-bottom: 0px;
+}
+
+/* ==========================================================================
+   CUSTOM FIELDS
+   ========================================================================== */
+.flex-container-custom-field-front {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding-bottom: 10px;
+  text-decoration: none !important;
+}
+
+.flex-items-custom-field-front, a.flex-items-custom-field-front{
+  font-family: inherit;
+  text-align: left;
+  line-height: normal;
+  font-size: 1em;
+  font-weight: normal;
+  padding-bottom: 0px;
+  width: auto;
+  color: white;
+  text-decoration: none !important;
+}
+
+.flex-container-custom-field-back, a.flex-items-custom-field-back{
+  display: flex;
+  flex-direction: row;
+  padding-bottom: 10px;
+  justify-content: flex-start;
+  align-items: center;
+  text-decoration: none !important;
+}
+
+.flex-items-custom-field-back {
+  font-family: inherit;
+  text-align: left;
+  line-height: normal;
+  font-size: 1em;
+  font-weight: normal;
+  padding-bottom: 0px;
+  width: auto;
+  color: white;
+  text-decoration: none !important;
+}
+
+/* ==========================================================================
+   SHORT BIO
+   ========================================================================== */
+.flex-container-consultant-bio {
+  display: flex;
+  flex-direction: column !important;
+  padding-bottom: 10px;
+  height: auto;
+}
+
+.flex-items-consultant-bio {
+  width: 98%;
+  overflow: hidden;
+  display: -webkit-box;
+  overflow-wrap: break-word;
+  text-overflow: ellipsis;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 12;
+  font-family: inherit;
+  text-align: left;
+  line-height: 120%;
+  font-size: 1em;
+  font-weight: normal;
+  padding-bottom: 0px;
+}
+
+/* ==========================================================================
+   CATEGORY & SUBCATEGORY
+   ========================================================================== */
+.flex-container-consultant-category-subcategory {
+  display: flex;
+  flex-direction: row;
+  padding-bottom: 10px;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.flex-items-icon-category {
+  font-size: 1.25em;
+  padding-right: 3px;
+}
+
+.flex-items-consultant-category,
+.flex-items-consultant-subcategory {
+  font-family: inherit;
+  text-align: left;
+  line-height: normal;
+  font-weight: normal;
+  padding-bottom: 0px;
+}
+
+/* ==========================================================================
+   SEPARATOR
+   ========================================================================== */
+.flex-items-separator {
+  font-family: inherit;
+  text-align: left;
+  line-height: normal;
+  font-weight: normal;
+  padding-bottom: 0px;
+}
+
+/* ==========================================================================
+   HORIZONTAL RULE
+   ========================================================================== */
+.container-rule {
+  display: flex;
+  padding-bottom: 10px;
+  flex-direction: column;
+  flex-wrap: wrap;
+}
+
+hr.custom-rule {
+  border-top: 1px solid white;
+  border-left: 0px;
+  border-right: 0px;
+  border-bottom: 0px;
+  width: 100%;
+  border-top-width: 1px;
+  padding-bottom: 0px;
+  display: flex;
+}
+
+/* ==========================================================================
+   EMAIL
+   ========================================================================== */
+.flex-container-consultant-email {
+  display: flex;
+  flex-direction: row;
+  padding-bottom: 10px;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.flex-items-icon-email {
+  font-size: 1.25em;
+  padding-right: 3px;
+}
+
+.flex-items-consultant-email {
+  font-family: inherit;
+  text-align: left;
+  line-height: normal;
+  font-weight: normal;
+  padding-bottom: 0px;
+}
+
+/* ==========================================================================
+   PHONE NUMBERS
+   ========================================================================== */
+.flex-container-consultant-office-phone,
+.flex-container-consultant-mobile-phone {
+  display: flex;
+  flex-direction: row;
+  padding-bottom: 10px;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.flex-items-icon-phone,
+.flex-items-icon-mobile {
+  font-size: 1.25em;
+  padding-right: 3px;
+}
+
+.flex-items-consultant-office-phone,
+.flex-items-consultant-phone,
+.flex-items-consultant-moblie-phone {
+  font-family: inherit;
+  text-align: left;
+  line-height: normal;
+  font-weight: normal;
+  padding-bottom: 0px;
+}
+
+/* ==========================================================================
+   SOCIAL ICONS
+   ========================================================================== */
+.flex-container-consultant-social-icons {
+  display: flex;
+  flex-direction: row;
+  padding-bottom: 10px;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.flex-items-icon-social {
+  font-size: 1.5em;
+  padding-right: 3px;
+}
+
+.flex-items-consultant-social-icons {
+  font-family: inherit;
+  text-align: left;
+  line-height: normal;
+  font-weight: normal;
+  padding-bottom: 0px;
+  color: white;
+}
+
+/* ==========================================================================
+   BUTTONS
+   ========================================================================== */
+.flex-container-consultant-buttons {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  jusitfy-content: flex-start !important;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.flex-items-consultant-button-A,
+.flex-items-consultant-button-B {
+  width: 150px;
+  height: 45px !important;
+  border-radius: 0px 0px 0px 0px !important;
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  font-size: 1em !important;
+  font-weight: normal !important;
+  border: 1px #000000 !important;
+  text-decoration: none !important;
+  margin-bottom: 10px;
+}
+
+.flex-items-consultant-button-spacer {
+  width: 15px;
+  height: 0px;
+}
+
+/* ==========================================================================
+   MODAL (Pop Up Layout)
+   ========================================================================== */
+.layout_4 .heading {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: start;
+}  
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgb(0, 0, 0);
+  background-color: rgba(0, 0, 0, 0.4);
+  border: 0px;
+  border-radius: 0px;
+}
+
+.modal-content {
+  background-color: #fefefe;
+  margin: 15% auto;
+  padding: 30px;
+  border: 0px solid #888;
+  width: 60%;
+}
+
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 1.75em;
+  font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.flex-container-modal-trigger {
+  width: auto;
+  padding-left: 5px;
+  padding-right: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-popup-icon {
+    background: white;
+    color: #333333;
+    width: 20px;
+    padding-left: 5px;
+    padding-right: 5px;
+    color: #000000;
+    font-size: 1em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ==========================================================================
+   SLIDER (Splide) CHROME
+   ========================================================================== */
+.consultant-content.splide {
+  position: relative;
+}
+
+/* Reserve room on both sides so cards sit centred between the arrows (arrows OFF the cards, default) */
+.consultant-content.splide .splide__track {
+  margin: 0 3em;
+}
+.consultant-content.splide.arrows-on-card .splide__track {
+  margin: 0;
+}
+
+/* Round, legible arrow buttons */
+.consultant-content .splide__arrow {
+  background: #ffffff;
+  opacity: 1;
+  width: 2.4em;
+  height: 2.4em;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+}
+.consultant-content .splide__arrow:disabled {
+  opacity: 0.35;
+}
+.consultant-content .splide__arrow svg {
+  display: none;   /* we inject a Font Awesome icon instead of Splide's default SVG */
+}
+.consultant-content .splide__arrow i {
+  font-size: 1em;
+  color: #333333;
+}
+/* Prev icon points the other way when the same icon is used for both */
+.consultant-content .splide__arrow--prev i {
+  transform: rotate(180deg);
+}
+.consultant-content .splide__arrow--prev { left: 0; }
+.consultant-content .splide__arrow--next { right: 0; }
+.consultant-content.arrows-on-card .splide__arrow--prev { left: 0.5em; }
+.consultant-content.arrows-on-card .splide__arrow--next { right: 0.5em; }
+
+/* Pagination dots BELOW the track, off the cards */
+.consultant-content .splide__pagination {
+  position: static;
+  margin-top: 14px;
+  padding: 0;
+  bottom: auto;
+}
+.consultant-content .splide__pagination__page.is-active {
+  background: #5048E5;
+}
