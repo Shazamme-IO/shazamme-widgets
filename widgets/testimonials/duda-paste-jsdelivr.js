@@ -1,5 +1,5 @@
 // LAST UPDATED: 2026-11-16 10:11 AEDT (v0.1.56)
-// Change: 24px of space between the cards and the dot row. Carries v0.1.55 (fixed height on every device, seven dots in one row).
+// Change: Nicer slider dots: small solid dots in the Design-tab colour, faded, with the active one a solid wider pill; 24px of space under the cards. Carries v0.1.55 (fixed height on every device, seven dots in one row).
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
 // existing widget JS.
