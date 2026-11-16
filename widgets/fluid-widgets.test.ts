@@ -25,10 +25,50 @@ describe.each(['consultant', 'job-feed-2026', 'testimonials'])('%s is container-
 });
 
 describe('consultant', () => {
-  it('no longer collapses to one slide at a fixed 800px viewport breakpoint', () => {
+  it('with fluid layout on, sizes slides from the container instead of the fixed 800px breakpoint; off, keeps the breakpoint', () => {
     const slider = src('consultant').match(/function slider\(\)\{[\s\S]*?\n\}/)![0];
-    expect(slider).not.toContain('responsive');
-    expect(src('consultant')).toContain('fluidColumns()');
+    expect(slider).toContain('fluid ? fluidColumns() : slidesToShow');
+    expect(slider).toContain('breakpoint: 800');
+    expect(slider).toMatch(/if \(!fluid\)[\s\S]*responsive/);
+  });
+
+  it('only installs the ResizeObserver, the wrapper growth and the inline card overrides when fluid layout is on', () => {
+    const body = src('consultant');
+    expect(body).toContain('var fluid = isFluidLayout(data);');
+    expect(body).toMatch(/function fluidGrid\(\)\{\n\s*if \(!fluid/);
+    expect(body).toMatch(/function fluidPortraits\(\)\{\n\s*if \(!fluid/);
+    expect(body).toMatch(/function growWrapper\(\)\{\n\s*if \(!fluid/);
+    expect(body).toContain("if (fluid && typeof ResizeObserver !== 'undefined')");
+    expect(body).toContain('fluid ? oneLine(text)');
+    // oneLine is reachable only through label(): its definition and the one call inside label.
+    expect(body.match(/\boneLine\(/g)!.length).toBe(2);
+    expect(body).not.toMatch(/oneLine\(i\./);
+  });
+
+  it.each([
+    [false, { responsive: true, fluidClass: false, slidesToShow: 3, height: '300px' }],
+    [true, { responsive: false, fluidClass: true, slidesToShow: 4, height: '320px' }],
+  ])('slider() with fluid=%s builds the matching Slick options and setPosition handler', (fluid, want) => {
+    const slider = src('consultant').match(/function slider\(\)\{[\s\S]*?\n\}/)![0];
+    const calls: string[] = [];
+    let options: Record<string, unknown> = {};
+    let onSetPosition: ((e: unknown, slick: unknown) => void) | null = null;
+    const wrap = {
+      addClass: (c: string) => { calls.push('addClass:' + c); return wrap; },
+      slick: (o: Record<string, unknown>) => { options = o; return wrap; },
+      on: (_e: string, h: (e: unknown, slick: unknown) => void) => { onSetPosition = h; return wrap; },
+      css: (k: string, v: string) => { calls.push(`css:${k}=${v}`); return wrap; },
+    };
+    const $ = () => ({ find: () => wrap });
+    new Function('$', 'element', 'fluid', 'slidesToShow', 'dotsPagination', 'infinite', 'arrows', 'autoplay', 'fluidColumns', 'fluidCards', 'growWrapper',
+      `${slider}; slider();`)($, {}, fluid, 3, true, false, true, false, () => 4, () => calls.push('fluidCards'), () => calls.push('growWrapper'));
+    expect('responsive' in options).toBe(want.responsive);
+    expect(options.slidesToShow).toBe(want.slidesToShow);
+    expect(calls.some((c) => c.startsWith('addClass:shm-fluid-slider'))).toBe(want.fluidClass);
+    onSetPosition!(null, { $slideTrack: { height: () => 300 }, $list: { outerHeight: () => 320 } });
+    expect(calls).toContain(`css:height=${want.height}`);
+    expect(calls.includes('fluidCards')).toBe(fluid);
+    expect(calls.includes('growWrapper')).toBe(fluid);
   });
 
   it('turns <br> in names and titles into spaces so they wrap with the card', () => {

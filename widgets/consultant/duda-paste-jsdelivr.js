@@ -1,5 +1,5 @@
-// LAST UPDATED: 2026-11-10 18:16 AEDT (07:16 UTC) (v0.1.43)
-// Change: Photo shape is no longer forced inline (Freshdesk 14329 / issue #54). The circle is only a low-priority default stylesheet rule, so site CSS for rounded squares or squares applies again after Update Widget. Sizing, grid and centring from v0.1.40 unchanged.
+// LAST UPDATED: 2026-11-11 09:07 AEDT (22:07 UTC) (v0.1.44)
+// Change: Fluid layout (columns from width, portrait sizing, wrapper growth, slider refit) is OPT-IN (issue #56): widget setting fluidLayout, or the WOW sites 0682872f / b40871c0. Every other site gets its pre-6-Nov layout back: NGO Recruitment 4 columns, Quinn Allan 290x360 portraits. Photo-shape default from v0.1.43 kept for fluid sites.
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
 // existing widget JS.
@@ -16,7 +16,7 @@
 // ===========================================================================
 (function () {
   var NAME = "consultant";
-  var TAG = "v0.1.43";
+  var TAG = "v0.1.44";
   var BUNDLE = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" + TAG + "/dist/" + NAME + "/0.1.0/widget.min.js";
   var SDK = "https://sdk.shazamme.io/js/shazamme-1.0.3.min.js";
   window.__shazSDKPromise = window.__shazSDKPromise || new Promise(function (res) {

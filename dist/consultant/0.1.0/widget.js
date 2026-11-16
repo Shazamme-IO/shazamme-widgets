@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build df3e4e981354. Registers window.ShazammeWidget["<name>"].
+ * Build 6b394b883d91. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -328,6 +328,15 @@ var __shazWidgetExport = (() => {
     let city = data.config.city ? data.config.city : "";
     let SearchKeys = data.config.searchKeywords ? data.config.searchKeywords : "";
     let dudaAlias = data.siteId;
+    var FLUID_SITES = ["0682872f", "b40871c0"];
+    function isFluidLayout(data2) {
+      var raw = data2 && data2.config ? data2.config.fluidLayout : void 0;
+      var flag = raw == null ? "" : String(raw).trim().toLowerCase();
+      if (flag === "true" || flag === "1") return true;
+      if (flag === "false" || flag === "0") return false;
+      return !!data2 && FLUID_SITES.indexOf(String(data2.siteId)) !== -1;
+    }
+    var fluid = isFluidLayout(data);
     if (itemLayout != "newslider") {
       var style = document.createElement("style");
       style.innerText = ".clsbottomSlider{margin:0!important;}";
@@ -347,6 +356,9 @@ var __shazWidgetExport = (() => {
     var FLUID_FALLBACK_COLUMNS = 3;
     function oneLine(text) {
       return String(text == null ? "" : text).replace(/<br\s*\/?>/gi, " ").replace(/\s+/g, " ").trim();
+    }
+    function label(text) {
+      return fluid ? oneLine(text) : text == null ? "" : text;
     }
     function fluidColumns() {
       var maxColumns = slidesToShow > 0 ? slidesToShow : FLUID_FALLBACK_COLUMNS;
@@ -377,6 +389,7 @@ var __shazWidgetExport = (() => {
     var PORTRAIT_SHARE = 0.8;
     var PORTRAIT_MAX = 230;
     function fluidPortraits() {
+      if (!fluid) return;
       ensurePortraitStyle();
       $(element).find(".consultList-consultant").each(function() {
         var cardWidth = this.getBoundingClientRect().width;
@@ -391,7 +404,7 @@ var __shazWidgetExport = (() => {
     var GRID_MIN_CARD = 240;
     var GRID_MAX_COLUMNS = 5;
     function fluidGrid() {
-      if (layout != "grid" || itemLayout == "newslider") return;
+      if (!fluid || layout != "grid" || itemLayout == "newslider") return;
       var wrap = $(element).find(".consultList-consultantWrap");
       var cards = wrap.children(".consultList-consultant");
       var count = cards.length;
@@ -410,15 +423,17 @@ var __shazWidgetExport = (() => {
       growWrapper();
     }
     function growWrapper() {
+      if (!fluid) return;
       var wrapper = element.closest ? element.closest(".widget-wrapper") : null;
       if (!wrapper) return;
       wrapper.style.setProperty("height", "auto", "important");
       wrapper.style.setProperty("min-height", Math.ceil(element.scrollHeight) + "px", "important");
     }
     function slider() {
-      $(element).find(".consultList-consultantWrap").addClass("shm-fluid-slider main-review-slider-container").slick({
+      var wrap = $(element).find(".consultList-consultantWrap");
+      var options = {
         dots: dotsPagination,
-        slidesToShow: fluidColumns(),
+        slidesToShow: fluid ? fluidColumns() : slidesToShow,
         centerMode: false,
         infinite,
         arrows,
@@ -426,9 +441,17 @@ var __shazWidgetExport = (() => {
         autoplay,
         prevArrow: '<i class="fas fa-chevron-left slick-prev"></i>',
         nextArrow: '<i class="fas fa-chevron-right slick-next"></i>'
-      }).on("setPosition", function(event, slick) {
+      };
+      if (!fluid) {
+        options.responsive = [{ breakpoint: 800, settings: { slidesToShow: 1 } }];
+        wrap.slick(options).on("setPosition", function(event, slick) {
+          wrap.css("height", slick.$slideTrack.height() + "px");
+        });
+        return;
+      }
+      wrap.addClass("shm-fluid-slider main-review-slider-container").slick(options).on("setPosition", function(event, slick) {
         fluidCards(slick);
-        $(element).find(".consultList-consultantWrap").css("height", Math.max(slick.$slideTrack.height(), slick.$list.outerHeight()) + "px");
+        wrap.css("height", Math.max(slick.$slideTrack.height(), slick.$list.outerHeight()) + "px");
         growWrapper();
       });
     }
@@ -446,7 +469,7 @@ var __shazWidgetExport = (() => {
         wrap.slick("setPosition");
       }
     }
-    if (typeof ResizeObserver !== "undefined") {
+    if (fluid && typeof ResizeObserver !== "undefined") {
       if (element.__shmConsultantObserver) element.__shmConsultantObserver.disconnect();
       element.__shmConsultantObserver = new ResizeObserver(function() {
         refitSlider();
@@ -575,12 +598,12 @@ var __shazWidgetExport = (() => {
                         </a>
                         <a href="${link2}" target="${newTab}" class="consultList-consultDetails" style="text-decoration:none"><div class="consultList-consultDetails">
                             <div class="consultList-consultName">
-                                ${oneLine(`${i.firstName} ${i.lastName}`)}
+                                ${label(`${i.firstName} ${i.lastName}`)}
                             </div>
                             <div class="consultList-consultPos">
-                                ${i.positionTitle ? oneLine(i.positionTitle) : "N/A"}
+                                ${i.positionTitle ? label(i.positionTitle) : "N/A"}
                             </div>
-                            ${ShowLoc && i.businessLocation2 ? `<div class="consultList-consultLoc">${oneLine(i.businessLocation2)}</div>` : ""}
+                            ${ShowLoc && i.businessLocation2 ? `<div class="consultList-consultLoc">${label(i.businessLocation2)}</div>` : ""}
                         </div>
                         </a>
                     </div>
@@ -594,12 +617,12 @@ var __shazWidgetExport = (() => {
                             <img src="${i.photoURL ? i.photoURL : "https://shazamme.io/Job-Listing/src/img/profile-placeholder.png?fit=1000%2C1000&ssl=1"}" alt="" loading="lazy">
                             <div class="consultList-consultDetails-new">
                                 <div class="consultList-consultName-new">
-                                    ${oneLine(`${i.firstName} ${i.lastName}`)}
+                                    ${label(`${i.firstName} ${i.lastName}`)}
                                 </div>
                                 <div class="consultList-consultPos-new">
-                                    ${i.positionTitle ? oneLine(i.positionTitle) : "N/A"}
+                                    ${i.positionTitle ? label(i.positionTitle) : "N/A"}
                                 </div>
-                                ${ShowLoc && i.businessLocation2 ? `<div class="consultList-consultLoc-new">${oneLine(i.businessLocation2)}</div>` : ""}
+                                ${ShowLoc && i.businessLocation2 ? `<div class="consultList-consultLoc-new">${label(i.businessLocation2)}</div>` : ""}
                             </div>
                             <div class="consultList-Contact-ContainerIcons consultList-ContactCompact">
                                 ${showPhone && i.phone ? `<a href="tel:${i.phone}"><i class="fas fa-phone-square"></i></a>` : ""}
@@ -625,12 +648,12 @@ var __shazWidgetExport = (() => {
                             <div class="consultList-consultDetails-new2">
                                 <div class="consultList-consultDetails-new2-hover">
                                     <div class="consultList-consultName-new2">
-                                        ${oneLine(`${i.firstName} ${i.lastName}`)}
+                                        ${label(`${i.firstName} ${i.lastName}`)}
                                     </div>
                                     <div class="consultList-consultPos-new2">
-                                        ${i.positionTitle ? oneLine(i.positionTitle) : "N/A"}
+                                        ${i.positionTitle ? label(i.positionTitle) : "N/A"}
                                     </div>
-                                    ${ShowLoc && i.businessLocation2 ? `<div class="consultList-consultLoc-new2">${oneLine(i.businessLocation2)}</div>` : ""}
+                                    ${ShowLoc && i.businessLocation2 ? `<div class="consultList-consultLoc-new2">${label(i.businessLocation2)}</div>` : ""}
                                 </div>
                             </div>
                         </div>
@@ -650,12 +673,12 @@ var __shazWidgetExport = (() => {
                             </a>
                             <div class="consultList-consultImg-bottom-part">
                                 <div class="consultList-consultName">
-                                    ${oneLine(`${i.firstName} ${i.lastName}`)}
+                                    ${label(`${i.firstName} ${i.lastName}`)}
                                 </div>
                                 <div class="consultList-consultPos">
-                                    ${i.positionTitle ? oneLine(i.positionTitle) : "N/A"}
+                                    ${i.positionTitle ? label(i.positionTitle) : "N/A"}
                                 </div>
-                                ${ShowLoc && i.businessLocation2 ? `<div class="consultList-consultLoc">${oneLine(i.businessLocation2)}</div>` : ""}
+                                ${ShowLoc && i.businessLocation2 ? `<div class="consultList-consultLoc">${label(i.businessLocation2)}</div>` : ""}
                                 <div class="consultList-Contact-Container">
                                     ${showPhone ? isPhone : ""}
                                     ${showMobile ? isMobile : ""}
@@ -698,12 +721,12 @@ var __shazWidgetExport = (() => {
                         </a>
                         <a href="${link2}" target="${newTab}" class="consultList-consultDetails" style="text-decoration:none"><div class="consultList-consultDetails">
                             <div class="consultList-consultName">
-                                ${oneLine(`${i.firstName} ${i.lastName}`)}
+                                ${label(`${i.firstName} ${i.lastName}`)}
                             </div>
                             <div class="consultList-consultPos">
-                                ${i.positionTitle ? oneLine(i.positionTitle) : "N/A"}
+                                ${i.positionTitle ? label(i.positionTitle) : "N/A"}
                             </div>
-                            ${ShowLoc && i.businessLocation2 ? `<div class="consultList-consultLoc">${oneLine(i.businessLocation2)}</div>` : ""}
+                            ${ShowLoc && i.businessLocation2 ? `<div class="consultList-consultLoc">${label(i.businessLocation2)}</div>` : ""}
 
                         </div>
                         </a>
@@ -714,9 +737,9 @@ var __shazWidgetExport = (() => {
                 <div class="col-sm-12 clsTileDiv">
                     <div class="col-sm-12 clsTile">
                         <div class="col-sm-9 clsDescDiv">
-                            <p class="con-Title">${oneLine(`${i.firstName} ${i.lastName}`)}</p>
-                            <p class="con-Desg">${i.positionTitle ? oneLine(i.positionTitle) : "N/A"}</p>
-                            ${ShowLoc && i.businessLocation2 ? `<p class="con-Loc">${oneLine(i.businessLocation2)}</p>` : ""}
+                            <p class="con-Title">${label(`${i.firstName} ${i.lastName}`)}</p>
+                            <p class="con-Desg">${i.positionTitle ? label(i.positionTitle) : "N/A"}</p>
+                            ${ShowLoc && i.businessLocation2 ? `<p class="con-Loc">${label(i.businessLocation2)}</p>` : ""}
                             <p class="con-Desc">${i.shortDescription ? i.shortDescription : " "}</p>
                             <a href="${link2}" target="${newTab}" class="clsbtnViewDetails"><span class="text">View more</span></a>
                         </div>
