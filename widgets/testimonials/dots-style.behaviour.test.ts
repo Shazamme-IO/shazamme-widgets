@@ -44,24 +44,28 @@ describe('testimonials ensureDotsStyle', () => {
   it('replaces the glyph with an empty box for every dot layout the widget can pick', () => {
     const { css } = install();
     expect(css).toContain('ul.shm-dots-shaped li button::before{content:""!important');
-    expect(css).toContain('ul.shm-dots-shaped.slideTwo-dotsl2 li button::before{border-radius:50%');
-    expect(css).toContain('ul.shm-dots-shaped.slideTwo-dots li button::before{padding:.06em .4em');
+    expect(css).toContain('ul.shm-dots-shaped.slideTwo-dotsl2 li button::before{border-radius:1em');
+    expect(css).toContain('ul.shm-dots-shaped.slideTwo-dots li button::before{padding:.075em .3em');
     expect(css).toContain('width:0!important;height:0!important;padding:.2em!important');
     expect(css).toContain('background-clip:content-box!important');
     expect(css).toContain('li button{position:relative!important');
     expect(css).not.toContain('display:inline-block!important');
     // Every rule is scoped to the shaped list, except the one that dims a window-edge glyph dot.
-    expect(css.match(/\.shmTestimonial ul/g)!.length).toBe(css.match(/\.shmTestimonial ul\.shm-dots-shaped/g)!.length + css.match(/\.shmTestimonial ul\[class\*="slideTwo-dots"\]:not\(\.shm-dots-shaped\) li\.shm-dot-edge/g)!.length);
+    expect(css.replace(/@media[^{]*\{/, '').match(/\.shmTestimonial ul/g)!.length).toBe(css.match(/\.shmTestimonial ul\.shm-dots-shaped/g)!.length + css.match(/\.shmTestimonial ul\[class\*="slideTwo-dots"\]:not\(\.shm-dots-shaped\) li\.shm-dot-edge/g)!.length);
     expect(css).toContain('text-indent:-9999px!important');
     expect(css).not.toContain('overflow:hidden');
     expect(css).toContain('background-color:transparent!important;background-image:none!important;background-clip:content-box!important');
-    expect(css).toContain('li.slick-active button::before{box-shadow:inset 0 0 0 1em currentColor');
+    expect(css).toContain('box-shadow:inset 0 0 0 1em currentColor!important;opacity:.4');
+    expect(css).toContain('li.slick-active button::before{padding:.2em .5em!important;opacity:1}');
+    expect(css).toContain('ul.shm-dots-shaped.slideTwo-dots li.slick-active button::before{padding:.075em .45em!important}');
+    expect(css).toContain('@media (prefers-reduced-motion: reduce){.shmTestimonial ul.shm-dots-shaped li button::before{transition:none!important}}');
     expect(document.querySelector('style')!.textContent).toBe(css);
   });
 
   it('draws in currentColor and em so the Design tab colour and font-size still apply', () => {
     const { css } = install();
-    expect(css).toContain('border:2px solid currentColor');
+    expect(css).toContain('box-shadow:inset 0 0 0 1em currentColor');
+    expect(css).toContain('border:0!important;border-radius:.08em!important');
     expect(css).not.toMatch(/#[0-9a-f]{3,6}\b/i);
     expect(css).not.toMatch(/font-size|rgb/);
   });

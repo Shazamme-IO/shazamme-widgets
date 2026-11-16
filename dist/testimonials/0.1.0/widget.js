@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 9877affed743. Registers window.ShazammeWidget["<name>"].
+ * Build 3c15ab0c3c67. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -346,16 +346,21 @@ var __shazWidgetExport = (() => {
       // row of 34 dots takes the room it always took; a fixed 24px button wrapped NGO's dots
       // onto two rows. The shape is centred on the button and overflows it the same way.
       ".shmTestimonial ul.shm-dots-shaped li button{position:relative!important;padding:0!important;border:0!important;background:transparent!important;text-indent:-9999px!important;overflow:visible!important;cursor:pointer}",
-      // The shape is all border and padding round a 0x0 content box, and the background is
-      // clipped to that content box: a Design tab background-color on the old glyph box (which
-      // outranks these rules by specificity) can no longer paint anything. Only a site rule that
-      // writes the `background` shorthand would reset the clip. The fill is an inset shadow,
-      // which paints over the padding. The shape is centred on the button and never clipped by
-      // it, so a large Design tab font-size still shows the whole shape.
-      '.shmTestimonial ul.shm-dots-shaped li button::before{content:""!important;position:absolute!important;top:50%!important;left:50%!important;transform:translate(-50%,-50%)!important;box-sizing:content-box!important;width:0!important;height:0!important;padding:.2em!important;line-height:0!important;text-indent:0!important;border:2px solid currentColor!important;border-radius:0!important;background-color:transparent!important;background-image:none!important;background-clip:content-box!important;opacity:1}',
-      ".shmTestimonial ul.shm-dots-shaped.slideTwo-dotsl2 li button::before{border-radius:50%!important}",
-      ".shmTestimonial ul.shm-dots-shaped.slideTwo-dots li button::before{padding:.06em .4em!important;border:0!important;box-shadow:inset 0 0 0 1em currentColor!important;opacity:.5}",
-      ".shmTestimonial ul.shm-dots-shaped li.slick-active button::before{box-shadow:inset 0 0 0 1em currentColor!important;opacity:1}",
+      // Every dot is a small solid shape in the Design tab colour, faded; the active dot is the
+      // same shape at full strength, drawn wider as a pill. Round layouts get round dots, square
+      // layouts softly rounded squares, line layouts short bars.
+      //
+      // The shape is all padding round a 0x0 content box, and the background is clipped to that
+      // content box: a Design tab background-color on the old glyph box (which outranks these
+      // rules by specificity) can no longer paint anything. The fill is an inset shadow, which
+      // paints over the padding. Sizes are in em of the glyph rule's font-size, so the Design tab
+      // size still applies; the shape is centred on the button and never clipped by it.
+      '.shmTestimonial ul.shm-dots-shaped li button::before{content:""!important;position:absolute!important;top:50%!important;left:50%!important;transform:translate(-50%,-50%)!important;box-sizing:content-box!important;width:0!important;height:0!important;padding:.2em!important;line-height:0!important;text-indent:0!important;border:0!important;border-radius:.08em!important;background-color:transparent!important;background-image:none!important;background-clip:content-box!important;box-shadow:inset 0 0 0 1em currentColor!important;opacity:.4;transition:padding .25s ease,opacity .25s ease}',
+      ".shmTestimonial ul.shm-dots-shaped.slideTwo-dotsl2 li button::before{border-radius:1em!important}",
+      ".shmTestimonial ul.shm-dots-shaped.slideTwo-dots li button::before{padding:.075em .3em!important;border-radius:1em!important}",
+      ".shmTestimonial ul.shm-dots-shaped li.slick-active button::before{padding:.2em .5em!important;opacity:1}",
+      ".shmTestimonial ul.shm-dots-shaped.slideTwo-dots li.slick-active button::before{padding:.075em .45em!important}",
+      "@media (prefers-reduced-motion: reduce){.shmTestimonial ul.shm-dots-shaped li button::before{transition:none!important}}",
       // A 24px hit area and focus ring, out of flow so the row keeps its pitch: the button itself
       // is near zero wide and the dash shape is only a couple of px tall.
       '.shmTestimonial ul.shm-dots-shaped li button::after{content:""!important;position:absolute!important;top:50%!important;left:50%!important;width:24px!important;height:24px!important;transform:translate(-50%,-50%)!important;background:transparent!important;border:0!important}',
