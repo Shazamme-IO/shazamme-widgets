@@ -1,11 +1,11 @@
 // Flip Cards — Karen widget v1. Runs inside the generated legacyController(ctx), which binds
 // element and data the way Duda's function(element, data, api) wrapper does. Needs no Shazamme SDK (.no-sdk).
 var cfg = (data && data.config) || {};
+if (typeof element.__shmFlipCardsCleanup === 'function') { element.__shmFlipCardsCleanup(); }
+
 var root = element.querySelector('.shm-flip-cards');
 var grid = root && root.querySelector('.shm-fc-grid');
 if (!root || !grid) { return; }
-
-if (typeof element.__shmFlipCardsCleanup === 'function') { element.__shmFlipCardsCleanup(); }
 
 var HEADING_TAGS = ['h2', 'h3', 'h4', 'h5', 'p', 'div'];
 var FLIP_STYLES = ['flip', 'fade', 'none'];
@@ -43,12 +43,12 @@ function text(v) {
   if (typeof v === 'object') { return text(v.url || v.src || v.href || v.link || ''); }
   return String(v).trim();
 }
-// http(s), a relative path or a #anchor. Any other scheme, and protocol-relative (//, /\), is dropped.
+// http(s), mailto:, tel:, a relative path or a #anchor. Any other scheme, and protocol-relative (//, /\), is dropped.
 function safeUrl(v) {
   var s = text(v);
   if (!s || /[\u0000-\u001f\u007f]/.test(s)) { return ''; }
   if (/^[\/\\]{2}/.test(s) || /^\\/.test(s)) { return ''; }
-  if (/^[a-z][a-z0-9+.\-]*:/i.test(s)) { return /^https?:/i.test(s) ? s : ''; }
+  if (/^[a-z][a-z0-9+.\-]*:/i.test(s)) { return /^(https?|mailto|tel):/i.test(s) ? s : ''; }
   return s;
 }
 function listFrom(v) {
@@ -246,7 +246,7 @@ function wireFlip() {
   });
   on(root, 'pointerout', function (e) {
     var card = cardOf(e.target);
-    if (card && e.pointerType === 'mouse' && !(e.relatedTarget && card.contains(e.relatedTarget))) { setFlipped(card, false); }
+    if (card && hoverFlip && e.pointerType === 'mouse' && !(e.relatedTarget && card.contains(e.relatedTarget))) { setFlipped(card, false); }
   });
   on(root, 'click', function (e) {
     pointerFocus = false;
@@ -260,7 +260,9 @@ function wireFlip() {
       return;
     }
     if (onLink) { e.preventDefault(); }
-    if (flipped && pointerType === 'mouse' && hoverFlip) { return; }
+    var clickType = e.pointerType || (e.detail === 0 ? 'synthetic' : pointerType);
+    pointerType = 'synthetic';
+    if (flipped && clickType === 'mouse' && hoverFlip) { return; }
     setFlipped(card, !flipped);
   });
   on(document, 'pointerdown', function (e) {

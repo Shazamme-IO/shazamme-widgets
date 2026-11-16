@@ -14,7 +14,7 @@ const BUNDLE = readFileSync(join(here, '..', '..', 'dist', 'flip-cards', VERSION
 type Win = Record<string, any>;
 type Card = Record<string, string>;
 
-const SHELL = '<div class="shm-flip-cards" data-shm-flip-cards><div class="shm-fc-grid" data-shm-fc-grid></div><div class="shm-fc-sources"></div></div>';
+const SHELL = '<div class="shm-flip-cards"><div class="shm-fc-grid"></div><div class="shm-fc-sources"></div></div>';
 const ONE: Card[] = [
   { image: 'https://example.com/a.jpg', alt: 'A photo', title: 'Accounting', frontLine: 'Finance', backHeading: 'Hire finance', backText: 'Back text', link: '/finance', buttonText: 'Find out more' },
 ];
@@ -72,8 +72,8 @@ describe('flip-cards bundle', () => {
     expect(el.querySelector('.shm-fc-img')!.getAttribute('alt')).toBe('"><script>');
   });
 
-  it('keeps http(s), relative and # links and drops everything else', () => {
-    const hrefs = ['https://a.com/x', 'http://a.com', '/page', 'page.html', '#top'];
+  it('keeps http(s), mailto, tel, relative and # links and drops everything else', () => {
+    const hrefs = ['https://a.com/x', 'http://a.com', 'mailto:jobs@a.com', 'tel:+61200000000', '/page', 'page.html', '#top'];
     const bad = ['javascript:alert(1)', ' JaVaScRiPt:alert(1)', '//evil.example', '/\\evil.example', 'data:text/html,x', 'vbscript:x'];
     const el = mount([...hrefs, ...bad].map((link, i) => ({ title: `T${i}`, backText: 'b', link })));
     const out = cardsOf(el).map((c) => c.querySelector('a.shm-fc-link')?.getAttribute('href') ?? null);
