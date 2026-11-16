@@ -6,7 +6,7 @@
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const NAME = 'salary-calculator-au';
@@ -171,7 +171,9 @@ function enter(el: HTMLElement, values: Record<string, string | boolean>) {
     const input = f(el, name);
     if (typeof v === 'boolean') input.checked = v;
     else input.value = v;
-    input.dispatchEvent(new Event(typeof v === 'boolean' || input.tagName === 'SELECT' ? 'change' : 'input', { bubbles: true }));
+    const isTextBox = typeof v !== 'boolean' && input.tagName !== 'SELECT';
+    if (isTextBox) input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
   }
 }
 const calculate = (el: HTMLElement) => (el.querySelector('[data-shm-calc]') as HTMLButtonElement).click();
@@ -301,8 +303,12 @@ describe('au salary calculator bundle', () => {
     expect(el.querySelector('[data-shm-error]')!.textContent).toBe('Enter hours per week between 1 and 168.');
     enter(el, { period: 'annual', amount: '60000', days: '0' });
     calculate(el);
+    expect(isHidden(el.querySelector('[data-shm-error]'))).toBe(true); // days only matter to the day column, which uses the default
+    expect(isHidden(el.querySelector('[data-shm-results]'))).toBe(false);
+    enter(el, { period: 'daily', amount: '200', days: '0' });
+    calculate(el);
     expect(el.querySelector('[data-shm-error]')!.textContent).toBe('Enter days per week between 1 and 7.');
-    enter(el, { days: '5' });
+    enter(el, { period: 'annual', amount: '60000', days: '5' });
     calculate(el);
     expect(isHidden(el.querySelector('[data-shm-error]'))).toBe(true);
     expect(cell(el, 'net', 'year')).toBe('$50,380.00');

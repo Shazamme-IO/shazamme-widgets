@@ -6,7 +6,6 @@
 // ---- TAX MODULE START ----
 var TAX_CONFIG = {
   taxYear: '2026/27',
-  effectiveFrom: '2026-04-06',
   currency: 'GBP',
   locale: 'en-GB',
   weeksPerYear: 52,
@@ -78,7 +77,8 @@ function perPeriod(annual, daysPerWeek, config) {
   };
 }
 
-// input: { annualGross, scottish, loan (none|plan1|plan2|plan4|plan5|postgrad), pensionPercent }
+// input: { annualGross, scottish, loan (none|plan1|plan2|plan4|plan5|postgrad|plan1pg|plan2pg|plan4pg|plan5pg), pensionPercent }
+// A 'pg' plan is that undergraduate plan repaid alongside a Postgraduate loan; the two are worked out separately and added.
 function calculateUkTax(input, config) {
   var gross = Math.max(0, Number(input.annualGross) || 0);
   var pensionPct = clampNum(Number(input.pensionPercent) || 0, 0, 100);
@@ -93,8 +93,14 @@ function calculateUkTax(input, config) {
     Math.max(0, Math.min(pay, n.upperEarningsLimit) - n.primaryThreshold) * n.mainRate +
     Math.max(0, pay - n.upperEarningsLimit) * n.upperRate
   );
-  var plan = config.studentLoans[input.loan];
-  var studentLoan = plan ? round2(Math.max(0, pay - plan.threshold) * plan.rate) : 0;
+  var loan = String(input.loan || 'none');
+  var plans = /^plan\dpg$/.test(loan) ? [loan.slice(0, -2), 'postgrad'] : [loan];
+  var studentLoan = 0;
+  for (var p = 0; p < plans.length; p++) {
+    var plan = config.studentLoans[plans[p]];
+    if (plan) { studentLoan += round2(Math.max(0, pay - plan.threshold) * plan.rate); }
+  }
+  studentLoan = round2(studentLoan);
   return {
     gross: round2(gross),
     pension: pension,
@@ -134,6 +140,10 @@ var DEFAULTS = {
   loanPlan4: 'Plan 4',
   loanPlan5: 'Plan 5',
   loanPostgrad: 'Postgraduate',
+  loanPlan1Pg: 'Plan 1 and Postgraduate',
+  loanPlan2Pg: 'Plan 2 and Postgraduate',
+  loanPlan4Pg: 'Plan 4 and Postgraduate',
+  loanPlan5Pg: 'Plan 5 and Postgraduate',
   pensionLabel: 'Pension contribution (% of salary)',
   pensionHelp: 'Taken from your pay before tax and National Insurance (salary sacrifice).',
   calcButton: 'Calculate',
@@ -156,7 +166,7 @@ var DEFAULTS = {
   disclaimerText: 'This calculator is a guide only. It estimates take-home pay from the standard {taxYear} UK rates and does not allow for your tax code, other income, benefits or other deductions. Your actual pay may differ. It is not tax or financial advice.'
 };
 var PERIODS = ['hourly', 'daily', 'weekly', 'monthly', 'annual'];
-var LOANS = ['none', 'plan1', 'plan2', 'plan4', 'plan5', 'postgrad'];
+var LOANS = ['none', 'plan1', 'plan2', 'plan4', 'plan5', 'postgrad', 'plan1pg', 'plan2pg', 'plan4pg', 'plan5pg'];
 
 function toBool(v, fallback) {
   if (v === true || v === 'true') { return true; }
@@ -225,7 +235,8 @@ var defaultPeriod = String(cfg.defaultPeriod || '').toLowerCase();
 if (PERIODS.indexOf(defaultPeriod) === -1) { defaultPeriod = 'annual'; }
 periodEl.value = defaultPeriod;
 hoursEl.value = String(toNum(cfg.defaultHours, 37.5, 1, 168));
-daysEl.value = String(toNum(cfg.defaultDays, 5, 1, 7));
+var DEFAULT_DAYS = toNum(cfg.defaultDays, 5, 1, 7);
+daysEl.value = String(DEFAULT_DAYS);
 var startAmount = toNum(cfg.defaultAmount, 0, 0, 1e9);
 amountEl.value = startAmount > 0 ? String(startAmount) : '';
 
@@ -237,6 +248,7 @@ function showDisclaimer() {
 showDisclaimer();
 if (noteEl) { noteEl.textContent = text('taxYearNote'); }
 
+var MAX_AMOUNT = 1e9;
 var calculated = false;
 
 function readInputs() {
@@ -253,9 +265,9 @@ function readInputs() {
 }
 
 function validate(inp) {
-  if (!(inp.amount > 0)) { return 'errorAmount'; }
+  if (!(inp.amount > 0 && inp.amount <= MAX_AMOUNT)) { return 'errorAmount'; }
   if (inp.period === 'hourly' && !(inp.hours >= 1 && inp.hours <= 168)) { return 'errorHours'; }
-  if (!(inp.days >= 1 && inp.days <= 7)) { return 'errorDays'; }
+  if (inp.period === 'daily' && !(inp.days >= 1 && inp.days <= 7)) { return 'errorDays'; }
   return '';
 }
 
@@ -274,9 +286,8 @@ function render(inp, result) {
     studentLoan: perPeriod(result.studentLoan, inp.days, TAX_CONFIG),
     net: perPeriod(result.net, inp.days, TAX_CONFIG)
   };
-  var rowFor = { gross: 'gross', pension: 'pension', incomeTax: 'incomeTax', ni: 'ni', studentLoan: 'studentLoan', net: 'net' };
-  for (var key in rowFor) {
-    for (var c = 0; c < cols.length; c++) { setCell(rowFor[key], cols[c], money(series[key][cols[c]])); }
+  for (var key in series) {
+    for (var c = 0; c < cols.length; c++) { setCell(key, cols[c], money(series[key][cols[c]])); }
   }
   for (var t = 0; t < cols.length; t++) {
     var tile = q('[data-tile="' + cols[t] + '"]');
@@ -301,6 +312,7 @@ function calculate() {
   }
   errorEl.hidden = true;
   errorEl.textContent = '';
+  if (!(inp.days >= 1 && inp.days <= 7)) { inp.days = DEFAULT_DAYS; }
   var annual = annualFromPay(inp.amount, inp.period, inp.hours, inp.days, TAX_CONFIG);
   render(inp, calculateUkTax({ annualGross: annual, scottish: inp.scottish, loan: inp.loan, pensionPercent: inp.pension }, TAX_CONFIG));
   showDisclaimer();
@@ -312,20 +324,43 @@ function onClick(ev) {
   if (t && t.closest && t.closest('[data-shm-calc]')) { ev.preventDefault(); calculate(); }
 }
 function onKey(ev) {
-  if (ev.key === 'Enter' && ev.target && ev.target.tagName === 'INPUT' && ev.target.type !== 'checkbox') { ev.preventDefault(); calculate(); }
+  if (ev.key === 'Enter' && ev.target && ev.target.tagName === 'INPUT' && ev.target.type !== 'checkbox') { ev.preventDefault(); flushInput(); }
 }
-function onChange() { if (calculated) { calculate(); } }
+// Typing recalculates once the visitor pauses, so the results region is not re-announced on every keystroke.
+// A text box's change event (on blur) only runs a recalculation still waiting on the pause, so nothing runs twice.
+var INPUT_DELAY = 300;
+var inputTimer = null;
+function flushInput() {
+  clearTimeout(inputTimer);
+  inputTimer = null;
+  calculate();
+}
+function onInput() {
+  if (!calculated) { return; }
+  clearTimeout(inputTimer);
+  inputTimer = setTimeout(flushInput, INPUT_DELAY);
+}
+function onChange(ev) {
+  var t = ev.target;
+  if (!calculated || !t) { return; }
+  var isTextBox = t.tagName === 'INPUT' && t.type !== 'checkbox';
+  if (isTextBox && inputTimer === null) { return; }
+  flushInput();
+}
 
 root.addEventListener('click', onClick);
 root.addEventListener('keydown', onKey);
-root.addEventListener('input', onChange);
+root.addEventListener('input', onInput);
 root.addEventListener('change', onChange);
 root.__shmStop = function () {
   root.removeEventListener('click', onClick);
   root.removeEventListener('keydown', onKey);
-  root.removeEventListener('input', onChange);
+  clearTimeout(inputTimer);
+  root.removeEventListener('input', onInput);
   root.removeEventListener('change', onChange);
 };
 
+resultsEl.hidden = true;
+errorEl.hidden = true;
+errorEl.textContent = '';
 if (amountEl.value) { calculate(); }
-root.classList.add('is-ready');

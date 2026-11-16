@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 269e3002187e. Registers window.ShazammeWidget["<name>"].
+ * Build 27edc0f23eac. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -70,7 +70,6 @@ var __shazWidgetExport = (() => {
     var data = ctx.data, element = ctx.element, $ = ctx.$ || window.jQuery || window.$, shazamme = ctx.shazamme || window.shazamme;
     var TAX_CONFIG = {
       taxYear: "2026/27",
-      effectiveFrom: "2026-04-06",
       currency: "GBP",
       locale: "en-GB",
       weeksPerYear: 52,
@@ -175,8 +174,16 @@ var __shazWidgetExport = (() => {
       var ni = round2(
         Math.max(0, Math.min(pay, n.upperEarningsLimit) - n.primaryThreshold) * n.mainRate + Math.max(0, pay - n.upperEarningsLimit) * n.upperRate
       );
-      var plan = config.studentLoans[input.loan];
-      var studentLoan = plan ? round2(Math.max(0, pay - plan.threshold) * plan.rate) : 0;
+      var loan = String(input.loan || "none");
+      var plans = /^plan\dpg$/.test(loan) ? [loan.slice(0, -2), "postgrad"] : [loan];
+      var studentLoan = 0;
+      for (var p = 0; p < plans.length; p++) {
+        var plan = config.studentLoans[plans[p]];
+        if (plan) {
+          studentLoan += round2(Math.max(0, pay - plan.threshold) * plan.rate);
+        }
+      }
+      studentLoan = round2(studentLoan);
       return {
         gross: round2(gross),
         pension,
@@ -217,6 +224,10 @@ var __shazWidgetExport = (() => {
       loanPlan4: "Plan 4",
       loanPlan5: "Plan 5",
       loanPostgrad: "Postgraduate",
+      loanPlan1Pg: "Plan 1 and Postgraduate",
+      loanPlan2Pg: "Plan 2 and Postgraduate",
+      loanPlan4Pg: "Plan 4 and Postgraduate",
+      loanPlan5Pg: "Plan 5 and Postgraduate",
       pensionLabel: "Pension contribution (% of salary)",
       pensionHelp: "Taken from your pay before tax and National Insurance (salary sacrifice).",
       calcButton: "Calculate",
@@ -239,7 +250,7 @@ var __shazWidgetExport = (() => {
       disclaimerText: "This calculator is a guide only. It estimates take-home pay from the standard {taxYear} UK rates and does not allow for your tax code, other income, benefits or other deductions. Your actual pay may differ. It is not tax or financial advice."
     };
     var PERIODS = ["hourly", "daily", "weekly", "monthly", "annual"];
-    var LOANS = ["none", "plan1", "plan2", "plan4", "plan5", "postgrad"];
+    var LOANS = ["none", "plan1", "plan2", "plan4", "plan5", "postgrad", "plan1pg", "plan2pg", "plan4pg", "plan5pg"];
     function toBool(v, fallback) {
       if (v === true || v === "true") {
         return true;
@@ -326,7 +337,8 @@ var __shazWidgetExport = (() => {
     }
     periodEl.value = defaultPeriod;
     hoursEl.value = String(toNum(cfg.defaultHours, 37.5, 1, 168));
-    daysEl.value = String(toNum(cfg.defaultDays, 5, 1, 7));
+    var DEFAULT_DAYS = toNum(cfg.defaultDays, 5, 1, 7);
+    daysEl.value = String(DEFAULT_DAYS);
     var startAmount = toNum(cfg.defaultAmount, 0, 0, 1e9);
     amountEl.value = startAmount > 0 ? String(startAmount) : "";
     function showDisclaimer() {
@@ -337,6 +349,7 @@ var __shazWidgetExport = (() => {
     if (noteEl) {
       noteEl.textContent = text("taxYearNote");
     }
+    var MAX_AMOUNT = 1e9;
     var calculated = false;
     function readInputs() {
       var period = periodEl.value;
@@ -351,13 +364,13 @@ var __shazWidgetExport = (() => {
       };
     }
     function validate(inp) {
-      if (!(inp.amount > 0)) {
+      if (!(inp.amount > 0 && inp.amount <= MAX_AMOUNT)) {
         return "errorAmount";
       }
       if (inp.period === "hourly" && !(inp.hours >= 1 && inp.hours <= 168)) {
         return "errorHours";
       }
-      if (!(inp.days >= 1 && inp.days <= 7)) {
+      if (inp.period === "daily" && !(inp.days >= 1 && inp.days <= 7)) {
         return "errorDays";
       }
       return "";
@@ -378,10 +391,9 @@ var __shazWidgetExport = (() => {
         studentLoan: perPeriod(result.studentLoan, inp.days, TAX_CONFIG),
         net: perPeriod(result.net, inp.days, TAX_CONFIG)
       };
-      var rowFor = { gross: "gross", pension: "pension", incomeTax: "incomeTax", ni: "ni", studentLoan: "studentLoan", net: "net" };
-      for (var key in rowFor) {
+      for (var key in series) {
         for (var c = 0; c < cols.length; c++) {
-          setCell(rowFor[key], cols[c], money(series[key][cols[c]]));
+          setCell(key, cols[c], money(series[key][cols[c]]));
         }
       }
       for (var t = 0; t < cols.length; t++) {
@@ -408,6 +420,9 @@ var __shazWidgetExport = (() => {
       }
       errorEl.hidden = true;
       errorEl.textContent = "";
+      if (!(inp.days >= 1 && inp.days <= 7)) {
+        inp.days = DEFAULT_DAYS;
+      }
       var annual = annualFromPay(inp.amount, inp.period, inp.hours, inp.days, TAX_CONFIG);
       render(inp, calculateUkTax({ annualGross: annual, scottish: inp.scottish, loan: inp.loan, pensionPercent: inp.pension }, TAX_CONFIG));
       showDisclaimer();
@@ -423,28 +438,51 @@ var __shazWidgetExport = (() => {
     function onKey(ev) {
       if (ev.key === "Enter" && ev.target && ev.target.tagName === "INPUT" && ev.target.type !== "checkbox") {
         ev.preventDefault();
-        calculate();
+        flushInput();
       }
     }
-    function onChange() {
-      if (calculated) {
-        calculate();
+    var INPUT_DELAY = 300;
+    var inputTimer = null;
+    function flushInput() {
+      clearTimeout(inputTimer);
+      inputTimer = null;
+      calculate();
+    }
+    function onInput() {
+      if (!calculated) {
+        return;
       }
+      clearTimeout(inputTimer);
+      inputTimer = setTimeout(flushInput, INPUT_DELAY);
+    }
+    function onChange(ev) {
+      var t = ev.target;
+      if (!calculated || !t) {
+        return;
+      }
+      var isTextBox = t.tagName === "INPUT" && t.type !== "checkbox";
+      if (isTextBox && inputTimer === null) {
+        return;
+      }
+      flushInput();
     }
     root.addEventListener("click", onClick);
     root.addEventListener("keydown", onKey);
-    root.addEventListener("input", onChange);
+    root.addEventListener("input", onInput);
     root.addEventListener("change", onChange);
     root.__shmStop = function() {
       root.removeEventListener("click", onClick);
       root.removeEventListener("keydown", onKey);
-      root.removeEventListener("input", onChange);
+      clearTimeout(inputTimer);
+      root.removeEventListener("input", onInput);
       root.removeEventListener("change", onChange);
     };
+    resultsEl.hidden = true;
+    errorEl.hidden = true;
+    errorEl.textContent = "";
     if (amountEl.value) {
       calculate();
     }
-    root.classList.add("is-ready");
   }
   return __toCommonJS(salary_calculator_uk_index_exports);
 })();

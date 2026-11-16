@@ -23,6 +23,10 @@ Build the Content Editor for this widget. Create one tab, "Text: pay and tax opt
 - Student loan option: Plan 4 | key: loanPlan4 | type: text | default: Plan 4
 - Student loan option: Plan 5 | key: loanPlan5 | type: text | default: Plan 5
 - Student loan option: postgraduate | key: loanPostgrad | type: text | default: Postgraduate
+- Student loan option: Plan 1 and postgraduate | key: loanPlan1Pg | type: text | default: Plan 1 and Postgraduate
+- Student loan option: Plan 2 and postgraduate | key: loanPlan2Pg | type: text | default: Plan 2 and Postgraduate
+- Student loan option: Plan 4 and postgraduate | key: loanPlan4Pg | type: text | default: Plan 4 and Postgraduate
+- Student loan option: Plan 5 and postgraduate | key: loanPlan5Pg | type: text | default: Plan 5 and Postgraduate
 - Pension label | key: pensionLabel | type: text | default: Pension contribution (% of salary)
 - Pension help text | key: pensionHelp | type: textarea | default: Taken from your pay before tax and National Insurance (salary sacrifice). | help: Small text under the pension box.
 - Calculate button text | key: calcButton | type: text | default: Calculate
