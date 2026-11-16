@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 798414cc7b63. Registers window.ShazammeWidget["<name>"].
+ * Build 3c15ab0c3c67. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -359,7 +359,7 @@ var __shazWidgetExport = (() => {
       ".shmTestimonial ul.shm-dots-shaped.slideTwo-dotsl2 li button::before{border-radius:1em!important}",
       ".shmTestimonial ul.shm-dots-shaped.slideTwo-dots li button::before{padding:.075em .3em!important;border-radius:1em!important}",
       ".shmTestimonial ul.shm-dots-shaped li.slick-active button::before{padding:.2em .5em!important;opacity:1}",
-      ".shmTestimonial ul.shm-dots-shaped.slideTwo-dots li.slick-active button::before{padding:.075em .6em!important}",
+      ".shmTestimonial ul.shm-dots-shaped.slideTwo-dots li.slick-active button::before{padding:.075em .45em!important}",
       "@media (prefers-reduced-motion: reduce){.shmTestimonial ul.shm-dots-shaped li button::before{transition:none!important}}",
       // A 24px hit area and focus ring, out of flow so the row keeps its pitch: the button itself
       // is near zero wide and the dash shape is only a couple of px tall.
