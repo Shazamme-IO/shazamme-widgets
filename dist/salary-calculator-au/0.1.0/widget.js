@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 56edf0badbde. Registers window.ShazammeWidget["<name>"].
+ * Build 4714777a91a1. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -386,7 +386,8 @@ var __shazWidgetExport = (() => {
       noteEl.textContent = text("taxYearNote");
     }
     var MAX_AMOUNT = 1e9;
-    var calculated = false;
+    var attempted = false;
+    var lastInputs = "";
     function readInputs() {
       var period = periodEl.value;
       return {
@@ -441,30 +442,49 @@ var __shazWidgetExport = (() => {
       resultsEl.hidden = false;
     }
     function calculate() {
+      attempted = true;
       var inp = readInputs();
+      lastInputs = JSON.stringify(inp);
       var err = validate(inp);
       if (err) {
         errorEl.textContent = text(err);
         errorEl.hidden = false;
         resultsEl.hidden = true;
-        calculated = false;
+        return;
+      }
+      var daysOk = inp.days >= 1 && inp.days <= 7;
+      if (!daysOk) {
+        inp.days = DEFAULT_DAYS;
+      }
+      var annual = annualFromPay(inp.amount, inp.period, inp.hours, inp.days, TAX_CONFIG);
+      if (!(annual <= MAX_AMOUNT)) {
+        showError("errorAmount");
         return;
       }
       errorEl.hidden = true;
       errorEl.textContent = "";
-      if (!(inp.days >= 1 && inp.days <= 7)) {
-        inp.days = DEFAULT_DAYS;
-      }
-      var annual = annualFromPay(inp.amount, inp.period, inp.hours, inp.days, TAX_CONFIG);
       render(inp, calculateAuTax({ annualAmount: annual, packageIncludesSuper: inp.superIncluded, residency: inp.residency, help: inp.help }, TAX_CONFIG));
+      if (!daysOk) {
+        blankDayColumn();
+      }
       showDisclaimer();
-      calculated = true;
+    }
+    function showError(key) {
+      errorEl.textContent = text(key);
+      errorEl.hidden = false;
+      resultsEl.hidden = true;
+    }
+    function blankDayColumn() {
+      var cells = qa('[data-col="day"], [data-tile="day"]');
+      for (var d = 0; d < cells.length; d++) {
+        cells[d].textContent = "\u2013";
+      }
     }
     function onClick(ev) {
       var t = ev.target;
       if (t && t.closest && t.closest("[data-shm-calc]")) {
         ev.preventDefault();
-        calculate();
+        flushInput();
       }
     }
     function onKey(ev) {
@@ -481,7 +501,7 @@ var __shazWidgetExport = (() => {
       calculate();
     }
     function onInput() {
-      if (!calculated) {
+      if (!attempted) {
         return;
       }
       clearTimeout(inputTimer);
@@ -489,11 +509,11 @@ var __shazWidgetExport = (() => {
     }
     function onChange(ev) {
       var t = ev.target;
-      if (!calculated || !t) {
+      if (!attempted || !t) {
         return;
       }
       var isTextBox = t.tagName === "INPUT" && t.type !== "checkbox";
-      if (isTextBox && inputTimer === null) {
+      if (isTextBox && inputTimer === null && JSON.stringify(readInputs()) === lastInputs) {
         return;
       }
       flushInput();

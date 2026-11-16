@@ -279,7 +279,9 @@ showDisclaimer();
 if (noteEl) { noteEl.textContent = text('taxYearNote'); }
 
 var MAX_AMOUNT = 1e9;
-var calculated = false;
+// Once the visitor has pressed Calculate (or Enter), edits recalculate live, including after an error.
+var attempted = false;
+var lastInputs = '';
 
 function readInputs() {
   var period = periodEl.value;
@@ -327,33 +329,46 @@ function render(inp, result) {
 }
 
 function calculate() {
+  attempted = true;
   var inp = readInputs();
+  lastInputs = JSON.stringify(inp);
   var err = validate(inp);
   if (err) {
     errorEl.textContent = text(err);
     errorEl.hidden = false;
     resultsEl.hidden = true;
-    calculated = false;
     return;
   }
+  // Days only feed the Day column unless pay is daily; a bad value blanks that column instead of guessing.
+  var daysOk = inp.days >= 1 && inp.days <= 7;
+  if (!daysOk) { inp.days = DEFAULT_DAYS; }
+  var annual = annualFromPay(inp.amount, inp.period, inp.hours, inp.days, TAX_CONFIG);
+  if (!(annual <= MAX_AMOUNT)) { showError('errorAmount'); return; }
   errorEl.hidden = true;
   errorEl.textContent = '';
-  if (!(inp.days >= 1 && inp.days <= 7)) { inp.days = DEFAULT_DAYS; }
-  var annual = annualFromPay(inp.amount, inp.period, inp.hours, inp.days, TAX_CONFIG);
   render(inp, calculateAuTax({ annualAmount: annual, packageIncludesSuper: inp.superIncluded, residency: inp.residency, help: inp.help }, TAX_CONFIG));
+  if (!daysOk) { blankDayColumn(); }
   showDisclaimer();
-  calculated = true;
+}
+function showError(key) {
+  errorEl.textContent = text(key);
+  errorEl.hidden = false;
+  resultsEl.hidden = true;
+}
+function blankDayColumn() {
+  var cells = qa('[data-col="day"], [data-tile="day"]');
+  for (var d = 0; d < cells.length; d++) { cells[d].textContent = '\u2013'; }
 }
 
 function onClick(ev) {
   var t = ev.target;
-  if (t && t.closest && t.closest('[data-shm-calc]')) { ev.preventDefault(); calculate(); }
+  if (t && t.closest && t.closest('[data-shm-calc]')) { ev.preventDefault(); flushInput(); }
 }
 function onKey(ev) {
   if (ev.key === 'Enter' && ev.target && ev.target.tagName === 'INPUT' && ev.target.type !== 'checkbox') { ev.preventDefault(); flushInput(); }
 }
 // Typing recalculates once the visitor pauses, so the results region is not re-announced on every keystroke.
-// A text box's change event (on blur) only runs a recalculation still waiting on the pause, so nothing runs twice.
+// Calculate, Enter, a select, a checkbox or a text box's change all run any waiting recalculation now, once.
 var INPUT_DELAY = 300;
 var inputTimer = null;
 function flushInput() {
@@ -362,15 +377,16 @@ function flushInput() {
   calculate();
 }
 function onInput() {
-  if (!calculated) { return; }
+  if (!attempted) { return; }
   clearTimeout(inputTimer);
   inputTimer = setTimeout(flushInput, INPUT_DELAY);
 }
 function onChange(ev) {
   var t = ev.target;
-  if (!calculated || !t) { return; }
+  if (!attempted || !t) { return; }
   var isTextBox = t.tagName === 'INPUT' && t.type !== 'checkbox';
-  if (isTextBox && inputTimer === null) { return; }
+  // A text box's change only matters if its value moved without an input event (autofill, script).
+  if (isTextBox && inputTimer === null && JSON.stringify(readInputs()) === lastInputs) { return; }
   flushInput();
 }
 

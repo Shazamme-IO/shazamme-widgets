@@ -314,6 +314,54 @@ describe('au salary calculator bundle', () => {
     expect(cell(el, 'net', 'year')).toBe('$50,380.00');
   });
 
+  it('keeps updating live after an error once the visitor has pressed Calculate', () => {
+    const el = mount();
+    calculate(el);
+    expect(isHidden(el.querySelector('[data-shm-error]'))).toBe(false);
+    enter(el, { amount: '60000' });
+    expect(isHidden(el.querySelector('[data-shm-error]'))).toBe(true);
+    expect(isHidden(el.querySelector('[data-shm-results]'))).toBe(false);
+  });
+
+  it('recalculates a value changed without typing (autofill), and blanks the day column for bad days', () => {
+    const el = mount();
+    enter(el, { amount: '60000' });
+    calculate(el);
+    const before = cell(el, 'net', 'year');
+    const days = f(el, 'days');
+    days.value = '0';
+    days.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(cell(el, 'net', 'year')).toBe(before);
+    expect(cell(el, 'net', 'day')).toBe('\u2013');
+    expect(el.querySelector('[data-tile="day"]')!.textContent).toBe('\u2013');
+  });
+
+  it('rejects pay that annualises above the cap', () => {
+    const el = mount();
+    enter(el, { amount: '1000000000', period: 'hourly', hours: '40' });
+    calculate(el);
+    expect(isHidden(el.querySelector('[data-shm-error]'))).toBe(false);
+    expect(isHidden(el.querySelector('[data-shm-results]'))).toBe(true);
+  });
+
+  it('Calculate runs a waiting recalculation once and cancels its timer', () => {
+    vi.useFakeTimers();
+    const el = mount();
+    enter(el, { amount: '60000' });
+    calculate(el);
+    const results = el.querySelector('[data-shm-results]')!;
+    const amount = f(el, 'amount');
+    amount.value = '1';
+    amount.dispatchEvent(new Event('input', { bubbles: true }));
+    calculate(el);
+    const after = cell(el, 'gross', 'year');
+    results.querySelector('[data-row="gross"] [data-col="year"]')!.textContent = 'untouched';
+    vi.advanceTimersByTime(1000);
+    vi.useRealTimers();
+    expect(after).toBe('$1.00');
+    expect(cell(el, 'gross', 'year')).toBe('untouched');
+  });
+
   it('uses the editable labels, with tokens for the tax year and super rate, and falls back to defaults', () => {
     const el = mount({ title: 'Pay checker', calcButton: 'Work it out', rowMedicare: 'Medicare', intro: 'Rates for {taxYear}', rowSuper: 'Super at {superRate}', helpLabel: '', colFortnight: 'Fn' });
     expect(el.querySelector('.shm-sc-title')!.textContent).toBe('Pay checker');

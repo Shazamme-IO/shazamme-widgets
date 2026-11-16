@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 27edc0f23eac. Registers window.ShazammeWidget["<name>"].
+ * Build 2b2015a4432d. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -118,6 +118,13 @@ var __shazWidgetExport = (() => {
         plan4: { threshold: 33795, rate: 0.09 },
         plan5: { threshold: 25e3, rate: 0.09 },
         postgrad: { threshold: 21e3, rate: 0.06 }
+      },
+      // An undergraduate plan repaid alongside a Postgraduate loan: each is worked out on its own and added.
+      combinedLoans: {
+        plan1pg: ["plan1", "postgrad"],
+        plan2pg: ["plan2", "postgrad"],
+        plan4pg: ["plan4", "postgrad"],
+        plan5pg: ["plan5", "postgrad"]
       }
     };
     function round2(n) {
@@ -175,10 +182,10 @@ var __shazWidgetExport = (() => {
         Math.max(0, Math.min(pay, n.upperEarningsLimit) - n.primaryThreshold) * n.mainRate + Math.max(0, pay - n.upperEarningsLimit) * n.upperRate
       );
       var loan = String(input.loan || "none");
-      var plans = /^plan\dpg$/.test(loan) ? [loan.slice(0, -2), "postgrad"] : [loan];
+      var plans = Object.prototype.hasOwnProperty.call(config.combinedLoans, loan) ? config.combinedLoans[loan] : [loan];
       var studentLoan = 0;
       for (var p = 0; p < plans.length; p++) {
-        var plan = config.studentLoans[plans[p]];
+        var plan = Object.prototype.hasOwnProperty.call(config.studentLoans, plans[p]) ? config.studentLoans[plans[p]] : null;
         if (plan) {
           studentLoan += round2(Math.max(0, pay - plan.threshold) * plan.rate);
         }
@@ -350,7 +357,8 @@ var __shazWidgetExport = (() => {
       noteEl.textContent = text("taxYearNote");
     }
     var MAX_AMOUNT = 1e9;
-    var calculated = false;
+    var attempted = false;
+    var lastInputs = "";
     function readInputs() {
       var period = periodEl.value;
       return {
@@ -409,30 +417,49 @@ var __shazWidgetExport = (() => {
       resultsEl.hidden = false;
     }
     function calculate() {
+      attempted = true;
       var inp = readInputs();
+      lastInputs = JSON.stringify(inp);
       var err = validate(inp);
       if (err) {
         errorEl.textContent = text(err);
         errorEl.hidden = false;
         resultsEl.hidden = true;
-        calculated = false;
+        return;
+      }
+      var daysOk = inp.days >= 1 && inp.days <= 7;
+      if (!daysOk) {
+        inp.days = DEFAULT_DAYS;
+      }
+      var annual = annualFromPay(inp.amount, inp.period, inp.hours, inp.days, TAX_CONFIG);
+      if (!(annual <= MAX_AMOUNT)) {
+        showError("errorAmount");
         return;
       }
       errorEl.hidden = true;
       errorEl.textContent = "";
-      if (!(inp.days >= 1 && inp.days <= 7)) {
-        inp.days = DEFAULT_DAYS;
-      }
-      var annual = annualFromPay(inp.amount, inp.period, inp.hours, inp.days, TAX_CONFIG);
       render(inp, calculateUkTax({ annualGross: annual, scottish: inp.scottish, loan: inp.loan, pensionPercent: inp.pension }, TAX_CONFIG));
+      if (!daysOk) {
+        blankDayColumn();
+      }
       showDisclaimer();
-      calculated = true;
+    }
+    function showError(key) {
+      errorEl.textContent = text(key);
+      errorEl.hidden = false;
+      resultsEl.hidden = true;
+    }
+    function blankDayColumn() {
+      var cells = qa('[data-col="day"], [data-tile="day"]');
+      for (var d = 0; d < cells.length; d++) {
+        cells[d].textContent = "\u2013";
+      }
     }
     function onClick(ev) {
       var t = ev.target;
       if (t && t.closest && t.closest("[data-shm-calc]")) {
         ev.preventDefault();
-        calculate();
+        flushInput();
       }
     }
     function onKey(ev) {
@@ -449,7 +476,7 @@ var __shazWidgetExport = (() => {
       calculate();
     }
     function onInput() {
-      if (!calculated) {
+      if (!attempted) {
         return;
       }
       clearTimeout(inputTimer);
@@ -457,11 +484,11 @@ var __shazWidgetExport = (() => {
     }
     function onChange(ev) {
       var t = ev.target;
-      if (!calculated || !t) {
+      if (!attempted || !t) {
         return;
       }
       var isTextBox = t.tagName === "INPUT" && t.type !== "checkbox";
-      if (isTextBox && inputTimer === null) {
+      if (isTextBox && inputTimer === null && JSON.stringify(readInputs()) === lastInputs) {
         return;
       }
       flushInput();
