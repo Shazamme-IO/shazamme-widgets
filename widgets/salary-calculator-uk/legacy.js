@@ -43,6 +43,13 @@ var TAX_CONFIG = {
     plan4: { threshold: 33795, rate: 0.09 },
     plan5: { threshold: 25000, rate: 0.09 },
     postgrad: { threshold: 21000, rate: 0.06 }
+  },
+  // An undergraduate plan repaid alongside a Postgraduate loan: each is worked out on its own and added.
+  combinedLoans: {
+    plan1pg: ['plan1', 'postgrad'],
+    plan2pg: ['plan2', 'postgrad'],
+    plan4pg: ['plan4', 'postgrad'],
+    plan5pg: ['plan5', 'postgrad']
   }
 };
 
@@ -78,7 +85,6 @@ function perPeriod(annual, daysPerWeek, config) {
 }
 
 // input: { annualGross, scottish, loan (none|plan1|plan2|plan4|plan5|postgrad|plan1pg|plan2pg|plan4pg|plan5pg), pensionPercent }
-// A 'pg' plan is that undergraduate plan repaid alongside a Postgraduate loan; the two are worked out separately and added.
 function calculateUkTax(input, config) {
   var gross = Math.max(0, Number(input.annualGross) || 0);
   var pensionPct = clampNum(Number(input.pensionPercent) || 0, 0, 100);
@@ -94,10 +100,10 @@ function calculateUkTax(input, config) {
     Math.max(0, pay - n.upperEarningsLimit) * n.upperRate
   );
   var loan = String(input.loan || 'none');
-  var plans = /^plan\dpg$/.test(loan) ? [loan.slice(0, -2), 'postgrad'] : [loan];
+  var plans = Object.prototype.hasOwnProperty.call(config.combinedLoans, loan) ? config.combinedLoans[loan] : [loan];
   var studentLoan = 0;
   for (var p = 0; p < plans.length; p++) {
-    var plan = config.studentLoans[plans[p]];
+    var plan = Object.prototype.hasOwnProperty.call(config.studentLoans, plans[p]) ? config.studentLoans[plans[p]] : null;
     if (plan) { studentLoan += round2(Math.max(0, pay - plan.threshold) * plan.rate); }
   }
   studentLoan = round2(studentLoan);
@@ -249,7 +255,9 @@ showDisclaimer();
 if (noteEl) { noteEl.textContent = text('taxYearNote'); }
 
 var MAX_AMOUNT = 1e9;
-var calculated = false;
+// Once the visitor has pressed Calculate (or Enter), edits recalculate live, including after an error.
+var attempted = false;
+var lastInputs = '';
 
 function readInputs() {
   var period = periodEl.value;
@@ -301,33 +309,46 @@ function render(inp, result) {
 }
 
 function calculate() {
+  attempted = true;
   var inp = readInputs();
+  lastInputs = JSON.stringify(inp);
   var err = validate(inp);
   if (err) {
     errorEl.textContent = text(err);
     errorEl.hidden = false;
     resultsEl.hidden = true;
-    calculated = false;
     return;
   }
+  // Days only feed the Day column unless pay is daily; a bad value blanks that column instead of guessing.
+  var daysOk = inp.days >= 1 && inp.days <= 7;
+  if (!daysOk) { inp.days = DEFAULT_DAYS; }
+  var annual = annualFromPay(inp.amount, inp.period, inp.hours, inp.days, TAX_CONFIG);
+  if (!(annual <= MAX_AMOUNT)) { showError('errorAmount'); return; }
   errorEl.hidden = true;
   errorEl.textContent = '';
-  if (!(inp.days >= 1 && inp.days <= 7)) { inp.days = DEFAULT_DAYS; }
-  var annual = annualFromPay(inp.amount, inp.period, inp.hours, inp.days, TAX_CONFIG);
   render(inp, calculateUkTax({ annualGross: annual, scottish: inp.scottish, loan: inp.loan, pensionPercent: inp.pension }, TAX_CONFIG));
+  if (!daysOk) { blankDayColumn(); }
   showDisclaimer();
-  calculated = true;
+}
+function showError(key) {
+  errorEl.textContent = text(key);
+  errorEl.hidden = false;
+  resultsEl.hidden = true;
+}
+function blankDayColumn() {
+  var cells = qa('[data-col="day"], [data-tile="day"]');
+  for (var d = 0; d < cells.length; d++) { cells[d].textContent = '\u2013'; }
 }
 
 function onClick(ev) {
   var t = ev.target;
-  if (t && t.closest && t.closest('[data-shm-calc]')) { ev.preventDefault(); calculate(); }
+  if (t && t.closest && t.closest('[data-shm-calc]')) { ev.preventDefault(); flushInput(); }
 }
 function onKey(ev) {
   if (ev.key === 'Enter' && ev.target && ev.target.tagName === 'INPUT' && ev.target.type !== 'checkbox') { ev.preventDefault(); flushInput(); }
 }
 // Typing recalculates once the visitor pauses, so the results region is not re-announced on every keystroke.
-// A text box's change event (on blur) only runs a recalculation still waiting on the pause, so nothing runs twice.
+// Calculate, Enter, a select, a checkbox or a text box's change all run any waiting recalculation now, once.
 var INPUT_DELAY = 300;
 var inputTimer = null;
 function flushInput() {
@@ -336,15 +357,16 @@ function flushInput() {
   calculate();
 }
 function onInput() {
-  if (!calculated) { return; }
+  if (!attempted) { return; }
   clearTimeout(inputTimer);
   inputTimer = setTimeout(flushInput, INPUT_DELAY);
 }
 function onChange(ev) {
   var t = ev.target;
-  if (!calculated || !t) { return; }
+  if (!attempted || !t) { return; }
   var isTextBox = t.tagName === 'INPUT' && t.type !== 'checkbox';
-  if (isTextBox && inputTimer === null) { return; }
+  // A text box's change only matters if its value moved without an input event (autofill, script).
+  if (isTextBox && inputTimer === null && JSON.stringify(readInputs()) === lastInputs) { return; }
   flushInput();
 }
 
