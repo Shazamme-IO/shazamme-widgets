@@ -1,4 +1,4 @@
-// LAST UPDATED: 2026-11-09 22:51 AEDT (11:51 UTC) (v0.1.42)
+// Job Schema loader — shazamme-widgets v0.1.42 — deployed 2026-11-10 07:56 AEDT (2026-11-09 20:56 UTC)
 // Change: JS moved out of Duda into the shazamme-widgets bundle. The JobPosting is now built from the widget's raw values, so a description with line breaks can no longer leave invalid JSON-LD.
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
