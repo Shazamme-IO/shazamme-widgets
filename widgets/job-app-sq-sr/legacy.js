@@ -8,8 +8,6 @@ let isRequiredCover = false;//true
 let dudaAlias = data.siteId;//data.siteId;
 let importData = {};
 let thankYouPage = "thank-you";
-let dashboardPage = "dashboard";
-let registerPage = "register";
 let loginFrom;
 if(data.config.toggleThankyouPage)
 {
@@ -720,6 +718,15 @@ function validateScreeningQuestions() {
     });
 
     return isOk;
+}
+
+const DUPLICATE_REAPPLY_MESSAGE = 'You have already applied for this job.\n\nClick OK to submit another application, or Cancel to go back.';
+
+// Re-applying for the same job is allowed (#13514). The warning stays as a popup, but OK now
+// continues with the application instead of forcing the candidate away from the form. Reads a
+// new config key so site copy written for the old "OK takes you away" prompt is not inverted.
+function confirmReapply() {
+    return confirm(data.config.duplicateReapplyWarning || DUPLICATE_REAPPLY_MESSAGE);
 }
 
 function checkForDuplicate(candidateID) {
@@ -1682,19 +1689,11 @@ const main = (w) => {
                         candidateInfo.candidateID = u.candidate.candidateID;
 
                         return checkForDuplicate(candidateInfo.candidateID).then( exists => {
-                            if (exists) {
-                                if (confirm(data.config.duplicateWarning || 'DUPLICATE WARNING MESSAGE')) {
-                                    let link = window.location.href.includes(dudaAlias) ? `/site/${dudaAlias}/${dashboardPage}?preview=true&insitepreview=true&dm_device=desktop`:`/${registerPage}`;
-
-                                    window.location.href = link;
-                                } else {
-                                    window.location.reload();
-                                }
-
+                            if (exists && !confirmReapply()) {
                                 return Promise.reject();
-                            } else {
-                                return Promise.resolve(u);
                             }
+
+                            return Promise.resolve(u);
                         });
                     } else {
                         return shazamme.submit({
@@ -1916,14 +1915,10 @@ const main = (w) => {
         shazamme.currentUser().then( u => {
             if (u?.candidate) {
                 checkForDuplicate(u.candidate.candidateID).then( exists => {
-                    if (exists) {
-                        if (confirm(data.config.duplicateWarning || 'DUPLICATE WARNING MESSAGE')) {
-                            let link = window.location.href.includes(dudaAlias) ? `/site/${dudaAlias}/${dashboardPage}?preview=true&insitepreview=true&dm_device=desktop`:`/${dashboardPage}`;
+                    if (exists && !confirmReapply()) {
+                        buttonAction("hide");
+                        $(element).find('.fcLoader').removeClass('fcLoadingSeek');
 
-                            window.location.href = link;
-                        } else {
-                            window.location.reload();
-                        }
                         return;
                     }
 
@@ -2021,18 +2016,6 @@ const main = (w) => {
         let session = u?.candidate;
 
         showOrHideForms(session);
-
-        session?.candidateID && checkForDuplicate(session.candidateID).then( exists => {
-            if (exists) {
-                if (confirm(data.config.duplicateWarning || 'DUPLICATE WARNING MESSAGE')) {
-                    let link = window.location.href.includes(dudaAlias) ? `/site/${dudaAlias}/${dashboardPage}?preview=true&insitepreview=true&dm_device=desktop`:`/${dashboardPage}`;
-
-                    window.location.href = link;
-                } else {
-                    window.location.reload();
-                }
-            }
-        });
     }
 
     shazamme.currentUser().then( u => {
