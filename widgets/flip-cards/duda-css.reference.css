@@ -34,8 +34,10 @@
 .shm-flip-cards .shm-fc-sources { display: none; }
 
 .shm-flip-cards .shm-fc-grid { display: flex; flex-wrap: wrap; gap: var(--shm-fc-gap); margin: 0; padding: 0; }
-/* Hold one card's height until the script has built the cards, so the page doesn't jump */
-.shm-flip-cards:not(.is-ready) .shm-fc-grid { min-height: var(--shm-fc-minh-d, 320px); }
+/* Hold one card's height (the default for each breakpoint) until the script has built the cards, so the page doesn't jump */
+.shm-flip-cards:not(.is-ready) .shm-fc-grid { min-height: 380px; }
+@media (max-width: 1023px) { .shm-flip-cards:not(.is-ready) .shm-fc-grid { min-height: 340px; } }
+@media (max-width: 767px) { .shm-flip-cards:not(.is-ready) .shm-fc-grid { min-height: 320px; } }
 .shm-flip-cards.is-fill .shm-fc-grid { height: 100%; }
 
 .shm-flip-cards .shm-fc-card {
@@ -90,21 +92,14 @@
 .shm-flip-cards .is-flipped .shm-fc-back { visibility: visible; transition: visibility 0s linear 0s; }
 .shm-flip-cards .is-flipped .shm-fc-front { visibility: hidden; transition: visibility 0s linear var(--shm-fc-speed); }
 
-/* Fade instead of flip: the Fade setting, and visitors who ask for less motion */
+/* Fade instead of flip: the Fade setting, and visitors who ask for less motion (the script adds is-fade
+   while prefers-reduced-motion matches, so this one block covers both) */
 .shm-flip-cards.is-fade .shm-fc-inner { transform: none !important; transition: none; }
 .shm-flip-cards.is-fade .shm-fc-face { transition: opacity var(--shm-fc-speed) ease, visibility 0s linear var(--shm-fc-speed); }
 .shm-flip-cards.is-fade .shm-fc-back { transform: none; opacity: 0; }
 .shm-flip-cards.is-fade .shm-fc-front { transition: opacity var(--shm-fc-speed) ease, visibility 0s linear 0s; }
 .shm-flip-cards.is-fade .is-flipped .shm-fc-front { opacity: 0; transition: opacity var(--shm-fc-speed) ease, visibility 0s linear var(--shm-fc-speed); }
 .shm-flip-cards.is-fade .is-flipped .shm-fc-back { opacity: 1; transition: opacity var(--shm-fc-speed) ease, visibility 0s linear 0s; }
-@media (prefers-reduced-motion: reduce) {
-  .shm-flip-cards .shm-fc-inner { transform: none !important; transition: none; }
-  .shm-flip-cards .shm-fc-face { transition: opacity 200ms ease, visibility 0s linear 200ms; }
-  .shm-flip-cards .shm-fc-back { transform: none; opacity: 0; }
-  .shm-flip-cards .shm-fc-front { transition: opacity 200ms ease, visibility 0s linear 0s; }
-  .shm-flip-cards .is-flipped .shm-fc-front { opacity: 0; transition: opacity 200ms ease, visibility 0s linear 200ms; }
-  .shm-flip-cards .is-flipped .shm-fc-back { opacity: 1; transition: opacity 200ms ease, visibility 0s linear 0s; }
-}
 
 /* Front */
 .shm-flip-cards .shm-fc-front {
