@@ -57,7 +57,7 @@ describe('testimonials ensureDotsStyle', () => {
     expect(css).toContain('background-color:transparent!important;background-image:none!important;background-clip:content-box!important');
     expect(css).toContain('box-shadow:inset 0 0 0 1em currentColor!important;opacity:.4');
     expect(css).toContain('li.slick-active button::before{padding:.2em .5em!important;opacity:1}');
-    expect(css).toContain('ul.shm-dots-shaped.slideTwo-dots li.slick-active button::before{padding:.075em .6em!important}');
+    expect(css).toContain('ul.shm-dots-shaped.slideTwo-dots li.slick-active button::before{padding:.075em .45em!important}');
     expect(css).toContain('@media (prefers-reduced-motion: reduce){.shmTestimonial ul.shm-dots-shaped li button::before{transition:none!important}}');
     expect(document.querySelector('style')!.textContent).toBe(css);
   });
