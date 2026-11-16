@@ -103,7 +103,7 @@ var fill = toBool(cfg.fillColumn, false);
 
 function cardHtml(c, index) {
   var name = c.title || c.backHeading || ('Card ' + (index + 1));
-  var target = newTab ? ' target="_blank" rel="noopener noreferrer"' : '';
+  var target = newTab && !/^(mailto|tel):/i.test(c.link) ? ' target="_blank" rel="noopener noreferrer"' : '';
   var front = '';
   if (c.image) {
     front += '<img class="shm-fc-img" src="' + esc(c.image) + '" alt="' + esc(c.alt) + '" loading="lazy" decoding="async">';
@@ -204,13 +204,16 @@ function closeAll(except) {
 function wireFlip() {
   var pointerType = 'mouse';
   var pointerFocus = false;
+  var lastInput = 'pointer';
 
   on(root, 'pointerdown', function (e) {
     pointerType = e.pointerType || 'mouse';
     pointerFocus = true;
+    lastInput = 'pointer';
   });
   on(root, 'keydown', function (e) {
     pointerFocus = false;
+    lastInput = 'key';
     var card = cardOf(e.target);
     if (!card) { return; }
     if (e.key === 'Escape' || e.key === 'Esc') {
@@ -246,7 +249,10 @@ function wireFlip() {
   });
   on(root, 'pointerout', function (e) {
     var card = cardOf(e.target);
-    if (card && hoverFlip && e.pointerType === 'mouse' && !(e.relatedTarget && card.contains(e.relatedTarget))) { setFlipped(card, false); }
+    if (!card || !hoverFlip || e.pointerType !== 'mouse' || (e.relatedTarget && card.contains(e.relatedTarget))) { return; }
+    // A card a keyboard user has focused stays open when a parked mouse leaves it.
+    if (lastInput === 'key' && card.contains(document.activeElement)) { return; }
+    setFlipped(card, false);
   });
   on(root, 'click', function (e) {
     pointerFocus = false;
@@ -261,7 +267,6 @@ function wireFlip() {
     }
     if (onLink) { e.preventDefault(); }
     var clickType = e.pointerType || (e.detail === 0 ? 'synthetic' : pointerType);
-    pointerType = 'synthetic';
     if (flipped && clickType === 'mouse' && hoverFlip) { return; }
     setFlipped(card, !flipped);
   });

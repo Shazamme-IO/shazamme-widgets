@@ -22,11 +22,22 @@
   var NAME = "flip-cards";
   var TAG = "v0.1.57";
   var BUNDLE = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" + TAG + "/dist/" + NAME + "/0.1.0/widget.min.js";
-  function bundle() { return new Promise(function (res) {
-    if (window.ShazammeWidget && window.ShazammeWidget[NAME]) return res();
-    var s = document.createElement("script"); s.src = BUNDLE; s.onload = res; s.onerror = function () { console.error("[" + NAME + "] could not load " + BUNDLE); }; document.head.appendChild(s);
-  }); }
+  // One script tag per page, however many Flip Cards widgets share it.
+  var loads = window.__shmBundleLoads = window.__shmBundleLoads || {};
+  function bundle() {
+    if (window.ShazammeWidget && window.ShazammeWidget[NAME]) return Promise.resolve();
+    if (!loads[BUNDLE]) loads[BUNDLE] = new Promise(function (res, rej) {
+      var s = document.createElement("script"); s.src = BUNDLE; s.onload = res; s.onerror = rej; document.head.appendChild(s);
+    });
+    return loads[BUNDLE];
+  }
+  function fail(msg) {
+    var r = element.querySelector(".shm-flip-cards"); if (r) r.classList.add("is-ready");
+    console.error("[" + NAME + "] " + msg);
+  }
   bundle().then(function () {
-    window.ShazammeWidget[NAME]({ element: element, data: data, $: window.jQuery || window.$, shazamme: undefined });
-  });
+    var run = window.ShazammeWidget && window.ShazammeWidget[NAME];
+    if (typeof run !== "function") return fail("bundle loaded but did not register: " + BUNDLE);
+    run({ element: element, data: data, $: window.jQuery || window.$, shazamme: undefined });
+  }, function () { delete loads[BUNDLE]; fail("could not load " + BUNDLE); });
 })();

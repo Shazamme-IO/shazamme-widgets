@@ -178,6 +178,46 @@ describe('flip-cards bundle', () => {
     expect(flipped(card)).toBe(false);
   });
 
+  it('with hover flip off, a clicked card stays open when the mouse leaves', () => {
+    const el = mount([{ title: 'T', backText: 'b' }], { flipOnHover: 'false' });
+    const card = cardsOf(el)[0];
+    pointer(card, 'pointerover', 'mouse');
+    expect(flipped(card)).toBe(false);
+    pointer(card, 'pointerdown', 'mouse');
+    click(card);
+    expect(flipped(card)).toBe(true);
+    pointer(card, 'pointerout', 'mouse', { relatedTarget: document.body });
+    expect(flipped(card)).toBe(true);
+  });
+
+  it('a card opened from the keyboard stays open when a parked mouse leaves it', () => {
+    const el = mount([{ title: 'T', backText: 'b' }]);
+    const card = cardsOf(el)[0];
+    key(card, 'Tab');
+    card.focus();
+    expect(flipped(card)).toBe(true);
+    pointer(card, 'pointerout', 'mouse', { relatedTarget: document.body });
+    expect(flipped(card)).toBe(true);
+  });
+
+  it('a click with no pointer press (assistive tech) toggles even a hover-opened card', () => {
+    const el = mount([{ title: 'T', backText: 'b' }]);
+    const card = cardsOf(el)[0];
+    pointer(card, 'pointerover', 'mouse');
+    expect(flipped(card)).toBe(true);
+    click(card);
+    expect(flipped(card)).toBe(false);
+  });
+
+  it('cleans up the previous run even when the new markup has no grid', () => {
+    const el = mount(ONE);
+    const w = el as HTMLElement & { __shmFlipCardsCleanup?: () => void };
+    expect(typeof w.__shmFlipCardsCleanup).toBe('function');
+    el.querySelector('.shm-fc-grid')!.remove();
+    run(el, { cards: ONE });
+    expect(w.__shmFlipCardsCleanup).toBeUndefined();
+  });
+
   it('swaps aria-hidden so each side is exposed once', () => {
     const el = mount(ONE);
     const card = cardsOf(el)[0];
