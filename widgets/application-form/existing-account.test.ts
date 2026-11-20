@@ -131,7 +131,7 @@ describe('register(): what still counts as an invalid email', () => {
 
     await t.register();
     expect(t.firebase.validateEmail).toHaveBeenCalledWith('candidate@example.com');
-    expect(t.firebase.create.mock.calls[0][0]).toBe('candidate@example.com');
+    expect(t.firebase.create).toHaveBeenCalledWith('candidate@example.com', 'pw');
   });
 });
 
