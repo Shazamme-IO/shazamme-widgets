@@ -1,5 +1,29 @@
-// Job Application (application-form.js) — resume file-type check + typed resume — built 2026-11-11 14:55 AEDT (03:55 UTC) on Duda v914
+// Job Application (application-form.js) — existing-account email fix (duda-widget #25) on top of resume file-type check + typed resume — built 2026-11-20 14:48 AEDT (03:48 UTC)
 let action = new Action();
+
+// Email checks (#25): only auth/invalid-email means the address is wrong; an
+// existing Shazamme login (often from another Shazamme site) is not an invalid email.
+const normalizeEmail = (value) => String(value ?? '').trim().toLowerCase();
+const isInvalidEmailError = (err) => err?.code === 'auth/invalid-email';
+const isEmailInUseError = (err) => err?.code === 'auth/email-already-in-use';
+
+function promptExistingAccount(email) {
+    const el = $(element);
+
+    el.find('.submitApplicationBtn, .applyText').css('pointer-events', 'auto');
+    el.find('.applyText').show();
+    setSubmitting(false);
+    el.find('#emailLogin').val(email);
+    el.find('.shmLoginContainer').show();
+
+    if (data.config.useSmartLogin) {
+        el.find('.smart-login-register').hide();
+        el.find('.smart-login-login').show();
+    }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    alert(data.config.warningEmailExists || 'You already have an account with this email address. Please log in, or use "Forgot password" to reset your password, then apply again.');
+}
 
 //THIS WILL HOLD THE UPLOADED FILES
 let uploadedFiles = {};
@@ -1007,14 +1031,33 @@ const main = (w) => {
             return Promise.reject();
         }
 
+        candidateInfo = { ...candidateInfo, eMail: normalizeEmail(candidateInfo.eMail) };
+        $(element).find('#emailAddress').val(candidateInfo.eMail);
+
         return shazamme
             .firebase()
             .validateEmail(candidateInfo.eMail)
-            .then( () => {
+            .catch( err => {
+                if (isInvalidEmailError(err)) {
+                    return Promise.reject(err);
+                }
+
+                // Not a verdict on the address (rate limit, network): the create step decides.
+                w.warn('Email check skipped', err?.code);
+
+                return Promise.resolve([]);
+            })
+            .then( signInMethods => {
                 //If complete na yung details ng candidate add candidate ID
-                candidateInfo.candidateID = shazamme.uuid();
+                candidateInfo = { ...candidateInfo, candidateID: shazamme.uuid() };
 
                 if (data.config.showPassword || !data.config.useAnonymous) {
+                    if (signInMethods?.length > 0) {
+                        promptExistingAccount(candidateInfo.eMail);
+
+                        return Promise.reject({ code: 'auth/email-already-in-use', handled: true });
+                    }
+
                     //REGISTER
                     return shazamme.firebase()
                         .create(candidateInfo.eMail, candidateInfo.password)
@@ -1023,24 +1066,10 @@ const main = (w) => {
                                 firebaseUserID: u.uid,
                           }))
                         .catch( err => {
-                            buttonAction("hide");
-                            setSubmitting(false);
+                            if (isEmailInUseError(err)) {
+                                promptExistingAccount(candidateInfo.eMail);
 
-                            if (err.code === 'auth/invalid-email') {
-                                alert(data.config.warningEmail || "Please use a valid email address");
-                            } else if (err.code == "auth/email-already-in-use") {
-                                if (data.config.showPassword) {
-                                    if (window.confirm('The email is already an existing account please login instead.')){
-                                        window.scrollTo({
-                                            top: 0,
-                                            behavior: 'smooth'
-                                        });
-
-                                        $(element).find(".submitApplicationBtn").css("pointer-events","auto");
-                                        $(element).find(".applyText").show();
-                                        setSubmitting(false);
-                                    };
-                                }
+                                return Promise.reject({ ...err, handled: true });
                             }
 
                             return Promise.reject(err);
@@ -1053,10 +1082,17 @@ const main = (w) => {
                     });
                 }
             })
-            .catch( () => {
+            .catch( err => {
                 buttonAction("hide");
                 setSubmitting(false);
-                alert(data.config.warningEmail || 'Please supply a valid email.');
+
+                if (!err?.handled) {
+                    w.warn('Register failed', err?.code);
+
+                    alert(isInvalidEmailError(err)
+                        ? (data.config.warningEmail || 'Please supply a valid email.')
+                        : (data.config.warningRegister || err?.msg || err?.message || 'We could not create your account. Please try again.'));
+                }
 
                 return Promise.reject();
             });

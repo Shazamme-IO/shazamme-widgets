@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 6eac75dcfeb9. Registers window.ShazammeWidget["<name>"].
+ * Build 5da22ef60b7a. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -69,6 +69,23 @@ var __shazWidgetExport = (() => {
     ensureScriptLoader();
     var data = ctx.data, element = ctx.element, $ = ctx.$ || window.jQuery || window.$, shazamme = ctx.shazamme || window.shazamme;
     let action = new Action();
+    const normalizeEmail = (value) => String(value != null ? value : "").trim().toLowerCase();
+    const isInvalidEmailError = (err) => (err == null ? void 0 : err.code) === "auth/invalid-email";
+    const isEmailInUseError = (err) => (err == null ? void 0 : err.code) === "auth/email-already-in-use";
+    function promptExistingAccount(email) {
+      const el = $(element);
+      el.find(".submitApplicationBtn, .applyText").css("pointer-events", "auto");
+      el.find(".applyText").show();
+      setSubmitting(false);
+      el.find("#emailLogin").val(email);
+      el.find(".shmLoginContainer").show();
+      if (data.config.useSmartLogin) {
+        el.find(".smart-login-register").hide();
+        el.find(".smart-login-login").show();
+      }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      alert(data.config.warningEmailExists || 'You already have an account with this email address. Please log in, or use "Forgot password" to reset your password, then apply again.');
+    }
     let uploadedFiles = {};
     let isRequiredResume = false;
     let isRequiredCover = false;
@@ -811,30 +828,28 @@ Typed by the candidate on the website, ${(/* @__PURE__ */ new Date()).toLocaleDa
           alert(data.config.warningPassword || "Please follow the password pattern!");
           return Promise.reject();
         }
-        return shazamme.firebase().validateEmail(candidateInfo.eMail).then(() => {
-          candidateInfo.candidateID = shazamme.uuid();
+        candidateInfo = { ...candidateInfo, eMail: normalizeEmail(candidateInfo.eMail) };
+        $(element).find("#emailAddress").val(candidateInfo.eMail);
+        return shazamme.firebase().validateEmail(candidateInfo.eMail).catch((err) => {
+          if (isInvalidEmailError(err)) {
+            return Promise.reject(err);
+          }
+          w.warn("Email check skipped", err == null ? void 0 : err.code);
+          return Promise.resolve([]);
+        }).then((signInMethods) => {
+          candidateInfo = { ...candidateInfo, candidateID: shazamme.uuid() };
           if (data.config.showPassword || !data.config.useAnonymous) {
+            if ((signInMethods == null ? void 0 : signInMethods.length) > 0) {
+              promptExistingAccount(candidateInfo.eMail);
+              return Promise.reject({ code: "auth/email-already-in-use", handled: true });
+            }
             return shazamme.firebase().create(candidateInfo.eMail, candidateInfo.password).then((u) => Promise.resolve({
               ...candidateInfo,
               firebaseUserID: u.uid
             })).catch((err) => {
-              buttonAction("hide");
-              setSubmitting(false);
-              if (err.code === "auth/invalid-email") {
-                alert(data.config.warningEmail || "Please use a valid email address");
-              } else if (err.code == "auth/email-already-in-use") {
-                if (data.config.showPassword) {
-                  if (window.confirm("The email is already an existing account please login instead.")) {
-                    window.scrollTo({
-                      top: 0,
-                      behavior: "smooth"
-                    });
-                    $(element).find(".submitApplicationBtn").css("pointer-events", "auto");
-                    $(element).find(".applyText").show();
-                    setSubmitting(false);
-                  }
-                  ;
-                }
+              if (isEmailInUseError(err)) {
+                promptExistingAccount(candidateInfo.eMail);
+                return Promise.reject({ ...err, handled: true });
               }
               return Promise.reject(err);
             });
@@ -844,10 +859,13 @@ Typed by the candidate on the website, ${(/* @__PURE__ */ new Date()).toLocaleDa
               isValidated: false
             });
           }
-        }).catch(() => {
+        }).catch((err) => {
           buttonAction("hide");
           setSubmitting(false);
-          alert(data.config.warningEmail || "Please supply a valid email.");
+          if (!(err == null ? void 0 : err.handled)) {
+            w.warn("Register failed", err == null ? void 0 : err.code);
+            alert(isInvalidEmailError(err) ? data.config.warningEmail || "Please supply a valid email." : data.config.warningRegister || (err == null ? void 0 : err.msg) || (err == null ? void 0 : err.message) || "We could not create your account. Please try again.");
+          }
           return Promise.reject();
         });
       };
