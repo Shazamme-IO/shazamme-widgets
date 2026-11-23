@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
-// AU Salary Calculator. Two layers: the pure tax module (the block between the TAX MODULE markers
-// in legacy.js, extracted and run on its own) checked against worked examples done by hand from the
-// 2026-27 rate tables and the ATO HELP examples, and the built bundle running in jsdom against the Handlebars-rendered shell.
+// AU Salary Calculator: the built bundle (dist) running in jsdom against the Handlebars-rendered shell,
+// the way Duda's loader stub runs it. The tax maths is covered on its own in tax.test.ts.
 
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -12,135 +11,25 @@ const here = dirname(fileURLToPath(import.meta.url));
 const NAME = 'salary-calculator-au';
 const VERSION = JSON.parse(readFileSync(join(here, '..', '..', 'package.json'), 'utf8')).version as string;
 const BUNDLE = readFileSync(join(here, '..', '..', 'dist', NAME, VERSION, 'widget.min.js'), 'utf8');
-const SOURCE = readFileSync(join(here, 'legacy.js'), 'utf8');
+const SETTINGS_SRC = readFileSync(join(here, 'settings.ts'), 'utf8');
 const HBS = readFileSync(join(here, 'content.hbs'), 'utf8');
 
+// A classic <script> makes the bundle's top-level `var` global; strict-mode eval keeps it local.
+// Assign it to window instead, leaving the bundle strict.
+const GLOBAL_BUNDLE = BUNDLE.replace('"use strict";var __shazWidgetExport=', '"use strict";window.__shazWidgetExport=');
+if (GLOBAL_BUNDLE === BUNDLE) throw new Error('bundle prologue changed: update GLOBAL_BUNDLE in this test');
+
 type Win = Record<string, any>;
-type Dict = Record<string, string>;
-
-const tax = new Function(
-  SOURCE.match(/\/\/ ---- TAX MODULE START ----([\s\S]*?)\/\/ ---- TAX MODULE END ----/)![1] +
-    '; return { TAX_CONFIG, calculateAuTax, annualFromPay, perPeriod, helpFor, medicareFor, litoFor };',
-)() as { TAX_CONFIG: any; calculateAuTax: (i: any, c: any) => Record<string, number>; annualFromPay: (...a: any[]) => number; perPeriod: (...a: any[]) => Record<string, number>; helpFor: (...a: any[]) => number; medicareFor: (...a: any[]) => number; litoFor: (...a: any[]) => number };
-const calc = (annualAmount: number, extra: Record<string, unknown> = {}) =>
-  tax.calculateAuTax({ annualAmount, residency: 'resident', help: false, packageIncludesSuper: false, ...extra }, tax.TAX_CONFIG);
-
-describe('au tax module, worked examples (2026-27, hand calculated from the ATO rate tables)', () => {
-  it('resident 60,000: 4,020 + 30c over 45,000, less 100 LITO, plus 2% Medicare', () => {
-    const r = calc(60000);
-    expect(r.incomeTax).toBe(8420); // 8,520 - (325 - 1.5% x 15,000)
-    expect(r.medicare).toBe(1200);
-    expect(r.superAmount).toBe(7200);
-    expect(r.net).toBe(50380);
-  });
-
-  it('resident 120,000: no LITO', () => {
-    const r = calc(120000);
-    expect(r.incomeTax).toBe(26520); // 4,020 + 75,000 x 30%
-    expect(r.medicare).toBe(2400);
-    expect(r.net).toBe(91080);
-    expect(r.superAmount).toBe(14400);
-  });
-
-  it('resident 200,000: top bracket', () => {
-    const r = calc(200000);
-    expect(r.incomeTax).toBe(55870); // 51,370 + 10,000 x 45%
-    expect(r.medicare).toBe(4000);
-    expect(r.net).toBe(140130);
-  });
-
-  it('120,000 package including super backs the 12% out of the entered amount', () => {
-    const r = calc(120000, { packageIncludesSuper: true });
-    expect(r.gross).toBe(107142.86); // 120,000 / 1.12
-    expect(r.superAmount).toBe(12857.14);
-    expect(r.totalPackage).toBe(120000);
-    expect(r.incomeTax).toBe(22662.86); // 4,020 + 62,142.86 x 30%
-    expect(r.medicare).toBe(2142.86);
-    expect(r.net).toBe(82337.14);
-  });
-
-  it('HELP on at 120,000: 15c over 69,528', () => {
-    const r = calc(120000, { help: true });
-    expect(r.help).toBe(7570.8);
-    expect(r.net).toBe(83509.2);
-  });
-
-  it('HELP matches the three examples the ATO publishes for 2026-27', () => {
-    expect(calc(86380, { help: true }).help).toBe(2527.8);
-    expect(calc(137064, { help: true }).help).toBe(10276.99);
-    expect(calc(254780, { help: true }).help).toBe(25478);
-    expect(calc(69528, { help: true }).help).toBe(0);
-  });
-
-  it('working holiday maker 50,000: 15c to 45,000 then 30c, no Medicare, no LITO', () => {
-    const r = calc(50000, { residency: 'whm' });
-    expect(r.incomeTax).toBe(8250); // 6,750 + 5,000 x 30%
-    expect(r.medicare).toBe(0);
-    expect(r.net).toBe(41750);
-  });
-
-  it('foreign resident 90,000: 30c from the first dollar, no Medicare', () => {
-    const r = calc(90000, { residency: 'foreign' });
-    expect(r.incomeTax).toBe(27000);
-    expect(r.medicare).toBe(0);
-    expect(r.net).toBe(63000);
-    expect(calc(200000, { residency: 'foreign' }).incomeTax).toBe(60850 + 4500);
-  });
-
-  it('Medicare levy phases in over the low-income thresholds and LITO tapers', () => {
-    expect(tax.medicareFor(28011, tax.TAX_CONFIG)).toBe(0);
-    expect(tax.medicareFor(30000, tax.TAX_CONFIG)).toBeCloseTo(198.9, 6);
-    expect(tax.medicareFor(35013, tax.TAX_CONFIG)).toBeCloseTo(700.2, 6);
-    expect(tax.medicareFor(36000, tax.TAX_CONFIG)).toBe(720);
-    const r = calc(30000);
-    expect(r.incomeTax).toBe(1070); // 1,770 - 700 LITO
-    expect(r.medicare).toBe(198.9);
-    expect(r.net).toBe(28731.1);
-    expect(tax.litoFor(40000, tax.TAX_CONFIG)).toBe(575);
-    expect(tax.litoFor(50000, tax.TAX_CONFIG)).toBe(250);
-    expect(calc(50000).incomeTax).toBe(5270);
-    expect(calc(18200).incomeTax).toBe(0);
-    expect(calc(10000).net).toBe(10000);
-  });
-
-  it('caps employer super at the maximum contribution base', () => {
-    expect(calc(300000).superAmount).toBe(32499.6); // 270,830 x 12%
-    const r = calc(400000, { packageIncludesSuper: true });
-    expect(r.superAmount).toBe(32499.6);
-    expect(r.gross).toBe(367500.4);
-  });
-
-  it('ignores bad input and unknown residency', () => {
-    expect(calc(-1).net).toBe(0);
-    expect(calc(60000, { residency: 'nonsense' }).net).toBe(50380);
-  });
-
-  it('turns every pay period into an annual figure and splits the year', () => {
-    const c = tax.TAX_CONFIG;
-    expect(tax.annualFromPay(40, 'hourly', 38, 5, c)).toBe(79040);
-    expect(tax.annualFromPay(300, 'daily', 38, 5, c)).toBe(78000);
-    expect(tax.annualFromPay(1500, 'weekly', 38, 5, c)).toBe(78000);
-    expect(tax.annualFromPay(6500, 'monthly', 38, 5, c)).toBe(78000);
-    expect(tax.perPeriod(78000, 5, c)).toEqual({ year: 78000, month: 6500, fortnight: 3000, day: 300 });
-  });
-
-  it('keeps the tax year, the sources and the unconfirmed flags in TAX_CONFIG', () => {
-    expect(tax.TAX_CONFIG.taxYear).toBe('2026-27');
-    expect(tax.TAX_CONFIG.superRate).toBe(0.12);
-    expect(SOURCE).toContain('https://www.ato.gov.au/tax-rates-and-codes/study-and-training-support-loans-rates-and-repayment-thresholds');
-    expect(SOURCE).toContain('https://www.ato.gov.au/tax-rates-and-codes/schedule-15-tax-table-for-working-holiday-makers');
-    expect(SOURCE.match(/UNCONFIRMED for 2026-27/g)!.length).toBe(2);
-  });
-});
+type Dict = Record<string, unknown>;
 
 // What Duda's Handlebars renders from content.hbs: {{key}} becomes the (escaped) setting, or nothing.
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-const render = (config: Dict) => HBS.replace(/\{\{(\w+)\}\}/g, (_m, k) => esc(config[k] ?? ''));
+const render = (config: Dict) => HBS.replace(/\{\{(\w+)\}\}/g, (_m, k) => esc(String(config[k] ?? '')));
 
 function load() {
   const win = window as unknown as Win;
   delete win.ShazammeWidget;
-  win.eval(BUNDLE);
+  win.eval(GLOBAL_BUNDLE);
   return win;
 }
 
@@ -447,16 +336,153 @@ describe('au salary calculator bundle', () => {
   });
 });
 
+
+describe('au salary calculator, modern runtime', () => {
+  it('needs no Shazamme SDK: no shazamme global, no SDK url, no loader in the bundle', () => {
+    expect((window as unknown as Win).shazamme).toBeUndefined();
+    expect(BUNDLE).not.toContain('sdk.shazamme.io');
+    expect(BUNDLE).not.toContain('__shazSDKPromise');
+    const el = mount();
+    enter(el, { amount: '60000' });
+    calculate(el);
+    expect(cell(el, 'net', 'year')).toBe('$50,380.00');
+  });
+
+  it('accepts real booleans and numbers as Duda sends them, as well as strings', () => {
+    const el = mount({ showTaxBreakdown: false, defaultAmount: 60000, showTaxOptions: false });
+    expect(visibleRows(el)).toEqual(['gross', 'net']);
+    expect(isHidden(el.querySelector('[data-shm-options]'))).toBe(true);
+    expect(cell(el, 'net', 'year')).toBe('$50,380.00');
+  });
+
+  it('announces the take-home pay in a polite live region and keeps the results table out of it', () => {
+    const el = mount();
+    const live = el.querySelector('[data-shm-live]') as HTMLElement;
+    expect(live.getAttribute('role')).toBe('status');
+    expect(live.getAttribute('aria-live')).toBe('polite');
+    expect(el.querySelector('[data-shm-results]')!.closest('[aria-live]')).toBeNull();
+    expect(live.textContent).toBe('');
+    enter(el, { amount: '60000' });
+    calculate(el);
+    expect(live.textContent).toContain('$50,380.00');
+    expect(live.textContent).toContain('Take-home pay');
+    calculate(el);
+    enter(el, { amount: '' });
+    calculate(el);
+    expect(live.textContent).toBe('');
+  });
+
+  it('marks the field behind an error and links it to the message', () => {
+    const el = mount();
+    calculate(el);
+    const err = el.querySelector('[data-shm-error]') as HTMLElement;
+    expect(err.getAttribute('role')).toBe('alert');
+    expect(f(el, 'amount').getAttribute('aria-invalid')).toBe('true');
+    expect(f(el, 'amount').getAttribute('aria-describedby')).toBe(err.id);
+    enter(el, { amount: '60000' });
+    expect(f(el, 'amount').hasAttribute('aria-invalid')).toBe(false);
+    expect(f(el, 'amount').hasAttribute('aria-describedby')).toBe(false);
+    enter(el, { amount: '20', period: 'hourly', hours: '0' });
+    calculate(el);
+    expect(f(el, 'hours').getAttribute('aria-invalid')).toBe('true');
+    expect(f(el, 'amount').hasAttribute('aria-invalid')).toBe(false);
+  });
+
+  it('gives every input a visible label wrapping it, and no two copies share an error id', () => {
+    document.body.innerHTML = '<div id="a"></div><div id="b"></div>';
+    load();
+    const a = mountOne(document.getElementById('a')!, {});
+    const b = mountOne(document.getElementById('b')!, {});
+    for (const input of a.querySelectorAll('[data-f]')) {
+      const wrapper = input.closest('label');
+      expect(wrapper, input.getAttribute('data-f')!).not.toBeNull();
+      expect(wrapper!.textContent!.trim().length).toBeGreaterThan(0);
+    }
+    expect(a.querySelector('[data-shm-error]')!.id).not.toBe(b.querySelector('[data-shm-error]')!.id);
+  });
+
+  it('a re-run on the same element cancels the previous run: no stacked handlers, no stray timer', () => {
+    vi.useFakeTimers();
+    const el = mount();
+    enter(el, { amount: '60000' });
+    calculate(el);
+    const input = f(el, 'amount');
+    input.value = '1';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    (window as unknown as Win).ShazammeWidget[NAME]({ element: el, data: { config: { calcButton: 'Go' } } });
+    const before = cell(el, 'gross', 'year');
+    vi.advanceTimersByTime(1000);
+    vi.useRealTimers();
+    expect(cell(el, 'gross', 'year')).toBe(before);
+    expect(el.querySelector('[data-shm-calc]')!.textContent).toBe('Go');
+  });
+
+  it('announces again when Calculate is pressed twice with the same values, and stays quiet on the first load', () => {
+    const quiet = mount({ defaultAmount: 60000 });
+    expect((quiet.querySelector('[data-shm-live]') as HTMLElement).textContent).toBe('');
+    expect(cell(quiet, 'net', 'year')).not.toBe('');
+    const el = mount();
+    const live = el.querySelector('[data-shm-live]') as HTMLElement;
+    enter(el, { amount: '60000' });
+    calculate(el);
+    const first = live.textContent;
+    calculate(el);
+    expect(live.textContent).not.toBe(first);
+    expect(live.textContent!.trim()).toBe(first!.trim());
+  });
+
+  it('removes its listeners itself on a re-run, without relying on AbortSignal support', () => {
+    const el = mount();
+    const root = el.querySelector('[data-shm-salary]') as HTMLElement;
+    const added: string[] = [];
+    const removed: string[] = [];
+    const add = root.addEventListener.bind(root);
+    const remove = root.removeEventListener.bind(root);
+    root.addEventListener = ((t: string, h: any, o?: any) => { added.push(t); return add(t, h, o); }) as typeof root.addEventListener;
+    root.removeEventListener = ((t: string, h: any, o?: any) => { removed.push(t); return remove(t, h, o); }) as typeof root.removeEventListener;
+    (window as unknown as Win).ShazammeWidget[NAME]({ element: el, data: { config: {} } });
+    expect(removed.sort()).toEqual(['change', 'click', 'input', 'keydown']);
+    expect(added.sort()).toEqual(['change', 'click', 'input', 'keydown']);
+  });
+
+  it('re-running after the editor replaces the markup binds the new markup once', () => {
+    const el = mount();
+    const win = window as unknown as Win;
+    el.innerHTML = render({ title: 'Edited' });
+    win.ShazammeWidget[NAME]({ element: el, data: { config: { title: 'Edited' }, inEditor: true } });
+    expect(el.querySelector('.shm-sc-title')!.textContent).toBe('Edited');
+    enter(el, { amount: '60000' });
+    calculate(el);
+    expect(cell(el, 'net', 'year')).toBe('$50,380.00');
+  });
+});
+
+describe('au salary calculator super wording', () => {
+  it('fills the {superRate} token in an edited label and keeps the super line off when showSuper is false', () => {
+    const el = mount({ rowSuper: 'Super at {superRate}', showSuper: 'false' });
+    expect(el.querySelector('[data-row="superAmount"] th')!.textContent).toBe('Super at 12%');
+    enter(el, { amount: '120000', superIncluded: true });
+    calculate(el);
+    expect(visibleRows(el)).toEqual(['gross', 'incomeTax', 'medicare', 'net']);
+  });
+});
+
 describe('au salary calculator settings', () => {
   const prompts = ['1-content-labels', '2-content-results', '3-content-options'].map((n) => readFileSync(join(here, `duda-ai-prompt-${n}.md`), 'utf8')).join('\n');
   const promptKeys = new Set([...prompts.matchAll(/\| key: (\w+)/g)].map((m) => m[1]));
 
-  it('lists in the Content Editor prompts every key the JS and the HTML read, and no others', () => {
-    const jsKeys = new Set<string>([...SOURCE.matchAll(/cfg\.(\w+)/g)].map((m) => m[1]));
-    const defaults = SOURCE.match(/var DEFAULTS = \{([\s\S]*?)\n\};/)![1];
-    for (const m of defaults.matchAll(/^\s{2}(\w+):/gm)) jsKeys.add(m[1]);
-    for (const m of HBS.matchAll(/\{\{(\w+)\}\}/g)) jsKeys.add(m[1]);
-    expect([...jsKeys].sort()).toEqual([...promptKeys].sort());
+  it('lists in the Content Editor prompts every key the code and the HTML read, and no others', () => {
+    const keys = new Set<string>([...SETTINGS_SRC.matchAll(/config\.(\w+)/g)].map((m) => m[1]));
+    const defaults = SETTINGS_SRC.match(/DEFAULT_LABELS = \{([\s\S]*?)\n\} as const/)![1];
+    for (const m of defaults.matchAll(/^\s{2}(\w+):/gm)) keys.add(m[1]);
+    for (const m of HBS.matchAll(/\{\{(\w+)\}\}/g)) keys.add(m[1]);
+    expect([...keys].sort()).toEqual([...promptKeys].sort());
+  });
+
+  it('keeps settings.json in step with the prompts and declares that no SDK is needed', () => {
+    const manifest = JSON.parse(readFileSync(join(here, 'settings.json'), 'utf8')) as { sdk: boolean; fields: { key: string }[] };
+    expect(manifest.sdk).toBe(false);
+    expect(manifest.fields.map((x) => x.key).sort()).toEqual([...promptKeys].sort());
   });
 
   it('uses root Handlebars keys only, no blocks and no config prefix', () => {

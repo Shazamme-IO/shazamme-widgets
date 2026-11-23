@@ -9,7 +9,7 @@
 // that kills the whole widget.
 //
 // This loads the salary-calculator-uk bundle from the CDN. The widget needs no
-// Shazamme SDK (.no-sdk), so this stub neither loads nor waits for it. Future widget updates ship from git -> CDN;
+// Shazamme SDK, so this stub neither loads nor waits for it. Future widget updates ship from git -> CDN;
 // this paste never changes. HTML + CSS remain in the Duda Content/CSS tabs.
 // ===========================================================================
 (function () {

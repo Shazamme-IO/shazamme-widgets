@@ -8,7 +8,13 @@ import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const noSdk = (w: string) => existsSync(join(here, w, '.no-sdk'));
+// An index.ts widget declares it needs no Shazamme SDK with "sdk": false in its settings.json
+// (the build already bundles an index.ts widget without any SDK step); a legacy.js port uses an empty .no-sdk file.
+function needsNoSdk(w: string): boolean {
+  const file = join(here, w, 'settings.json');
+  return existsSync(file) && (JSON.parse(readFileSync(file, 'utf8')) as { sdk?: boolean }).sdk === false;
+}
+const noSdk = (w: string) => existsSync(join(here, w, '.no-sdk')) || needsNoSdk(w);
 
 const stubs = readdirSync(here)
   .filter((w) => existsSync(join(here, w, 'duda-paste.js')))

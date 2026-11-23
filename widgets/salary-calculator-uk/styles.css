@@ -45,3 +45,5 @@
 
 .shm-salary-uk .shm-sc-note { margin: 16px 0 0; color: #4a5560; font-size: 13px; text-align: left; }
 .shm-salary-uk .shm-sc-disclaimer { margin: 8px 0 0; color: #4a5560; font-size: 13px; line-height: 1.5; text-align: left; }
+
+.shm-salary-uk .shm-sc-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }

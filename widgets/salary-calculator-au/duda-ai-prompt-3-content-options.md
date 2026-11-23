@@ -1,4 +1,4 @@
-Build the Content Editor for this widget. Create one tab, "Options". Keep the keys exactly as written. Toggles come through as the text true or false.
+Build the Content Editor for this widget. Create one tab, "Options". Keep the keys exactly as written. Toggles come through as true or false (the widget accepts a real boolean or the text).
 
 **Tab: Options**
 

@@ -1,0 +1,327 @@
+{
+  "_comment": "Self-documenting settings manifest (not a Duda-imposed format). Each entry is one Content Editor field read off data.config.<key>. Duda sends text as strings and toggles as booleans (or the text true/false); settings.ts accepts both. A blank field is not sent and uses its default. Generated from the duda-ai-prompt-1..3 files, which the settings test keeps in step.",
+  "widget": "salary-calculator-au",
+  "sdk": false,
+  "fields": [
+    {
+      "key": "title",
+      "label": "Title",
+      "type": "text",
+      "default": "AU Salary Calculator",
+      "help": "The heading above the calculator."
+    },
+    {
+      "key": "intro",
+      "label": "Intro text",
+      "type": "textarea",
+      "default": "Work out your take-home pay. Rates are for the {taxYear} financial year.",
+      "help": "Short line under the title. Type {taxYear} to show the tax year automatically."
+    },
+    {
+      "key": "payHeading",
+      "label": "Pay section heading",
+      "type": "text",
+      "default": "Your pay"
+    },
+    {
+      "key": "payAmountLabel",
+      "label": "Pay amount label",
+      "type": "text",
+      "default": "Pay amount ($)",
+      "help": "Include the currency symbol."
+    },
+    {
+      "key": "payPeriodLabel",
+      "label": "Pay period label",
+      "type": "text",
+      "default": "Pay period"
+    },
+    {
+      "key": "periodHourly",
+      "label": "Period option: hourly",
+      "type": "text",
+      "default": "Hourly"
+    },
+    {
+      "key": "periodDaily",
+      "label": "Period option: daily",
+      "type": "text",
+      "default": "Daily"
+    },
+    {
+      "key": "periodWeekly",
+      "label": "Period option: weekly",
+      "type": "text",
+      "default": "Weekly"
+    },
+    {
+      "key": "periodMonthly",
+      "label": "Period option: monthly",
+      "type": "text",
+      "default": "Monthly"
+    },
+    {
+      "key": "periodAnnual",
+      "label": "Period option: annual",
+      "type": "text",
+      "default": "Annual"
+    },
+    {
+      "key": "hoursLabel",
+      "label": "Hours per week label",
+      "type": "text",
+      "default": "Hours per week"
+    },
+    {
+      "key": "daysLabel",
+      "label": "Days per week label",
+      "type": "text",
+      "default": "Days per week"
+    },
+    {
+      "key": "taxOptionsTitle",
+      "label": "Tax options heading",
+      "type": "text",
+      "default": "Tax options"
+    },
+    {
+      "key": "residencyLabel",
+      "label": "Residency label",
+      "type": "text",
+      "default": "Tax residency"
+    },
+    {
+      "key": "residencyResident",
+      "label": "Residency option: resident",
+      "type": "text",
+      "default": "Australian resident"
+    },
+    {
+      "key": "residencyForeign",
+      "label": "Residency option: foreign resident",
+      "type": "text",
+      "default": "Foreign resident"
+    },
+    {
+      "key": "residencyWhm",
+      "label": "Residency option: working holiday maker",
+      "type": "text",
+      "default": "Working holiday maker"
+    },
+    {
+      "key": "helpLabel",
+      "label": "Study loan label",
+      "type": "text",
+      "default": "I have a HELP or study loan"
+    },
+    {
+      "key": "superIncludedLabel",
+      "label": "Package includes super label",
+      "type": "text",
+      "default": "My package includes super"
+    },
+    {
+      "key": "superIncludedHelp",
+      "label": "Package includes super help text",
+      "type": "textarea",
+      "default": "The amount I entered already includes employer super. It is taken out before tax.",
+      "help": "Small text under the option."
+    },
+    {
+      "key": "calcButton",
+      "label": "Calculate button text",
+      "type": "text",
+      "default": "Calculate"
+    },
+    {
+      "key": "resultsHeading",
+      "label": "Results heading",
+      "type": "text",
+      "default": "Your estimated pay"
+    },
+    {
+      "key": "tilesHeading",
+      "label": "Take-home summary heading",
+      "type": "text",
+      "default": "Take-home pay",
+      "help": "Shown above the four take-home boxes."
+    },
+    {
+      "key": "colYear",
+      "label": "Column: year",
+      "type": "text",
+      "default": "Year"
+    },
+    {
+      "key": "colMonth",
+      "label": "Column: month",
+      "type": "text",
+      "default": "Month"
+    },
+    {
+      "key": "colFortnight",
+      "label": "Column: fortnight",
+      "type": "text",
+      "default": "Fortnight"
+    },
+    {
+      "key": "colDay",
+      "label": "Column: day",
+      "type": "text",
+      "default": "Day"
+    },
+    {
+      "key": "rowPackage",
+      "label": "Row: total package",
+      "type": "text",
+      "default": "Total package (including super)",
+      "help": "Only shown when \"My package includes super\" is ticked."
+    },
+    {
+      "key": "rowGross",
+      "label": "Row: gross salary",
+      "type": "text",
+      "default": "Gross salary"
+    },
+    {
+      "key": "rowIncomeTax",
+      "label": "Row: income tax",
+      "type": "text",
+      "default": "Income tax"
+    },
+    {
+      "key": "rowMedicare",
+      "label": "Row: Medicare levy",
+      "type": "text",
+      "default": "Medicare levy"
+    },
+    {
+      "key": "rowHelp",
+      "label": "Row: study loan repayment",
+      "type": "text",
+      "default": "HELP or study loan repayment"
+    },
+    {
+      "key": "rowTakeHome",
+      "label": "Row: take-home pay",
+      "type": "text",
+      "default": "Take-home pay"
+    },
+    {
+      "key": "rowSuper",
+      "label": "Row: employer super",
+      "type": "text",
+      "default": "Employer super ({superRate}, paid on top)",
+      "help": "Type {superRate} to show the super rate automatically."
+    },
+    {
+      "key": "errorAmount",
+      "label": "Message: amount missing",
+      "type": "text",
+      "default": "Enter a pay amount greater than zero."
+    },
+    {
+      "key": "errorHours",
+      "label": "Message: hours not valid",
+      "type": "text",
+      "default": "Enter hours per week between 1 and 168."
+    },
+    {
+      "key": "errorDays",
+      "label": "Message: days not valid",
+      "type": "text",
+      "default": "Enter days per week between 1 and 7."
+    },
+    {
+      "key": "taxYearNote",
+      "label": "Tax year note",
+      "type": "text",
+      "default": "Based on {taxYear} tax rates.",
+      "help": "Small line under the results. Type {taxYear} to show the tax year automatically."
+    },
+    {
+      "key": "disclaimerText",
+      "label": "Guide-only statement",
+      "type": "textarea",
+      "default": "This calculator is a guide only. It estimates take-home pay from the standard {taxYear} Australian rates and does not allow for the Medicare levy surcharge, family or senior thresholds, other offsets, salary sacrifice, bonuses or other income. Your actual pay may differ. Some {taxYear} thresholds are still awaiting final legislation. It is not tax or financial advice.",
+      "help": "Always shown under the results and cannot be switched off. Blank uses the default wording. Type {taxYear} to show the tax year automatically."
+    },
+    {
+      "key": "showTaxOptions",
+      "label": "Show tax options",
+      "type": "boolean",
+      "default": true,
+      "help": "Off hides the whole Tax options group. Tax is still worked out as an Australian resident with no study loan and super not included."
+    },
+    {
+      "key": "showResidency",
+      "label": "Show residency option",
+      "type": "boolean",
+      "default": true,
+      "help": "Off hides this option inside Tax options and ignores it."
+    },
+    {
+      "key": "showHelp",
+      "label": "Show study loan option",
+      "type": "boolean",
+      "default": true,
+      "help": "Off hides this option inside Tax options and ignores it."
+    },
+    {
+      "key": "showSuperIncluded",
+      "label": "Show package includes super option",
+      "type": "boolean",
+      "default": true,
+      "help": "Off hides this option inside Tax options and ignores it."
+    },
+    {
+      "key": "showTaxBreakdown",
+      "label": "Show tax breakdown",
+      "type": "boolean",
+      "default": true,
+      "help": "Off hides income tax, Medicare levy, study loan and super lines so only gross salary and take-home pay show."
+    },
+    {
+      "key": "showSuper",
+      "label": "Show employer super line",
+      "type": "boolean",
+      "default": true,
+      "help": "Employer super is shown on its own line under take-home pay. Only used while the tax breakdown is on."
+    },
+    {
+      "key": "defaultAmount",
+      "label": "Starting pay amount",
+      "type": "number",
+      "default": null,
+      "help": "Leave blank to start empty. A number calculates as soon as the page loads."
+    },
+    {
+      "key": "defaultPeriod",
+      "label": "Starting pay period",
+      "type": "dropdown",
+      "default": "annual",
+      "options": [
+        "hourly",
+        "daily",
+        "weekly",
+        "monthly",
+        "annual"
+      ],
+      "help": "Which period is selected first."
+    },
+    {
+      "key": "defaultHours",
+      "label": "Starting hours per week",
+      "type": "number",
+      "default": 38,
+      "help": "Used for hourly pay."
+    },
+    {
+      "key": "defaultDays",
+      "label": "Starting days per week",
+      "type": "number",
+      "default": 5,
+      "help": "Used for daily pay and the per-day figures."
+    }
+  ]
+}

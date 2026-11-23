@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
-// UK Salary Calculator. Two layers: the pure tax module (the block between the TAX MODULE markers
-// in legacy.js, extracted and run on its own) checked against worked examples done by hand from the
-// 2026/27 rate tables, and the built bundle running in jsdom against the Handlebars-rendered shell.
+// UK Salary Calculator: the built bundle (dist) running in jsdom against the Handlebars-rendered shell,
+// the way Duda's loader stub runs it. The tax maths is covered on its own in tax.test.ts.
 
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -12,118 +11,25 @@ const here = dirname(fileURLToPath(import.meta.url));
 const NAME = 'salary-calculator-uk';
 const VERSION = JSON.parse(readFileSync(join(here, '..', '..', 'package.json'), 'utf8')).version as string;
 const BUNDLE = readFileSync(join(here, '..', '..', 'dist', NAME, VERSION, 'widget.min.js'), 'utf8');
-const SOURCE = readFileSync(join(here, 'legacy.js'), 'utf8');
+const SETTINGS_SRC = readFileSync(join(here, 'settings.ts'), 'utf8');
 const HBS = readFileSync(join(here, 'content.hbs'), 'utf8');
 
+// A classic <script> makes the bundle's top-level `var` global; strict-mode eval keeps it local.
+// Assign it to window instead, leaving the bundle strict.
+const GLOBAL_BUNDLE = BUNDLE.replace('"use strict";var __shazWidgetExport=', '"use strict";window.__shazWidgetExport=');
+if (GLOBAL_BUNDLE === BUNDLE) throw new Error('bundle prologue changed: update GLOBAL_BUNDLE in this test');
+
 type Win = Record<string, any>;
-type Dict = Record<string, string>;
-
-const tax = new Function(
-  SOURCE.match(/\/\/ ---- TAX MODULE START ----([\s\S]*?)\/\/ ---- TAX MODULE END ----/)![1] +
-    '; return { TAX_CONFIG, calculateUkTax, annualFromPay, perPeriod };',
-)() as { TAX_CONFIG: any; calculateUkTax: (i: any, c: any) => Record<string, number>; annualFromPay: (...a: any[]) => number; perPeriod: (...a: any[]) => Record<string, number> };
-const calc = (annualGross: number, extra: Record<string, unknown> = {}) =>
-  tax.calculateUkTax({ annualGross, scottish: false, loan: 'none', pensionPercent: 0, ...extra }, tax.TAX_CONFIG);
-
-describe('uk tax module, worked examples (2026/27, hand calculated from the rate tables)', () => {
-  it('30,000: tax 20% over 12,570, NI 8% over 12,570', () => {
-    const r = calc(30000);
-    expect(r.incomeTax).toBe(3486); // (30000-12570) x 20%
-    expect(r.ni).toBe(1394.4); // (30000-12570) x 8%
-    expect(r.net).toBe(25119.6);
-  });
-
-  it('60,000: higher rate over 50,270, NI 2% over 50,270', () => {
-    const r = calc(60000);
-    expect(r.incomeTax).toBe(11432); // 37,700 x 20% + 9,730 x 40%
-    expect(r.ni).toBe(3210.6); // 37,700 x 8% + 9,730 x 2%
-    expect(r.net).toBe(45357.4);
-  });
-
-  it('125,000: allowance tapers to 70', () => {
-    const r = calc(125000);
-    expect(r.personalAllowance).toBe(70); // 12,570 - 12,500
-    expect(r.incomeTax).toBe(42432); // 37,700 x 20% + 87,230 x 40%
-    expect(r.ni).toBe(4510.6); // 3,016 + 74,730 x 2%
-    expect(r.net).toBe(78057.4);
-  });
-
-  it('Scottish 45,000: six-band income tax', () => {
-    const r = calc(45000, { scottish: true });
-    expect(r.incomeTax).toBe(6882.05); // 3,967x19% + 12,989x20% + 14,136x21% + 1,338x42%
-    expect(r.ni).toBe(2594.4);
-    expect(r.net).toBe(35523.55);
-  });
-
-  it('Plan 2 at 35,000: 9% over 29,385', () => {
-    const r = calc(35000, { loan: 'plan2' });
-    expect(r.studentLoan).toBe(505.35);
-    expect(r.incomeTax).toBe(4486);
-    expect(r.ni).toBe(1794.4);
-    expect(r.net).toBe(28214.25);
-  });
-
-  it('no allowance taper at exactly 100,000, and full taper at 125,140', () => {
-    expect(calc(100000).incomeTax).toBe(27432);
-    expect(calc(110000).personalAllowance).toBe(7570);
-    expect(calc(110000).incomeTax).toBe(33432);
-    expect(calc(125140).personalAllowance).toBe(0);
-  });
-
-  it('Postgraduate loan is 6% over 21,000 and Plan 1, 4 and 5 use their own thresholds', () => {
-    expect(calc(40000, { loan: 'postgrad' }).studentLoan).toBe(1140);
-    expect(calc(40000, { loan: 'plan1' }).studentLoan).toBe(1179);
-    expect(calc(40000, { loan: 'plan4' }).studentLoan).toBe(558.45);
-    expect(calc(40000, { loan: 'plan5' }).studentLoan).toBe(1350);
-  });
-
-  it('an undergraduate plan with a Postgraduate loan repays both', () => {
-    // Plan 2: (40,000 - 29,385) x 9% = 955.35; Postgraduate: (40,000 - 21,000) x 6% = 1,140
-    expect(calc(40000, { loan: 'plan2pg' }).studentLoan).toBe(2095.35);
-    expect(calc(20000, { loan: 'plan1pg' }).studentLoan).toBe(0);
-  });
-
-  it('pension is a salary sacrifice taken before tax, NI and the student loan', () => {
-    const r = calc(40000, { pensionPercent: 5 });
-    expect(r.pension).toBe(2000);
-    expect(r.incomeTax).toBe(5086);
-    expect(r.ni).toBe(2034.4);
-    expect(r.net).toBe(30879.6);
-  });
-
-  it('pays nothing below the allowance, and ignores bad input', () => {
-    expect(calc(12000).incomeTax).toBe(0);
-    expect(calc(12000).ni).toBe(0);
-    expect(calc(-5).net).toBe(0);
-    expect(calc(30000, { pensionPercent: 500 }).pension).toBe(30000);
-  });
-
-  it('turns every pay period into an annual figure and splits the year', () => {
-    const c = tax.TAX_CONFIG;
-    expect(tax.annualFromPay(20, 'hourly', 40, 5, c)).toBe(41600);
-    expect(tax.annualFromPay(200, 'daily', 40, 5, c)).toBe(52000);
-    expect(tax.annualFromPay(500, 'weekly', 40, 5, c)).toBe(26000);
-    expect(tax.annualFromPay(3000, 'monthly', 40, 5, c)).toBe(36000);
-    expect(tax.annualFromPay(36000, 'annual', 40, 5, c)).toBe(36000);
-    expect(tax.perPeriod(52000, 5, c)).toEqual({ year: 52000, month: 52000 / 12, week: 1000, day: 200 });
-  });
-
-  it('keeps the tax year, the Scottish limits and the sources in TAX_CONFIG', () => {
-    expect(tax.TAX_CONFIG.taxYear).toBe('2026/27');
-    expect(tax.TAX_CONFIG.scotlandBands.map((b: any) => b.upTo + tax.TAX_CONFIG.personalAllowance).slice(0, 4)).toEqual([16537, 29526, 43662, 75000]);
-    expect(SOURCE).toContain('https://www.mygov.scot/scottish-income-tax/current-income-tax-rates');
-    expect(SOURCE).toContain('https://www.gov.uk/income-tax-rates');
-  });
-});
+type Dict = Record<string, unknown>;
 
 // What Duda's Handlebars renders from content.hbs: {{key}} becomes the (escaped) setting, or nothing.
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-const render = (config: Dict) => HBS.replace(/\{\{(\w+)\}\}/g, (_m, k) => esc(config[k] ?? ''));
+const render = (config: Dict) => HBS.replace(/\{\{(\w+)\}\}/g, (_m, k) => esc(String(config[k] ?? '')));
 
 function load() {
   const win = window as unknown as Win;
   delete win.ShazammeWidget;
-  win.eval(BUNDLE);
+  win.eval(GLOBAL_BUNDLE);
   return win;
 }
 
@@ -430,16 +336,143 @@ describe('uk salary calculator bundle', () => {
   });
 });
 
+
+describe('uk salary calculator, modern runtime', () => {
+  it('needs no Shazamme SDK: no shazamme global, no SDK url, no loader in the bundle', () => {
+    expect((window as unknown as Win).shazamme).toBeUndefined();
+    expect(BUNDLE).not.toContain('sdk.shazamme.io');
+    expect(BUNDLE).not.toContain('__shazSDKPromise');
+    const el = mount();
+    enter(el, { amount: '30000' });
+    calculate(el);
+    expect(cell(el, 'net', 'year')).toBe('£25,119.60');
+  });
+
+  it('accepts real booleans and numbers as Duda sends them, as well as strings', () => {
+    const el = mount({ showTaxBreakdown: false, defaultAmount: 30000, showTaxOptions: false });
+    expect(visibleRows(el)).toEqual(['gross', 'net']);
+    expect(isHidden(el.querySelector('[data-shm-options]'))).toBe(true);
+    expect(cell(el, 'net', 'year')).toBe('£25,119.60');
+  });
+
+  it('announces the take-home pay in a polite live region and keeps the results table out of it', () => {
+    const el = mount();
+    const live = el.querySelector('[data-shm-live]') as HTMLElement;
+    expect(live.getAttribute('role')).toBe('status');
+    expect(live.getAttribute('aria-live')).toBe('polite');
+    expect(el.querySelector('[data-shm-results]')!.closest('[aria-live]')).toBeNull();
+    expect(live.textContent).toBe('');
+    enter(el, { amount: '30000' });
+    calculate(el);
+    expect(live.textContent).toContain('£25,119.60');
+    expect(live.textContent).toContain('Take-home pay');
+    calculate(el);
+    enter(el, { amount: '' });
+    calculate(el);
+    expect(live.textContent).toBe('');
+  });
+
+  it('marks the field behind an error and links it to the message', () => {
+    const el = mount();
+    calculate(el);
+    const err = el.querySelector('[data-shm-error]') as HTMLElement;
+    expect(err.getAttribute('role')).toBe('alert');
+    expect(f(el, 'amount').getAttribute('aria-invalid')).toBe('true');
+    expect(f(el, 'amount').getAttribute('aria-describedby')).toBe(err.id);
+    enter(el, { amount: '30000' });
+    expect(f(el, 'amount').hasAttribute('aria-invalid')).toBe(false);
+    expect(f(el, 'amount').hasAttribute('aria-describedby')).toBe(false);
+    enter(el, { amount: '20', period: 'hourly', hours: '0' });
+    calculate(el);
+    expect(f(el, 'hours').getAttribute('aria-invalid')).toBe('true');
+    expect(f(el, 'amount').hasAttribute('aria-invalid')).toBe(false);
+  });
+
+  it('gives every input a visible label wrapping it, and no two copies share an error id', () => {
+    document.body.innerHTML = '<div id="a"></div><div id="b"></div>';
+    load();
+    const a = mountOne(document.getElementById('a')!, {});
+    const b = mountOne(document.getElementById('b')!, {});
+    for (const input of a.querySelectorAll('[data-f]')) {
+      const wrapper = input.closest('label');
+      expect(wrapper, input.getAttribute('data-f')!).not.toBeNull();
+      expect(wrapper!.textContent!.trim().length).toBeGreaterThan(0);
+    }
+    expect(a.querySelector('[data-shm-error]')!.id).not.toBe(b.querySelector('[data-shm-error]')!.id);
+  });
+
+  it('a re-run on the same element cancels the previous run: no stacked handlers, no stray timer', () => {
+    vi.useFakeTimers();
+    const el = mount();
+    enter(el, { amount: '30000' });
+    calculate(el);
+    const input = f(el, 'amount');
+    input.value = '1';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    (window as unknown as Win).ShazammeWidget[NAME]({ element: el, data: { config: { calcButton: 'Go' } } });
+    const before = cell(el, 'gross', 'year');
+    vi.advanceTimersByTime(1000);
+    vi.useRealTimers();
+    expect(cell(el, 'gross', 'year')).toBe(before);
+    expect(el.querySelector('[data-shm-calc]')!.textContent).toBe('Go');
+  });
+
+  it('announces again when Calculate is pressed twice with the same values, and stays quiet on the first load', () => {
+    const quiet = mount({ defaultAmount: 30000 });
+    expect((quiet.querySelector('[data-shm-live]') as HTMLElement).textContent).toBe('');
+    expect(cell(quiet, 'net', 'year')).not.toBe('');
+    const el = mount();
+    const live = el.querySelector('[data-shm-live]') as HTMLElement;
+    enter(el, { amount: '30000' });
+    calculate(el);
+    const first = live.textContent;
+    calculate(el);
+    expect(live.textContent).not.toBe(first);
+    expect(live.textContent!.trim()).toBe(first!.trim());
+  });
+
+  it('removes its listeners itself on a re-run, without relying on AbortSignal support', () => {
+    const el = mount();
+    const root = el.querySelector('[data-shm-salary]') as HTMLElement;
+    const added: string[] = [];
+    const removed: string[] = [];
+    const add = root.addEventListener.bind(root);
+    const remove = root.removeEventListener.bind(root);
+    root.addEventListener = ((t: string, h: any, o?: any) => { added.push(t); return add(t, h, o); }) as typeof root.addEventListener;
+    root.removeEventListener = ((t: string, h: any, o?: any) => { removed.push(t); return remove(t, h, o); }) as typeof root.removeEventListener;
+    (window as unknown as Win).ShazammeWidget[NAME]({ element: el, data: { config: {} } });
+    expect(removed.sort()).toEqual(['change', 'click', 'input', 'keydown']);
+    expect(added.sort()).toEqual(['change', 'click', 'input', 'keydown']);
+  });
+
+  it('re-running after the editor replaces the markup binds the new markup once', () => {
+    const el = mount();
+    const win = window as unknown as Win;
+    el.innerHTML = render({ title: 'Edited' });
+    win.ShazammeWidget[NAME]({ element: el, data: { config: { title: 'Edited' }, inEditor: true } });
+    expect(el.querySelector('.shm-sc-title')!.textContent).toBe('Edited');
+    enter(el, { amount: '30000' });
+    calculate(el);
+    expect(cell(el, 'net', 'year')).toBe('£25,119.60');
+  });
+});
+
 describe('uk salary calculator settings', () => {
   const prompts = ['1-content-labels', '2-content-results', '3-content-options'].map((n) => readFileSync(join(here, `duda-ai-prompt-${n}.md`), 'utf8')).join('\n');
   const promptKeys = new Set([...prompts.matchAll(/\| key: (\w+)/g)].map((m) => m[1]));
 
-  it('lists in the Content Editor prompts every key the JS and the HTML read, and no others', () => {
-    const jsKeys = new Set<string>([...SOURCE.matchAll(/cfg\.(\w+)/g)].map((m) => m[1]));
-    const defaults = SOURCE.match(/var DEFAULTS = \{([\s\S]*?)\n\};/)![1];
-    for (const m of defaults.matchAll(/^\s{2}(\w+):/gm)) jsKeys.add(m[1]);
-    for (const m of HBS.matchAll(/\{\{(\w+)\}\}/g)) jsKeys.add(m[1]);
-    expect([...jsKeys].sort()).toEqual([...promptKeys].sort());
+  it('lists in the Content Editor prompts every key the code and the HTML read, and no others', () => {
+    const keys = new Set<string>([...SETTINGS_SRC.matchAll(/config\.(\w+)/g)].map((m) => m[1]));
+    const defaults = SETTINGS_SRC.match(/DEFAULT_LABELS = \{([\s\S]*?)\n\} as const/)![1];
+    for (const m of defaults.matchAll(/^\s{2}(\w+):/gm)) keys.add(m[1]);
+    for (const m of HBS.matchAll(/\{\{(\w+)\}\}/g)) keys.add(m[1]);
+    expect([...keys].sort()).toEqual([...promptKeys].sort());
+  });
+
+  it('keeps settings.json in step with the prompts and declares that no SDK is needed', () => {
+    const manifest = JSON.parse(readFileSync(join(here, 'settings.json'), 'utf8')) as { sdk: boolean; fields: { key: string }[] };
+    expect(manifest.sdk).toBe(false);
+    expect(manifest.fields.map((x) => x.key).sort()).toEqual([...promptKeys].sort());
   });
 
   it('uses root Handlebars keys only, no blocks and no config prefix', () => {
