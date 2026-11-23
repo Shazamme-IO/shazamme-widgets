@@ -1,5 +1,5 @@
 // LAST UPDATED: 2026-11-16 17:46 AEDT (v0.1.57)
-// Change: New widget. Flip Cards, a list of photo cards that flip to a back with text, a link and an optional button.
+// Change: New widget. Flip Cards, a list of photo cards that flip to a back with text, a link and an optional button. TypeScript build, no stacked listeners on editor re-runs.
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
 // existing widget JS.

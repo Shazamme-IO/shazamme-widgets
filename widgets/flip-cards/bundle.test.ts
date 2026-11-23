@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// flip-cards runs the built bundle against the markup Duda renders from content.hbs. It must build
+// flip-cards runs the built bundle (index.ts, bundled by build/build.mjs) against the markup Duda renders from content.hbs. It must build
 // escaped cards, guard links, flip on tap and keyboard, swap aria-hidden, and set per-breakpoint CSS variables.
 
 import { readFileSync } from 'node:fs';
@@ -12,6 +12,12 @@ const VERSION = JSON.parse(readFileSync(join(here, '..', '..', 'package.json'), 
 const BUNDLE = readFileSync(join(here, '..', '..', 'dist', 'flip-cards', VERSION, 'widget.min.js'), 'utf8');
 
 type Win = Record<string, any>;
+
+// A script tag makes the bundle's top-level var global, which is what its footer reads. jsdom's eval keeps
+// the file-level "use strict" local, so drop that one directive to get the same global.
+function loadBundle(): void {
+  (window as unknown as Win).eval(BUNDLE.replace('"use strict";', ''));
+}
 type Card = Record<string, string>;
 
 const SHELL = '<div class="shm-flip-cards"><div class="shm-fc-grid"></div><div class="shm-fc-sources"></div></div>';
@@ -26,7 +32,7 @@ function mount(cards: Card[] | undefined, config: Record<string, unknown> = {}, 
   const win = window as unknown as Win;
   win.document.body.innerHTML = `<div id="widget">${html}</div>`;
   delete win.ShazammeWidget;
-  win.eval(BUNDLE);
+  loadBundle();
   const element = win.document.getElementById('widget')!;
   run(element, { ...(cards ? { cards } : {}), ...config }, inEditor);
   return element;
@@ -209,13 +215,83 @@ describe('flip-cards bundle', () => {
     expect(flipped(card)).toBe(false);
   });
 
-  it('cleans up the previous run even when the new markup has no grid', () => {
+  it('removes every listener of the previous run, document ones included, when the editor re-runs it', () => {
+    const live = new Set<string>();
+    const origAdd = document.addEventListener.bind(document);
+    const origRemove = document.removeEventListener.bind(document);
+    const ids = new Map<object, string>();
+    const id = (fn: unknown) => {
+      if (!ids.has(fn as object)) ids.set(fn as object, String(ids.size));
+      return ids.get(fn as object)!;
+    };
+    document.addEventListener = ((t: string, fn: EventListener, o?: unknown) => { live.add(`${t}${id(fn)}`); origAdd(t, fn, o as boolean); }) as typeof document.addEventListener;
+    document.removeEventListener = ((t: string, fn: EventListener, o?: unknown) => { live.delete(`${t}${id(fn)}`); origRemove(t, fn, o as boolean); }) as typeof document.removeEventListener;
+    try {
+      const el = mount(ONE);
+      run(el, { cards: ONE });
+      run(el, { cards: ONE });
+      expect(live.size).toBe(1);
+      el.querySelector('.shm-fc-grid')!.remove();
+      run(el, { cards: ONE });
+      expect(live.size).toBe(0);
+    } finally {
+      delete (document as any).addEventListener;
+      delete (document as any).removeEventListener;
+    }
+  });
+
+  it('a document listener left by a detached widget removes itself on the next tap', () => {
     const el = mount(ONE);
-    const w = el as HTMLElement & { __shmFlipCardsCleanup?: () => void };
-    expect(typeof w.__shmFlipCardsCleanup).toBe('function');
-    el.querySelector('.shm-fc-grid')!.remove();
-    run(el, { cards: ONE });
-    expect(w.__shmFlipCardsCleanup).toBeUndefined();
+    el.remove();
+    const spy: string[] = [];
+    const origRemove = document.removeEventListener.bind(document);
+    document.removeEventListener = ((t: string, fn: EventListener, o?: unknown) => { spy.push(t); origRemove(t, fn, o as boolean); }) as typeof document.removeEventListener;
+    try {
+      pointer(document.body, 'pointerdown', 'touch');
+      expect(spy).toContain('pointerdown');
+    } finally {
+      delete (document as any).removeEventListener;
+    }
+  });
+
+  it('works where matchMedia only has addListener and removeListener (older Safari)', () => {
+    const win = window as unknown as Win;
+    let added = 0;
+    win.matchMedia = () => ({ matches: false, addListener: () => { added += 1; }, removeListener: () => undefined });
+    try {
+      const el = mount(ONE);
+      expect(added).toBe(1);
+      expect(el.querySelector('.shm-flip-cards')!.classList.contains('is-ready')).toBe(true);
+    } finally {
+      delete win.matchMedia;
+    }
+  });
+
+  it('takes an image or link from a second property when the first is empty', () => {
+    const el = mount([{ title: 'T', backText: 'b', image: { url: '', src: 'https://e.com/a.jpg' } as unknown as string }]);
+    expect(el.querySelector('.shm-fc-img')!.getAttribute('src')).toBe('https://e.com/a.jpg');
+  });
+
+  it('flip style none draws no flip wiring and a mailto link gets no target', () => {
+    const el = mount([{ title: 'T', link: 'mailto:a@b.com' }], { flipStyle: 'none', openInNewTab: 'true' });
+    key(el.querySelector('.shm-fc-card')!, 'Enter');
+    expect(el.querySelector('.is-flipped')).toBeNull();
+    expect(el.querySelector('a.shm-fc-link')!.hasAttribute('target')).toBe(false);
+  });
+
+  it('stops listening to the reduced-motion query when the editor re-runs it', () => {
+    const win = window as unknown as Win;
+    let added = 0;
+    let removed = 0;
+    win.matchMedia = () => ({ matches: false, addEventListener: () => { added += 1; }, removeEventListener: () => { removed += 1; } });
+    try {
+      const el = mount(ONE);
+      run(el, { cards: ONE });
+      run(el, { cards: ONE });
+      expect([added, removed]).toEqual([3, 2]);
+    } finally {
+      delete win.matchMedia;
+    }
   });
 
   it('swaps aria-hidden so each side is exposed once', () => {
@@ -257,7 +333,7 @@ describe('flip-cards bundle', () => {
     const win = window as unknown as Win;
     win.document.body.innerHTML = `<div id="a">${SHELL}</div><div id="b">${SHELL}</div>`;
     delete win.ShazammeWidget;
-    win.eval(BUNDLE);
+    loadBundle();
     const a = win.document.getElementById('a')!;
     const b = win.document.getElementById('b')!;
     run(a, { cards: [{ title: 'A', backText: 'a' }], columnsDesktop: '2' });
