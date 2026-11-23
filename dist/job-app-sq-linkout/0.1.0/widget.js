@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build e47681d3af76. Registers window.ShazammeWidget["<name>"].
+ * Build a7dc004e47e6. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -77,6 +77,7 @@ var __shazWidgetExport = (() => {
     let thankYouPage = "thank-you";
     let dashboardPage = "dashboard";
     let registerPage = "register";
+    const BROCHURE_SUBMISSION_TYPE_ID = 2;
     let loginFrom;
     if (data.config.toggleThankyouPage) {
       thankYouPage = data.config.txt_Thankyoupageurl;
@@ -1572,6 +1573,7 @@ ${invalid.join("\n")}`);
               // The candidate form sends the template alongside the answers,
               // so the record says WHICH screening form was answered.
               screeningTemplateID: configuredScreeningTemplate() || (screening == null ? void 0 : screening._screeningTemplateID) || void 0,
+              submissionTypeID: BROCHURE_SUBMISSION_TYPE_ID,
               ...referralSource
             };
             if (hasItemsTobeUploaded) {
