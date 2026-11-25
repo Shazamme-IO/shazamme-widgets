@@ -10,6 +10,9 @@ let importData = {};
 let thankYouPage = "thank-you";
 let dashboardPage = "dashboard";
 let registerPage = "register";
+// dbo.SubmissionType 2 = BrochureDownload: Vinyl sends the BD candidate email
+// ("Thanks for your interest") instead of the standard application one (AP).
+const BROCHURE_SUBMISSION_TYPE_ID = 2;
 let loginFrom;
 if(data.config.toggleThankyouPage)
 {
@@ -1966,6 +1969,7 @@ const main = (w) => {
                     // The candidate form sends the template alongside the answers,
                     // so the record says WHICH screening form was answered.
                     screeningTemplateID: configuredScreeningTemplate() || screening?._screeningTemplateID || undefined,
+                    submissionTypeID: BROCHURE_SUBMISSION_TYPE_ID,
                     ...referralSource,
                 };
 

@@ -228,3 +228,21 @@ describe('screening template selection', () => {
     expect(at({ screeningTemplateId: '   ' })).toBeNull();
   });
 });
+
+describe('application record', () => {
+  // Vinyl's dbo.SubmissionType: 2 = BrochureDownload, which picks the BD candidate
+  // email instead of the standard "Thank you for applying" (AP).
+  const constLine = src.match(/^const BROCHURE_SUBMISSION_TYPE_ID = .*$/m)?.[0] ?? '';
+  const start = src.indexOf('let a = {');
+  const block = src.slice(start, endOfBlock(start));
+  const build = new Function('getJobID', 'answers', 'configuredScreeningTemplate', 'screening', 'referralSource',
+    `${constLine}\n${block}; return a;`);
+
+  it('tags every submission as a brochure download', () => {
+    const a = build(() => GUID, [], () => undefined, undefined, { referralCampaign: SLUG });
+
+    expect(a.submissionTypeID).toBe(2);
+    expect(a.jobID).toBe(GUID);
+    expect(a.referralCampaign).toBe(SLUG);
+  });
+});
