@@ -53,34 +53,55 @@ describe('isViewedJob', () => {
 });
 
 describe('fitCards', () => {
-  type Rect = { top: number; bottom: number; height: number };
-  const rect = (top: number, height: number): Rect => ({ top, bottom: top + height, height });
+  type Spec = { pinned: number; content: number; boxSizing?: string };
+  const rect = (top: number, height: number) => ({ top, bottom: top + height, height }) as DOMRect;
 
-  function mount(pinned: number, contentHeight: number) {
-    document.body.innerHTML = `<div id="w"><div class="container-card-content"><div class="ordering-content"></div></div></div>`;
-    const card = document.querySelector('.container-card-content') as HTMLElement;
-    const inner = card.firstElementChild as HTMLElement;
-    card.getBoundingClientRect = () => rect(0, parseFloat(card.style.height) || pinned) as DOMRect;
-    inner.getBoundingClientRect = () => rect(20, contentHeight) as DOMRect;
-    const fit = new Function(
-      '$el',
-      'getComputedStyle',
-      `const self = { el: $el }; self.fitCards = ${body('this.fitCards = () => {').replace('this.fitCards = ', '')}; return self.fitCards;`.replace(/this\./g, 'self.'),
-    );
-    const $el = { find: () => ({ get: () => [card] }) };
-    return { card, run: fit($el, () => ({ paddingBottom: '20px' })) as () => void };
+  function mount(specs: Spec[]) {
+    document.body.innerHTML = specs.map(() => '<div class="container-card-content"><div class="ordering-content"></div></div>').join('');
+    const cards = Array.from(document.querySelectorAll<HTMLElement>('.container-card-content'));
+    cards.forEach((card, i) => {
+      const inner = card.firstElementChild as HTMLElement;
+      card.getBoundingClientRect = () => rect(0, parseFloat(card.style.height) || specs[i].pinned);
+      inner.getBoundingClientRect = () => rect(20, specs[i].content);
+    });
+    const fitBody = body('this.fitCards = () => {').replace('this.fitCards = ', '');
+    const fit = new Function('self', 'getComputedStyle', `return ${fitBody.replace(/this\./g, 'self.')};`);
+    const self = { el: { find: () => ({ get: () => cards }) } };
+    const css = (c: Element) => ({
+      paddingTop: '20px', paddingBottom: '20px', borderTopWidth: '0px', borderBottomWidth: '0px',
+      boxSizing: specs[cards.indexOf(c as HTMLElement)].boxSizing ?? 'border-box',
+    });
+    return { cards, run: fit(self, css) as () => void };
   }
 
   it('grows a card box that is shorter than its copy', () => {
-    const { card, run } = mount(320, 346);
+    const { cards, run } = mount([{ pinned: 320, content: 346 }]);
     run();
-    expect(card.style.getPropertyValue('height')).toBe('386px');
-    expect(card.style.getPropertyPriority('height')).toBe('important');
+    expect(cards[0].style.getPropertyValue('height')).toBe('386px');
+    expect(cards[0].style.getPropertyPriority('height')).toBe('important');
   });
 
-  it('leaves a card box alone when the copy fits', () => {
-    const { card, run } = mount(400, 200);
+  it('leaves every card alone when all of them fit', () => {
+    const { cards, run } = mount([{ pinned: 400, content: 200 }, { pinned: 400, content: 300 }]);
     run();
-    expect(card.style.height).toBe('');
+    expect(cards.map((c) => c.style.height)).toEqual(['', '']);
+  });
+
+  it('equalises the cards once one of them overflows', () => {
+    const { cards, run } = mount([{ pinned: 320, content: 346 }, { pinned: 320, content: 200 }]);
+    run();
+    expect(cards.map((c) => c.style.height)).toEqual(['386px', '386px']);
+  });
+
+  it('subtracts padding for a content-box card', () => {
+    const { cards, run } = mount([{ pinned: 320, content: 346, boxSizing: 'content-box' }]);
+    run();
+    expect(cards[0].style.height).toBe('346px');
+  });
+
+  it('does nothing while the widget is hidden', () => {
+    const { cards, run } = mount([{ pinned: 0, content: 0 }]);
+    run();
+    expect(cards[0].style.height).toBe('');
   });
 });

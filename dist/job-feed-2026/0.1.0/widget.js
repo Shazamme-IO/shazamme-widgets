@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build d5ee4123219c. Registers window.ShazammeWidget["<name>"].
+ * Build cf801c230cfb. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -537,17 +537,29 @@ var __shazWidgetExport = (() => {
       this.fitCards = () => {
         const cards = this.el.find(".container-card-content").get();
         cards.forEach((c) => c.style.removeProperty("height"));
-        const needed = cards.reduce((tallest, c) => {
-          const top = c.getBoundingClientRect().top;
-          const bottom = Array.from(c.children).reduce((low, k) => Math.max(low, k.getBoundingClientRect().bottom), top);
-          const pad = parseFloat(getComputedStyle(c).paddingBottom) || 0;
-          return Math.max(tallest, Math.ceil(bottom - top + pad));
-        }, 0);
-        cards.forEach((c) => {
-          if (needed > c.getBoundingClientRect().height + 1) {
-            c.style.setProperty("height", `${needed}px`, "important");
-          }
+        const sizes = cards.map((c) => {
+          const box = c.getBoundingClientRect();
+          const css = getComputedStyle(c);
+          const num = (v) => parseFloat(v) || 0;
+          const bottom = Array.from(c.children).reduce((low, k) => Math.max(low, k.getBoundingClientRect().bottom), box.top);
+          const frame = num(css.paddingTop) + num(css.paddingBottom) + num(css.borderTopWidth) + num(css.borderBottomWidth);
+          return {
+            c,
+            height: box.height,
+            needed: Math.ceil(bottom - box.top + num(css.paddingBottom) + num(css.borderBottomWidth)),
+            frame: css.boxSizing === "border-box" ? 0 : frame
+          };
         });
+        if (sizes.length === 0 || sizes.some((x) => x.height === 0) || !sizes.some((x) => x.needed > x.height + 1)) return;
+        const tallest = Math.max(...sizes.map((x) => x.needed));
+        sizes.forEach((x) => x.c.style.setProperty("height", `${tallest - x.frame}px`, "important"));
+      };
+      this.watchCards = () => {
+        var _a2;
+        if (typeof ResizeObserver === "undefined") return;
+        (_a2 = this.cardObserver) == null ? void 0 : _a2.disconnect();
+        this.cardObserver = new ResizeObserver(() => this.fitCards());
+        this.cardObserver.observe(this.el.get(0));
       };
       this.growWrapper = () => {
         const wrapper = this.el.get(0).closest(".widget-wrapper");
@@ -826,6 +838,7 @@ var __shazWidgetExport = (() => {
               ux.loadSlides().then((s2) => slides = s2);
             } else if (hasJobs) {
               ux.fitCards();
+              ux.watchCards();
             }
           });
         };
