@@ -2151,7 +2151,63 @@ ux.el.find('[data-rel=action-filter-reset]').on('click', function() {
     shazamme.pub('job-results-filter-change', activeFilter);
 });
 
+// The classic template draws its clear buttons with Font Awesome classes, and the
+// location one also nests a second <i> icon, so it showed two crosses.
+const ClearIcon = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+const ClearStyle = `
+.section-job-result-filter .section-keyword-search .filter-keyword-clear {
+    right: 10px;
+    width: 24px;
+    height: 24px;
+    padding: 5px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: inherit;
+    opacity: .6;
+    line-height: 0;
+    transition: background-color .15s ease, opacity .15s ease;
+}
+.section-job-result-filter .section-keyword-search .filter-keyword-clear[data-keyword-field=jobStartDate],
+.section-job-result-filter .section-keyword-search .filter-keyword-clear[data-keyword-field=jobEndDate] {
+    right: 34px;
+}
+.section-job-result-filter .section-keyword-search .filter-keyword-clear svg {
+    display: block;
+    width: 14px;
+    height: 14px;
+    pointer-events: none;
+}
+.section-job-result-filter .section-keyword-search .filter-keyword-clear:hover {
+    background: rgba(127, 127, 127, .18);
+    opacity: 1;
+}
+.section-job-result-filter .section-keyword-search .filter-keyword-clear:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 1px;
+}
+.section-job-result-filter .section-keyword-search .filter-field[data-keyword-field=keyword],
+.section-job-result-filter .section-keyword-search .filter-field[data-keyword-field=location] {
+    padding-right: 40px;
+}
+.section-job-result-filter .section-keyword-search .filter-field[type=date] {
+    padding-right: 64px;
+}`;
+
+const prettifyClearButtons = (root) => {
+    if (!document.getElementById('shm-jr-clear')) {
+        $('<style id="shm-jr-clear">').text(ClearStyle).appendTo(document.head);
+    }
+
+    root.find('.filter-keyword-clear')
+        .removeClass('far fa-window-close')
+        .attr({ type: 'button', 'aria-label': 'Clear' })
+        .html(ClearIcon);
+};
+
 const main = (w) => {
+    prettifyClearButtons(ux.el);
+
     activeFilter = filtersFromParams();
     defaultFilter = filtersFromParams(true);
 
