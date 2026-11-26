@@ -1501,7 +1501,7 @@ let showJobs = (pageNumber) => {
         }
 
         ux.reveal();
-    }).catch( e => { console.warn('[job-results] showJobs failed', e); ux.reveal(); } );
+    }).catch( e => { console.warn('[job-results] showJobs failed', e); ux.showLoadingMessage(false); ux.reveal(); } );
 
     if (data.inEditor && Object.keys(activeFilter).length > 0) {
         ux.el.find('[data-rel=default-filter]').show();

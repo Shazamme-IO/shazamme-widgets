@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build f6b51c35b2ee. Registers window.ShazammeWidget["<name>"].
+ * Build 52262a9e29c2. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -1211,6 +1211,7 @@ var __shazWidgetExport = (() => {
         ux.reveal();
       }).catch((e) => {
         console.warn("[job-results] showJobs failed", e);
+        ux.showLoadingMessage(false);
         ux.reveal();
       });
       if (data.inEditor && Object.keys(activeFilter).length > 0) {

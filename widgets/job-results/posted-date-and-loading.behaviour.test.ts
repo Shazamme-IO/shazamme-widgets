@@ -87,3 +87,13 @@ describe('showLoadingMessage', () => {
     expect(ctx.list.textContent).toBe('x');
   });
 });
+
+describe('loading message wiring', () => {
+  it('is cleared when a page of jobs fails to load', () => {
+    expect(src).toMatch(/showJobs failed', e\); ux\.showLoadingMessage\(false\);/);
+  });
+
+  it('is cleared when the initial load rejects', () => {
+    expect(src).toMatch(/\.catch\( e => \{\s*ux\.showLoadingMessage\(false\);\s*throw e;/);
+  });
+});
