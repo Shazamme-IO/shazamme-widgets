@@ -624,21 +624,32 @@ const toast = (m, t = 2500) => new Promise( (res, rej) => {
 const PageFix = {
     trackPx: 6,
     centreTolerancePx: 4,
+    labelGapPx: 8,
     stickyMaxWidth: '(max-width: 767px)',
     stickyClass: 'sz-sticky-apply',
     stickyRetryMs: 500,
-    stickyRetries: 20,
+    stickyRetries: 40,
+    stickyZ: 9998,
+    settleMs: 100,
+    watchSelector: '.control-salary-slider, input[type=checkbox]',
 };
 
 const centreOf = (r) => r.top + r.height / 2;
+const centredLabels = new WeakSet();
 
 // The salary range is two overlaid range inputs. Site CSS keeps every widget input at
 // 44px for tapping and the Design Editor fills the track, so the pair reads as a
 // thick pill. Keep the 44px input (the tap target and the handles) and paint only a
-// thin strip of it, so the track is thin and the handles stay where they are.
+// thin strip of it, so the track is thin and the handles stay where they are. Our own
+// inline values are cleared before each measure, so a changed input height is followed.
 function thinSalaryTracks(root = document) {
     root.querySelectorAll('.control-salary-slider .slider').forEach( slider => {
         const inputs = Array.from(slider.querySelectorAll('input[type=range]'));
+
+        inputs.forEach( input => {
+            ['padding-block', 'background-clip', 'box-sizing'].forEach( p => input.style.removeProperty(p) );
+        });
+
         const tall = inputs.filter( i => i.getBoundingClientRect().height > PageFix.trackPx * 2 );
 
         tall.forEach( input => {
@@ -652,95 +663,159 @@ function thinSalaryTracks(root = document) {
         const bar = slider.querySelector('.section-color');
         const first = tall[0];
 
-        if (bar && first) {
+        if (bar && first && getComputedStyle(bar).position === 'absolute' && bar.offsetParent === slider) {
             const box = first.getBoundingClientRect();
             const barBox = bar.getBoundingClientRect();
 
-            if (Math.abs(centreOf(barBox) - centreOf(box)) > 2) {
+            if (Math.abs(centreOf(barBox) - centreOf(box)) > PageFix.centreTolerancePx / 2) {
                 bar.style.setProperty('top', `${(box.height - barBox.height) / 2}px`);
             }
         }
     });
 }
 
-// A checkbox kept at 44px sits beside a one-line label; centre the label on it.
+// A checkbox kept at 44px sits beside a one-line text label; centre the label on it.
+// Labels with their own elements (links), several lines of text, or already centred
+// are left alone.
 function centreCheckboxLabels(root = document) {
+    const off = [];
+
     root.querySelectorAll('.dmCustomWidget label > input[type=checkbox]').forEach( box => {
         const label = box.parentElement;
+
+        if (centredLabels.has(label) || label.children.length !== 1) return;
+
         const text = document.createRange();
 
         text.selectNodeContents(label);
 
-        const textBox = Array.from(text.getClientRects()).filter( r => r.width > 0 && r.height > 0 && r.height < box.getBoundingClientRect().height ).pop();
+        const lines = Array.from(text.getClientRects()).filter( r => r.width > 0 && r.height > 0 && r.height < box.getBoundingClientRect().height );
 
-        if (!textBox || Math.abs(centreOf(textBox) - centreOf(box.getBoundingClientRect())) <= PageFix.centreTolerancePx) return;
+        if (lines.length !== 1 || Math.abs(centreOf(lines[0]) - centreOf(box.getBoundingClientRect())) <= PageFix.centreTolerancePx) return;
 
-        label.style.setProperty('display', 'flex');
+        off.push(label);
+    });
+
+    off.forEach( label => {
+        centredLabels.add(label);
+        label.style.setProperty('display', getComputedStyle(label).display.startsWith('inline') ? 'inline-flex' : 'flex');
         label.style.setProperty('align-items', 'center');
-        label.style.setProperty('gap', '8px');
+        label.style.setProperty('gap', `${PageFix.labelGapPx}px`);
     });
 }
 
 // Opt-in: put class "sz-sticky-apply" on the Apply button widget of the job details
-// page. On a phone, while that button is off screen, a bar pinned to the bottom
-// carries the same button; tapping it clicks the real one.
+// page. On a phone, while no copy of that button is on screen, a bar pinned to the
+// bottom carries the same button; tapping it clicks the real one.
 function installStickyApply() {
+    if (!document.querySelector(`.${PageFix.stickyClass}`) || typeof IntersectionObserver === 'undefined') return;
+
     const phone = window.matchMedia?.(PageFix.stickyMaxWidth);
+    const onScreen = new Map();
     let attempts = 0;
     let bar = null;
+    let button = null;
     let observer = null;
+    let inlinePadding = null;
+    let timer = null;
 
-    const source = () => Array.from(document.querySelectorAll(`.${PageFix.stickyClass}`))
+    const sources = () => Array.from(document.querySelectorAll(`.${PageFix.stickyClass}`))
         .map( host => host.matches('a, button, [href]') ? host : host.querySelector('a, button, [href]') )
-        .find( el => el && el.getClientRects().length > 0 );
+        .filter( el => el && el.getClientRects().length > 0 );
+
+    const modalOpen = () => !!document.querySelector('[aria-modal=true], dialog[open]');
+
+    const refresh = () => {
+        if (!bar) return;
+
+        const live = sources();
+        const showing = live.length > 0 && !live.some( el => onScreen.get(el) ) && !modalOpen();
+
+        if (live.length === 0) {
+            remove();
+            start();
+            return;
+        }
+
+        button.textContent = (live[0].textContent || '').trim();
+        bar.style.setProperty('display', showing ? 'block' : 'none');
+
+        if (showing && inlinePadding === null) {
+            inlinePadding = document.body.style.paddingBottom;
+            document.body.style.setProperty('padding-bottom', `calc(${getComputedStyle(document.body).paddingBottom} + ${bar.offsetHeight}px)`);
+        } else if (!showing && inlinePadding !== null) {
+            document.body.style.paddingBottom = inlinePadding;
+            inlinePadding = null;
+        }
+    };
 
     const remove = () => {
         observer?.disconnect();
         observer = null;
         bar?.remove();
         bar = null;
-        document.body.style.removeProperty('padding-bottom');
+        button = null;
+        onScreen.clear();
+
+        if (inlinePadding !== null) {
+            document.body.style.paddingBottom = inlinePadding;
+            inlinePadding = null;
+        }
     };
 
-    const build = (el) => {
+    const style = (el) => {
         const css = getComputedStyle(el);
-        const label = (el.textContent || '').trim();
-        const button = document.createElement('button');
+        const solid = /rgba?\(.*,\s*0\)$/.test(css.backgroundColor) || css.backgroundColor === 'transparent' || css.backgroundImage !== 'none';
+
+        return [
+            'width:100%', 'min-height:48px', 'cursor:pointer', 'box-sizing:border-box',
+            `background:${solid ? '#1a1a1a' : css.backgroundColor}`, `color:${solid ? '#fff' : css.color}`,
+            `border:${solid ? '0' : css.border}`, `border-radius:${css.borderRadius}`,
+            `font-family:${css.fontFamily}`, `font-size:${css.fontSize}`, `font-weight:${css.fontWeight}`,
+            `line-height:${css.lineHeight}`, `text-transform:${css.textTransform}`, `letter-spacing:${css.letterSpacing}`,
+        ].join(';');
+    };
+
+    const build = (live) => {
+        if (!document.getElementById('shz-sticky-apply-style')) {
+            const sheet = document.createElement('style');
+
+            sheet.id = 'shz-sticky-apply-style';
+            sheet.textContent = '[data-rel=sticky-apply] button:focus-visible{outline:3px solid currentColor;outline-offset:3px}';
+            document.head.appendChild(sheet);
+        }
 
         bar = document.createElement('div');
         bar.setAttribute('data-rel', 'sticky-apply');
-        bar.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:2147483000;display:none;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:#fff;box-shadow:0 -2px 12px rgba(0,0,0,.18);box-sizing:border-box';
+        bar.style.cssText = `position:fixed;left:0;right:0;bottom:0;z-index:${PageFix.stickyZ};display:none;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:#fff;box-shadow:0 -2px 12px rgba(0,0,0,.18);box-sizing:border-box`;
 
+        button = document.createElement('button');
         button.type = 'button';
-        button.textContent = label;
-        button.style.cssText = [
-            'width:100%', 'min-height:48px', 'cursor:pointer', 'border:0', 'box-sizing:border-box',
-            `background:${css.backgroundColor}`, `color:${css.color}`, `border-radius:${css.borderRadius}`,
-            `font:${css.font}`, `text-transform:${css.textTransform}`, `letter-spacing:${css.letterSpacing}`,
-        ].join(';');
-        button.addEventListener('click', () => el.click());
+        button.style.cssText = style(live[0]);
+        button.textContent = (live[0].textContent || '').trim();
+        button.addEventListener('click', () => (sources()[0] || live[0]).click());
 
         bar.appendChild(button);
         document.body.appendChild(bar);
 
         observer = new IntersectionObserver( entries => {
-            const showing = !entries.some( e => e.isIntersecting );
-
-            bar.style.setProperty('display', showing ? 'block' : 'none');
-            document.body.style.setProperty('padding-bottom', showing ? `${bar.offsetHeight}px` : '0');
+            entries.forEach( e => onScreen.set(e.target, e.isIntersecting) );
+            refresh();
         });
-        observer.observe(el);
+        live.forEach( el => observer.observe(el) );
     };
 
     const start = () => {
+        clearTimeout(timer);
+
         if (!phone?.matches || bar) return;
 
-        const el = source();
+        const live = sources();
 
-        if (el) {
-            build(el);
+        if (live.length > 0) {
+            build(live);
         } else if (++attempts < PageFix.stickyRetries) {
-            setTimeout(start, PageFix.stickyRetryMs);
+            timer = setTimeout(start, PageFix.stickyRetryMs);
         }
     };
 
@@ -750,12 +825,16 @@ function installStickyApply() {
         start();
     });
 
-    if (document.querySelector(`.${PageFix.stickyClass}`) && typeof IntersectionObserver !== 'undefined') start();
+    start();
 }
 
 function installPageFixes() {
+    if (window.__szPageFixes) return;
+
+    window.__szPageFixes = true;
+
     const run = () => {
-        if (!document.querySelector('.control-salary-slider, .dmCustomWidget label > input[type=checkbox]')) return;
+        if (!document.querySelector(PageFix.watchSelector)) return;
 
         thinSalaryTracks();
         centreCheckboxLabels();
@@ -763,7 +842,8 @@ function installPageFixes() {
 
     installStickyApply();
 
-    // Widgets draw their controls after load, and again when filters redraw.
+    // Widgets draw their controls after load, redraw them when filters change, and a
+    // control inside a collapsed panel has no size until the panel opens.
     let queued = false;
     const again = () => {
         if (queued) return;
@@ -772,10 +852,18 @@ function installPageFixes() {
         setTimeout(() => {
             queued = false;
             run();
-        }, 100);
+        }, PageFix.settleMs);
     };
+    const brings = (n) => n.nodeType === 1 && (n.matches(PageFix.watchSelector) || !!n.querySelector(PageFix.watchSelector));
 
-    new MutationObserver(again).observe(document.body, { childList: true, subtree: true });
+    new MutationObserver( records => {
+        if (records.some( r => Array.from(r.addedNodes).some(brings) )) again();
+    }).observe(document.body, { childList: true, subtree: true });
+
+    window.addEventListener('resize', again);
+    window.addEventListener('orientationchange', again);
+    document.addEventListener('click', again);
+
     run();
 }
 
