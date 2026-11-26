@@ -858,6 +858,8 @@ function buttonAction(action){
 }
 
 function showScreeningQuestions() {
+        if (!getJobID()) return;
+
         shazamme.site()
             .then( s => shazamme.fetch({
                 path: `/job-results/${s.siteID}/${getJobID()}`,
@@ -997,6 +999,31 @@ function checkForDuplicate(candidateID) {
 
 }
 
+
+// Opened without ?jobID= (and no job remembered from an earlier visit) there is
+// nothing to apply for, so no job lookup is made and the form gives way to the
+// "no longer available" message.
+function showNoJob() {
+    $('.shmApplicationMainContainer').hide();
+    $('.section-no-job-message').show();
+}
+
+// Native radios and file buttons keep the browser's look. These rules style them
+// with zero specificity (:where), so any site or Design Editor rule beats them.
+// Set styleNativeInputs to false to leave them as the browser draws them.
+function installNativeInputStyles() {
+    if (data.config.styleNativeInputs === false || document.getElementById('shz-apply-native-inputs')) return;
+
+    const css = `
+        :where(.shmApplicationMainContainer) input[type=radio],
+        :where(.shmApplicationMainContainer) input[type=checkbox] { accent-color: currentColor; }
+        :where(.shmApplicationMainContainer) input[type=file]::file-selector-button {
+            font: inherit; color: inherit; background: transparent; cursor: pointer;
+            border: 1px solid currentColor; border-radius: 6px; padding: .5em 1em; margin-right: 12px;
+        }`;
+
+    $('<style id="shz-apply-native-inputs">').text(css).appendTo('head');
+}
 
 const main = (w) => {
     const register = () => {
@@ -1472,9 +1499,13 @@ const main = (w) => {
     }
 
     shazamme.store('applicationURL', window.location.href);
-    shazamme.store("jobID", getJobID());
+    getJobID() && shazamme.store("jobID", getJobID());
 
-    if (!data.inEditor) {
+    installNativeInputStyles();
+
+    if (!data.inEditor && !getJobID()) {
+        showNoJob();
+    } else if (!data.inEditor) {
         shazamme.site()
             .then( s => shazamme.fetch({
                 path: `/job-results/${s.siteID}/${getJobID()}`,
@@ -1491,8 +1522,7 @@ const main = (w) => {
                         w.pub('job-application-fixed-job', j.data.jobID, true);
                     }
                 } else {
-                    $('.shmApplicationMainContainer').hide();
-                    $('.section-no-job-message').show();
+                    showNoJob();
                 }
             });
     }
