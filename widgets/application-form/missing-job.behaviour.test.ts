@@ -53,7 +53,7 @@ describe('installNativeInputStyles', () => {
     api.installNativeInputStyles();
     const sheets = document.querySelectorAll('#shz-apply-native-inputs');
     expect(sheets).toHaveLength(1);
-    expect(sheets[0].textContent).toContain(':where(.shmApplicationMainContainer) input[type=radio]');
+    expect(sheets[0].textContent).toContain(':where(.shmApplicationMainContainer input[type=radio]');
     expect(sheets[0].textContent).toContain('::file-selector-button');
   });
 

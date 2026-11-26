@@ -1009,20 +1009,20 @@ function showNoJob() {
 }
 
 // Native radios and file buttons keep the browser's look. These rules style them
-// with zero specificity (:where), so any site or Design Editor rule beats them.
+// with zero specificity (the whole selector sits in :where) at the top of <head>,
+// so any site or Design Editor rule beats them.
 // Set styleNativeInputs to false to leave them as the browser draws them.
 function installNativeInputStyles() {
     if (data.config.styleNativeInputs === false || document.getElementById('shz-apply-native-inputs')) return;
 
     const css = `
-        :where(.shmApplicationMainContainer) input[type=radio],
-        :where(.shmApplicationMainContainer) input[type=checkbox] { accent-color: currentColor; }
-        :where(.shmApplicationMainContainer) input[type=file]::file-selector-button {
+        :where(.shmApplicationMainContainer input[type=radio], .shmApplicationMainContainer input[type=checkbox]) { accent-color: currentColor; }
+        :where(.shmApplicationMainContainer input[type=file])::file-selector-button {
             font: inherit; color: inherit; background: transparent; cursor: pointer;
             border: 1px solid currentColor; border-radius: 6px; padding: .5em 1em; margin-right: 12px;
         }`;
 
-    $('<style id="shz-apply-native-inputs">').text(css).appendTo('head');
+    $('<style id="shz-apply-native-inputs">').text(css).prependTo('head');
 }
 
 const main = (w) => {

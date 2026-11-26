@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 6e1615b4eb67. Registers window.ShazammeWidget["<name>"].
+ * Build 893edafdc946. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -815,13 +815,12 @@ Typed by the candidate on the website, ${(/* @__PURE__ */ new Date()).toLocaleDa
     function installNativeInputStyles() {
       if (data.config.styleNativeInputs === false || document.getElementById("shz-apply-native-inputs")) return;
       const css = `
-        :where(.shmApplicationMainContainer) input[type=radio],
-        :where(.shmApplicationMainContainer) input[type=checkbox] { accent-color: currentColor; }
-        :where(.shmApplicationMainContainer) input[type=file]::file-selector-button {
+        :where(.shmApplicationMainContainer input[type=radio], .shmApplicationMainContainer input[type=checkbox]) { accent-color: currentColor; }
+        :where(.shmApplicationMainContainer input[type=file])::file-selector-button {
             font: inherit; color: inherit; background: transparent; cursor: pointer;
             border: 1px solid currentColor; border-radius: 6px; padding: .5em 1em; margin-right: 12px;
         }`;
-      $('<style id="shz-apply-native-inputs">').text(css).appendTo("head");
+      $('<style id="shz-apply-native-inputs">').text(css).prependTo("head");
     }
     const main = (w) => {
       const register = () => {
