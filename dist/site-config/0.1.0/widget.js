@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 409d5d78c2b8. Registers window.ShazammeWidget["<name>"].
+ * Build be4b25523eda. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -492,7 +492,131 @@ var __shazWidgetExport = (() => {
         });
       }
     });
+    const PageFix = {
+      trackPx: 6,
+      centreTolerancePx: 4,
+      stickyMaxWidth: "(max-width: 767px)",
+      stickyClass: "sz-sticky-apply",
+      stickyRetryMs: 500,
+      stickyRetries: 20
+    };
+    const centreOf = (r) => r.top + r.height / 2;
+    function thinSalaryTracks(root = document) {
+      root.querySelectorAll(".control-salary-slider .slider").forEach((slider) => {
+        const inputs = Array.from(slider.querySelectorAll("input[type=range]"));
+        const tall = inputs.filter((i) => i.getBoundingClientRect().height > PageFix.trackPx * 2);
+        tall.forEach((input) => {
+          const pad = (input.getBoundingClientRect().height - PageFix.trackPx) / 2;
+          input.style.setProperty("box-sizing", "border-box");
+          input.style.setProperty("padding-block", `${pad}px`);
+          input.style.setProperty("background-clip", "content-box");
+        });
+        const bar = slider.querySelector(".section-color");
+        const first = tall[0];
+        if (bar && first) {
+          const box = first.getBoundingClientRect();
+          const barBox = bar.getBoundingClientRect();
+          if (Math.abs(centreOf(barBox) - centreOf(box)) > 2) {
+            bar.style.setProperty("top", `${(box.height - barBox.height) / 2}px`);
+          }
+        }
+      });
+    }
+    function centreCheckboxLabels(root = document) {
+      root.querySelectorAll(".dmCustomWidget label > input[type=checkbox]").forEach((box) => {
+        const label = box.parentElement;
+        const text = document.createRange();
+        text.selectNodeContents(label);
+        const textBox = Array.from(text.getClientRects()).filter((r) => r.width > 0 && r.height > 0 && r.height < box.getBoundingClientRect().height).pop();
+        if (!textBox || Math.abs(centreOf(textBox) - centreOf(box.getBoundingClientRect())) <= PageFix.centreTolerancePx) return;
+        label.style.setProperty("display", "flex");
+        label.style.setProperty("align-items", "center");
+        label.style.setProperty("gap", "8px");
+      });
+    }
+    function installStickyApply() {
+      var _a, _b;
+      const phone = (_a = window.matchMedia) == null ? void 0 : _a.call(window, PageFix.stickyMaxWidth);
+      let attempts = 0;
+      let bar = null;
+      let observer = null;
+      const source = () => Array.from(document.querySelectorAll(`.${PageFix.stickyClass}`)).map((host) => host.matches("a, button, [href]") ? host : host.querySelector("a, button, [href]")).find((el) => el && el.getClientRects().length > 0);
+      const remove = () => {
+        observer == null ? void 0 : observer.disconnect();
+        observer = null;
+        bar == null ? void 0 : bar.remove();
+        bar = null;
+        document.body.style.removeProperty("padding-bottom");
+      };
+      const build = (el) => {
+        const css = getComputedStyle(el);
+        const label = (el.textContent || "").trim();
+        const button = document.createElement("button");
+        bar = document.createElement("div");
+        bar.setAttribute("data-rel", "sticky-apply");
+        bar.style.cssText = "position:fixed;left:0;right:0;bottom:0;z-index:2147483000;display:none;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:#fff;box-shadow:0 -2px 12px rgba(0,0,0,.18);box-sizing:border-box";
+        button.type = "button";
+        button.textContent = label;
+        button.style.cssText = [
+          "width:100%",
+          "min-height:48px",
+          "cursor:pointer",
+          "border:0",
+          "box-sizing:border-box",
+          `background:${css.backgroundColor}`,
+          `color:${css.color}`,
+          `border-radius:${css.borderRadius}`,
+          `font:${css.font}`,
+          `text-transform:${css.textTransform}`,
+          `letter-spacing:${css.letterSpacing}`
+        ].join(";");
+        button.addEventListener("click", () => el.click());
+        bar.appendChild(button);
+        document.body.appendChild(bar);
+        observer = new IntersectionObserver((entries) => {
+          const showing = !entries.some((e) => e.isIntersecting);
+          bar.style.setProperty("display", showing ? "block" : "none");
+          document.body.style.setProperty("padding-bottom", showing ? `${bar.offsetHeight}px` : "0");
+        });
+        observer.observe(el);
+      };
+      const start = () => {
+        if (!(phone == null ? void 0 : phone.matches) || bar) return;
+        const el = source();
+        if (el) {
+          build(el);
+        } else if (++attempts < PageFix.stickyRetries) {
+          setTimeout(start, PageFix.stickyRetryMs);
+        }
+      };
+      (_b = phone == null ? void 0 : phone.addEventListener) == null ? void 0 : _b.call(phone, "change", () => {
+        remove();
+        attempts = 0;
+        start();
+      });
+      if (document.querySelector(`.${PageFix.stickyClass}`) && typeof IntersectionObserver !== "undefined") start();
+    }
+    function installPageFixes() {
+      const run = () => {
+        if (!document.querySelector(".control-salary-slider, .dmCustomWidget label > input[type=checkbox]")) return;
+        thinSalaryTracks();
+        centreCheckboxLabels();
+      };
+      installStickyApply();
+      let queued = false;
+      const again = () => {
+        if (queued) return;
+        queued = true;
+        setTimeout(() => {
+          queued = false;
+          run();
+        }, 100);
+      };
+      new MutationObserver(again).observe(document.body, { childList: true, subtree: true });
+      run();
+    }
     let main = (w) => {
+      if (!data.inEditor) installPageFixes();
       delete this._fileUploads;
       delete this._iconPicker;
       if (data.inEditor) {
