@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build ad3c749ec9db. Registers window.ShazammeWidget["<name>"].
+ * Build d5ee4123219c. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -532,6 +532,22 @@ var __shazWidgetExport = (() => {
           this.style.setProperty("max-width", share, "important");
         });
         this.growWrapper();
+        this.fitCards();
+      };
+      this.fitCards = () => {
+        const cards = this.el.find(".container-card-content").get();
+        cards.forEach((c) => c.style.removeProperty("height"));
+        const needed = cards.reduce((tallest, c) => {
+          const top = c.getBoundingClientRect().top;
+          const bottom = Array.from(c.children).reduce((low, k) => Math.max(low, k.getBoundingClientRect().bottom), top);
+          const pad = parseFloat(getComputedStyle(c).paddingBottom) || 0;
+          return Math.max(tallest, Math.ceil(bottom - top + pad));
+        }, 0);
+        cards.forEach((c) => {
+          if (needed > c.getBoundingClientRect().height + 1) {
+            c.style.setProperty("height", `${needed}px`, "important");
+          }
+        });
       };
       this.growWrapper = () => {
         const wrapper = this.el.get(0).closest(".widget-wrapper");
@@ -732,6 +748,23 @@ var __shazWidgetExport = (() => {
         return parts.length > 0 ? parts.join(" ") : data.config.noSalaryText || "";
       };
     }
+    const lastPathSegment = (path) => {
+      const seg = String(path || "").split("?")[0].split("#")[0].split("/").filter(Boolean).pop() || "";
+      try {
+        return decodeURIComponent(seg).toLowerCase();
+      } catch (e) {
+        return seg.toLowerCase();
+      }
+    };
+    const isViewedJob = (job, pathname) => {
+      if (!(job == null ? void 0 : job.jobURL)) return false;
+      try {
+        const seg = lastPathSegment(new URL(job.jobURL).pathname);
+        return seg !== "" && seg === lastPathSegment(pathname);
+      } catch (e) {
+        return false;
+      }
+    };
     const ux = new UX();
     let main = (w) => {
       var _a2, _b2;
@@ -764,7 +797,7 @@ var __shazWidgetExport = (() => {
         const reload = () => {
           shazamme.fetch(Collection.job).then((c) => {
             let container = $("<div />");
-            let jobs = c.filter((j) => filteredJob(j, filters)).slice(0, parseInt(data.config.jobLimit || "1"));
+            let jobs = c.filter((j) => filteredJob(j, filters)).filter((j) => data.config.boundJobID || !isViewedJob(j.data, window.location.pathname)).slice(0, parseInt(data.config.jobLimit || "1"));
             let hasJobs = jobs.length > 0;
             if (hasJobs) {
               container.append(
@@ -791,6 +824,8 @@ var __shazWidgetExport = (() => {
             ux.el.find("[data-rel=content-main]").empty().append(container);
             if (data.config.useSlides && hasJobs) {
               ux.loadSlides().then((s2) => slides = s2);
+            } else if (hasJobs) {
+              ux.fitCards();
             }
           });
         };
