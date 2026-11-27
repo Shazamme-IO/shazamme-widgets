@@ -1,5 +1,8 @@
-// LAST UPDATED: 2026-11-27 15:23 AEDT (v0.1.67)
-// Change: photos as an option (initials stay the default), per-item contact and social toggles with icon and text, location, sector, description, profile button, slider and filter bar; pinned to v0.1.67 (pending: the tag exists only after Rick merges the PR).
+// LAST UPDATED: 2026-11-27 18:00 AEDT (v0.1.67, PENDING TAG)
+// Change: photos as an option (initials stay the default), per-item contact and social toggles with icon and text, location, sector, description, profile button, slider and filter bar; review fixes (local-only profile links, filter count announced, slider keys and autoplay end, debounced search).
+// PENDING TAG v0.1.67: the tag does not exist yet. Rick tags the merge commit of this PR v0.1.67
+// (latest existing tag v0.1.65; v0.1.66 is reserved for the Job Board widget). Do not paste this
+// stub until https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@v0.1.67/dist/consultant-card/0.1.0/widget.min.js returns 200.
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab.
 //

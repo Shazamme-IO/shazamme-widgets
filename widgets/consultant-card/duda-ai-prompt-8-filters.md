@@ -15,3 +15,5 @@ Filter bar for visitors
 - All button text | key: filterAllText | type: text | default: All | help: The first button in each row, which shows everyone.
 - Filter bar position | key: filterAlign | type: dropdown | default: left | options: left, center, right | help: Where the search box and buttons sit above the list.
 - Message when nothing matches | key: noMatchText | type: text | default: No consultants match your search. | help: Shown when the search and buttons leave no consultants.
+- Count read out, one consultant | key: resultsCountOne | type: text | default: {n} consultant shown | help: Screen readers hear this after each search or button press. {n} is the number.
+- Count read out, several | key: resultsCountMany | type: text | default: {n} consultants shown | help: The same, for any other number. Not shown on the page.

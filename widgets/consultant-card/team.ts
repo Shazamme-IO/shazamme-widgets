@@ -3,11 +3,23 @@
 // consultants already loaded. Returns a teardown for the editor's re-runs.
 
 import { applyFilters, distinctValues, type ActiveFilters, type Consultant } from './data';
-import { esc, listHtml, toolsHtml } from './render';
+import { esc, listHtml, resultsText, toolsHtml } from './render';
 import type { Settings } from './settings';
 import { mountSlider } from './slider';
 
-let instances = 0;
+/** Typing waits this long after the last key before the list redraws, so a slider is not reset on every key. */
+export const SEARCH_DEBOUNCE_MS = 150;
+
+/** An id of the element's own, so two copies on one page (or a re-run) never share a label target. */
+export function uniqueId(): string {
+  const c = (globalThis as { crypto?: { randomUUID?: () => string } }).crypto;
+  if (c && typeof c.randomUUID === 'function') return c.randomUUID();
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function sameFilters(a: ActiveFilters, b: ActiveFilters): boolean {
+  return a.sector === b.sector && a.location === b.location && a.query.trim().toLowerCase() === b.query.trim().toLowerCase();
+}
 
 export function hasTools(s: Settings): boolean {
   return s.showSearch || s.showClassificationFilter || s.showLocationFilter;
@@ -27,7 +39,7 @@ export function mountTeam(stage: HTMLElement, items: Consultant[], s: Settings, 
     stage.innerHTML = listHtml(items, s, counts);
     return mountSlider(stage, s);
   }
-  const uid = `shm-cc-${++instances}`;
+  const uid = `shm-cc-${uniqueId()}`;
   const sectors = distinctValues(items, 'sectors');
   const locations = distinctValues(items, 'locations');
   const notes = inEditor ? editorNotes(s, sectors, locations) : '';
@@ -39,12 +51,16 @@ export function mountTeam(stage: HTMLElement, items: Consultant[], s: Settings, 
   let active: ActiveFilters = { sector: '', location: '', query: '' };
   let teardownSlider = mountSlider(results, s);
 
+  let pending = 0;
+
+  /** Redraws the list and announces how many are shown (or the no-match message) after every real change. */
   const update = (next: ActiveFilters): void => {
+    if (sameFilters(next, active)) return;
     active = next;
     teardownSlider();
     const shown = applyFilters(items, active);
     results.innerHTML = listHtml(shown, s, counts);
-    status.textContent = shown.length ? '' : s.noMatchText;
+    status.textContent = shown.length ? resultsText(shown.length, s) : s.noMatchText;
     teardownSlider = mountSlider(results, s);
   };
 
@@ -56,11 +72,18 @@ export function mountTeam(stage: HTMLElement, items: Consultant[], s: Settings, 
     const value = button.getAttribute('data-value') ?? '';
     update(group.getAttribute('data-shm-cc-group') === 'sector' ? { ...active, sector: value } : { ...active, location: value });
   };
-  const onInput = (): void => update({ ...active, query: search?.value ?? '' });
+  const onInput = (): void => {
+    window.clearTimeout(pending);
+    pending = window.setTimeout(() => {
+      pending = 0;
+      update({ ...active, query: search?.value ?? '' });
+    }, SEARCH_DEBOUNCE_MS);
+  };
 
   tools.addEventListener('click', onClick);
   search?.addEventListener('input', onInput);
   return () => {
+    window.clearTimeout(pending);
     teardownSlider();
     tools.removeEventListener('click', onClick);
     search?.removeEventListener('input', onInput);

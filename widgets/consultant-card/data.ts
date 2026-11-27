@@ -52,14 +52,26 @@ export function plainText(v: unknown): string {
   return (doc.body.textContent ?? '').trim();
 }
 
+/**
+ * A path that stays on this site. Leading slashes and backslashes collapse to one "/", so
+ * "//evil.com/p" or "/\evil" (which a browser reads as another host) become a local path.
+ */
+export function localPath(path: string): string {
+  return path.replace(/^[/\\]+/, '/');
+}
+
 /** The consultant's page as a link: the path of the address, keeping its case, so a case-sensitive slug still works. */
 export function hrefPath(v: unknown): string {
   const url = safeUrl(v);
   if (!url) return '';
-  if (url.startsWith('/')) return url === '/' ? '' : url;
+  if (url.startsWith('/')) {
+    const path = localPath(url);
+    return path === '/' ? '' : path;
+  }
   try {
     const u = new URL(url);
-    return u.pathname === '/' ? '' : `${u.pathname}${u.search}`;
+    const path = localPath(u.pathname);
+    return path === '/' ? '' : `${path}${u.search}`;
   } catch {
     return '';
   }
@@ -131,9 +143,14 @@ export function parseList(v: unknown, objectKey: string): string[] {
   return out;
 }
 
-/** The console's photo fields, in the order the platform Consultant widget reads them (photoURL first). */
+/**
+ * The console's photo fields, in the order the platform Consultant widget reads them (photoURL
+ * first). An http address is asked for over https, so the photo never makes the page mixed
+ * content; a host without https fails to load and the card falls back (see photoErrorHandler).
+ */
 export function photoUrl(row: Raw): string {
-  return safeUrl(row.photoURL) || safeUrl(row.externalPhotoURL) || safeUrl(row.s3URL);
+  const url = safeUrl(row.photoURL) || safeUrl(row.externalPhotoURL) || safeUrl(row.s3URL);
+  return url.replace(/^http:\/\//i, 'https://');
 }
 
 const SOCIAL_FIELDS: Record<SocialKey, string> = {
@@ -244,7 +261,7 @@ export function distinctValues(items: Consultant[], field: 'sectors' | 'location
 export function profileHref(c: Pick<Consultant, 'path'>, profilePage: string): string {
   if (!c.path || !profilePage) return c.path;
   const slug = c.path.split(/[?#]/)[0].replace(/\/+$/, '').split('/').pop() ?? '';
-  return slug ? `/${profilePage.split('/').map(encodeURIComponent).join('/')}/${slug}` : c.path;
+  return slug ? localPath(`/${profilePage.split('/').map(encodeURIComponent).join('/')}/${slug}`) : c.path;
 }
 
 function isLive(row: Raw): boolean {

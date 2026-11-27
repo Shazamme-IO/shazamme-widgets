@@ -1,7 +1,9 @@
 // Slider behaviour for layout "slider": a CSS scroll-snap row the arrows, the arrow keys
 // and (optionally) a timer move one card at a time. No library. Autoplay pauses on hover,
 // on keyboard focus, in a hidden tab and when the visitor asks for reduced motion, and
-// always has a pause button (WCAG 2.2.2). Returns a teardown for the editor's re-runs.
+// always has a pause button (WCAG 2.2.2). Without "infinite" it stops at the last card.
+// Right to left pages scroll the other way: "next" always means towards the end of the
+// row, and the arrow keys follow the reading direction. Returns a teardown for re-runs.
 
 import { ICONS } from './icons';
 import type { Settings } from './settings';
@@ -30,9 +32,13 @@ export function mountSlider(scope: HTMLElement, s: SliderSettings): () => void {
   const reduced = prefersReducedMotion();
   const smooth = !reduced;
 
+  const isRtl = (): boolean => getComputedStyle(track).direction === 'rtl';
+  /** -1 in a right to left row: the end of the row is at a negative scrollLeft there. */
+  const sign = (): 1 | -1 => (isRtl() ? -1 : 1);
   const max = (): number => Math.max(0, track.scrollWidth - track.clientWidth);
-  const atStart = (): boolean => track.scrollLeft <= EDGE;
-  const atEnd = (): boolean => track.scrollLeft >= max() - EDGE;
+  const offset = (): number => Math.abs(track.scrollLeft);
+  const atStart = (): boolean => offset() <= EDGE;
+  const atEnd = (): boolean => offset() >= max() - EDGE;
   const step = (): number => {
     const item = track.querySelector<HTMLElement>('.shm-cc-item');
     const gap = parseFloat(getComputedStyle(track).columnGap) || 0;
@@ -51,25 +57,30 @@ export function mountSlider(scope: HTMLElement, s: SliderSettings): () => void {
     next?.setAttribute('aria-disabled', String(atEnd()));
   };
 
-  const go = (dir: 1 | -1, wrap: boolean): void => {
+  /** One card towards the end (1) or the start (-1). Returns false when it is at that end and does not wrap. */
+  const go = (dir: 1 | -1, wrap: boolean): boolean => {
     if (dir > 0 && atEnd()) {
       if (wrap) moveTo(track, 0, smooth);
-      return;
+      return wrap;
     }
     if (dir < 0 && atStart()) {
-      if (wrap) moveTo(track, max(), smooth);
-      return;
+      if (wrap) moveTo(track, sign() * max(), smooth);
+      return wrap;
     }
-    if (typeof track.scrollBy === 'function') track.scrollBy({ left: dir * step(), behavior: smooth ? 'smooth' : 'auto' });
-    else track.scrollLeft += dir * step();
+    const left = sign() * dir * step();
+    if (typeof track.scrollBy === 'function') track.scrollBy({ left, behavior: smooth ? 'smooth' : 'auto' });
+    else track.scrollLeft += left;
+    return true;
   };
 
-  const onPrev = (): void => go(-1, s.infinite);
-  const onNext = (): void => go(1, s.infinite);
+  const onPrev = (): void => { go(-1, s.infinite); };
+  const onNext = (): void => { go(1, s.infinite); };
   const onKey = (e: KeyboardEvent): void => {
+    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
     e.preventDefault();
-    go(e.key === 'ArrowRight' ? 1 : -1, s.infinite);
+    const towardsRight: 1 | -1 = e.key === 'ArrowRight' ? 1 : -1;
+    go((towardsRight * sign()) as 1 | -1, s.infinite);
   };
   let frame = 0;
   const onScroll = (): void => {
@@ -86,7 +97,13 @@ export function mountSlider(scope: HTMLElement, s: SliderSettings): () => void {
   observer?.observe(track);
   sync();
 
-  const stopAutoplay = s.autoplay ? startAutoplay(slider, track, pauseButton, s, reduced, () => go(1, true)) : noop;
+  const stopAutoplay = s.autoplay
+    ? startAutoplay(slider, track, pauseButton, s, reduced, {
+      advance: () => go(1, s.infinite),
+      atEnd,
+      rewind: () => moveTo(track, 0, smooth),
+    })
+    : noop;
 
   return () => {
     stopAutoplay();
@@ -99,7 +116,14 @@ export function mountSlider(scope: HTMLElement, s: SliderSettings): () => void {
   };
 }
 
-function startAutoplay(slider: HTMLElement, track: HTMLElement, pauseButton: HTMLButtonElement | null, s: SliderSettings, reduced: boolean, advance: () => void): () => void {
+interface Motion {
+  /** Moves one card on; false when it is at the last card and does not loop. */
+  advance: () => boolean;
+  atEnd: () => boolean;
+  rewind: () => void;
+}
+
+function startAutoplay(slider: HTMLElement, track: HTMLElement, pauseButton: HTMLButtonElement | null, s: SliderSettings, reduced: boolean, motion: Motion): () => void {
   let paused = reduced;
   let hovered = false;
   let focused = false;
@@ -109,7 +133,11 @@ function startAutoplay(slider: HTMLElement, track: HTMLElement, pauseButton: HTM
     pauseButton.innerHTML = paused ? ICONS.play : ICONS.pause;
     slider.classList.toggle('is-paused', paused);
   };
-  const onToggle = (): void => { paused = !paused; label(); };
+  const onToggle = (): void => {
+    paused = !paused;
+    if (!paused && !s.infinite && motion.atEnd()) motion.rewind();
+    label();
+  };
   const onEnter = (): void => { hovered = true; };
   const onLeave = (): void => { hovered = false; };
   const onFocusIn = (e: FocusEvent): void => { focused = track.contains(e.target as Node | null); };
@@ -122,7 +150,9 @@ function startAutoplay(slider: HTMLElement, track: HTMLElement, pauseButton: HTM
   label();
   const timer = window.setInterval(() => {
     if (paused || hovered || focused || document.visibilityState === 'hidden') return;
-    advance();
+    if (motion.advance()) return;
+    paused = true;
+    label();
   }, s.sliderSpeed);
   return () => {
     window.clearInterval(timer);

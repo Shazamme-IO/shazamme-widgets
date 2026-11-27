@@ -40,16 +40,16 @@ function avatarHtml(c: Consultant, s: Settings): string {
   if (!c.photo) return s.avatar === 'photo' ? `<span class="shm-cc-photo is-missing" aria-hidden="true">${ICONS.person}</span>` : badge;
   return (
     `<span class="shm-cc-photo" aria-hidden="true" data-initials="${esc(initials(c.name))}">` +
-    `<img class="shm-cc-photo-img" src="${esc(c.photo)}" alt="" width="64" height="64" loading="lazy" decoding="async"></span>`
+    `<img class="shm-cc-photo-img" src="${esc(c.photo)}" alt="" width="64" height="64" loading="lazy" decoding="async" referrerpolicy="no-referrer"></span>`
   );
 }
 
-/** One contact link. Text only is the v0.1.65 markup; an icon adds a class and, without text, a name for screen readers. */
+/** One contact link. Text only is the v0.1.65 markup; an icon adds a class and, without text, a name for screen readers ("Phone: 02 9999 0000"). */
 function contactLink(cls: string, href: string, text: string, item: Item, icon: string): string {
   if (!href || (!item.icon && !item.label)) return '';
   if (!item.icon) return `<a class="${cls}" href="${esc(href)}">${esc(text)}</a>`;
   const label = item.label ? `<span class="shm-cc-text">${esc(text)}</span>` : '';
-  const named = item.label ? '' : ` aria-label="${esc(text)}"`;
+  const named = item.label ? '' : ` aria-label="${esc(`${item.text}: ${text}`)}"`;
   return `<a class="${cls} has-icon${item.label ? '' : ' is-icon-only'}" href="${esc(href)}"${named}>${icon}${label}</a>`;
 }
 
@@ -139,13 +139,19 @@ export function sliderHtml(items: Consultant[], s: Settings, counts: Map<string,
   const controls = pause || arrows ? `<div class="shm-cc-controls">${pause}${arrows}</div>` : '';
   return (
     `<div class="shm-cc-slider" role="region" aria-roledescription="carousel" aria-label="${esc(s.ariaLabel)}">` +
-    `<ul class="shm-cc-grid shm-cc-track" role="list" tabindex="0" aria-label="${esc(s.ariaLabel)}" data-shm-cc-track>${itemsHtml(items, s, counts)}</ul>` +
+    `<ul class="shm-cc-grid shm-cc-track" role="list" tabindex="0" data-shm-cc-track>${itemsHtml(items, s, counts)}</ul>` +
     `${controls}</div>`
   );
 }
 
+/** "{n} consultants shown", read out by the filter bar's status line after every change. */
+export function resultsText(n: number, s: Pick<Settings, 'resultsCountOne' | 'resultsCountMany'>): string {
+  return (n === 1 ? s.resultsCountOne : s.resultsCountMany).replace(/\{n\}/g, String(n));
+}
+
+/** Nothing matches: the status line reads the message out, so the visible copy is hidden from screen readers. */
 export function listHtml(items: Consultant[], s: Settings, counts: Map<string, number> | null): string {
-  if (!items.length) return `<p class="shm-cc-empty shm-cc-nomatch">${esc(s.noMatchText)}</p>`;
+  if (!items.length) return `<p class="shm-cc-empty shm-cc-nomatch" aria-hidden="true">${esc(s.noMatchText)}</p>`;
   return s.layout === 'slider' ? sliderHtml(items, s, counts) : teamHtml(items, s, counts);
 }
 

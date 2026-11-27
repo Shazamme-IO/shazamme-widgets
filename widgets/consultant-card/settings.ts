@@ -11,16 +11,15 @@ export type Align = 'left' | 'center';
 export type Layout = 'grid' | 'slider';
 export type FilterAlign = 'left' | 'center' | 'right';
 
-/** One contact or social line: shown at all, with its icon, with its text. */
+/** One contact or social line: shown at all, with its icon, with its text, and its name for screen readers. */
 export interface Item {
   show: boolean;
   icon: boolean;
   label: boolean;
-}
-
-export interface Social extends Item {
   text: string;
 }
+
+export type Social = Item;
 
 export type SocialKey = 'linkedin' | 'facebook' | 'twitter' | 'google' | 'wechat';
 export const SOCIAL_ORDER: readonly SocialKey[] = ['linkedin', 'facebook', 'twitter', 'google', 'wechat'];
@@ -81,6 +80,8 @@ export interface Settings {
   locationFilterLabel: string;
   searchPlaceholder: string;
   noMatchText: string;
+  resultsCountOne: string;
+  resultsCountMany: string;
   filterAlign: FilterAlign;
 }
 
@@ -179,9 +180,9 @@ export function readSettings(config: unknown): Settings {
     buttonText: textOr(c.buttonText, 'View profile'),
     profilePage: toText(c.profilePage).replace(/^\/+|\/+$/g, ''),
     newTab: toBool(c.newTab, false),
-    phone: { show: showPhone, icon: toBool(c.showPhoneIcon, false), label: toBool(c.showPhoneLabel, true) },
-    mobile: { show: toBool(c.showMobile, false), icon: toBool(c.showMobileIcon, false), label: toBool(c.showMobileLabel, true) },
-    email: { show: showEmail, icon: toBool(c.showEmailIcon, false), label: toBool(c.showEmailLabel, true) },
+    phone: { show: showPhone, icon: toBool(c.showPhoneIcon, false), label: toBool(c.showPhoneLabel, true), text: textOr(c.phoneText, 'Phone') },
+    mobile: { show: toBool(c.showMobile, false), icon: toBool(c.showMobileIcon, false), label: toBool(c.showMobileLabel, true), text: textOr(c.mobileText, 'Mobile') },
+    email: { show: showEmail, icon: toBool(c.showEmailIcon, false), label: toBool(c.showEmailLabel, true), text: textOr(c.emailText, 'Email') },
     socials: {
       linkedin: social(c.showLinkedin, c.showLinkedinIcon, c.showLinkedinLabel, c.linkedinText, 'LinkedIn'),
       facebook: social(c.showFacebook, c.showFacebookIcon, c.showFacebookLabel, c.facebookText, 'Facebook'),
@@ -207,6 +208,8 @@ export function readSettings(config: unknown): Settings {
     locationFilterLabel: textOr(c.locationFilterLabel, 'Filter by location'),
     searchPlaceholder: textOr(c.searchPlaceholder, 'Search by name'),
     noMatchText: textOr(c.noMatchText, 'No consultants match your search.'),
+    resultsCountOne: textOr(c.resultsCountOne, '{n} consultant shown'),
+    resultsCountMany: textOr(c.resultsCountMany, '{n} consultants shown'),
     filterAlign: toChoice(c.filterAlign, FILTER_ALIGNS, 'left'),
   };
 }

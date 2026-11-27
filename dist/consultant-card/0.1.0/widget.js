@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 752533f45148. Registers window.ShazammeWidget["<name>"].
+ * Build 86535663d3ee. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var __shazWidgetExport = (() => {
@@ -112,9 +112,9 @@ var __shazWidgetExport = (() => {
       buttonText: textOr(c.buttonText, "View profile"),
       profilePage: toText(c.profilePage).replace(/^\/+|\/+$/g, ""),
       newTab: toBool(c.newTab, false),
-      phone: { show: showPhone, icon: toBool(c.showPhoneIcon, false), label: toBool(c.showPhoneLabel, true) },
-      mobile: { show: toBool(c.showMobile, false), icon: toBool(c.showMobileIcon, false), label: toBool(c.showMobileLabel, true) },
-      email: { show: showEmail, icon: toBool(c.showEmailIcon, false), label: toBool(c.showEmailLabel, true) },
+      phone: { show: showPhone, icon: toBool(c.showPhoneIcon, false), label: toBool(c.showPhoneLabel, true), text: textOr(c.phoneText, "Phone") },
+      mobile: { show: toBool(c.showMobile, false), icon: toBool(c.showMobileIcon, false), label: toBool(c.showMobileLabel, true), text: textOr(c.mobileText, "Mobile") },
+      email: { show: showEmail, icon: toBool(c.showEmailIcon, false), label: toBool(c.showEmailLabel, true), text: textOr(c.emailText, "Email") },
       socials: {
         linkedin: social(c.showLinkedin, c.showLinkedinIcon, c.showLinkedinLabel, c.linkedinText, "LinkedIn"),
         facebook: social(c.showFacebook, c.showFacebookIcon, c.showFacebookLabel, c.facebookText, "Facebook"),
@@ -140,6 +140,8 @@ var __shazWidgetExport = (() => {
       locationFilterLabel: textOr(c.locationFilterLabel, "Filter by location"),
       searchPlaceholder: textOr(c.searchPlaceholder, "Search by name"),
       noMatchText: textOr(c.noMatchText, "No consultants match your search."),
+      resultsCountOne: textOr(c.resultsCountOne, "{n} consultant shown"),
+      resultsCountMany: textOr(c.resultsCountMany, "{n} consultants shown"),
       filterAlign: toChoice(c.filterAlign, FILTER_ALIGNS, "left")
     };
   }
@@ -162,13 +164,20 @@ var __shazWidgetExport = (() => {
     doc.querySelectorAll("script, style").forEach((el) => el.remove());
     return ((_a = doc.body.textContent) != null ? _a : "").trim();
   }
+  function localPath(path) {
+    return path.replace(/^[/\\]+/, "/");
+  }
   function hrefPath(v) {
     const url = safeUrl(v);
     if (!url) return "";
-    if (url.startsWith("/")) return url === "/" ? "" : url;
+    if (url.startsWith("/")) {
+      const path = localPath(url);
+      return path === "/" ? "" : path;
+    }
     try {
       const u = new URL(url);
-      return u.pathname === "/" ? "" : `${u.pathname}${u.search}`;
+      const path = localPath(u.pathname);
+      return path === "/" ? "" : `${path}${u.search}`;
     } catch (e) {
       return "";
     }
@@ -229,7 +238,8 @@ var __shazWidgetExport = (() => {
     return out;
   }
   function photoUrl(row) {
-    return safeUrl(row.photoURL) || safeUrl(row.externalPhotoURL) || safeUrl(row.s3URL);
+    const url = safeUrl(row.photoURL) || safeUrl(row.externalPhotoURL) || safeUrl(row.s3URL);
+    return url.replace(/^http:\/\//i, "https://");
   }
   var SOCIAL_FIELDS = {
     linkedin: "linkedInURL",
@@ -311,7 +321,7 @@ var __shazWidgetExport = (() => {
     var _a;
     if (!c.path || !profilePage) return c.path;
     const slug = (_a = c.path.split(/[?#]/)[0].replace(/\/+$/, "").split("/").pop()) != null ? _a : "";
-    return slug ? `/${profilePage.split("/").map(encodeURIComponent).join("/")}/${slug}` : c.path;
+    return slug ? localPath(`/${profilePage.split("/").map(encodeURIComponent).join("/")}/${slug}`) : c.path;
   }
   function isLive(row) {
     return !(row.activeStatus === false || row.activeStatus === "false");
@@ -442,13 +452,13 @@ var __shazWidgetExport = (() => {
     const badge = `<span class="shm-cc-badge" aria-hidden="true">${esc(initials(c.name))}</span>`;
     if (s.avatar === "initials") return badge;
     if (!c.photo) return s.avatar === "photo" ? `<span class="shm-cc-photo is-missing" aria-hidden="true">${ICONS.person}</span>` : badge;
-    return `<span class="shm-cc-photo" aria-hidden="true" data-initials="${esc(initials(c.name))}"><img class="shm-cc-photo-img" src="${esc(c.photo)}" alt="" width="64" height="64" loading="lazy" decoding="async"></span>`;
+    return `<span class="shm-cc-photo" aria-hidden="true" data-initials="${esc(initials(c.name))}"><img class="shm-cc-photo-img" src="${esc(c.photo)}" alt="" width="64" height="64" loading="lazy" decoding="async" referrerpolicy="no-referrer"></span>`;
   }
   function contactLink(cls, href, text, item, icon) {
     if (!href || !item.icon && !item.label) return "";
     if (!item.icon) return `<a class="${cls}" href="${esc(href)}">${esc(text)}</a>`;
     const label = item.label ? `<span class="shm-cc-text">${esc(text)}</span>` : "";
-    const named = item.label ? "" : ` aria-label="${esc(text)}"`;
+    const named = item.label ? "" : ` aria-label="${esc(`${item.text}: ${text}`)}"`;
     return `<a class="${cls} has-icon${item.label ? "" : " is-icon-only"}" href="${esc(href)}"${named}>${icon}${label}</a>`;
   }
   function contactHtml(c, s) {
@@ -510,10 +520,13 @@ var __shazWidgetExport = (() => {
     const pause = s.autoplay ? controlButton("shm-cc-pause", "data-shm-cc-pause", s.pauseLabel, ICONS.pause) : "";
     const arrows = s.arrows ? controlButton("shm-cc-prev", "data-shm-cc-prev", s.previousLabel, ICONS.previous) + controlButton("shm-cc-next", "data-shm-cc-next", s.nextLabel, ICONS.next) : "";
     const controls = pause || arrows ? `<div class="shm-cc-controls">${pause}${arrows}</div>` : "";
-    return `<div class="shm-cc-slider" role="region" aria-roledescription="carousel" aria-label="${esc(s.ariaLabel)}"><ul class="shm-cc-grid shm-cc-track" role="list" tabindex="0" aria-label="${esc(s.ariaLabel)}" data-shm-cc-track>${itemsHtml(items, s, counts)}</ul>${controls}</div>`;
+    return `<div class="shm-cc-slider" role="region" aria-roledescription="carousel" aria-label="${esc(s.ariaLabel)}"><ul class="shm-cc-grid shm-cc-track" role="list" tabindex="0" data-shm-cc-track>${itemsHtml(items, s, counts)}</ul>${controls}</div>`;
+  }
+  function resultsText(n, s) {
+    return (n === 1 ? s.resultsCountOne : s.resultsCountMany).replace(/\{n\}/g, String(n));
   }
   function listHtml(items, s, counts) {
-    if (!items.length) return `<p class="shm-cc-empty shm-cc-nomatch">${esc(s.noMatchText)}</p>`;
+    if (!items.length) return `<p class="shm-cc-empty shm-cc-nomatch" aria-hidden="true">${esc(s.noMatchText)}</p>`;
     return s.layout === "slider" ? sliderHtml(items, s, counts) : teamHtml(items, s, counts);
   }
   function filterGroup(kind, label, values, s) {
@@ -551,9 +564,12 @@ var __shazWidgetExport = (() => {
     const pauseButton = slider.querySelector("[data-shm-cc-pause]");
     const reduced = prefersReducedMotion();
     const smooth = !reduced;
+    const isRtl = () => getComputedStyle(track).direction === "rtl";
+    const sign = () => isRtl() ? -1 : 1;
     const max = () => Math.max(0, track.scrollWidth - track.clientWidth);
-    const atStart = () => track.scrollLeft <= EDGE;
-    const atEnd = () => track.scrollLeft >= max() - EDGE;
+    const offset = () => Math.abs(track.scrollLeft);
+    const atStart = () => offset() <= EDGE;
+    const atEnd = () => offset() >= max() - EDGE;
     const step = () => {
       const item = track.querySelector(".shm-cc-item");
       const gap = parseFloat(getComputedStyle(track).columnGap) || 0;
@@ -573,21 +589,29 @@ var __shazWidgetExport = (() => {
     const go = (dir, wrap) => {
       if (dir > 0 && atEnd()) {
         if (wrap) moveTo(track, 0, smooth);
-        return;
+        return wrap;
       }
       if (dir < 0 && atStart()) {
-        if (wrap) moveTo(track, max(), smooth);
-        return;
+        if (wrap) moveTo(track, sign() * max(), smooth);
+        return wrap;
       }
-      if (typeof track.scrollBy === "function") track.scrollBy({ left: dir * step(), behavior: smooth ? "smooth" : "auto" });
-      else track.scrollLeft += dir * step();
+      const left = sign() * dir * step();
+      if (typeof track.scrollBy === "function") track.scrollBy({ left, behavior: smooth ? "smooth" : "auto" });
+      else track.scrollLeft += left;
+      return true;
     };
-    const onPrev = () => go(-1, s.infinite);
-    const onNext = () => go(1, s.infinite);
+    const onPrev = () => {
+      go(-1, s.infinite);
+    };
+    const onNext = () => {
+      go(1, s.infinite);
+    };
     const onKey = (e) => {
+      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
       e.preventDefault();
-      go(e.key === "ArrowRight" ? 1 : -1, s.infinite);
+      const towardsRight = e.key === "ArrowRight" ? 1 : -1;
+      go(towardsRight * sign(), s.infinite);
     };
     let frame = 0;
     const onScroll = () => {
@@ -605,7 +629,11 @@ var __shazWidgetExport = (() => {
     const observer = typeof ResizeObserver === "function" ? new ResizeObserver(sync) : null;
     observer == null ? void 0 : observer.observe(track);
     sync();
-    const stopAutoplay = s.autoplay ? startAutoplay(slider, track, pauseButton, s, reduced, () => go(1, true)) : noop;
+    const stopAutoplay = s.autoplay ? startAutoplay(slider, track, pauseButton, s, reduced, {
+      advance: () => go(1, s.infinite),
+      atEnd,
+      rewind: () => moveTo(track, 0, smooth)
+    }) : noop;
     return () => {
       stopAutoplay();
       observer == null ? void 0 : observer.disconnect();
@@ -616,7 +644,7 @@ var __shazWidgetExport = (() => {
       track.removeEventListener("scroll", onScroll);
     };
   }
-  function startAutoplay(slider, track, pauseButton, s, reduced, advance) {
+  function startAutoplay(slider, track, pauseButton, s, reduced, motion) {
     let paused = reduced;
     let hovered = false;
     let focused = false;
@@ -628,6 +656,7 @@ var __shazWidgetExport = (() => {
     };
     const onToggle = () => {
       paused = !paused;
+      if (!paused && !s.infinite && motion.atEnd()) motion.rewind();
       label();
     };
     const onEnter = () => {
@@ -650,7 +679,9 @@ var __shazWidgetExport = (() => {
     label();
     const timer = window.setInterval(() => {
       if (paused || hovered || focused || document.visibilityState === "hidden") return;
-      advance();
+      if (motion.advance()) return;
+      paused = true;
+      label();
     }, s.sliderSpeed);
     return () => {
       window.clearInterval(timer);
@@ -663,7 +694,15 @@ var __shazWidgetExport = (() => {
   }
 
   // widgets/consultant-card/team.ts
-  var instances = 0;
+  var SEARCH_DEBOUNCE_MS = 150;
+  function uniqueId() {
+    const c = globalThis.crypto;
+    if (c && typeof c.randomUUID === "function") return c.randomUUID();
+    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  }
+  function sameFilters(a, b) {
+    return a.sector === b.sector && a.location === b.location && a.query.trim().toLowerCase() === b.query.trim().toLowerCase();
+  }
   function hasTools(s) {
     return s.showSearch || s.showClassificationFilter || s.showLocationFilter;
   }
@@ -679,7 +718,7 @@ var __shazWidgetExport = (() => {
       stage.innerHTML = listHtml(items, s, counts);
       return mountSlider(stage, s);
     }
-    const uid = `shm-cc-${++instances}`;
+    const uid = `shm-cc-${uniqueId()}`;
     const sectors = distinctValues(items, "sectors");
     const locations = distinctValues(items, "locations");
     const notes = inEditor ? editorNotes(s, sectors, locations) : "";
@@ -690,12 +729,14 @@ var __shazWidgetExport = (() => {
     const search = stage.querySelector("[data-shm-cc-search]");
     let active = { sector: "", location: "", query: "" };
     let teardownSlider = mountSlider(results, s);
+    let pending = 0;
     const update = (next) => {
+      if (sameFilters(next, active)) return;
       active = next;
       teardownSlider();
       const shown = applyFilters(items, active);
       results.innerHTML = listHtml(shown, s, counts);
-      status.textContent = shown.length ? "" : s.noMatchText;
+      status.textContent = shown.length ? resultsText(shown.length, s) : s.noMatchText;
       teardownSlider = mountSlider(results, s);
     };
     const onClick = (e) => {
@@ -708,12 +749,17 @@ var __shazWidgetExport = (() => {
       update(group.getAttribute("data-shm-cc-group") === "sector" ? { ...active, sector: value } : { ...active, location: value });
     };
     const onInput = () => {
-      var _a;
-      return update({ ...active, query: (_a = search == null ? void 0 : search.value) != null ? _a : "" });
+      window.clearTimeout(pending);
+      pending = window.setTimeout(() => {
+        var _a;
+        pending = 0;
+        update({ ...active, query: (_a = search == null ? void 0 : search.value) != null ? _a : "" });
+      }, SEARCH_DEBOUNCE_MS);
     };
     tools.addEventListener("click", onClick);
     search == null ? void 0 : search.addEventListener("input", onInput);
     return () => {
+      window.clearTimeout(pending);
       teardownSlider();
       tools.removeEventListener("click", onClick);
       search == null ? void 0 : search.removeEventListener("input", onInput);
