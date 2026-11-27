@@ -1,7 +1,7 @@
 // Consultant data: normalise each collection row to one shape, then filter, sort and
 // count live roles. Everything here is pure except `loadRows`.
 
-import { toText, type Settings } from './settings';
+import { toText, type Settings, type SocialKey } from './settings';
 
 export interface Consultant {
   id: string;
@@ -13,6 +13,14 @@ export interface Consultant {
   key: string;
   classification: string;
   sortOrder: number;
+  /** The phone line as stored, without falling back to the mobile (used when the mobile line is on too). */
+  phoneOnly: string;
+  mobile: string;
+  photo: string;
+  locations: string[];
+  sectors: string[];
+  description: string;
+  socials: Partial<Record<SocialKey, string>>;
 }
 
 /** How many live jobs name each consultant. `known` is false when the job feed carries no consultant link at all. */
@@ -44,14 +52,26 @@ export function plainText(v: unknown): string {
   return (doc.body.textContent ?? '').trim();
 }
 
+/**
+ * A path that stays on this site. Leading slashes and backslashes collapse to one "/", so
+ * "//evil.com/p" or "/\evil" (which a browser reads as another host) become a local path.
+ */
+export function localPath(path: string): string {
+  return path.replace(/^[/\\]+/, '/');
+}
+
 /** The consultant's page as a link: the path of the address, keeping its case, so a case-sensitive slug still works. */
 export function hrefPath(v: unknown): string {
   const url = safeUrl(v);
   if (!url) return '';
-  if (url.startsWith('/')) return url === '/' ? '' : url;
+  if (url.startsWith('/')) {
+    const path = localPath(url);
+    return path === '/' ? '' : path;
+  }
   try {
     const u = new URL(url);
-    return u.pathname === '/' ? '' : `${u.pathname}${u.search}`;
+    const path = localPath(u.pathname);
+    return path === '/' ? '' : `${path}${u.search}`;
   } catch {
     return '';
   }
@@ -92,11 +112,74 @@ export function rowData(entry: unknown): Raw | null {
   return inner && typeof inner === 'object' ? (inner as Raw) : e;
 }
 
+/**
+ * A list field from the console: a JSON array (`[{"Profession":"Legal"}]`, `[{"LocationName":"Sydney"}]`
+ * or plain strings) or comma-separated text. Returns trimmed, de-duplicated plain text.
+ */
+export function parseList(v: unknown, objectKey: string): string[] {
+  const raw = typeof v === 'string' ? v.trim() : Array.isArray(v) ? v : '';
+  if (!raw) return [];
+  let items: unknown[] | null = Array.isArray(raw) ? raw : null;
+  if (!items && typeof raw === 'string' && raw.startsWith('[')) {
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      if (Array.isArray(parsed)) items = parsed;
+    } catch {
+      items = null;
+    }
+  }
+  const values = items
+    ? items.map((i) => (typeof i === 'string' ? i : i && typeof i === 'object' ? (i as Raw)[objectKey] ?? (i as Raw).Name ?? (i as Raw).name : ''))
+    : String(raw).split(',');
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const value of values) {
+    const text = plainText(typeof value === 'string' ? value : '');
+    if (text && !seen.has(text.toLowerCase())) {
+      seen.add(text.toLowerCase());
+      out.push(text);
+    }
+  }
+  return out;
+}
+
+/**
+ * The console's photo fields, in the order the platform Consultant widget reads them (photoURL
+ * first). An http address is asked for over https, so the photo never makes the page mixed
+ * content. A custom port is kept as written; only an explicit :80 (the http default, which never
+ * speaks https) is dropped. A host without https fails to load and the card falls back (see
+ * photoErrorHandler).
+ */
+export function photoUrl(row: Raw): string {
+  const url = safeUrl(row.photoURL) || safeUrl(row.externalPhotoURL) || safeUrl(row.s3URL);
+  if (!/^http:\/\//i.test(url)) return url;
+  return url.replace(/^http:\/\/([^/?#]*?):80(?=[/?#]|$)/i, 'http://$1').replace(/^http:\/\//i, 'https://');
+}
+
+const SOCIAL_FIELDS: Record<SocialKey, string> = {
+  linkedin: 'linkedInURL',
+  facebook: 'facebookURL',
+  twitter: 'twitterURL',
+  google: 'googleURL',
+  wechat: 'weChatURL',
+};
+
+function socialsOf(row: Raw): Partial<Record<SocialKey, string>> {
+  const out: Partial<Record<SocialKey, string>> = {};
+  for (const [id, field] of Object.entries(SOCIAL_FIELDS) as [SocialKey, string][]) {
+    const url = safeUrl(row[field]);
+    if (/^https?:\/\//i.test(url)) out[id] = url;
+  }
+  return out;
+}
+
 export function toConsultant(row: Raw, index: number): Consultant | null {
   if (row.isVisible === false || row.isVisible === 'false') return null;
   const name = [plainText(row.firstName), plainText(row.lastName)].filter(Boolean).join(' ');
   if (!name) return null;
   const sort = typeof row.sortOrder === 'number' ? row.sortOrder : parseInt(String(row.sortOrder ?? ''), 10);
+  const locations = parseList(row.businessLocation, 'LocationName');
+  const sectors = parseList(row.classification, 'Profession');
   return {
     id: toText(row.consultantID, `row-${index}`).toLowerCase() || `row-${index}`,
     name,
@@ -107,6 +190,13 @@ export function toConsultant(row: Raw, index: number): Consultant | null {
     key: pathKey(row.consultantURL),
     classification: toText(row.classification).toLowerCase(),
     sortOrder: Number.isFinite(sort) ? sort : Number.MAX_SAFE_INTEGER,
+    phoneOnly: plainText(row.phone),
+    mobile: plainText(row.mobile),
+    photo: photoUrl(row),
+    locations: locations.length ? locations : parseList(row.businessLocation2, 'LocationName'),
+    sectors: sectors.length ? sectors : parseList(row.classification2, 'Profession'),
+    description: plainText(row.shortDescription),
+    socials: socialsOf(row),
   };
 }
 
@@ -121,13 +211,60 @@ export function normaliseConsultants(entries: unknown): Consultant[] {
   return out;
 }
 
-export function selectConsultants(all: Consultant[], s: Pick<Settings, 'classification' | 'sortBy' | 'maxConsultants'>): Consultant[] {
-  const filtered = s.classification ? all.filter((c) => c.classification === s.classification) : all.slice();
+/** Comma-separated wanted values; a consultant matches on their whole field or any one of its entries. */
+function matchesAny(want: string, whole: string, entries: string[]): boolean {
+  if (!want) return true;
+  if (whole && whole === want) return true;
+  const wanted = want.split(',').map((w) => w.trim()).filter(Boolean);
+  return entries.some((e) => wanted.includes(e.toLowerCase()));
+}
+
+export function selectConsultants(all: Consultant[], s: Pick<Settings, 'classification' | 'sortBy' | 'maxConsultants'> & Partial<Pick<Settings, 'location'>>): Consultant[] {
+  const location = s.location ?? '';
+  const filtered =
+    s.classification || location
+      ? all.filter((c) => matchesAny(s.classification, c.classification, c.sectors) && matchesAny(location, '', c.locations))
+      : all.slice();
   const sorted =
     s.sortBy === 'name'
       ? filtered.sort((a, b) => a.name.localeCompare(b.name))
       : filtered.sort((a, b) => a.sortOrder - b.sortOrder);
   return s.maxConsultants > 0 ? sorted.slice(0, s.maxConsultants) : sorted;
+}
+
+export interface ActiveFilters {
+  sector: string;
+  location: string;
+  query: string;
+}
+
+/** The visitor's choices in the filter bar: one sector, one location and a name search, all at once. */
+export function applyFilters(items: Consultant[], f: ActiveFilters): Consultant[] {
+  const query = f.query.trim().toLowerCase();
+  return items.filter(
+    (c) =>
+      (!f.sector || c.sectors.some((x) => x.toLowerCase() === f.sector)) &&
+      (!f.location || c.locations.some((x) => x.toLowerCase() === f.location)) &&
+      (!query || c.name.toLowerCase().includes(query) || c.role.toLowerCase().includes(query)),
+  );
+}
+
+/** Every distinct value of one list field, A to Z, for the filter buttons. */
+export function distinctValues(items: Consultant[], field: 'sectors' | 'locations'): string[] {
+  const byLower = new Map<string, string>();
+  for (const c of items) for (const v of c[field]) if (!byLower.has(v.toLowerCase())) byLower.set(v.toLowerCase(), v);
+  return [...byLower.values()].sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * The consultant's page. With no profile page set it is the consultant's own address; with one
+ * (for example "consultant") it is that page plus the last part of their address, as the
+ * Consultant widget builds it.
+ */
+export function profileHref(c: Pick<Consultant, 'path'>, profilePage: string): string {
+  if (!c.path || !profilePage) return c.path;
+  const slug = c.path.split(/[?#]/)[0].replace(/\/+$/, '').split('/').pop() ?? '';
+  return slug ? localPath(`/${profilePage.split('/').map(encodeURIComponent).join('/')}/${slug}`) : c.path;
 }
 
 function isLive(row: Raw): boolean {
@@ -185,7 +322,11 @@ export function consultantForJob(job: Raw, consultants: Consultant[]): Consultan
   if (match) return match;
   const name = plainText(job.contactName);
   if (!name) return null;
-  return { id: 'job-contact', name, role: '', email, phone: plainText(job.contactPhone), path: hrefPath(job.consultantURL), key, classification: '', sortOrder: 0 };
+  const phone = plainText(job.contactPhone);
+  return {
+    id: 'job-contact', name, role: '', email, phone, path: hrefPath(job.consultantURL), key, classification: '', sortOrder: 0,
+    phoneOnly: phone, mobile: '', photo: '', locations: [], sectors: [], description: '', socials: {},
+  };
 }
 
 export interface Sdk {
