@@ -1,0 +1,14 @@
+{
+  "_comment": "Every data.config key Keyword Ticker reads. The Duda editors are built from duda-ai-prompt-1-content.md; index.test.ts keeps this file and that prompt in step. Duda serialises dropdowns and numbers as strings and toggles as booleans or strings; readSettings coerces both. sdk is false because typed words need no SDK: the loader stub loads it only when source is professions.",
+  "widget": "keyword-ticker",
+  "sdk": false,
+  "fields": [
+    { "key": "source", "type": "dropdown", "default": "words", "options": ["words", "professions"] },
+    { "key": "words", "type": "textarea", "default": "" },
+    { "key": "maxWords", "type": "number", "default": 12, "min": 1, "max": 60 },
+    { "key": "speed", "type": "number", "default": 40, "min": 5, "max": 300 },
+    { "key": "direction", "type": "dropdown", "default": "rtl", "options": ["rtl", "ltr"] },
+    { "key": "pauseOnHover", "type": "boolean", "default": true },
+    { "key": "showSeparator", "type": "boolean", "default": true }
+  ]
+}

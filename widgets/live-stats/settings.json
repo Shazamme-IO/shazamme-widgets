@@ -1,0 +1,18 @@
+{
+  "_comment": "Every data.config key Live Stats reads. The Duda editors are built from duda-ai-prompt-1-content.md; index.test.ts keeps this file and that prompt in step. Item keys of the tiles list are listed under itemKeys. Duda serialises dropdowns and numbers as strings; normaliseTiles coerces them.",
+  "widget": "live-stats",
+  "fields": [
+    { "key": "tiles", "type": "list", "default": [] }
+  ],
+  "itemKeys": [
+    { "key": "source", "type": "dropdown", "default": "custom", "options": ["jobs", "industries", "countries", "consultants", "custom"] },
+    { "key": "value", "type": "text", "default": "" },
+    { "key": "suffix", "type": "text", "default": "" },
+    { "key": "label", "type": "text", "default": "" },
+    { "key": "text", "type": "textarea", "default": "" },
+    { "key": "size", "type": "dropdown", "default": "1", "options": ["1", "2"] },
+    { "key": "style", "type": "dropdown", "default": "dark", "options": ["dark", "accent"] },
+    { "key": "linkText", "type": "text", "default": "" },
+    { "key": "linkUrl", "type": "link", "default": "" }
+  ]
+}

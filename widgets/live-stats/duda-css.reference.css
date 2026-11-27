@@ -1,0 +1,114 @@
+.shm-ls { box-sizing: border-box; width: 100%; font-family: 'Albert Sans', system-ui, sans-serif; }
+.shm-ls *, .shm-ls *::before, .shm-ls *::after { box-sizing: border-box; }
+.shm-ls .shm-ls-sources { display: none; }
+
+.shm-ls .shm-ls-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@media (max-width: 1023px) {
+  .shm-ls .shm-ls-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 767px) {
+  .shm-ls .shm-ls-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Dark card (the default). */
+.shm-ls .shm-ls-tile {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 24px;
+  min-width: 0;
+  padding: 32px;
+  border: 1px solid rgba(247, 245, 239, 0.1);
+  border-radius: 20px;
+  background-color: #1A2036;
+  color: #F7F5EF;
+}
+.shm-ls .shm-ls-tile.is-wide { grid-column: span 2; justify-content: space-between; min-height: 280px; padding: 36px; }
+@media (max-width: 767px) {
+  .shm-ls .shm-ls-tile.is-wide { grid-column: span 1; }
+}
+.shm-ls .shm-ls-main { display: flex; flex-direction: column; gap: 8px; }
+.shm-ls .shm-ls-tile.is-wide .shm-ls-main { gap: 12px; }
+
+.shm-ls .shm-ls-number {
+  font-family: Montserrat, sans-serif;
+  font-size: 64px;
+  font-weight: 900;
+  font-style: italic;
+  line-height: 1;
+  letter-spacing: 0;
+  color: #F7F5EF;
+  overflow-wrap: break-word;
+}
+.shm-ls .shm-ls-tile.is-wide .shm-ls-number { font-size: clamp(72px, 8vw, 120px); line-height: 0.9; letter-spacing: -0.04em; }
+.shm-ls .shm-ls-suffix { color: #D4F34A; }
+
+.shm-ls .shm-ls-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #D4F34A;
+}
+.shm-ls .shm-ls-tile.is-wide > .shm-ls-label { letter-spacing: 0.18em; }
+.shm-ls .shm-ls-tile.is-wide > .shm-ls-label::before { content: ""; display: inline-block; flex: none; width: 32px; height: 2px; background-color: #D4F34A; }
+
+.shm-ls .shm-ls-text { margin: 0; max-width: 420px; font-size: 15px; line-height: 1.5; color: #C9CCD6; }
+.shm-ls .shm-ls-tile.is-wide .shm-ls-text { font-size: 18px; }
+
+/* Accent card. */
+.shm-ls .shm-ls-tile.is-accent {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 0;
+  padding: 32px 36px;
+  border-color: transparent;
+  background-color: #D4F34A;
+  color: #101423;
+}
+.shm-ls .shm-ls-tile.is-accent .shm-ls-main { gap: 10px; }
+.shm-ls .shm-ls-tile.is-accent .shm-ls-number { font-size: clamp(40px, 4vw, 56px); line-height: 1; letter-spacing: -0.02em; color: #101423; }
+.shm-ls .shm-ls-tile.is-accent .shm-ls-suffix { color: inherit; }
+.shm-ls .shm-ls-tile.is-accent .shm-ls-label { color: #101423; }
+.shm-ls .shm-ls-tile.is-accent .shm-ls-text { max-width: none; font-size: 16px; font-weight: 500; color: #101423; }
+
+/* Button, per the Shazamme button standard: 44px tall, room around the label. Colours are set per card style so each has its own Design editor keys. */
+.shm-ls .shm-ls-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 14px 32px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration: none;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+.shm-ls .shm-ls-tile.is-dark .shm-ls-link { align-self: flex-start; border-color: #D4F34A; background-color: #D4F34A; color: #101423; }
+.shm-ls .shm-ls-tile.is-dark .shm-ls-link:hover { border-color: #F7F5EF; background-color: #F7F5EF; color: #101423; }
+.shm-ls .shm-ls-tile.is-accent .shm-ls-link { border-color: #101423; background-color: #101423; color: #F7F5EF; }
+.shm-ls .shm-ls-tile.is-accent .shm-ls-link:hover { border-color: #3A4056; background-color: #3A4056; color: #F7F5EF; }
+.shm-ls .shm-ls-link:focus-visible { outline: 3px solid #FFFFFF; outline-offset: 2px; box-shadow: 0 0 0 5px #101423; }
+
+.shm-ls .shm-ls-empty { grid-column: 1 / -1; padding: 16px; border: 1px dashed #999999; color: #555555; font-size: 14px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .shm-ls .shm-ls-link { transition: none; }
+}

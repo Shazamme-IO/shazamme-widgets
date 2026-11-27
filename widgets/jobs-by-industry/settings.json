@@ -1,0 +1,25 @@
+{
+  "_comment": "Every data.config key Jobs by Industry reads. The Duda editors are built from duda-ai-prompt-1-content.md and duda-ai-prompt-2-industries.md; index.test.ts keeps this file, the HTML source markup and those prompts in step. Duda serialises dropdowns and numbers as strings and toggles as booleans or strings; readSettings coerces both.",
+  "widget": "jobs-by-industry",
+  "fields": [
+    { "key": "maxProfessions", "type": "number", "default": 6, "min": 1, "max": 30 },
+    { "key": "maxJobs", "type": "number", "default": 4, "min": 1, "max": 12 },
+    { "key": "detailsPage", "type": "text", "default": "/job-details" },
+    { "key": "locationFormat", "type": "dropdown", "default": "city-state", "options": ["city-state", "city-country", "city-state-country"] },
+    { "key": "showSalary", "type": "boolean", "default": true },
+    { "key": "showSeeAll", "type": "boolean", "default": true },
+    { "key": "seeAllText", "type": "text", "default": "See all {count} roles" },
+    { "key": "seeAllUrl", "type": "link", "default": "/job-results" },
+    { "key": "countOne", "type": "text", "default": "{n} live role" },
+    { "key": "countMany", "type": "text", "default": "{n} live roles" },
+    { "key": "ariaLabel", "type": "text", "default": "Industries" },
+    { "key": "headingTag", "type": "dropdown", "default": "h3", "options": ["h2", "h3", "h4", "h5", "p"] },
+    { "key": "defaultImage", "type": "image", "default": "" },
+    { "key": "industries", "type": "list", "default": [] }
+  ],
+  "itemKeys": [
+    { "key": "name", "type": "text", "default": "" },
+    { "key": "blurb", "type": "text", "default": "" },
+    { "key": "image", "type": "image", "default": "" }
+  ]
+}

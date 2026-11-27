@@ -1,0 +1,19 @@
+.shm-jbi .shm-jbi-top { justify-content: stretch; }
+.shm-jbi .shm-jbi-all { width: 100%; padding: 14px 24px; }
+
+/* The tab list becomes one row you scroll sideways; the panel sits underneath. */
+.shm-jbi .shm-jbi-board { flex-direction: column; flex-wrap: nowrap; border-radius: 20px; }
+.shm-jbi .shm-jbi-tabs {
+  flex: none;
+  flex-direction: row;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  border-right: 0;
+  border-bottom: 1px solid #E4E1D8;
+}
+.shm-jbi .shm-jbi-tab { flex: 0 0 auto; width: min(240px, 78%); min-height: 68px; padding: 14px 20px; border-bottom: 0; border-right: 1px solid #E4E1D8; scroll-snap-align: start; }
+.shm-jbi .shm-jbi-panel { flex: none; min-height: 480px; }
+.shm-jbi .shm-jbi-panel-body { padding: 24px 20px; }
+.shm-jbi .shm-jbi-cards { grid-template-columns: minmax(0, 1fr); }
