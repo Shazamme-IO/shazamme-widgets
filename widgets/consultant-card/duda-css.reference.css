@@ -1,0 +1,56 @@
+/* Consultant Card: shared CSS. Every rule starts with .shm-cc. Initials only, never a photo. */
+.shm-cc, .shm-cc *, .shm-cc *::before, .shm-cc *::after { box-sizing: border-box; }
+.shm-cc [hidden] { display: none !important; }
+.shm-cc[hidden] { display: none !important; }
+.shm-cc { position: relative; width: 100%; container-type: inline-size; container-name: shm-cc; color: #101423; font-family: inherit; }
+.shm-cc :focus-visible { outline: 3px solid #1d4ed8; outline-offset: 2px; }
+.shm-cc.is-mode-job :focus-visible { outline-color: #d4f34a; }
+
+/* Space is kept free while the data loads, so the page does not jump */
+.shm-cc:not(.is-ready) .shm-cc-stage { min-height: 200px; }
+.shm-cc.is-mode-job:not(.is-ready) .shm-cc-stage { min-height: 220px; }
+
+.shm-cc .shm-cc-editor-note { padding: 16px 18px; border: 2px dashed #b45309; border-radius: 8px; background-color: #fffbeb; color: #78350f; font: 14px/1.5 system-ui, sans-serif; }
+.shm-cc .shm-cc-empty { margin: 0; color: #4b5060; font-size: 15px; }
+
+/* Columns come from the Content Editor, by the width of the widget itself */
+.shm-cc .shm-cc-stage { --shm-cc-per: var(--shm-cc-cols-m, 1); }
+@container shm-cc (min-width: 560px) { .shm-cc .shm-cc-stage { --shm-cc-per: var(--shm-cc-cols-t, 2); } }
+@container shm-cc (min-width: 900px) { .shm-cc .shm-cc-stage { --shm-cc-per: var(--shm-cc-cols-d, 4); } }
+
+/* Team grid */
+.shm-cc .shm-cc-grid { display: grid; grid-template-columns: repeat(var(--shm-cc-per, 1), minmax(0, 1fr)); gap: 16px; margin: 0; padding: 0; list-style: none; }
+.shm-cc .shm-cc-item { min-width: 0; margin: 0; padding: 0; }
+
+/* Card (team) */
+.shm-cc.is-mode-team .shm-cc-card { position: relative; display: flex; flex-direction: column; gap: 18px; height: 100%; margin: 0; padding: 28px; border: 1px solid #e4e1d8; border-radius: 20px; background-color: #ffffff; color: #101423; text-align: left; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+.shm-cc.is-mode-team .shm-cc-card:hover { border-color: #101423; }
+.shm-cc.is-mode-team .shm-cc-card:has(.shm-cc-name:focus-visible) { outline: 3px solid #1d4ed8; outline-offset: 2px; }
+.shm-cc.is-mode-team .shm-cc-name:focus-visible { outline: none; }
+.shm-cc.is-mode-team a.shm-cc-name::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.shm-cc.is-mode-team .shm-cc-contact a { position: relative; z-index: 1; }
+
+/* Initials badge */
+.shm-cc .shm-cc-badge { display: inline-grid; flex: 0 0 auto; place-items: center; width: 64px; height: 64px; border-radius: 18px; background-color: #101423; color: #d4f34a; font-family: Montserrat, sans-serif; font-size: 24px; font-style: italic; font-weight: 900; line-height: 1; letter-spacing: 0; }
+.shm-cc .shm-cc-id { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.shm-cc .shm-cc-name { color: #101423; font-size: 19px; font-weight: 700; line-height: 1.25; text-decoration: none; overflow-wrap: anywhere; }
+.shm-cc a.shm-cc-name:hover { text-decoration: underline; }
+.shm-cc .shm-cc-role { color: #4b5060; font-size: 15px; line-height: 1.4; }
+.shm-cc .shm-cc-contact { display: flex; flex-direction: column; gap: 8px; font-size: 15px; overflow-wrap: anywhere; }
+.shm-cc .shm-cc-contact a { color: inherit; text-decoration: underline; }
+.shm-cc.is-mode-team .shm-cc-contact { color: #101423; }
+.shm-cc .shm-cc-live { margin-top: auto; padding-top: 14px; border-top: 1px solid #e4e1d8; color: #101423; font-size: 14px; font-weight: 600; line-height: 1.4; }
+
+/* Job page card: the consultant who owns the job, on a dark panel */
+.shm-cc.is-mode-job .shm-cc-job { display: flex; flex-direction: column; gap: 18px; padding: 28px; border-radius: 22px; background-color: #101423; color: #f7f5ef; }
+.shm-cc .shm-cc-eyebrow { color: #d4f34a; font-size: 13px; font-weight: 700; letter-spacing: 0.16em; line-height: 1.3; text-transform: uppercase; }
+.shm-cc.is-mode-job .shm-cc-card { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 16px; margin: 0; padding: 0; border: 0; background: transparent; }
+.shm-cc.is-mode-job .shm-cc-badge { width: 60px; height: 60px; background-color: #d4f34a; color: #101423; font-size: 22px; }
+.shm-cc.is-mode-job .shm-cc-name { color: #f7f5ef; }
+.shm-cc.is-mode-job .shm-cc-role { color: #c9ccd6; font-size: 14px; }
+.shm-cc.is-mode-job .shm-cc-contact { grid-column: 1 / -1; color: #f7f5ef; }
+.shm-cc.is-mode-job .shm-cc-live { grid-column: 1 / -1; margin-top: 0; border-top-color: rgba(247, 245, 239, 0.16); color: #f7f5ef; }
+
+@media (prefers-reduced-motion: reduce) {
+  .shm-cc * { transition: none !important; animation: none !important; }
+}

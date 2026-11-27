@@ -1,7 +1,8 @@
 // Content Editor settings -> a typed object. Duda hands every value through as a
 // string (or leaves it out), so every read is coerced with a fallback and never throws.
 
-export type Layout = 'slider' | 'grid' | 'list' | 'featured';
+export type Layout = 'slider' | 'grid' | 'list' | 'featured' | 'wall';
+export type WallHeadline = 'name' | 'role';
 export type SortOrder = 'newest' | 'oldest' | 'random' | 'manual';
 export type ReadMoreMode = 'expand' | 'dialog' | 'off';
 export type Pagination = 'dots' | 'avatars' | 'none';
@@ -14,6 +15,9 @@ export interface Settings {
   sortOrder: SortOrder;
   maxTestimonials: number;
   layout: Layout;
+  wallAccent: number;
+  wallHeadline: WallHeadline;
+  wallPhotos: boolean;
   columnsDesktop: number;
   columnsTablet: number;
   columnsMobile: number;
@@ -53,11 +57,13 @@ export const LIMITS = {
   columns: { min: 1, max: 4 },
   maxTestimonials: { min: 0, max: 200 },
   pageSize: { min: 0, max: 100 },
+  wallAccent: { min: 0, max: 12 },
   quoteLines: { min: 0, max: 30 },
   autoplaySeconds: { min: 2, max: 60 },
 } as const;
 
-const LAYOUTS: readonly Layout[] = ['slider', 'grid', 'list', 'featured'];
+const LAYOUTS: readonly Layout[] = ['slider', 'grid', 'list', 'featured', 'wall'];
+const WALL_HEADLINES: readonly WallHeadline[] = ['name', 'role'];
 const SORTS: readonly SortOrder[] = ['newest', 'oldest', 'random', 'manual'];
 const READ_MORE: readonly ReadMoreMode[] = ['expand', 'dialog', 'off'];
 const PAGINATIONS: readonly Pagination[] = ['dots', 'avatars', 'none'];
@@ -111,6 +117,9 @@ export function readSettings(config: unknown): Settings {
     sortOrder: toChoice(c.sortOrder, SORTS, 'newest'),
     maxTestimonials: toInt(c.maxTestimonials, 0, LIMITS.maxTestimonials.min, LIMITS.maxTestimonials.max),
     layout: toChoice(c.testimonialLayout, LAYOUTS, 'slider'),
+    wallAccent: toInt(c.wallAccent, 2, LIMITS.wallAccent.min, LIMITS.wallAccent.max),
+    wallHeadline: toChoice(c.wallHeadline, WALL_HEADLINES, 'name'),
+    wallPhotos: toBool(c.wallPhotos, false),
     columnsDesktop: toInt(c.columnsDesktop, 3, LIMITS.columns.min, LIMITS.columns.max),
     columnsTablet: toInt(c.columnsTablet, 2, LIMITS.columns.min, LIMITS.columns.max),
     columnsMobile: toInt(c.columnsMobile, 1, LIMITS.columns.min, LIMITS.columns.max),

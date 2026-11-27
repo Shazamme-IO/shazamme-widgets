@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 996f15e38b78. Registers window.ShazammeWidget["<name>"].
+ * Build 1c4847a537c6. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var __shazWidgetExport = (() => {
@@ -32,10 +32,12 @@ var __shazWidgetExport = (() => {
     columns: { min: 1, max: 4 },
     maxTestimonials: { min: 0, max: 200 },
     pageSize: { min: 0, max: 100 },
+    wallAccent: { min: 0, max: 12 },
     quoteLines: { min: 0, max: 30 },
     autoplaySeconds: { min: 2, max: 60 }
   };
-  var LAYOUTS = ["slider", "grid", "list", "featured"];
+  var LAYOUTS = ["slider", "grid", "list", "featured", "wall"];
+  var WALL_HEADLINES = ["name", "role"];
   var SORTS = ["newest", "oldest", "random", "manual"];
   var READ_MORE = ["expand", "dialog", "off"];
   var PAGINATIONS = ["dots", "avatars", "none"];
@@ -81,6 +83,9 @@ var __shazWidgetExport = (() => {
       sortOrder: toChoice(c.sortOrder, SORTS, "newest"),
       maxTestimonials: toInt(c.maxTestimonials, 0, LIMITS.maxTestimonials.min, LIMITS.maxTestimonials.max),
       layout: toChoice(c.testimonialLayout, LAYOUTS, "slider"),
+      wallAccent: toInt(c.wallAccent, 2, LIMITS.wallAccent.min, LIMITS.wallAccent.max),
+      wallHeadline: toChoice(c.wallHeadline, WALL_HEADLINES, "name"),
+      wallPhotos: toBool(c.wallPhotos, false),
       columnsDesktop: toInt(c.columnsDesktop, 3, LIMITS.columns.min, LIMITS.columns.max),
       columnsTablet: toInt(c.columnsTablet, 2, LIMITS.columns.min, LIMITS.columns.max),
       columnsMobile: toInt(c.columnsMobile, 1, LIMITS.columns.min, LIMITS.columns.max),
@@ -663,7 +668,7 @@ var __shazWidgetExport = (() => {
   function photoHtml(t, s, extra = "") {
     if (!s.showPhoto) return "";
     const cls = extra ? `shm-tm-photo ${extra}` : "shm-tm-photo";
-    if (t.photo) {
+    if (t.photo && (s.layout !== "wall" || s.wallPhotos)) {
       return `<span class="${cls}"><img src="${esc(t.photo)}" alt="" width="64" height="64" loading="lazy" decoding="async"></span>`;
     }
     return `<span class="${cls} shm-tm-initials" aria-hidden="true">${esc(initials(t.name))}</span>`;
@@ -680,16 +685,37 @@ var __shazWidgetExport = (() => {
     const name = ctx.settings.linkConsultant && path ? `<a class="shm-tm-consultant-link" href="${esc(path)}">${esc(c.name)}</a>` : esc(c.name);
     return `<span class="shm-tm-consultant">${label}${name}</span>`;
   }
+  function wallLines(t, s) {
+    const asRole = s.wallHeadline === "role" && t.position;
+    const head = asRole ? t.position : t.name;
+    const rest = asRole ? [] : [s.showPosition ? t.position : "", s.showCompany ? t.company : ""];
+    if (asRole && s.showCompany) rest.push(t.company);
+    return { head, sub: rest.filter(Boolean).join(" \xB7 ") };
+  }
+  function wallPersonHtml(t, ctx) {
+    const s = ctx.settings;
+    const { head, sub } = wallLines(t, s);
+    const subHtml = sub ? `<span class="shm-tm-role">${esc(sub)}</span>` : "";
+    return `<figcaption class="shm-tm-person">${photoHtml(t, s)}<span class="shm-tm-meta"><span class="shm-tm-name">${esc(head)}</span>${subHtml}${dateHtml(t, ctx)}${consultantHtml(t, ctx)}</span></figcaption>`;
+  }
+  function dateHtml(t, ctx) {
+    if (!ctx.settings.showDate || t.dateMs === null) return "";
+    const f = formatDate(t.dateMs, ctx.settings.dateFormat, ctx.locale);
+    return `<time class="shm-tm-date"${f.iso ? ` datetime="${esc(f.iso)}"` : ""}>${esc(f.text)}</time>`;
+  }
   function personHtml(t, ctx) {
     const s = ctx.settings;
+    if (s.layout === "wall") return wallPersonHtml(t, ctx);
     const role = s.showPosition && t.position ? `<span class="shm-tm-role">${esc(t.position)}</span>` : "";
     const company = s.showCompany && t.company ? `<span class="shm-tm-company">${esc(t.company)}</span>` : "";
-    let date = "";
-    if (s.showDate && t.dateMs !== null) {
-      const f = formatDate(t.dateMs, s.dateFormat, ctx.locale);
-      date = `<time class="shm-tm-date"${f.iso ? ` datetime="${esc(f.iso)}"` : ""}>${esc(f.text)}</time>`;
-    }
+    const date = dateHtml(t, ctx);
     return `<figcaption class="shm-tm-person">${photoHtml(t, s)}<span class="shm-tm-meta"><span class="shm-tm-name">${esc(t.name)}</span>${role}${company}${date}${consultantHtml(t, ctx)}</span></figcaption>`;
+  }
+  function quoteText(t, s) {
+    return s.layout === "wall" ? `\u201C${esc(t.quote)}\u201D` : esc(t.quote);
+  }
+  function accentClass(index, s) {
+    return s.layout === "wall" && s.wallAccent > 0 && index + 1 === s.wallAccent ? " is-accent" : "";
   }
   function cardHtml(t, index, ctx) {
     const s = ctx.settings;
@@ -698,7 +724,7 @@ var __shazWidgetExport = (() => {
     const stars = s.showRating && t.rating !== null ? starsHtml(t.rating) : "";
     const popup = s.readMore === "dialog" ? ' aria-haspopup="dialog"' : "";
     const more = s.readMore === "off" ? "" : `<button type="button" class="shm-tm-more"${popup} hidden>${moreLabelHtml(s.readMoreText, t.name)}</button>`;
-    return `<figure class="shm-tm-card" data-index="${index}"><div class="shm-tm-body">${mark}${stars}<blockquote class="shm-tm-quote"><p class="shm-tm-text" id="${esc(textId)}">${esc(t.quote)}</p></blockquote>${more}</div>${personHtml(t, ctx)}</figure>`;
+    return `<figure class="shm-tm-card${accentClass(index, s)}" data-index="${index}"><div class="shm-tm-body">${mark}${stars}<blockquote class="shm-tm-quote"><p class="shm-tm-text" id="${esc(textId)}">${quoteText(t, s)}</p></blockquote>${more}</div>${personHtml(t, ctx)}</figure>`;
   }
   function tagFilterHtml(tags, s) {
     if (!s.showTagFilter || tags.length < 2) return "";
