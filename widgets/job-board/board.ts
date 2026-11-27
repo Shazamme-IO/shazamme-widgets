@@ -53,62 +53,119 @@ export const valueOf = (job: SiteJob, id: GroupId): string => VALUE[id](job.fiel
 
 const fold = (s: string): string => s.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '');
 
-function haystack(job: SiteJob, fields: readonly string[]): string {
-  return fold(fields.map((k) => text(job.fields[k])).join(' '));
+const words = (query: string): string[] => fold(query).split(/[\s,]+/).filter(Boolean);
+
+interface Entry {
+  job: SiteJob;
+  /** Folded keyword and location text, built once per data load. */
+  kw: string;
+  loc: string;
+  /** Folded value of each group, '' when the job has none. */
+  folded: Record<GroupId, string>;
 }
 
-/** Every word of the search must appear somewhere in the job's text. */
-function matchesWords(job: SiteJob, query: string, fields: readonly string[]): boolean {
-  const words = fold(query).split(/[\s,]+/).filter(Boolean);
-  if (!words.length) return true;
-  const hay = haystack(job, fields);
-  return words.every((w) => hay.includes(w));
+interface Option {
+  value: string;
+  total: number;
 }
 
-function matchesGroups(job: SiteJob, selected: State['selected'], except?: GroupId): boolean {
+interface Index {
+  entries: Entry[];
+  /** Every value of each group across all jobs, keyed by its folded form, most jobs first then A to Z. */
+  totals: Record<GroupId, Map<string, Option>>;
+}
+
+/** One index per jobs array: the board loads its jobs once, so folding happens once, not on every render. */
+const indexes = new WeakMap<readonly SiteJob[], Index>();
+
+function buildIndex(jobs: readonly SiteJob[]): Index {
+  const totals = Object.fromEntries(GROUP_IDS.map((id) => [id, new Map<string, Option>()])) as Index['totals'];
+  const entries = jobs.map((job) => {
+    const folded = {} as Record<GroupId, string>;
+    for (const id of GROUP_IDS) {
+      const v = valueOf(job, id);
+      const k = v ? fold(v) : '';
+      folded[id] = k;
+      if (!k) continue;
+      const entry = totals[id].get(k);
+      if (entry) entry.total += 1;
+      else totals[id].set(k, { value: v, total: 1 });
+    }
+    const hay = (fields: readonly string[]): string => fold(fields.map((k) => text(job.fields[k])).join(' '));
+    return { job, kw: hay(KEYWORD_FIELDS), loc: hay(LOCATION_FIELDS), folded };
+  });
   for (const id of GROUP_IDS) {
-    if (id === except) continue;
-    const picks = selected[id];
-    if (!picks?.length) continue;
-    const v = fold(valueOf(job, id));
-    if (!picks.some((p) => fold(p) === v)) return false;
+    totals[id] = new Map([...totals[id].entries()].sort((a, b) => b[1].total - a[1].total || a[1].value.localeCompare(b[1].value, 'en-AU')));
   }
-  return true;
+  return { entries, totals };
 }
 
-export function filterJobs(jobs: readonly SiteJob[], state: State, except?: GroupId): SiteJob[] {
-  return jobs.filter(
-    (j) => matchesWords(j, state.keyword, KEYWORD_FIELDS) && matchesWords(j, state.location, LOCATION_FIELDS) && matchesGroups(j, state.selected, except),
-  );
+function indexFor(jobs: readonly SiteJob[]): Index {
+  let index = indexes.get(jobs);
+  if (!index) {
+    index = buildIndex(jobs);
+    indexes.set(jobs, index);
+  }
+  return index;
+}
+
+export interface SearchResult {
+  matched: SiteJob[];
+  facets: Facet[];
 }
 
 /**
- * Each shown group with every value the site's jobs carry, most jobs first then A to Z, so the list does not jump
- * as filters change. A value picked in the address that no job has stays listed (count 0) so it can be unticked.
+ * The jobs that match the state and the facets for the shown groups, in one pass. Keyword and location are checked
+ * once per job; for each job the board notes which group (if exactly one) it fails, so a facet counts the jobs that
+ * pass every other filter (its "except" mask) without filtering again per group.
+ * A value picked in the address that no job has stays listed (count 0) so it can be unticked.
  */
-export function buildFacets(jobs: readonly SiteJob[], state: State, groups: Settings['groups']): Facet[] {
-  return groups.map(({ id, label }) => {
-    const totals = new Map<string, { value: string; total: number }>();
-    for (const j of jobs) {
-      const v = valueOf(j, id);
-      if (!v) continue;
-      const k = fold(v);
-      const entry = totals.get(k);
-      if (entry) entry.total += 1;
-      else totals.set(k, { value: v, total: 1 });
+export function searchBoard(jobs: readonly SiteJob[], state: State, groups: Settings['groups']): SearchResult {
+  const { entries, totals } = indexFor(jobs);
+  const kw = words(state.keyword);
+  const loc = words(state.location);
+  const picks = GROUP_IDS.filter((id) => state.selected[id]?.length).map((id) => [id, new Set((state.selected[id] ?? []).map(fold))] as const);
+  const shown = groups.map((g) => g.id);
+  const live = Object.fromEntries(shown.map((id) => [id, new Map<string, number>()])) as Partial<Record<GroupId, Map<string, number>>>;
+  const matched: SiteJob[] = [];
+  for (const e of entries) {
+    if (!kw.every((w) => e.kw.includes(w)) || !loc.every((w) => e.loc.includes(w))) continue;
+    let misses = 0;
+    let missed: GroupId | undefined;
+    for (const [id, set] of picks) {
+      if (set.has(e.folded[id])) continue;
+      misses += 1;
+      missed = id;
+      if (misses > 1) break;
     }
-    const picks = (state.selected[id] ?? []).map(fold);
-    for (const p of state.selected[id] ?? []) if (!totals.has(fold(p))) totals.set(fold(p), { value: p, total: 0 });
-    const live = new Map<string, number>();
-    for (const j of filterJobs(jobs, state, id)) {
-      const k = fold(valueOf(j, id));
-      if (k) live.set(k, (live.get(k) ?? 0) + 1);
+    if (misses === 0) matched.push(e.job);
+    if (misses > 1) continue;
+    for (const id of shown) {
+      if (misses === 1 && missed !== id) continue;
+      const k = e.folded[id];
+      if (k) live[id]!.set(k, (live[id]!.get(k) ?? 0) + 1);
     }
-    const options = [...totals.entries()]
-      .sort((a, b) => b[1].total - a[1].total || a[1].value.localeCompare(b[1].value, 'en-AU'))
-      .map(([k, { value }]) => ({ value, count: live.get(k) ?? 0, checked: picks.includes(k) }));
-    return { id, label, options };
+  }
+  const facets = groups.map(({ id, label }) => {
+    const chosen = state.selected[id] ?? [];
+    const keys = new Set(chosen.map(fold));
+    const options: FacetOption[] = [...totals[id].entries()].map(([k, { value }]) => ({ value, count: live[id]!.get(k) ?? 0, checked: keys.has(k) }));
+    const extra = chosen
+      .filter((p, i) => !totals[id].has(fold(p)) && chosen.findIndex((q) => fold(q) === fold(p)) === i)
+      .sort((a, b) => a.localeCompare(b, 'en-AU'));
+    return { id, label, options: [...options, ...extra.map((value) => ({ value, count: 0, checked: true }))] };
   }).filter((f) => f.options.length > 0);
+  return { matched, facets };
+}
+
+export function filterJobs(jobs: readonly SiteJob[], state: State, except?: GroupId): SiteJob[] {
+  const selected = except ? { ...state.selected, [except]: [] } : state.selected;
+  return searchBoard(jobs, { ...state, selected }, []).matched;
+}
+
+/** Each shown group with every value the site's jobs carry, most jobs first then A to Z, so the list does not jump as filters change. */
+export function buildFacets(jobs: readonly SiteJob[], state: State, groups: Settings['groups']): Facet[] {
+  return searchBoard(jobs, state, groups).facets;
 }
 
 function postedAt(j: SiteJob): number {
@@ -168,7 +225,13 @@ export function whereFor(f: Record<string, unknown>, format: LocationFormat): st
 export function toCard(job: SiteJob, s: Settings): Card {
   const f = job.fields;
   const label = s.cardLabel === 'none' ? '' : valueOf(job, s.cardLabel);
-  const path = job.pageItemUrl.split('/').map((seg) => encodeURIComponent(safeDecode(seg))).join('/');
+  // Each segment is encoded on its own and empty, "." and ".." segments are dropped, so the link always stays under detailsPage.
+  const path = job.pageItemUrl
+    .split(/[/\\]/)
+    .map((seg) => safeDecode(seg))
+    .filter((seg) => seg && seg !== '.' && seg !== '..')
+    .map((seg) => encodeURIComponent(seg))
+    .join('/');
   return {
     label,
     title: text(f.jobName) || text(f.positionTitle),
@@ -180,11 +243,14 @@ export function toCard(job: SiteJob, s: Settings): Card {
   };
 }
 
-/** Search and filters from the address. Takes what Job Search Hero sends (keyword, location, workType) and the legacy Job Search hash. */
-export function readAddress(search: string, hash: string, defaultSort: Sort): State {
+/**
+ * Search and filters from the address. Takes what Job Search Hero sends (keyword, location, workType) and the legacy
+ * Job Search hash. Only the groups the board shows are read: a filter for a hidden group could not be unticked.
+ */
+export function readAddress(search: string, hash: string, defaultSort: Sort, groups: readonly GroupId[] = GROUP_IDS): State {
   const params = new URLSearchParams(search);
   const selected: State['selected'] = {};
-  for (const id of GROUP_IDS) {
+  for (const id of groups) {
     const values = params.getAll(id).map((v) => v.trim()).filter(Boolean);
     if (values.length) selected[id] = [...new Set(values)];
   }

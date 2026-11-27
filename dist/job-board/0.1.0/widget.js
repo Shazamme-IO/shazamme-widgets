@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 6d3d3747af90. Registers window.ShazammeWidget["<name>"].
+ * Build 299ff44af252. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var __shazWidgetExport = (() => {
@@ -31,6 +31,7 @@ var __shazWidgetExport = (() => {
   var SDK_READY_TIMEOUT_MS = 1200;
   var COLLECTION_PAGE_SIZE = 100;
   var COLLECTION_MAX_PAGES = 20;
+  var COLLECTION_TIMEOUT_MS = 4e3;
   function text(v) {
     if (typeof v === "string") return v.trim();
     if (typeof v === "number" && Number.isFinite(v)) return String(v);
@@ -125,27 +126,71 @@ var __shazWidgetExport = (() => {
     const key = `collection:${name}`;
     const hit = cache.get(key);
     if (hit && !inEditor) return hit;
-    const pending = (async () => {
-      var _a2;
-      const api = await loader.call(win.dmAPI);
-      const values = [];
-      for (let page = 0; page < COLLECTION_MAX_PAGES; page += 1) {
-        const res = await api.data(name).pageSize(COLLECTION_PAGE_SIZE).pageNumber(page).get();
-        values.push(...Array.isArray(res == null ? void 0 : res.values) ? res.values : []);
-        if (page + 1 >= (Number((_a2 = res == null ? void 0 : res.page) == null ? void 0 : _a2.totalPages) || 1)) break;
-      }
-      return toRows(values);
-    })();
+    const pending = loader.call(win.dmAPI).then((api) => readAllPages(name, (n) => api.data(name).pageSize(COLLECTION_PAGE_SIZE).pageNumber(n).get()));
     if (!inEditor) {
       cache.set(key, pending);
       pending.catch(() => cache.delete(key));
     }
     return pending;
   }
-  async function loadJobsFrom(collection, shazamme, data, inEditor) {
+  function pageValues(res) {
+    if (Array.isArray(res)) return res;
+    return Array.isArray(res == null ? void 0 : res.values) ? res.values : [];
+  }
+  function pageMeta(res) {
+    var _a;
+    const page = Array.isArray(res) ? void 0 : res == null ? void 0 : res.page;
+    const whole = (v) => {
+      const n = Number(v);
+      return Number.isFinite(n) && n > 0 ? Math.trunc(n) : 0;
+    };
+    return { echo: Number((_a = page == null ? void 0 : page.pageNumber) != null ? _a : NaN), total: whole(page == null ? void 0 : page.totalPages), size: whole(page == null ? void 0 : page.pageSize) };
+  }
+  function dedupe(rows) {
+    const seen = /* @__PURE__ */ new Set();
+    return rows.filter((r) => {
+      if (!r.pageItemUrl) return true;
+      if (seen.has(r.pageItemUrl)) return false;
+      seen.add(r.pageItemUrl);
+      return true;
+    });
+  }
+  async function readAllPages(name, get) {
+    let first = await get(0);
+    let base = pageMeta(first).echo === 1 ? 1 : 0;
+    if (!pageValues(first).length && !pageMeta(first).total) {
+      const one = await get(1);
+      if (pageValues(one).length) {
+        first = one;
+        base = 1;
+      }
+    }
+    const meta = pageMeta(first);
+    const size = Math.min(meta.size || COLLECTION_PAGE_SIZE, COLLECTION_PAGE_SIZE);
+    const pages = [pageValues(first)];
+    const full = () => pages[pages.length - 1].length >= size;
+    const total = Math.min(meta.total, COLLECTION_MAX_PAGES);
+    if (total > 1) {
+      const rest = await Promise.all(Array.from({ length: total - 1 }, (_, i) => get(base + 1 + i)));
+      pages.push(...rest.map(pageValues));
+    }
+    while (full() && pages.length < COLLECTION_MAX_PAGES) pages.push(pageValues(await get(base + pages.length)));
+    if (full() && pages.length >= COLLECTION_MAX_PAGES) {
+      console.warn(`[site-jobs] collection "${name}" has more than ${COLLECTION_MAX_PAGES * COLLECTION_PAGE_SIZE} rows; only the first ${COLLECTION_MAX_PAGES} pages are shown`);
+    }
+    return dedupe(toRows(pages.flat()));
+  }
+  function withTimeout(work, ms, what) {
+    let timer;
+    const late = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`${what} took longer than ${ms}ms`)), ms);
+    });
+    return Promise.race([work, late]).finally(() => clearTimeout(timer));
+  }
+  async function loadJobsFrom(collection, shazamme, data, inEditor, collectionTimeoutMs = COLLECTION_TIMEOUT_MS) {
     if (collection) {
       try {
-        const jobs = await loadCollectionJobs(collection, inEditor);
+        const jobs = await withTimeout(loadCollectionJobs(collection, inEditor), collectionTimeoutMs, `The "${collection}" collection`);
         if (jobs.length) return { jobs, source: "collection" };
       } catch (err) {
         if (inEditor) console.warn(`[site-jobs] collection "${collection}" could not be read, using the job feed`, err);
@@ -174,18 +219,24 @@ var __shazWidgetExport = (() => {
   function ends(f) {
     return { from: amount(f.salaryFrom) || amount(f.realSalaryFrom), to: amount(f.salaryTo) || amount(f.realSalaryTo) };
   }
+  var THREE_LETTERS = /^[A-Za-z]{3}$/;
+  var SYMBOL_AMOUNT_RE = /[$£€¥₹]\s?\d/;
+  function codeFor(f) {
+    const code = str(f.currencyCode) || str(f.salaryCurrency) || str(f.currency);
+    if (code) return code.toUpperCase();
+    const given = str(f.currencySymbol);
+    return THREE_LETTERS.test(given) ? given.toUpperCase() : "";
+  }
   function symbolFor(f) {
-    const code = (str(f.currencyCode) || str(f.salaryCurrency) || str(f.currency)).toUpperCase();
+    const code = codeFor(f);
     if (SYMBOLS[code]) return SYMBOLS[code];
     const given = str(f.currencySymbol);
-    if (given && !/^[A-Za-z]{3}$/.test(given)) return given;
+    if (given && !THREE_LETTERS.test(given)) return given;
     if (/^[A-Z]{3}$/.test(code)) return `${code} `;
     return "";
   }
   function money(n, symbol) {
-    const cents = Math.round(n * 100) % 100 !== 0;
-    const digits = cents ? 2 : 0;
-    return `${symbol}${n.toLocaleString("en-AU", { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
+    return `${symbol}${Math.round(n).toLocaleString("en-AU")}`;
   }
   function salaryRange(row) {
     if (!row || typeof row !== "object") return "";
@@ -198,18 +249,22 @@ var __shazWidgetExport = (() => {
   function figuresIn(wording) {
     return [...wording.matchAll(/(\d[\d,]*(?:\.\d+)?)\s*(k\b)?/gi)].map((m) => parseFloat(m[1].replace(/,/g, "")) * (m[2] ? 1e3 : 1));
   }
+  function statesPay(wording, row) {
+    if (SYMBOL_AMOUNT_RE.test(wording)) return true;
+    const { from, to } = ends(row);
+    return figuresIn(wording).some((n) => n === from || n === to);
+  }
   function payLine(row) {
     if (!row || typeof row !== "object" || isHidden(row)) return "";
     const wording = str(row.salaryText);
     const range = salaryRange(row);
-    if (!range) return wording && !SUFFIX_RE.test(wording) ? wording : "";
+    if (wording && (statesPay(wording, row) || !SUFFIX_RE.test(wording))) return wording;
+    if (!range) return "";
     if (!wording) {
       const unit = UNIT[str(row.salaryType).toLowerCase()];
       return unit ? `${range} ${unit}` : range;
     }
-    const { from, to } = ends(row);
-    if (figuresIn(wording).some((n) => n === from || n === to)) return wording;
-    return SUFFIX_RE.test(wording) ? `${range} ${wording}` : `${range}, ${wording}`;
+    return `${range} ${wording}`;
   }
   function annualPay(row) {
     var _a;
@@ -304,7 +359,9 @@ var __shazWidgetExport = (() => {
       showWorkModel: flag(config.showWorkModel, false),
       emptyTitle: t("emptyTitle", "No jobs match your search"),
       emptyText: t("emptyText", "Try removing a filter or searching for something broader."),
-      noJobsText: t("noJobsText", "There are no live jobs right now. Check back soon.")
+      noJobsText: t("noJobsText", "There are no live jobs right now. Check back soon."),
+      loadErrorText: t("loadErrorText", "We couldn't load the jobs just now. Please try again."),
+      retryText: t("retryText", "Try again")
     };
   }
   var fill = (template, count) => template.split("{count}").join(String(count));
@@ -323,55 +380,82 @@ var __shazWidgetExport = (() => {
   var LOCATION_FIELDS = ["city", "state", "country", "postalCode", "location", "address", "fullAddressForSearch"];
   var valueOf = (job, id) => VALUE[id](job.fields);
   var fold = (s) => s.toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "");
-  function haystack(job, fields) {
-    return fold(fields.map((k) => text(job.fields[k])).join(" "));
-  }
-  function matchesWords(job, query, fields) {
-    const words = fold(query).split(/[\s,]+/).filter(Boolean);
-    if (!words.length) return true;
-    const hay = haystack(job, fields);
-    return words.every((w) => hay.includes(w));
-  }
-  function matchesGroups(job, selected, except) {
-    for (const id of GROUP_IDS) {
-      if (id === except) continue;
-      const picks = selected[id];
-      if (!(picks == null ? void 0 : picks.length)) continue;
-      const v = fold(valueOf(job, id));
-      if (!picks.some((p) => fold(p) === v)) return false;
-    }
-    return true;
-  }
-  function filterJobs(jobs, state, except) {
-    return jobs.filter(
-      (j) => matchesWords(j, state.keyword, KEYWORD_FIELDS) && matchesWords(j, state.location, LOCATION_FIELDS) && matchesGroups(j, state.selected, except)
-    );
-  }
-  function buildFacets(jobs, state, groups) {
-    return groups.map(({ id, label }) => {
-      var _a, _b, _c;
-      const totals = /* @__PURE__ */ new Map();
-      for (const j of jobs) {
-        const v = valueOf(j, id);
-        if (!v) continue;
-        const k = fold(v);
-        const entry = totals.get(k);
+  var words = (query) => fold(query).split(/[\s,]+/).filter(Boolean);
+  var indexes = /* @__PURE__ */ new WeakMap();
+  function buildIndex(jobs) {
+    const totals = Object.fromEntries(GROUP_IDS.map((id) => [id, /* @__PURE__ */ new Map()]));
+    const entries = jobs.map((job) => {
+      const folded = {};
+      for (const id of GROUP_IDS) {
+        const v = valueOf(job, id);
+        const k = v ? fold(v) : "";
+        folded[id] = k;
+        if (!k) continue;
+        const entry = totals[id].get(k);
         if (entry) entry.total += 1;
-        else totals.set(k, { value: v, total: 1 });
+        else totals[id].set(k, { value: v, total: 1 });
       }
-      const picks = ((_a = state.selected[id]) != null ? _a : []).map(fold);
-      for (const p of (_b = state.selected[id]) != null ? _b : []) if (!totals.has(fold(p))) totals.set(fold(p), { value: p, total: 0 });
-      const live = /* @__PURE__ */ new Map();
-      for (const j of filterJobs(jobs, state, id)) {
-        const k = fold(valueOf(j, id));
-        if (k) live.set(k, ((_c = live.get(k)) != null ? _c : 0) + 1);
+      const hay = (fields) => fold(fields.map((k) => text(job.fields[k])).join(" "));
+      return { job, kw: hay(KEYWORD_FIELDS), loc: hay(LOCATION_FIELDS), folded };
+    });
+    for (const id of GROUP_IDS) {
+      totals[id] = new Map([...totals[id].entries()].sort((a, b) => b[1].total - a[1].total || a[1].value.localeCompare(b[1].value, "en-AU")));
+    }
+    return { entries, totals };
+  }
+  function indexFor(jobs) {
+    let index = indexes.get(jobs);
+    if (!index) {
+      index = buildIndex(jobs);
+      indexes.set(jobs, index);
+    }
+    return index;
+  }
+  function searchBoard(jobs, state, groups) {
+    var _a;
+    const { entries, totals } = indexFor(jobs);
+    const kw = words(state.keyword);
+    const loc = words(state.location);
+    const picks = GROUP_IDS.filter((id) => {
+      var _a2;
+      return (_a2 = state.selected[id]) == null ? void 0 : _a2.length;
+    }).map((id) => {
+      var _a2;
+      return [id, new Set(((_a2 = state.selected[id]) != null ? _a2 : []).map(fold))];
+    });
+    const shown = groups.map((g) => g.id);
+    const live = Object.fromEntries(shown.map((id) => [id, /* @__PURE__ */ new Map()]));
+    const matched = [];
+    for (const e of entries) {
+      if (!kw.every((w) => e.kw.includes(w)) || !loc.every((w) => e.loc.includes(w))) continue;
+      let misses = 0;
+      let missed;
+      for (const [id, set] of picks) {
+        if (set.has(e.folded[id])) continue;
+        misses += 1;
+        missed = id;
+        if (misses > 1) break;
       }
-      const options = [...totals.entries()].sort((a, b) => b[1].total - a[1].total || a[1].value.localeCompare(b[1].value, "en-AU")).map(([k, { value }]) => {
-        var _a2;
-        return { value, count: (_a2 = live.get(k)) != null ? _a2 : 0, checked: picks.includes(k) };
+      if (misses === 0) matched.push(e.job);
+      if (misses > 1) continue;
+      for (const id of shown) {
+        if (misses === 1 && missed !== id) continue;
+        const k = e.folded[id];
+        if (k) live[id].set(k, ((_a = live[id].get(k)) != null ? _a : 0) + 1);
+      }
+    }
+    const facets = groups.map(({ id, label }) => {
+      var _a2;
+      const chosen = (_a2 = state.selected[id]) != null ? _a2 : [];
+      const keys = new Set(chosen.map(fold));
+      const options = [...totals[id].entries()].map(([k, { value }]) => {
+        var _a3;
+        return { value, count: (_a3 = live[id].get(k)) != null ? _a3 : 0, checked: keys.has(k) };
       });
-      return { id, label, options };
+      const extra = chosen.filter((p, i) => !totals[id].has(fold(p)) && chosen.findIndex((q2) => fold(q2) === fold(p)) === i).sort((a, b) => a.localeCompare(b, "en-AU"));
+      return { id, label, options: [...options, ...extra.map((value) => ({ value, count: 0, checked: true }))] };
     }).filter((f) => f.options.length > 0);
+    return { matched, facets };
   }
   function postedAt(j) {
     return Date.parse(text(j.fields.addedOnUTC) || text(j.fields.changedOnUTC) || "") || 0;
@@ -421,7 +505,7 @@ var __shazWidgetExport = (() => {
   function toCard(job, s) {
     const f = job.fields;
     const label = s.cardLabel === "none" ? "" : valueOf(job, s.cardLabel);
-    const path = job.pageItemUrl.split("/").map((seg) => encodeURIComponent(safeDecode(seg))).join("/");
+    const path = job.pageItemUrl.split(/[/\\]/).map((seg) => safeDecode(seg)).filter((seg) => seg && seg !== "." && seg !== "..").map((seg) => encodeURIComponent(seg)).join("/");
     return {
       label,
       title: text(f.jobName) || text(f.positionTitle),
@@ -432,11 +516,11 @@ var __shazWidgetExport = (() => {
       href: `${s.detailsPage}/${path}`
     };
   }
-  function readAddress(search, hash, defaultSort) {
+  function readAddress(search, hash, defaultSort, groups = GROUP_IDS) {
     var _a, _b, _c, _d;
     const params = new URLSearchParams(search);
     const selected = {};
-    for (const id of GROUP_IDS) {
+    for (const id of groups) {
       const values = params.getAll(id).map((v) => v.trim()).filter(Boolean);
       if (values.length) selected[id] = [...new Set(values)];
     }
@@ -473,9 +557,36 @@ var __shazWidgetExport = (() => {
 
   // widgets/job-board/drawer.ts
   var FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  var locks = 0;
+  var savedOverflow = "";
+  function lockScroll() {
+    if (locks === 0) {
+      savedOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+    }
+    locks += 1;
+  }
+  function unlockScroll() {
+    if (locks === 0) return;
+    locks -= 1;
+    if (locks === 0) document.body.style.overflow = savedOverflow;
+  }
+  function inertOutside(side, keep) {
+    const changed = [];
+    for (let node = side; node && node !== document.body; node = node.parentElement) {
+      const parent = node.parentElement;
+      if (!parent) break;
+      for (const sib of [...parent.children]) {
+        if (sib === node || sib === keep || sib.hasAttribute("inert") || sib.tagName === "SCRIPT") continue;
+        sib.setAttribute("inert", "");
+        changed.push(sib);
+      }
+    }
+    return changed;
+  }
   function createDrawer(side, opener, backdrop) {
     let open = false;
-    let savedOverflow = "";
+    let inerted = [];
     const focusables = () => [...side.querySelectorAll(FOCUSABLE)].filter((el) => !el.closest("[hidden]"));
     const onKey = (e) => {
       if (!open) return;
@@ -508,8 +619,8 @@ var __shazWidgetExport = (() => {
         side.setAttribute("aria-modal", "true");
         backdrop.hidden = false;
         opener.setAttribute("aria-expanded", "true");
-        savedOverflow = document.body.style.overflow;
-        document.body.style.overflow = "hidden";
+        lockScroll();
+        inerted = inertOutside(side, backdrop);
         document.addEventListener("keydown", onKey, true);
         const target = (_a = side.querySelector(".shm-jb-close")) != null ? _a : focusables()[0];
         target == null ? void 0 : target.focus();
@@ -522,7 +633,9 @@ var __shazWidgetExport = (() => {
         side.removeAttribute("aria-modal");
         backdrop.hidden = true;
         opener.setAttribute("aria-expanded", "false");
-        document.body.style.overflow = savedOverflow;
+        for (const el of inerted) el.removeAttribute("inert");
+        inerted = [];
+        unlockScroll();
         document.removeEventListener("keydown", onKey, true);
         if (returnFocus) opener.focus();
       },
@@ -543,7 +656,7 @@ var __shazWidgetExport = (() => {
     const search = s.showSearch ? `<form class="shm-jb-search" role="search" aria-label="${esc(s.searchButtonLabel)}"${s.searchOverlap ? ` style="margin-top:-${s.searchOverlap}px"` : ""}>` + (s.searchPrompt ? `<p class="shm-jb-prompt">${esc(s.searchPrompt)}</p>` : "") + `<div class="shm-jb-fields"><input class="shm-jb-input" type="search" name="keyword" autocomplete="off" placeholder="${esc(s.keywordPlaceholder)}" aria-label="${esc(s.keywordPlaceholder)}" value="${esc(state.keyword)}">` + (s.showLocationSearch ? `<input class="shm-jb-input" type="search" name="location" autocomplete="off" placeholder="${esc(s.locationPlaceholder)}" aria-label="${esc(s.locationPlaceholder)}" value="${esc(state.location)}">` : "") + `<button class="shm-jb-search-btn" type="submit" aria-label="${esc(s.searchButtonLabel)}">${SEARCH}</button></div></form>` : "";
     const side = s.showFilters ? `<button type="button" class="shm-jb-btn shm-jb-btn-primary shm-jb-open" aria-expanded="false" aria-controls="${id}-side">${FILTER}<span class="shm-jb-open-text">${esc(s.filtersButtonText)}</span><span class="shm-jb-open-count"></span></button><div class="shm-jb-backdrop" hidden></div><aside class="shm-jb-side" id="${id}-side" aria-labelledby="${id}-side-title"><div class="shm-jb-side-head"><h2 class="shm-jb-side-title" id="${id}-side-title">${esc(s.filtersTitle)}</h2><button type="button" class="shm-jb-close" aria-label="${esc(s.closeText)}">${CLOSE}</button></div><div class="shm-jb-facets"></div><div class="shm-jb-side-foot"><button type="button" class="shm-jb-btn shm-jb-btn-secondary shm-jb-clear">${esc(s.clearText)}</button><button type="button" class="shm-jb-btn shm-jb-btn-primary shm-jb-apply"></button></div></aside>` : "";
     const sort = s.showSort ? `<label class="shm-jb-sort"><span class="shm-jb-sort-label">${esc(s.sortLabel)}</span><select class="shm-jb-sort-select" name="sort">` + SORTS.map((k) => `<option value="${k}"${k === state.sort ? " selected" : ""}>${esc(s.sortNames[k])}</option>`).join("") + "</select></label>" : "";
-    return search + `<div class="shm-jb-layout${s.showFilters ? "" : " is-wide"}">` + side + `<div class="shm-jb-results"><div class="shm-jb-head"><p class="shm-jb-count" role="status" aria-live="polite"></p>${sort}</div><div class="shm-jb-note" hidden></div><ul class="shm-jb-grid" role="list" aria-busy="true"></ul><div class="shm-jb-empty" hidden></div><nav class="shm-jb-pager" aria-label="${esc(s.pagerLabel)}" hidden></nav></div></div>`;
+    return search + `<div class="shm-jb-layout${s.showFilters ? "" : " is-wide"}">` + side + `<div class="shm-jb-results"><div class="shm-jb-head"><p class="shm-jb-count" role="status" aria-live="polite" tabindex="-1"></p>${sort}</div><div class="shm-jb-note" hidden></div><ul class="shm-jb-grid" role="list" aria-busy="true"></ul><div class="shm-jb-empty" hidden></div><nav class="shm-jb-pager" aria-label="${esc(s.pagerLabel)}" hidden></nav></div></div>`;
   }
   function facetsHtml(id, facets, s, view) {
     return facets.map((f) => {
@@ -554,7 +667,7 @@ var __shazWidgetExport = (() => {
       const more = f.options.length > s.optionsShown ? `<button type="button" class="shm-jb-btn shm-jb-btn-secondary shm-jb-more" data-group="${f.id}" aria-expanded="${isExpanded}">${esc(isExpanded ? s.showLessText : s.showMoreText)}</button>` : "";
       const options = shown.map((o) => {
         const disabled = o.count === 0 && !o.checked;
-        return `<li class="shm-jb-option${disabled ? " is-empty" : ""}"><label class="shm-jb-option-label"><input class="shm-jb-check" type="checkbox" data-group="${f.id}" value="${esc(o.value)}"${o.checked ? " checked" : ""}${disabled ? " disabled" : ""}><span class="shm-jb-option-name">${esc(o.value)}</span><span class="shm-jb-option-count" aria-label="${esc(countText(o.count, s))}">${o.count}</span></label></li>`;
+        return `<li class="shm-jb-option${disabled ? " is-empty" : ""}"><label class="shm-jb-option-label"><input class="shm-jb-check" type="checkbox" data-group="${f.id}" value="${esc(o.value)}"${o.checked ? " checked" : ""}${disabled ? " disabled" : ""}><span class="shm-jb-option-name">${esc(o.value)}</span><span class="shm-jb-option-count" aria-hidden="true">${o.count}</span><span class="shm-jb-sr"> (${esc(countText(o.count, s))})</span></label></li>`;
       }).join("");
       return `<div class="shm-jb-group${isOpen ? " is-open" : ""}" data-group="${f.id}"><h3 class="shm-jb-group-head"><button type="button" class="shm-jb-toggle" aria-expanded="${isOpen}" aria-controls="${listId}"><span class="shm-jb-group-title">${esc(f.label)}</span><span class="shm-jb-sign" aria-hidden="true"></span></button></h3><div class="shm-jb-group-body" id="${listId}"${isOpen ? "" : " hidden"}><ul class="shm-jb-options" role="list" aria-label="${esc(f.label)}">${options}</ul>${more}</div></div>`;
     }).join("");
@@ -579,6 +692,9 @@ var __shazWidgetExport = (() => {
     ).join("");
     return `<button type="button" class="shm-jb-btn shm-jb-btn-secondary shm-jb-prev" data-page="${current - 1}"${current <= 1 ? " disabled" : ""}>${esc(s.prevText)}</button><span class="shm-jb-pages">${nums}</span><button type="button" class="shm-jb-btn shm-jb-btn-secondary shm-jb-next" data-page="${current + 1}"${current >= total ? " disabled" : ""}>${esc(s.nextText)}</button>`;
   }
+  function errorHtml(s) {
+    return `<p class="shm-jb-empty-title shm-jb-error" role="alert">${esc(s.loadErrorText)}</p><button type="button" class="shm-jb-btn shm-jb-btn-secondary shm-jb-retry">${esc(s.retryText)}</button>`;
+  }
   function emptyHtml(s, hasJobs, hasFilters) {
     if (!hasJobs) return `<p class="shm-jb-empty-title">${esc(s.noJobsText)}</p>`;
     return `<p class="shm-jb-empty-title">${esc(s.emptyTitle)}</p><p class="shm-jb-empty-text">${esc(s.emptyText)}</p>` + (hasFilters ? `<button type="button" class="shm-jb-btn shm-jb-btn-secondary shm-jb-clear">${esc(s.clearText)}</button>` : "");
@@ -595,8 +711,9 @@ var __shazWidgetExport = (() => {
     (_a = teardowns.get(element)) == null ? void 0 : _a();
     teardowns.delete(element);
   }
+  var shownGroups = (s) => s.showFilters ? s.groups.map((g) => g.id) : [];
   function freshState(s, inEditor) {
-    if (s.syncAddress && !inEditor) return readAddress(window.location.search, window.location.hash, s.defaultSort);
+    if (s.syncAddress && !inEditor) return readAddress(window.location.search, window.location.hash, s.defaultSort, shownGroups(s));
     return { keyword: "", location: "", selected: {}, sort: s.defaultSort, page: 1 };
   }
   function openGroups(s) {
@@ -610,7 +727,7 @@ var __shazWidgetExport = (() => {
     return `Showing ${count} live jobs from the site job feed${why}.`;
   }
   var q = (root, sel) => root.querySelector(sel);
-  function mountBoard(stage, jobs, source, s, inEditor, id) {
+  function mountBoard(stage, { jobs, source, retry }, s, inEditor, id) {
     var _a;
     let state = freshState(s, inEditor);
     const view = { open: openGroups(s), expanded: /* @__PURE__ */ new Set() };
@@ -631,12 +748,15 @@ var __shazWidgetExport = (() => {
       note.hidden = false;
       note.textContent = sourceNote(source, jobs.length, s);
     }
+    let facets = [];
     const renderFacets = () => {
       if (!facetsBox) return;
-      facetsBox.innerHTML = facetsHtml(id, buildFacets(jobs, state, s.groups), s, view);
+      facetsBox.innerHTML = facetsHtml(id, facets, s, view);
     };
     const render = () => {
-      const matched = sortJobs(filterJobs(jobs, state), state.sort);
+      const result = searchBoard(jobs, state, s.groups);
+      facets = result.facets;
+      const matched = sortJobs(result.matched, state.sort);
       const pages = pageCount(matched.length, s.pageSize);
       state = { ...state, page: Math.min(state.page, pages) };
       const shown = visibleJobs(matched, state, s);
@@ -646,7 +766,7 @@ var __shazWidgetExport = (() => {
       count.textContent = countText(matched.length, s);
       const filtered = activeFilterCount(state) > 0 || !!state.keyword || !!state.location;
       empty.hidden = shown.length > 0;
-      empty.innerHTML = shown.length ? "" : emptyHtml(s, jobs.length > 0, filtered);
+      empty.innerHTML = shown.length ? "" : retry ? errorHtml(s) : emptyHtml(s, jobs.length > 0, filtered);
       const pagerMarkup = pagerHtml(state.page, pages, shown.length, matched.length, s);
       pager.innerHTML = pagerMarkup;
       pager.hidden = !pagerMarkup;
@@ -656,10 +776,10 @@ var __shazWidgetExport = (() => {
       if (badge) badge.textContent = n ? `(${n})` : "";
       renderFacets();
     };
-    const commit = (push) => {
+    const commit = (mode) => {
       if (s.syncAddress && !inEditor) {
         const url = `${window.location.pathname}${writeAddress(window.location.search, state, s.defaultSort)}`;
-        if (push) window.history.pushState({ shmJobBoard: true }, "", url);
+        if (mode === "push") window.history.pushState({ shmJobBoard: true }, "", url);
         else window.history.replaceState(window.history.state, "", url);
       }
       render();
@@ -691,7 +811,7 @@ var __shazWidgetExport = (() => {
         return ((_b = (_a2 = form.querySelector(`[name=${name}]`)) == null ? void 0 : _a2.value) != null ? _b : "").trim();
       };
       state = { ...state, keyword: val("keyword"), location: val("location"), page: 1 };
-      commit(true);
+      commit("push");
     };
     const onChange = (e) => {
       var _a2, _b;
@@ -702,16 +822,16 @@ var __shazWidgetExport = (() => {
         const now = (_a2 = state.selected[group]) != null ? _a2 : [];
         const next = box.checked ? [...now, box.value] : now.filter((v) => v.toLowerCase() !== box.value.toLowerCase());
         state = { ...state, selected: { ...state.selected, [group]: next }, page: 1 };
-        commit(true);
+        commit("replace");
         focusIn(`.shm-jb-check[data-group="${group}"]`, (c) => c.value === box.value);
       } else if (el.matches("[name=sort]")) {
         const value = el.value;
         state = { ...state, sort: (_b = SORTS.find((x) => x === value)) != null ? _b : s.defaultSort, page: 1 };
-        commit(true);
+        commit("replace");
       }
     };
     const onClick = (e) => {
-      var _a2, _b, _c;
+      var _a2, _b, _c, _d;
       const el = e.target.closest("button, .shm-jb-backdrop");
       if (!el || !stage.contains(el)) return;
       if (el.matches(".shm-jb-toggle")) {
@@ -726,22 +846,26 @@ var __shazWidgetExport = (() => {
         else view.expanded.add(group);
         renderFacets();
         focusIn(`.shm-jb-more[data-group="${group}"]`);
+      } else if (el.matches(".shm-jb-retry")) {
+        retry == null ? void 0 : retry();
       } else if (el.matches(".shm-jb-clear")) {
+        const fromEmpty = !!el.closest(".shm-jb-empty");
         state = { ...state, keyword: "", location: "", selected: {}, page: 1 };
         syncInputs();
-        commit(true);
+        commit("push");
+        if (fromEmpty) ((_a2 = q(stage, "[name=keyword]")) != null ? _a2 : count).focus();
       } else if (el.matches(".shm-jb-page, .shm-jb-prev, .shm-jb-next")) {
-        const page = parseInt((_a2 = el.dataset.page) != null ? _a2 : "", 10);
+        const page = parseInt((_b = el.dataset.page) != null ? _b : "", 10);
         if (!page) return;
         state = { ...state, page };
-        commit(true);
+        commit("push");
         toResults();
         focusIn(".shm-jb-page.is-current");
       } else if (el.matches(".shm-jb-loadmore")) {
         const before = grid.children.length;
         state = { ...state, page: state.page + 1 };
-        commit(false);
-        (_c = (_b = grid.children[before]) == null ? void 0 : _b.querySelector("a")) == null ? void 0 : _c.focus();
+        commit("replace");
+        (_d = (_c = grid.children[before]) == null ? void 0 : _c.querySelector("a")) == null ? void 0 : _d.focus();
       } else if (el.matches(".shm-jb-open")) {
         drawer == null ? void 0 : drawer.open();
       } else if (el.matches(".shm-jb-close, .shm-jb-apply, .shm-jb-backdrop")) {
@@ -750,6 +874,10 @@ var __shazWidgetExport = (() => {
       }
     };
     const onPop = () => {
+      if (!stage.isConnected) {
+        teardown();
+        return;
+      }
       state = freshState(s, inEditor);
       syncInputs();
       render();
@@ -764,7 +892,7 @@ var __shazWidgetExport = (() => {
     if (s.syncAddress && !inEditor) window.addEventListener("popstate", onPop);
     (_a = wide == null ? void 0 : wide.addEventListener) == null ? void 0 : _a.call(wide, "change", onWide);
     render();
-    return () => {
+    function teardown() {
       var _a2;
       drawer == null ? void 0 : drawer.destroy();
       stage.removeEventListener("submit", onSubmit);
@@ -772,7 +900,8 @@ var __shazWidgetExport = (() => {
       stage.removeEventListener("click", onClick);
       window.removeEventListener("popstate", onPop);
       (_a2 = wide == null ? void 0 : wide.removeEventListener) == null ? void 0 : _a2.call(wide, "change", onWide);
-    };
+    }
+    return teardown;
   }
   function ensureRoot(element) {
     let root = element.querySelector(".shm-jb");
@@ -790,7 +919,7 @@ var __shazWidgetExport = (() => {
     return { root, stage };
   }
   async function jobBoard(ctx) {
-    var _a, _b, _c;
+    var _a, _b, _c, _d;
     const element = ctx == null ? void 0 : ctx.element;
     if (!element || typeof element.querySelector !== "function") return;
     const data = (_a = ctx.data) != null ? _a : {};
@@ -804,12 +933,18 @@ var __shazWidgetExport = (() => {
       const { jobs, source } = await loadJobsFrom(s.jobsCollection, ctx.shazamme, data, inEditor);
       if (runs.get(element) !== run) return;
       release(element);
-      teardowns.set(element, mountBoard(stage, jobs, source, s, inEditor, id));
+      teardowns.set(element, mountBoard(stage, { jobs, source }, s, inEditor, id));
     } catch (err) {
       if (runs.get(element) !== run) return;
-      console.error(`[${NAME}]`, err);
+      console.error(`[${NAME}] could not load jobs`, {
+        collection: s.jobsCollection || "(none, job feed only)",
+        siteId: (_d = data.siteId) != null ? _d : null,
+        inEditor,
+        hasSdk: !!ctx.shazamme,
+        page: typeof window !== "undefined" ? window.location.pathname : ""
+      }, err);
       release(element);
-      teardowns.set(element, mountBoard(stage, [], "feed", s, inEditor, id));
+      teardowns.set(element, mountBoard(stage, { jobs: [], source: "feed", retry: () => void jobBoard(ctx) }, s, inEditor, id));
       if (inEditor) {
         const note = stage.querySelector(".shm-jb-note");
         if (note) note.textContent = `Job Board could not read any jobs: ${err instanceof Error ? err.message : String(err)}`;

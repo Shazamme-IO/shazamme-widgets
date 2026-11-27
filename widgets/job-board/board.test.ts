@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { SiteJob } from '../../core/site-jobs';
-import { activeFilterCount, buildFacets, filterJobs, pageList, readAddress, sortJobs, toCard, visibleJobs, writeAddress, type State } from './board';
+import { activeFilterCount, buildFacets, filterJobs, pageList, readAddress, searchBoard, sortJobs, toCard, valueOf, visibleJobs, writeAddress, type State } from './board';
+import { GROUP_IDS, type GroupId } from './settings';
 import { parseGroups, readSettings } from './settings';
 
 const job = (n: number, f: Record<string, unknown>): SiteJob => ({ pageItemUrl: `role-${n}`, fields: { jobName: `Job ${n}`, addedOnUTC: `2026-11-${String(10 + n).padStart(2, '0')}T00:00:00`, ...f } });
@@ -140,5 +141,95 @@ describe('settings', () => {
   it('a cleared collection name reads the feed; an untouched one reads Jobs', () => {
     expect(readSettings({}).jobsCollection).toBe('Jobs');
     expect(readSettings({ jobsCollection: '  ' }).jobsCollection).toBe('');
+  });
+});
+
+// A pseudo-random board of n jobs (fixed seed), for the perf test and the brute-force facet check.
+function bigBoard(n: number): SiteJob[] {
+  let seed = 7;
+  const rnd = (k: number) => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed % k; };
+  const pickOf = <T,>(list: readonly T[]) => list[rnd(list.length)];
+  return Array.from({ length: n }, (_, i) => job(i, {
+    jobName: `${pickOf(['Senior', 'Junior', 'Lead', 'Principal'])} ${pickOf(['Accountant', 'Engineer', 'Nurse', 'Driver', 'Analyst'])}`,
+    category: pickOf(['Finance', 'IT & Telecomms', 'Mining', 'Healthcare', 'Logistics', 'Café & Hospitality']),
+    subCategory: pickOf(['Payroll', 'Cloud', 'Surface', 'Aged care', 'Warehouse']),
+    workType: pickOf(['Permanent', 'Contract', 'Casual']),
+    workModel: pickOf(['Hybrid', 'Remote', 'Onsite']),
+    city: pickOf(['Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Adelaide', 'Hobart', 'Darwin', 'Canberra']),
+    state: pickOf(['NSW', 'VIC', 'QLD', 'WA', 'SA']),
+    country: pickOf(['Australia', 'New Zealand']),
+    shortDescription: 'A role with a great team and real growth',
+  }));
+}
+
+describe('review fix #4: facets in one pass', () => {
+  const groups = parseGroups(GROUP_IDS.join(', '), {});
+  const fold = (v: string) => v.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '');
+
+  /** The old O(groups x jobs) way: refilter every job for every group. */
+  function naiveCount(jobs: SiteJob[], state: State, id: GroupId): Map<string, number> {
+    const out = new Map<string, number>();
+    for (const j of filterJobs(jobs, { ...state, selected: { ...state.selected, [id]: [] } })) {
+      const k = fold(valueOf(j, id));
+      if (k) out.set(k, (out.get(k) ?? 0) + 1);
+    }
+    return out;
+  }
+
+  it('counts every option exactly as refiltering per group would', () => {
+    const jobs = bigBoard(400);
+    const states: State[] = [
+      base(),
+      base({ keyword: 'engineer' }),
+      base({ selected: { workType: ['Contract'], city: ['Perth', 'Hobart'] } }),
+      base({ keyword: 'senior', location: 'nsw', selected: { profession: ['Finance', 'Mining'], workModel: ['Remote'], country: ['Australia'] } }),
+      base({ selected: { profession: ['Cafe & Hospitality'] } }),
+    ];
+    for (const st of states) {
+      const { facets, matched } = searchBoard(jobs, st, groups);
+      expect(matched).toEqual(filterJobs(jobs, st));
+      for (const f of facets) {
+        const want = naiveCount(jobs, st, f.id);
+        for (const o of f.options) expect(o.count, `${f.id}=${o.value}`).toBe(want.get(fold(o.value)) ?? 0);
+      }
+    }
+  });
+
+  it('works out a 2,000-job board with seven groups and filters on in well under the time bound', () => {
+    const jobs = bigBoard(2000);
+    const st = base({ keyword: 'lead', location: 'australia', selected: { workType: ['Permanent', 'Contract'], city: ['Sydney', 'Perth'], profession: ['Finance', 'Mining', 'Healthcare'] } });
+    const t0 = performance.now();
+    searchBoard(jobs, st, groups);
+    const first = performance.now() - t0;
+    const t1 = performance.now();
+    for (let i = 0; i < 20; i += 1) searchBoard(jobs, { ...st, page: i }, groups);
+    const perRender = (performance.now() - t1) / 20;
+    expect(first).toBeLessThan(500);
+    expect(perRender).toBeLessThan(50);
+  });
+});
+
+describe('review fix #7: address filters for hidden groups', () => {
+  it('reads only the groups it is given', () => {
+    const st = readAddress('?city=Perth&workType=Contract&profession=Finance', '', 'newest', ['workType']);
+    expect(st.selected).toEqual({ workType: ['Contract'] });
+    expect(readAddress('?city=Perth', '', 'newest', []).selected).toEqual({});
+  });
+});
+
+describe('review fix #9: job links stay on the site', () => {
+  it('keeps protocol-relative, javascript: and dot-segment addresses under the details page', () => {
+    const href = (pageItemUrl: string) => toCard({ pageItemUrl, fields: { jobName: 'x' } }, s).href;
+    expect(href('//evil.com')).toBe('/job-details/evil.com');
+    expect(href('javascript:alert(1)')).toBe('/job-details/javascript%3Aalert(1)');
+    expect(href('\\\\evil.com')).toBe('/job-details/evil.com');
+    expect(href('../../admin')).toBe('/job-details/admin');
+    expect(href('%2e%2e/%2E%2E/admin')).toBe('/job-details/admin');
+    expect(href('a/%2F%2Fevil.com')).toBe('/job-details/a/%2F%2Fevil.com');
+    for (const u of ['//evil.com', 'javascript:alert(1)', '\\\\evil.com', '../../admin', 'https://evil.com/x']) {
+      const url = new URL(href(u), 'https://site.example/jobs');
+      expect(url.origin, u).toBe('https://site.example');
+      expect(url.pathname.startsWith('/job-details/'), u).toBe(true);
+    }
   });
 });

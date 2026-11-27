@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 146394d0f190. Registers window.ShazammeWidget["<name>"].
+ * Build ae8c953b7a4e. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -83,18 +83,24 @@ var __shazWidgetExport = (() => {
   function ends(f2) {
     return { from: amount(f2.salaryFrom) || amount(f2.realSalaryFrom), to: amount(f2.salaryTo) || amount(f2.realSalaryTo) };
   }
+  var THREE_LETTERS = /^[A-Za-z]{3}$/;
+  var SYMBOL_AMOUNT_RE = /[$£€¥₹]\s?\d/;
+  function codeFor(f2) {
+    const code = str(f2.currencyCode) || str(f2.salaryCurrency) || str(f2.currency);
+    if (code) return code.toUpperCase();
+    const given = str(f2.currencySymbol);
+    return THREE_LETTERS.test(given) ? given.toUpperCase() : "";
+  }
   function symbolFor(f2) {
-    const code = (str(f2.currencyCode) || str(f2.salaryCurrency) || str(f2.currency)).toUpperCase();
+    const code = codeFor(f2);
     if (SYMBOLS[code]) return SYMBOLS[code];
     const given = str(f2.currencySymbol);
-    if (given && !/^[A-Za-z]{3}$/.test(given)) return given;
+    if (given && !THREE_LETTERS.test(given)) return given;
     if (/^[A-Z]{3}$/.test(code)) return `${code} `;
     return "";
   }
   function money(n, symbol) {
-    const cents = Math.round(n * 100) % 100 !== 0;
-    const digits = cents ? 2 : 0;
-    return `${symbol}${n.toLocaleString("en-AU", { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
+    return `${symbol}${Math.round(n).toLocaleString("en-AU")}`;
   }
   function salaryRange(row) {
     if (!row || typeof row !== "object") return "";
@@ -107,18 +113,22 @@ var __shazWidgetExport = (() => {
   function figuresIn(wording) {
     return [...wording.matchAll(/(\d[\d,]*(?:\.\d+)?)\s*(k\b)?/gi)].map((m) => parseFloat(m[1].replace(/,/g, "")) * (m[2] ? 1e3 : 1));
   }
+  function statesPay(wording, row) {
+    if (SYMBOL_AMOUNT_RE.test(wording)) return true;
+    const { from, to } = ends(row);
+    return figuresIn(wording).some((n) => n === from || n === to);
+  }
   function payLine(row) {
     if (!row || typeof row !== "object" || isHidden(row)) return "";
     const wording = str(row.salaryText);
     const range = salaryRange(row);
-    if (!range) return wording && !SUFFIX_RE.test(wording) ? wording : "";
+    if (wording && (statesPay(wording, row) || !SUFFIX_RE.test(wording))) return wording;
+    if (!range) return "";
     if (!wording) {
       const unit = UNIT[str(row.salaryType).toLowerCase()];
       return unit ? `${range} ${unit}` : range;
     }
-    const { from, to } = ends(row);
-    if (figuresIn(wording).some((n) => n === from || n === to)) return wording;
-    return SUFFIX_RE.test(wording) ? `${range} ${wording}` : `${range}, ${wording}`;
+    return `${range} ${wording}`;
   }
 
   // dist/.gen/job-feed-2026.index.js

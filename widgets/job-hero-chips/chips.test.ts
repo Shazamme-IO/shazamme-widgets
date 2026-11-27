@@ -90,6 +90,17 @@ describe('job-hero-chips', () => {
     expect(buildChips(job, { chip1: 'salary', chip2: 'none', chip3: 'none', chip4: 'none' })[0].value).toBe('$150,000 – $170,000 + super');
   });
 
+  it('salary (3e) rounds amounts to whole units, and (3d) reads a 3-letter currencySymbol as the code', () => {
+    const one = (job: Record<string, unknown>) => buildChips(job, { chip1: 'salary', chip2: 'none', chip3: 'none', chip4: 'none' })[0].value;
+    expect(one({ salaryFrom: '32.5', salaryTo: '40.4', currencyCode: 'AUD', salaryText: 'per hour' })).toBe('$33 – $40 per hour');
+    expect(one({ salaryFrom: '80000', salaryTo: '', currencySymbol: 'GBP' })).toBe('£80,000');
+  });
+
+  it('salary (3a) shows standalone wording as written', () => {
+    const one = (job: Record<string, unknown>) => buildChips(job, { chip1: 'salary', chip2: 'none', chip3: 'none', chip4: 'none' })[0].value;
+    expect(one({ salaryFrom: '150000', salaryTo: '170000', currencyCode: 'AUD', salaryText: 'Competitive' })).toBe('Competitive');
+  });
+
   it('buildChips defaults match the prompt', () => {
     expect(buildChips({ city: 'X', workType: 'W', workModel: 'M', salaryText: 'S' }, {}).map((c) => c.kind)).toEqual(['location', 'workType', 'workModel', 'salary']);
   });

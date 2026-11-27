@@ -298,6 +298,16 @@
       "key": "noJobsText",
       "type": "text",
       "default": "There are no live jobs right now. Check back soon."
+    },
+    {
+      "key": "loadErrorText",
+      "type": "text",
+      "default": "We couldn't load the jobs just now. Please try again."
+    },
+    {
+      "key": "retryText",
+      "type": "text",
+      "default": "Try again"
     }
   ]
 }

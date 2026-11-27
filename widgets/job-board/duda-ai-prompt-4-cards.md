@@ -15,3 +15,5 @@ Build the Content Editor for this widget. Create one tab called "Job cards". Kee
 - Heading when no jobs match | key: emptyTitle | type: text | default: No jobs match your search
 - Text when no jobs match | key: emptyText | type: text | default: Try removing a filter or searching for something broader.
 - Text when the site has no live jobs | key: noJobsText | type: text | default: There are no live jobs right now. Check back soon.
+- Text when the jobs could not be loaded | key: loadErrorText | type: text | default: We couldn't load the jobs just now. Please try again.
+- Retry button text | key: retryText | type: text | default: Try again

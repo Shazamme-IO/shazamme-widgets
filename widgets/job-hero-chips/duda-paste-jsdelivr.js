@@ -1,5 +1,5 @@
-// LAST UPDATED: 2026-11-27 15:18 AEDT (v0.1.66)
-// Change: salary chip shows the amount before the advert wording ("$150,000 – $170,000 + super", was "+ super").
+// LAST UPDATED: 2026-11-27 16:01 AEDT (v0.1.66)
+// Change: salary chip shows the amount before suffix wording ("$150,000 – $170,000 + super", was "+ super"); other wording shows as written.
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab.
 //

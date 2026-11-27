@@ -137,12 +137,14 @@
 .shm-jb .shm-jb-check:disabled { cursor: default; }
 .shm-jb .shm-jb-option-name { flex: 1 1 auto; min-width: 0; font-size: 15px; line-height: 1.35; color: #101423; }
 .shm-jb .shm-jb-option-count { flex: 0 0 auto; font-size: 13px; font-weight: 700; color: #4A5A12; }
+.shm-jb .shm-jb-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .shm-jb .shm-jb-option.is-empty .shm-jb-option-label { cursor: default; opacity: 0.45; }
 .shm-jb .shm-jb-more { margin-top: 12px; padding: 14px 24px; font-size: 14px; }
 
 /* Results */
 .shm-jb .shm-jb-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; margin: 0 0 20px; }
 .shm-jb .shm-jb-count { margin: 0; font-family: Montserrat, sans-serif; font-size: 22px; font-style: italic; font-weight: 800; color: #101423; }
+.shm-jb .shm-jb-count:focus:not(:focus-visible) { outline: none; }
 .shm-jb .shm-jb-sort { display: inline-flex; align-items: center; gap: 10px; font-size: 14px; color: #4B5060; white-space: nowrap; }
 .shm-jb .shm-jb-sort-select {
   min-height: 44px;

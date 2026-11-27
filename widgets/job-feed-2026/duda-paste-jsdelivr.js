@@ -1,5 +1,5 @@
-// LAST UPDATED: 2026-11-27 15:18 AEDT (v0.1.66)
-// Change: chip card salary shows the amount before the advert wording ("$150,000 – $170,000 + super", was "+ super"); default card unchanged. Carries v0.1.63 chip card and v0.1.40.
+// LAST UPDATED: 2026-11-27 16:01 AEDT (v0.1.66)
+// Change: chip card salary shows the amount before suffix wording ("$150,000 – $170,000 + super", was "+ super"); other wording shows as written; default card unchanged. Carries v0.1.63 chip card and v0.1.40.
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
 // existing widget JS.

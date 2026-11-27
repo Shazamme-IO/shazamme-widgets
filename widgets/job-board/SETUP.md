@@ -31,7 +31,7 @@ Rows with `activeStatus` false are skipped. Facets read `profession` or `categor
 
 ## Page address
 
-The search lives in the query string, so a search can be shared and Back works: `keyword`, `location`, one parameter per ticked value (`profession`, `role`, `workType`, `workModel`, `country`, `state`, `city`, repeated for several), `sort` (when not the default) and `page`. It accepts what Job Search Hero sends (`keyword`, `location`, `workType`) and the keyword from the legacy Job Search hash. Turn off "Keep the search in the page address" when two boards share one page. The editor never writes the address.
+The search lives in the query string, so a search can be shared and Back works: `keyword`, `location`, one parameter per ticked value (`profession`, `role`, `workType`, `workModel`, `country`, `state`, `city`, repeated for several), `sort` (when not the default) and `page`. It accepts what Job Search Hero sends (`keyword`, `location`, `workType`) and the keyword from the legacy Job Search hash. Only the filter groups the board shows are read from the address (none when the filters are off), so a visitor is never filtered by something they cannot untick. A search or a page change adds a Back step; a tick, a sort or "load more" does not. Turn off "Keep the search in the page address" when two boards share one page. The editor never writes the address.
 
 ## Accessibility
 
@@ -42,3 +42,7 @@ Filters are real checkboxes inside labels; each group is a button with `aria-exp
 1. Edit the TypeScript, then `npm run check` and commit `dist/job-board`.
 2. Set `TAG` in `duda-paste-jsdelivr.js` to the next free `v0.1.x`. After the merge, tag the merge commit with it and check the jsDelivr URL returns 200 with the new code.
 3. Repaste the stub only when `TAG` changed. Sites don't need republishing.
+
+## When the jobs cannot be loaded
+
+The board waits up to 4 seconds for the Duda collection, then uses the Shazamme job feed. If neither can be read it shows `loadErrorText` with a `retryText` button (not the "no live jobs" text) and logs `[job-board] could not load jobs` with the collection name and site to the browser console.

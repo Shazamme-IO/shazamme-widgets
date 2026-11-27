@@ -17,14 +17,24 @@ const SDK_READY_TIMEOUT_MS = 1200;
 const CONSULTANTS_COLLECTION = 'Consultants';
 const CONSULTANTS_ACTION = 'Get Consultants';
 
-/** Duda's Collections API pages at 100 rows; 20 pages covers any recruiter's live jobs. */
-const COLLECTION_PAGE_SIZE = 100;
-const COLLECTION_MAX_PAGES = 20;
+/**
+ * Duda's Collections API (developer.duda.co/docs/collections-api.md): pageNumber is 0-based, pageSize is at most 100,
+ * and get() resolves { values, page: { pageNumber, pageSize, totalPages, totalItems } } (checked live on Demo 2,
+ * 27 Nov 2026). 20 pages covers any recruiter's live jobs.
+ */
+export const COLLECTION_PAGE_SIZE = 100;
+export const COLLECTION_MAX_PAGES = 20;
+/** How long a widget waits for the collection before using the Shazamme job feed instead. */
+export const COLLECTION_TIMEOUT_MS = 4000;
 
+interface CollectionPage {
+  values?: unknown[];
+  page?: { pageNumber?: number; totalPages?: number };
+}
 interface CollectionQuery {
   pageSize(n: number): CollectionQuery;
   pageNumber(n: number): CollectionQuery;
-  get(): Promise<{ values?: unknown[]; page?: { totalPages?: number } }>;
+  get(): Promise<CollectionPage | unknown[]>;
 }
 interface DmApi {
   loadCollectionsAPI?: () => Promise<{ data(name: string): CollectionQuery }>;
@@ -166,16 +176,7 @@ export async function loadCollectionJobs(name: string, inEditor: boolean): Promi
   const key = `collection:${name}`;
   const hit = cache.get(key);
   if (hit && !inEditor) return hit;
-  const pending = (async () => {
-    const api = await loader.call(win.dmAPI);
-    const values: unknown[] = [];
-    for (let page = 0; page < COLLECTION_MAX_PAGES; page += 1) {
-      const res = await api.data(name).pageSize(COLLECTION_PAGE_SIZE).pageNumber(page).get();
-      values.push(...(Array.isArray(res?.values) ? res.values : []));
-      if (page + 1 >= (Number(res?.page?.totalPages) || 1)) break;
-    }
-    return toRows(values);
-  })();
+  const pending = loader.call(win.dmAPI).then((api) => readAllPages(name, (n) => api.data(name).pageSize(COLLECTION_PAGE_SIZE).pageNumber(n).get()));
   if (!inEditor) {
     cache.set(key, pending);
     pending.catch(() => cache.delete(key));
@@ -183,8 +184,75 @@ export async function loadCollectionJobs(name: string, inEditor: boolean): Promi
   return pending;
 }
 
+type PageGetter = (n: number) => Promise<CollectionPage | unknown[]>;
+
+function pageValues(res: CollectionPage | unknown[] | undefined): unknown[] {
+  if (Array.isArray(res)) return res;
+  return Array.isArray(res?.values) ? res.values : [];
+}
+
+function pageMeta(res: CollectionPage | unknown[] | undefined): { echo: number; total: number; size: number } {
+  const page = (Array.isArray(res) ? undefined : res?.page) as { pageNumber?: unknown; totalPages?: unknown; pageSize?: unknown } | undefined;
+  const whole = (v: unknown): number => {
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0 ? Math.trunc(n) : 0;
+  };
+  return { echo: Number(page?.pageNumber ?? NaN), total: whole(page?.totalPages), size: whole(page?.pageSize) };
+}
+
+/** Rows once each: a repeated page_item_url (an API that pages from 1 answers page 0 and page 1 alike) is dropped. */
+function dedupe(rows: SiteJob[]): SiteJob[] {
+  const seen = new Set<string>();
+  return rows.filter((r) => {
+    if (!r.pageItemUrl) return true;
+    if (seen.has(r.pageItemUrl)) return false;
+    seen.add(r.pageItemUrl);
+    return true;
+  });
+}
+
 /**
- * Jobs from the named Duda collection when it can be read and has rows, else the Shazamme job feed.
+ * Every page of a collection. Page 0 first; its totalPages lets the rest load in parallel. A short page (fewer than
+ * 100 rows) ends the read whatever totalPages says, and a full last page keeps reading one page at a time, so a
+ * missing or wrong totalPages, or an API that counts pages from 1, still reads every row. Stops at 20 pages.
+ */
+export async function readAllPages(name: string, get: PageGetter): Promise<SiteJob[]> {
+  let first = await get(0);
+  let base = pageMeta(first).echo === 1 ? 1 : 0;
+  if (!pageValues(first).length && !pageMeta(first).total) {
+    const one = await get(1);
+    if (pageValues(one).length) {
+      first = one;
+      base = 1;
+    }
+  }
+  const meta = pageMeta(first);
+  const size = Math.min(meta.size || COLLECTION_PAGE_SIZE, COLLECTION_PAGE_SIZE);
+  const pages: unknown[][] = [pageValues(first)];
+  const full = (): boolean => pages[pages.length - 1].length >= size;
+  const total = Math.min(meta.total, COLLECTION_MAX_PAGES);
+  if (total > 1) {
+    const rest = await Promise.all(Array.from({ length: total - 1 }, (_, i) => get(base + 1 + i)));
+    pages.push(...rest.map(pageValues));
+  }
+  while (full() && pages.length < COLLECTION_MAX_PAGES) pages.push(pageValues(await get(base + pages.length)));
+  if (full() && pages.length >= COLLECTION_MAX_PAGES) {
+    console.warn(`[site-jobs] collection "${name}" has more than ${COLLECTION_MAX_PAGES * COLLECTION_PAGE_SIZE} rows; only the first ${COLLECTION_MAX_PAGES} pages are shown`);
+  }
+  return dedupe(toRows(pages.flat()));
+}
+
+/** The promise, or a rejection once ms have passed. The timer is cleared either way. */
+function withTimeout<T>(work: Promise<T>, ms: number, what: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${what} took longer than ${ms}ms`)), ms);
+  });
+  return Promise.race([work, late]).finally(() => clearTimeout(timer));
+}
+
+/**
+ * Jobs from the named Duda collection when it can be read within 4 seconds and has rows, else the Shazamme job feed.
  * A blank collection name goes straight to the feed.
  */
 export async function loadJobsFrom(
@@ -192,10 +260,11 @@ export async function loadJobsFrom(
   shazamme: unknown,
   data: DudaData | undefined,
   inEditor: boolean,
+  collectionTimeoutMs = COLLECTION_TIMEOUT_MS,
 ): Promise<{ jobs: SiteJob[]; source: JobSource }> {
   if (collection) {
     try {
-      const jobs = await loadCollectionJobs(collection, inEditor);
+      const jobs = await withTimeout(loadCollectionJobs(collection, inEditor), collectionTimeoutMs, `The "${collection}" collection`);
       if (jobs.length) return { jobs, source: 'collection' };
     } catch (err) {
       if (inEditor) console.warn(`[site-jobs] collection "${collection}" could not be read, using the job feed`, err);

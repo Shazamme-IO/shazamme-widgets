@@ -81,6 +81,8 @@ export interface Settings {
   emptyTitle: string;
   emptyText: string;
   noJobsText: string;
+  loadErrorText: string;
+  retryText: string;
 }
 
 /** "profession, city" to the groups in that order, unknown names and repeats dropped. "none" shows no groups. */
@@ -144,6 +146,8 @@ export function readSettings(config: Record<string, unknown> = {}): Settings {
     emptyTitle: t('emptyTitle', 'No jobs match your search'),
     emptyText: t('emptyText', 'Try removing a filter or searching for something broader.'),
     noJobsText: t('noJobsText', 'There are no live jobs right now. Check back soon.'),
+    loadErrorText: t('loadErrorText', "We couldn't load the jobs just now. Please try again."),
+    retryText: t('retryText', 'Try again'),
   };
 }
 

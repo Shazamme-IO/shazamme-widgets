@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 0eab5d390430. Registers window.ShazammeWidget["<name>"].
+ * Build 0bbbf8e296f0. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var __shazWidgetExport = (() => {
@@ -41,18 +41,23 @@ var __shazWidgetExport = (() => {
   function ends(f) {
     return { from: amount(f.salaryFrom) || amount(f.realSalaryFrom), to: amount(f.salaryTo) || amount(f.realSalaryTo) };
   }
+  var THREE_LETTERS = /^[A-Za-z]{3}$/;
+  function codeFor(f) {
+    const code = str(f.currencyCode) || str(f.salaryCurrency) || str(f.currency);
+    if (code) return code.toUpperCase();
+    const given = str(f.currencySymbol);
+    return THREE_LETTERS.test(given) ? given.toUpperCase() : "";
+  }
   function symbolFor(f) {
-    const code = (str(f.currencyCode) || str(f.salaryCurrency) || str(f.currency)).toUpperCase();
+    const code = codeFor(f);
     if (SYMBOLS[code]) return SYMBOLS[code];
     const given = str(f.currencySymbol);
-    if (given && !/^[A-Za-z]{3}$/.test(given)) return given;
+    if (given && !THREE_LETTERS.test(given)) return given;
     if (/^[A-Z]{3}$/.test(code)) return `${code} `;
     return "";
   }
   function money(n, symbol) {
-    const cents = Math.round(n * 100) % 100 !== 0;
-    const digits = cents ? 2 : 0;
-    return `${symbol}${n.toLocaleString("en-AU", { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
+    return `${symbol}${Math.round(n).toLocaleString("en-AU")}`;
   }
   function salaryRange(row) {
     if (!row || typeof row !== "object") return "";

@@ -43,7 +43,7 @@ export function shellHtml(id: string, s: Settings, state: State): string {
     `<div class="shm-jb-layout${s.showFilters ? '' : ' is-wide'}">` +
     side +
     '<div class="shm-jb-results">' +
-    `<div class="shm-jb-head"><p class="shm-jb-count" role="status" aria-live="polite"></p>${sort}</div>` +
+    `<div class="shm-jb-head"><p class="shm-jb-count" role="status" aria-live="polite" tabindex="-1"></p>${sort}</div>` +
     '<div class="shm-jb-note" hidden></div>' +
     '<ul class="shm-jb-grid" role="list" aria-busy="true"></ul>' +
     '<div class="shm-jb-empty" hidden></div>' +
@@ -74,7 +74,8 @@ export function facetsHtml(id: string, facets: readonly Facet[], s: Settings, vi
             `<li class="shm-jb-option${disabled ? ' is-empty' : ''}"><label class="shm-jb-option-label">` +
             `<input class="shm-jb-check" type="checkbox" data-group="${f.id}" value="${esc(o.value)}"${o.checked ? ' checked' : ''}${disabled ? ' disabled' : ''}>` +
             `<span class="shm-jb-option-name">${esc(o.value)}</span>` +
-            `<span class="shm-jb-option-count" aria-label="${esc(countText(o.count, s))}">${o.count}</span></label></li>`
+            `<span class="shm-jb-option-count" aria-hidden="true">${o.count}</span>` +
+            `<span class="shm-jb-sr"> (${esc(countText(o.count, s))})</span></label></li>`
           );
         })
         .join('');
@@ -123,6 +124,14 @@ export function pagerHtml(current: number, total: number, shown: number, all: nu
     `<button type="button" class="shm-jb-btn shm-jb-btn-secondary shm-jb-prev" data-page="${current - 1}"${current <= 1 ? ' disabled' : ''}>${esc(s.prevText)}</button>` +
     `<span class="shm-jb-pages">${nums}</span>` +
     `<button type="button" class="shm-jb-btn shm-jb-btn-secondary shm-jb-next" data-page="${current + 1}"${current >= total ? ' disabled' : ''}>${esc(s.nextText)}</button>`
+  );
+}
+
+/** The jobs could not be loaded at all: a message and a button that loads them again. */
+export function errorHtml(s: Settings): string {
+  return (
+    `<p class="shm-jb-empty-title shm-jb-error" role="alert">${esc(s.loadErrorText)}</p>` +
+    `<button type="button" class="shm-jb-btn shm-jb-btn-secondary shm-jb-retry">${esc(s.retryText)}</button>`
   );
 }
 

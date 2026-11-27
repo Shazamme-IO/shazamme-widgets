@@ -1,5 +1,5 @@
-// LAST UPDATED: 2026-11-27 15:15 AEDT (v0.1.66)
-// Change: New widget. Job Board, search panel, filters with live counts (a sheet on mobile) and job cards with sort and pages.
+// LAST UPDATED: 2026-11-27 16:01 AEDT (v0.1.66)
+// Change: New widget. Job Board, search panel, filters with live counts (a sheet on mobile) and job cards with sort and pages. Review fixes: reads every collection page, 4s collection timeout, load-error message with retry.
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
 // existing widget JS.

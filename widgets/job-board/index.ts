@@ -5,11 +5,9 @@
 
 import type { DudaData } from '../../core/config';
 import { loadJobsFrom, type JobSource, type SiteJob } from '../../core/site-jobs';
-import {
-  activeFilterCount, buildFacets, filterJobs, pageCount, readAddress, sortJobs, toCard, visibleJobs, writeAddress, type State,
-} from './board';
+import { activeFilterCount, pageCount, readAddress, searchBoard, sortJobs, toCard, visibleJobs, writeAddress, type Facet, type State } from './board';
 import { createDrawer } from './drawer';
-import { cardHtml, countText, emptyHtml, facetsHtml, pagerHtml, shellHtml, type FacetView } from './render';
+import { cardHtml, countText, emptyHtml, errorHtml, facetsHtml, pagerHtml, shellHtml, type FacetView } from './render';
 import { fill, readSettings, SORTS, type GroupId, type Settings } from './settings';
 
 interface WidgetContext {
@@ -28,8 +26,11 @@ function release(element: HTMLElement): void {
   teardowns.delete(element);
 }
 
+/** The groups a visitor can see and untick; only these are read from the address. */
+const shownGroups = (s: Settings): GroupId[] => (s.showFilters ? s.groups.map((g) => g.id) : []);
+
 function freshState(s: Settings, inEditor: boolean): State {
-  if (s.syncAddress && !inEditor) return readAddress(window.location.search, window.location.hash, s.defaultSort);
+  if (s.syncAddress && !inEditor) return readAddress(window.location.search, window.location.hash, s.defaultSort, shownGroups(s));
   return { keyword: '', location: '', selected: {}, sort: s.defaultSort, page: 1 };
 }
 
@@ -47,7 +48,17 @@ function sourceNote(source: JobSource, count: number, s: Settings): string {
 
 const q = <T extends Element>(root: Element, sel: string): T | null => root.querySelector<T>(sel);
 
-function mountBoard(stage: HTMLElement, jobs: readonly SiteJob[], source: JobSource, s: Settings, inEditor: boolean, id: string): () => void {
+interface Mount {
+  jobs: readonly SiteJob[];
+  source: JobSource;
+  /** Set when the jobs could not be loaded: the board shows the error message and a retry button. */
+  retry?: () => void;
+}
+
+/** History entries: a search or a page change can be gone back to; a tick, a sort or "load more" replaces the entry. */
+type HistoryMode = 'push' | 'replace';
+
+function mountBoard(stage: HTMLElement, { jobs, source, retry }: Mount, s: Settings, inEditor: boolean, id: string): () => void {
   let state = freshState(s, inEditor);
   const view: FacetView = { open: openGroups(s), expanded: new Set() };
   stage.innerHTML = shellHtml(id, s, state);
@@ -70,13 +81,17 @@ function mountBoard(stage: HTMLElement, jobs: readonly SiteJob[], source: JobSou
     note.textContent = sourceNote(source, jobs.length, s);
   }
 
+  let facets: Facet[] = [];
+
   const renderFacets = (): void => {
     if (!facetsBox) return;
-    facetsBox.innerHTML = facetsHtml(id, buildFacets(jobs, state, s.groups), s, view);
+    facetsBox.innerHTML = facetsHtml(id, facets, s, view);
   };
 
   const render = (): void => {
-    const matched = sortJobs(filterJobs(jobs, state), state.sort);
+    const result = searchBoard(jobs, state, s.groups);
+    facets = result.facets;
+    const matched = sortJobs(result.matched, state.sort);
     const pages = pageCount(matched.length, s.pageSize);
     state = { ...state, page: Math.min(state.page, pages) };
     const shown = visibleJobs(matched, state, s);
@@ -86,7 +101,7 @@ function mountBoard(stage: HTMLElement, jobs: readonly SiteJob[], source: JobSou
     count.textContent = countText(matched.length, s);
     const filtered = activeFilterCount(state) > 0 || !!state.keyword || !!state.location;
     empty.hidden = shown.length > 0;
-    empty.innerHTML = shown.length ? '' : emptyHtml(s, jobs.length > 0, filtered);
+    empty.innerHTML = shown.length ? '' : retry ? errorHtml(s) : emptyHtml(s, jobs.length > 0, filtered);
     const pagerMarkup = pagerHtml(state.page, pages, shown.length, matched.length, s);
     pager.innerHTML = pagerMarkup;
     pager.hidden = !pagerMarkup;
@@ -97,10 +112,10 @@ function mountBoard(stage: HTMLElement, jobs: readonly SiteJob[], source: JobSou
     renderFacets();
   };
 
-  const commit = (push: boolean): void => {
+  const commit = (mode: HistoryMode): void => {
     if (s.syncAddress && !inEditor) {
       const url = `${window.location.pathname}${writeAddress(window.location.search, state, s.defaultSort)}`;
-      if (push) window.history.pushState({ shmJobBoard: true }, '', url);
+      if (mode === 'push') window.history.pushState({ shmJobBoard: true }, '', url);
       else window.history.replaceState(window.history.state, '', url);
     }
     render();
@@ -131,7 +146,7 @@ function mountBoard(stage: HTMLElement, jobs: readonly SiteJob[], source: JobSou
     const form = e.target as HTMLFormElement;
     const val = (name: string): string => (form.querySelector<HTMLInputElement>(`[name=${name}]`)?.value ?? '').trim();
     state = { ...state, keyword: val('keyword'), location: val('location'), page: 1 };
-    commit(true);
+    commit('push');
   };
 
   const onChange = (e: Event): void => {
@@ -142,12 +157,12 @@ function mountBoard(stage: HTMLElement, jobs: readonly SiteJob[], source: JobSou
       const now = state.selected[group] ?? [];
       const next = box.checked ? [...now, box.value] : now.filter((v) => v.toLowerCase() !== box.value.toLowerCase());
       state = { ...state, selected: { ...state.selected, [group]: next }, page: 1 };
-      commit(true);
+      commit('replace');
       focusIn(`.shm-jb-check[data-group="${group}"]`, (c) => (c as HTMLInputElement).value === box.value);
     } else if (el.matches('[name=sort]')) {
       const value = (el as HTMLSelectElement).value;
       state = { ...state, sort: SORTS.find((x) => x === value) ?? s.defaultSort, page: 1 };
-      commit(true);
+      commit('replace');
     }
   };
 
@@ -166,21 +181,26 @@ function mountBoard(stage: HTMLElement, jobs: readonly SiteJob[], source: JobSou
       else view.expanded.add(group);
       renderFacets();
       focusIn(`.shm-jb-more[data-group="${group}"]`);
+    } else if (el.matches('.shm-jb-retry')) {
+      retry?.();
     } else if (el.matches('.shm-jb-clear')) {
+      const fromEmpty = !!el.closest('.shm-jb-empty');
       state = { ...state, keyword: '', location: '', selected: {}, page: 1 };
       syncInputs();
-      commit(true);
+      commit('push');
+      // The empty message's button is gone after the re-render, so focus moves to the search box or the result count.
+      if (fromEmpty) (q<HTMLElement>(stage, '[name=keyword]') ?? count).focus();
     } else if (el.matches('.shm-jb-page, .shm-jb-prev, .shm-jb-next')) {
       const page = parseInt(el.dataset.page ?? '', 10);
       if (!page) return;
       state = { ...state, page };
-      commit(true);
+      commit('push');
       toResults();
       focusIn('.shm-jb-page.is-current');
     } else if (el.matches('.shm-jb-loadmore')) {
       const before = grid.children.length;
       state = { ...state, page: state.page + 1 };
-      commit(false);
+      commit('replace');
       (grid.children[before]?.querySelector('a') as HTMLElement | null)?.focus();
     } else if (el.matches('.shm-jb-open')) {
       drawer?.open();
@@ -191,6 +211,11 @@ function mountBoard(stage: HTMLElement, jobs: readonly SiteJob[], source: JobSou
   };
 
   const onPop = (): void => {
+    // Duda can remove the widget without re-running it; a board no longer on the page stops listening.
+    if (!stage.isConnected) {
+      teardown();
+      return;
+    }
     state = freshState(s, inEditor);
     syncInputs();
     render();
@@ -208,14 +233,15 @@ function mountBoard(stage: HTMLElement, jobs: readonly SiteJob[], source: JobSou
   wide?.addEventListener?.('change', onWide);
   render();
 
-  return () => {
+  function teardown(): void {
     drawer?.destroy();
     stage.removeEventListener('submit', onSubmit);
     stage.removeEventListener('change', onChange);
     stage.removeEventListener('click', onClick);
     window.removeEventListener('popstate', onPop);
     wide?.removeEventListener?.('change', onWide);
-  };
+  }
+  return teardown;
 }
 
 function ensureRoot(element: HTMLElement): { root: HTMLElement; stage: HTMLElement } {
@@ -249,12 +275,18 @@ export default async function jobBoard(ctx: WidgetContext): Promise<void> {
     const { jobs, source } = await loadJobsFrom(s.jobsCollection, ctx.shazamme, data, inEditor);
     if (runs.get(element) !== run) return;
     release(element);
-    teardowns.set(element, mountBoard(stage, jobs, source, s, inEditor, id));
+    teardowns.set(element, mountBoard(stage, { jobs, source }, s, inEditor, id));
   } catch (err) {
     if (runs.get(element) !== run) return;
-    console.error(`[${NAME}]`, err);
+    console.error(`[${NAME}] could not load jobs`, {
+      collection: s.jobsCollection || '(none, job feed only)',
+      siteId: (data as { siteId?: unknown }).siteId ?? null,
+      inEditor,
+      hasSdk: !!ctx.shazamme,
+      page: typeof window !== 'undefined' ? window.location.pathname : '',
+    }, err);
     release(element);
-    teardowns.set(element, mountBoard(stage, [], 'feed', s, inEditor, id));
+    teardowns.set(element, mountBoard(stage, { jobs: [], source: 'feed', retry: () => void jobBoard(ctx) }, s, inEditor, id));
     if (inEditor) {
       const note = stage.querySelector<HTMLElement>('.shm-jb-note');
       if (note) note.textContent = `Job Board could not read any jobs: ${err instanceof Error ? err.message : String(err)}`;

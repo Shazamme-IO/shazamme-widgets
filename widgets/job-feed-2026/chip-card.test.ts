@@ -74,6 +74,11 @@ describe('job-feed-2026 chip card salary from the live feed', () => {
     expect(await pay(live('per hour + super', { salaryFrom: '55', salaryTo: '65', realSalaryFrom: 55, realSalaryTo: 65, salaryType: 'Hourly' }))).toBe('$55 – $65 per hour + super');
   });
 
+  it('salary (3e) rounds to whole units and (3a) shows standalone wording as written', async () => {
+    expect(await pay(live('per hour', { salaryFrom: '32.5', salaryTo: '40.4', realSalaryFrom: 32.5, realSalaryTo: 40.4, salaryType: 'Hourly' }))).toBe('$33 – $40 per hour');
+    expect(await pay(live('Competitive'))).toBe('Competitive');
+  });
+
   it('shows no pay line when the advert hides its salary', async () => {
     expect(await pay(live('+ super', { isDisplaySalary: false }))).toBeUndefined();
   });

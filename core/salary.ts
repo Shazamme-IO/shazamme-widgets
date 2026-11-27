@@ -33,19 +33,37 @@ function ends(f: Record<string, unknown>): { from: number; to: number } {
   return { from: amount(f.salaryFrom) || amount(f.realSalaryFrom), to: amount(f.salaryTo) || amount(f.realSalaryTo) };
 }
 
+const THREE_LETTERS = /^[A-Za-z]{3}$/;
+
+/** A currency symbol in front of a figure: "$150k", "A$90,000", "£ 550", "€100". */
+const SYMBOL_AMOUNT_RE = /[$£€¥₹]\s?\d/;
+
+/** The currency code: currencyCode, salaryCurrency or currency, else a 3-letter currencySymbol ("AUD"). */
+function codeFor(f: Record<string, unknown>): string {
+  const code = str(f.currencyCode) || str(f.salaryCurrency) || str(f.currency);
+  if (code) return code.toUpperCase();
+  const given = str(f.currencySymbol);
+  return THREE_LETTERS.test(given) ? given.toUpperCase() : '';
+}
+
+/** True when the row names a currency in any of the fields the feed uses. */
+export function hasCurrency(row: Row): boolean {
+  if (!row || typeof row !== 'object') return false;
+  return !!(codeFor(row) || str(row.currencySymbol));
+}
+
 function symbolFor(f: Record<string, unknown>): string {
-  const code = (str(f.currencyCode) || str(f.salaryCurrency) || str(f.currency)).toUpperCase();
+  const code = codeFor(f);
   if (SYMBOLS[code]) return SYMBOLS[code];
   const given = str(f.currencySymbol);
-  if (given && !/^[A-Za-z]{3}$/.test(given)) return given;
+  if (given && !THREE_LETTERS.test(given)) return given;
   if (/^[A-Z]{3}$/.test(code)) return `${code} `;
   return '';
 }
 
+/** Whole units, as every card showed them before core/salary: "$32.50" reads "$33". */
 function money(n: number, symbol: string): string {
-  const cents = Math.round(n * 100) % 100 !== 0;
-  const digits = cents ? 2 : 0;
-  return `${symbol}${n.toLocaleString('en-AU', { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
+  return `${symbol}${Math.round(n).toLocaleString('en-AU')}`;
 }
 
 /** "$150,000 – $170,000", one figure when only one end is set or both match, "" when there is no amount. */
@@ -63,20 +81,29 @@ function figuresIn(wording: string): number[] {
   return [...wording.matchAll(/(\d[\d,]*(?:\.\d+)?)\s*(k\b)?/gi)].map((m) => parseFloat(m[1].replace(/,/g, '')) * (m[2] ? 1000 : 1));
 }
 
-/** The salary line for a card: amount plus the recruiter's wording, the wording alone when it already states the amount, or "". */
+/** The wording already gives the pay: a currency symbol before a figure, or the salaryFrom / salaryTo figure itself. */
+function statesPay(wording: string, row: Record<string, unknown>): boolean {
+  if (SYMBOL_AMOUNT_RE.test(wording)) return true;
+  const { from, to } = ends(row);
+  return figuresIn(wording).some((n) => n === from || n === to);
+}
+
+/**
+ * The salary line for a card. Wording that only reads after an amount ("+ super", "per hour") gets the formatted
+ * range in front; wording that stands on its own ("Competitive") or already states the pay ("$90k + super") is shown
+ * as written; no wording shows the range. Hidden salaries (isDisplaySalary false) show nothing, wording included.
+ */
 export function payLine(row: Row): string {
   if (!row || typeof row !== 'object' || isHidden(row)) return '';
   const wording = str(row.salaryText);
   const range = salaryRange(row);
-  if (!range) return wording && !SUFFIX_RE.test(wording) ? wording : '';
+  if (wording && (statesPay(wording, row) || !SUFFIX_RE.test(wording))) return wording;
+  if (!range) return '';
   if (!wording) {
     const unit = UNIT[str(row.salaryType).toLowerCase()];
     return unit ? `${range} ${unit}` : range;
   }
-  const { from, to } = ends(row);
-  if (figuresIn(wording).some((n) => n === from || n === to)) return wording;
-  // "+ super" and "per hour" follow the amount; wording that stands alone ("Super included") is set off with a comma.
-  return SUFFIX_RE.test(wording) ? `${range} ${wording}` : `${range}, ${wording}`;
+  return `${range} ${wording}`;
 }
 
 /** Top of the pay range as a yearly figure, for sorting by salary. 0 when there is no amount or it is hidden. */

@@ -45,6 +45,12 @@ describe('job-summary', () => {
     expect(buildRows({ salaryFrom: '10', salaryTo: '20', salaryText: '$10 – $20', currencyCode: 'AUD' }, {}).map((r) => r.key)).toEqual(['salary', 'currency']);
   });
 
+  it('salary (3e) rounds the Salary row to whole units, and (3d) reads a 3-letter currencySymbol as the code', () => {
+    const salary = (job: Record<string, unknown>) => buildRows(job, {}).find((r) => r.key === 'salary')?.value;
+    expect(salary({ salaryFrom: '149999.6', salaryTo: '170000.2', currencyCode: 'AUD' })).toBe('$150,000 – $170,000');
+    expect(salary({ salaryFrom: '55.5', salaryTo: '65', currencySymbol: 'NZD' })).toBe('$56 – $65');
+  });
+
   it('honours row toggles and custom labels, given as strings or booleans', async () => {
     const el = mount(SHELL);
     await run(el, { jobID: 'job-1', showProfession: false, showRole: 'false', labelWorkType: 'Contract type' });

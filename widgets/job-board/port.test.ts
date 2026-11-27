@@ -6,7 +6,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const VERSION = JSON.parse(readFileSync(join(here, '..', '..', 'package.json'), 'utf8')).version as string;
@@ -86,6 +86,22 @@ const checkbox = (el: Element, group: string, value: string) =>
 const option = (el: Element, group: string) =>
   [...el.querySelectorAll(`.shm-jb-group[data-group="${group}"] .shm-jb-option`)].map((o) => `${o.querySelector('.shm-jb-option-name')!.textContent} ${o.querySelector('.shm-jb-option-count')!.textContent}`);
 const tickBox = (box: HTMLInputElement) => { box.checked = !box.checked; box.dispatchEvent(new Event('change', { bubbles: true })); };
+/** Counts pushState and replaceState calls until restore(). */
+function spyHistory() {
+  const h = window.history;
+  const realPush = h.pushState.bind(h);
+  const realReplace = h.replaceState.bind(h);
+  const out = { pushes: 0, replaces: 0, restore: () => { h.pushState = realPush; h.replaceState = realReplace; } };
+  h.pushState = (...a: Parameters<History['pushState']>) => { out.pushes += 1; realPush(...a); };
+  h.replaceState = (...a: Parameters<History['replaceState']>) => { out.replaces += 1; realReplace(...a); };
+  return out;
+}
+const submit = (el: Element, keyword: string) => {
+  el.querySelector<HTMLInputElement>('[name=keyword]')!.value = keyword;
+  el.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+};
+/** An SDK whose feed rows carry the given page_item_url values. */
+const feedWith = (items: Array<{ url: string; data: Row }>) => ({ site: async () => ({ siteID: 'site-1' }), fetch: async () => items.map((i) => ({ page_item_url: i.url, data: i.data })) });
 const press = (key: string, shiftKey = false) => document.dispatchEvent(new KeyboardEvent('keydown', { key, shiftKey, bubbles: true, cancelable: true }));
 
 describe('job-board bundle', () => {
@@ -129,7 +145,7 @@ describe('job-board bundle', () => {
   it('renders with no settings and no data source without crashing, with a note in the editor', async () => {
     const el = await mount({}, { shazamme: undefined, inEditor: true });
     expect(el.querySelector('.shm-jb-note')!.textContent).toMatch(/could not read any jobs/);
-    expect(el.querySelector('.shm-jb-empty-title')!.textContent).toBe('There are no live jobs right now. Check back soon.');
+    expect(el.querySelector('.shm-jb-empty-title')!.textContent).toBe("We couldn't load the jobs just now. Please try again.");
     const live = await mount({}, { shazamme: undefined });
     expect(live.querySelector('.shm-jb-note')!.hasAttribute('hidden')).toBe(true);
   });
@@ -295,14 +311,12 @@ describe('job-board bundle', () => {
     expect(window.location.search).toBe('');
     const win = window as unknown as Win;
     await win.ShazammeWidget['job-board']({ element: b, data: { config: { syncAddress: 'false' } }, shazamme: sdk() });
-    let pushes = 0;
-    const real = window.history.pushState.bind(window.history);
-    window.history.pushState = (...args: Parameters<History['pushState']>) => { pushes += 1; real(...args); };
     const c = await mount({}, { id: 'c', keep: true });
     await win.ShazammeWidget['job-board']({ element: c, data: { config: {} }, shazamme: sdk() });
+    const writes = spyHistory();
     tickBox(checkbox(c, 'profession', 'IT'));
-    window.history.pushState = real;
-    expect(pushes).toBe(1);
+    writes.restore();
+    expect(writes.replaces + writes.pushes).toBe(1);
     expect(titles(c)).toHaveLength(2);
   });
 
@@ -310,6 +324,158 @@ describe('job-board bundle', () => {
     const el = await mount({}, { inEditor: true });
     tickBox(checkbox(el, 'profession', 'IT'));
     expect(window.location.search).toBe('');
+  });
+});
+
+describe('job-board review fixes', () => {
+  beforeEach(() => { document.body.innerHTML = ''; document.body.style.overflow = ''; });
+  afterEach(() => vi.restoreAllMocks());
+
+  it('#1 reads a collection whose pages carry no totalPages, stopping on the short page', async () => {
+    const many = Array.from({ length: 130 }, (_, i) => row(i % 9, { jobName: `Role ${i}`, category: 'Finance' }));
+    const asked: number[] = [];
+    const dm = { loadCollectionsAPI: async () => ({ data: () => { let p = 0; const q = { pageSize: () => q, pageNumber: (n: number) => ((p = n), q), get: async () => { asked.push(p); return { values: many.slice(p * 100, p * 100 + 100).map((r, i) => ({ page_item_url: `c-${p * 100 + i}`, data: r })) }; } }; return q; } }) };
+    const el = await mount({ pageSize: '60' }, { dm, shazamme: sdk() });
+    expect(asked).toEqual([0, 1]);
+    expect(el.querySelector('.shm-jb-count')!.textContent).toBe('130 jobs');
+  });
+
+  it('#2 leaves out jobs whose activeStatus is the string "false" (intended change)', async () => {
+    const el = await mount({}, { shazamme: sdk([...ROWS, row(7, { jobName: 'Text closed', category: 'Finance', activeStatus: 'false' }), row(8, { jobName: 'Text open', category: 'Finance', activeStatus: 'true' })]) });
+    expect(titles(el)).not.toContain('Text closed');
+    expect(titles(el)).toContain('Text open');
+    expect(el.querySelector('.shm-jb-count')!.textContent).toBe('6 jobs');
+  });
+
+  it('#6 shows the load-error message and a retry button when the feed fails on the live site, and logs the context', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    let fail = true;
+    const flaky = { site: async () => ({ siteID: 'site-1' }), fetch: async () => { if (fail) throw new Error('feed down'); return ROWS.map((r, i) => ({ page_item_url: `job-${i + 1}`, data: r })); } };
+    const el = await mount({ loadErrorText: 'Jobs are unavailable', retryText: 'Reload jobs' }, { shazamme: flaky });
+    expect(el.querySelector('.shm-jb-empty-title')!.textContent).toBe('Jobs are unavailable');
+    expect(el.querySelector('.shm-jb-empty-title')!.textContent).not.toContain('no live jobs');
+    const retry = el.querySelector<HTMLButtonElement>('.shm-jb-retry')!;
+    expect(retry.textContent).toBe('Reload jobs');
+    expect(retry.classList.contains('shm-jb-btn')).toBe(true);
+    expect(error).toHaveBeenCalledWith('[job-board] could not load jobs', expect.objectContaining({ collection: 'Jobs', inEditor: false, hasSdk: true }), expect.any(Error));
+    fail = false;
+    retry.click();
+    await tick();
+    await tick();
+    expect(titles(el)).toHaveLength(5);
+    expect(el.querySelector('.shm-jb-retry')).toBeNull();
+  });
+
+  it('#6 still shows the no-live-jobs text when the feed answers with no jobs', async () => {
+    const el = await mount({}, { shazamme: sdk([]) });
+    expect(el.querySelector('.shm-jb-empty-title')!.textContent).toBe('There are no live jobs right now. Check back soon.');
+    expect(el.querySelector('.shm-jb-retry')).toBeNull();
+  });
+
+  it('#7 ignores address filters for groups the board does not show', async () => {
+    const el = await mount({ filterGroups: 'profession, workType' }, { url: '/jobs?city=Perth&workModel=Remote&workType=Contract' });
+    expect(titles(el)).toEqual(['Job 4', 'Job 2']);
+    expect(el.querySelector('.shm-jb-open-count')!.textContent).toBe('(1)');
+    tickBox(checkbox(el, 'workType', 'Contract'));
+    expect(titles(el)).toHaveLength(5);
+    expect(window.location.search).toBe('');
+  });
+
+  it('#7 ignores every address filter when the filters are turned off', async () => {
+    const el = await mount({ showFilters: 'false' }, { url: '/jobs?workType=Contract&city=Perth' });
+    expect(titles(el)).toHaveLength(5);
+  });
+
+  it('#8 replaces the history entry for ticks and sort, and pushes one for a search and a page change', async () => {
+    const el = await mount({ pageSize: '3' });
+    const h = spyHistory();
+    tickBox(checkbox(el, 'workModel', 'Remote'));
+    tickBox(checkbox(el, 'workModel', 'Remote'));
+    const sort = el.querySelector<HTMLSelectElement>('[name=sort]')!;
+    sort.value = 'salary-low';
+    sort.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(h).toMatchObject({ pushes: 0, replaces: 3 });
+    submit(el, 'job');
+    expect(h.pushes).toBe(1);
+    (el.querySelector('.shm-jb-page[data-page="2"]') as HTMLButtonElement).click();
+    h.restore();
+    expect(h).toMatchObject({ pushes: 2, replaces: 3 });
+  });
+
+  it('#9 keeps a job link on the site for a protocol-relative or javascript: page_item_url', async () => {
+    const el = await mount({}, { shazamme: feedWith([
+      { url: '//evil.com', data: row(1, { jobName: 'A' }) },
+      { url: 'javascript:alert(1)', data: row(2, { jobName: 'B' }) },
+      { url: '/\\evil.com/../../x', data: row(3, { jobName: 'C' }) },
+    ]) });
+    const hrefs = Object.fromEntries([...el.querySelectorAll('.shm-jb-card')].map((a) => [a.querySelector('.shm-jb-card-title')!.textContent, a.getAttribute('href')!]));
+    expect(hrefs).toEqual({ A: '/job-details/evil.com', B: '/job-details/javascript%3Aalert(1)', C: '/job-details/evil.com/x' });
+    for (const href of Object.values(hrefs)) {
+      const url = new URL(href, window.location.href);
+      expect(url.origin).toBe(window.location.origin);
+      expect(url.pathname.startsWith('/job-details/')).toBe(true);
+      expect(url.protocol).toBe(window.location.protocol);
+    }
+  });
+
+  it('#10 locks page scroll until the last open sheet closes, and makes the page behind inert while open', async () => {
+    const a = await mount({ syncAddress: 'false' }, { id: 'a' });
+    const b = await mount({ syncAddress: 'false' }, { id: 'b', keep: true });
+    const outside = document.createElement('p');
+    document.body.appendChild(outside);
+    document.body.style.overflow = 'scroll';
+    a.querySelector<HTMLButtonElement>('.shm-jb-open')!.click();
+    expect(b.hasAttribute('inert')).toBe(true);
+    expect(outside.hasAttribute('inert')).toBe(true);
+    expect(a.querySelector('.shm-jb-results')!.hasAttribute('inert')).toBe(true);
+    expect(a.querySelector('.shm-jb-open')!.hasAttribute('inert')).toBe(true);
+    expect(a.querySelector('.shm-jb-backdrop')!.hasAttribute('inert')).toBe(false);
+    expect(a.querySelector('.shm-jb-side')!.hasAttribute('inert')).toBe(false);
+    b.querySelector<HTMLButtonElement>('.shm-jb-open')!.click();
+    a.querySelector<HTMLButtonElement>('.shm-jb-close')!.click();
+    expect(document.body.style.overflow).toBe('hidden');
+    b.querySelector<HTMLButtonElement>('.shm-jb-close')!.click();
+    expect(document.body.style.overflow).toBe('scroll');
+    expect(document.querySelectorAll('[inert]')).toHaveLength(0);
+  });
+
+  it('#10 a re-run while the sheet is open lifts the lock and the inert attributes', async () => {
+    const el = await mount({ syncAddress: 'false' });
+    el.querySelector<HTMLButtonElement>('.shm-jb-open')!.click();
+    expect(document.querySelectorAll('[inert]').length).toBeGreaterThan(0);
+    await (window as unknown as Win).ShazammeWidget['job-board']({ element: el, data: { config: { syncAddress: 'false' } }, shazamme: sdk() });
+    expect(document.querySelectorAll('[inert]')).toHaveLength(0);
+    expect(document.body.style.overflow).toBe('');
+  });
+
+  it('#11 moves focus to the search box after the empty message\'s Clear, or to the count with no search box', async () => {
+    const el = await mount({}, { url: '/jobs?keyword=zzzz' });
+    (el.querySelector('.shm-jb-empty .shm-jb-clear') as HTMLButtonElement).click();
+    expect(document.activeElement).toBe(el.querySelector('[name=keyword]'));
+    const bare = await mount({ showSearch: 'false' }, { url: '/jobs?workType=Casual' });
+    (bare.querySelector('.shm-jb-empty .shm-jb-clear') as HTMLButtonElement).click();
+    expect(document.activeElement).toBe(bare.querySelector('.shm-jb-count'));
+    expect(titles(bare)).toHaveLength(5);
+  });
+
+  it('#12 a board removed from the page stops listening for Back on its next popstate', async () => {
+    const el = await mount();
+    const removed = vi.spyOn(window, 'removeEventListener');
+    el.remove();
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    expect(removed).toHaveBeenCalledWith('popstate', expect.any(Function));
+    removed.mockClear();
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    expect(removed).not.toHaveBeenCalled();
+  });
+
+  it('#13 says each option count in visually hidden text, not an aria-label', async () => {
+    const el = await mount();
+    const opt = [...el.querySelectorAll('.shm-jb-group[data-group="workType"] .shm-jb-option')][0];
+    expect(opt.querySelector('[aria-label]')).toBeNull();
+    expect(opt.querySelector('.shm-jb-option-count')!.getAttribute('aria-hidden')).toBe('true');
+    expect(opt.querySelector('.shm-jb-sr')!.textContent).toBe(' (3 jobs)');
+    expect(opt.querySelector('label')!.textContent).toBe('Permanent3 (3 jobs)');
   });
 });
 

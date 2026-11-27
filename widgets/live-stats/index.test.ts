@@ -75,6 +75,12 @@ describe('live-stats bundle', () => {
     expect(tilesOf(el).map(num)).toEqual(['4', '2', '2']);
   });
 
+  it('does not count a job whose activeStatus is the string "false" (intended change in core/site-jobs)', async () => {
+    const jobs = [...JOBS, { category: 'Legal', country: 'Canada', activeStatus: 'false' }, { category: 'Retail', country: 'Australia', activeStatus: 'true' }];
+    const el = await mount({ tiles: [{ source: 'jobs' }, { source: 'industries' }, { source: 'countries' }] }, { shazamme: sdk({ jobs }) });
+    expect(tilesOf(el).map(num)).toEqual(['5', '3', '2']);
+  });
+
   it('counts only visible consultants', async () => {
     const el = await mount({ tiles: [{ source: 'consultants', label: 'Consultants' }] }, { shazamme: sdk({ consultants: CONSULTANTS }) });
     expect(tilesOf(el).map(num)).toEqual(['2']);
