@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 7d614faf0479. Registers window.ShazammeWidget["<name>"].
+ * Build e7e7958f684d. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var __shazWidgetExport = (() => {
@@ -761,7 +761,7 @@ var __shazWidgetExport = (() => {
   function dotHtml(t, i, s, avatar) {
     const label = `Show testimonial ${i + 1}`;
     const inner = avatar ? photoHtml(t, { ...s, showPhoto: true }, "shm-tm-dot-photo") : "";
-    return `<button type="button" class="shm-tm-dot${avatar ? " is-avatar" : ""}" data-page="${i}" data-name="${esc(t.name)}" aria-label="${esc(label)}">${inner}</button>`;
+    return `<button type="button" class="shm-tm-dot${avatar ? " is-avatar" : ""}" data-page="${i}" data-name="${esc(displayName(t, s))}" aria-label="${esc(label)}">${inner}</button>`;
   }
   function dialogHtml(t, ctx, titleId, closeLabel) {
     const stars = ctx.settings.showRating && t.rating !== null ? starsHtml(t.rating) : "";

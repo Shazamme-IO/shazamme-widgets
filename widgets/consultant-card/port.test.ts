@@ -80,6 +80,11 @@ describe('team mode', () => {
     expect(first.querySelector('a.shm-cc-name')!.getAttribute('href')).toBe('/consultant/tom-reilly');
   });
 
+  it('does not link a consultant whose page is just the site root', async () => {
+    const { element } = await mount({ Consultants: [consultant({ consultantURL: 'https://demo.example.com/' })] });
+    expect(element.querySelector('a.shm-cc-name')).toBeNull();
+  });
+
   it('keeps the case of the profile link but matches on any case', async () => {
     const rows = [consultant({ consultantURL: 'https://demo.example.com/Consultant/Priya-Shah?ref=A' })];
     const { element } = await mount({ Consultants: rows, Jobs: [job({ consultantURL: '/consultant/priya-shah/' })] });
@@ -227,6 +232,8 @@ describe('job mode', () => {
     const rows = [consultant({ consultantID: 'x', phone: '+61 2 9999 8888 ext 12', eMail: 'a@b.co?bcc=x@y.com' })];
     const { element } = await mount({ Consultants: rows, Jobs: [job({ jobID: 'J9', consultantURL: '/consultant/priya-shah' })] }, { mode: 'job', jobID: 'J9' });
     expect(element.querySelector('.shm-cc-phone')!.getAttribute('href')).toBe('tel:+61299998888');
+    const vanity = await mount({ Consultants: [consultant({ phone: '1300 EXCEL 99' })] }, { showPhone: 'show' });
+    expect(vanity.element.querySelector('.shm-cc-phone')!.getAttribute('href')).toBe('tel:130099');
     expect(element.querySelector('.shm-cc-email')).toBeNull();
   });
 

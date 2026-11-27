@@ -48,10 +48,10 @@ export function plainText(v: unknown): string {
 export function hrefPath(v: unknown): string {
   const url = safeUrl(v);
   if (!url) return '';
-  if (url.startsWith('/')) return url;
+  if (url.startsWith('/')) return url === '/' ? '' : url;
   try {
     const u = new URL(url);
-    return `${u.pathname}${u.search}`;
+    return u.pathname === '/' ? '' : `${u.pathname}${u.search}`;
   } catch {
     return '';
   }
@@ -72,7 +72,7 @@ const MIN_PHONE_DIGITS = 6;
 
 /** Digits and a leading plus only, so a phone number can sit in a tel: link. An extension ("ext 12", "x12", "#12") is not dialled. */
 export function telHref(phone: string): string {
-  const main = phone.split(/\s*(?:ext\.?|x|#)/i)[0];
+  const main = phone.split(/\s*(?:ext\.?(?=\s*\d)|x(?=\s*\d)|#)/i)[0];
   const digits = main.replace(/\D/g, '');
   if (digits.length < MIN_PHONE_DIGITS) return '';
   return `tel:${main.trim().startsWith('+') ? '+' : ''}${digits}`;

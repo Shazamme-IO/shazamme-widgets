@@ -7,6 +7,7 @@ Build the Design Editor for this widget. Every line is one style a site builder 
 - Card corner radius | selector: .shm-cc.is-mode-team .shm-cc-card | property: border-radius | default: 20px
 - Card inner space | selector: .shm-cc.is-mode-team .shm-cc-card | property: padding | default: 28px
 - Space inside the card | selector: .shm-cc.is-mode-team .shm-cc-card | property: gap | default: 18px
+- Name underline on card hover (team) | selector: .shm-cc.is-mode-team .shm-cc-card:hover a.shm-cc-name | property: text-decoration | default: underline
 - Card hover border | selector: .shm-cc.is-mode-team .shm-cc-card:hover | property: border-color | default: #101423
 - Space between cards | selector: .shm-cc .shm-cc-grid | property: gap | default: 16px
 - Space kept free while the data loads | selector: .shm-cc:not(.is-ready) .shm-cc-stage | property: min-height | default: 200px
@@ -53,5 +54,6 @@ Build the Design Editor for this widget. Every line is one style a site builder 
 - Job title colour on the panel | selector: .shm-cc.is-mode-job .shm-cc-role | property: color | default: #c9ccd6
 - Job title size on the panel | selector: .shm-cc.is-mode-job .shm-cc-role | property: font-size | default: 14px
 - Live roles colour on the panel | selector: .shm-cc.is-mode-job .shm-cc-live | property: color | default: #f7f5ef
+- Live roles divider line colour on the panel | selector: .shm-cc.is-mode-job .shm-cc-live | property: border-top-color | default: rgba(247, 245, 239, 0.16)
 - Phone and email colour | selector: .shm-cc.is-mode-job .shm-cc-contact | property: color | default: #f7f5ef
 - Focus outline on the panel | selector: .shm-cc.is-mode-job :focus-visible | property: outline-color | default: #d4f34a

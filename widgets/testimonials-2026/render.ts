@@ -198,7 +198,7 @@ export function carouselHtml(items: Testimonial[], ctx: CardCtx): string {
 function dotHtml(t: Testimonial, i: number, s: Settings, avatar: boolean): string {
   const label = `Show testimonial ${i + 1}`;
   const inner = avatar ? photoHtml(t, { ...s, showPhoto: true }, 'shm-tm-dot-photo') : '';
-  return `<button type="button" class="shm-tm-dot${avatar ? ' is-avatar' : ''}" data-page="${i}" data-name="${esc(t.name)}" aria-label="${esc(label)}">${inner}</button>`;
+  return `<button type="button" class="shm-tm-dot${avatar ? ' is-avatar' : ''}" data-page="${i}" data-name="${esc(displayName(t, s))}" aria-label="${esc(label)}">${inner}</button>`;
 }
 
 export function dialogHtml(t: Testimonial, ctx: CardCtx, titleId: string, closeLabel: string): string {

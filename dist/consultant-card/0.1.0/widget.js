@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 3ebca6309df5. Registers window.ShazammeWidget["<name>"].
+ * Build 69379dfde9fe. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var __shazWidgetExport = (() => {
@@ -107,10 +107,10 @@ var __shazWidgetExport = (() => {
   function hrefPath(v) {
     const url = safeUrl(v);
     if (!url) return "";
-    if (url.startsWith("/")) return url;
+    if (url.startsWith("/")) return url === "/" ? "" : url;
     try {
       const u = new URL(url);
-      return `${u.pathname}${u.search}`;
+      return u.pathname === "/" ? "" : `${u.pathname}${u.search}`;
     } catch (e) {
       return "";
     }
@@ -125,7 +125,7 @@ var __shazWidgetExport = (() => {
   }
   var MIN_PHONE_DIGITS = 6;
   function telHref(phone) {
-    const main = phone.split(/\s*(?:ext\.?|x|#)/i)[0];
+    const main = phone.split(/\s*(?:ext\.?(?=\s*\d)|x(?=\s*\d)|#)/i)[0];
     const digits = main.replace(/\D/g, "");
     if (digits.length < MIN_PHONE_DIGITS) return "";
     return `tel:${main.trim().startsWith("+") ? "+" : ""}${digits}`;
@@ -341,24 +341,26 @@ var __shazWidgetExport = (() => {
   }
   async function ownerOfJob(sdk, s, siteId, inEditor) {
     const [jobRows, consultantRows] = await Promise.all([
-      loadRows(sdk, JOBS, siteId, inEditor).catch(() => null),
+      loadRows(sdk, JOBS, siteId, inEditor).catch((err) => {
+        console.error("[consultant-card] jobs unavailable", err);
+        return null;
+      }),
       loadRows(sdk, CONSULTANTS, siteId, inEditor).catch(() => [])
     ]);
     const all = normaliseConsultants(consultantRows);
     const job = findJob(jobRows, s.jobId);
     const fromJob = job ? consultantForJob(job, all) : null;
-    if (fromJob) return { consultant: fromJob, all };
-    return { consultant: await consultantFromApi(sdk, s.jobId).catch(() => null), all };
+    if (fromJob) return { consultant: fromJob, all, jobRows };
+    return { consultant: await consultantFromApi(sdk, s.jobId).catch(() => null), all, jobRows };
   }
   async function renderJob(sdk, s, siteId, inEditor) {
     if (!s.jobId) {
       return { note: "connect the Job ID field to the page's job, so the card knows which job it is on.", live: s.noConsultantMessage };
     }
-    const { consultant, all } = await ownerOfJob(sdk, s, siteId, inEditor);
+    const { consultant, all, jobRows } = await ownerOfJob(sdk, s, siteId, inEditor);
     if (!consultant) return { note: `no consultant is assigned to job ${s.jobId}.`, live: s.noConsultantMessage };
     const everyone = all.some((c) => c.id === consultant.id) ? all : [...all, consultant];
-    const jobs = s.showLiveRoles ? await loadRows(sdk, JOBS, siteId, inEditor).catch(() => null) : null;
-    return { html: jobHtml(consultant, s, countsFrom(jobs, everyone)) };
+    return { html: jobHtml(consultant, s, s.showLiveRoles ? countsFrom(jobRows, everyone) : null) };
   }
   var runs = /* @__PURE__ */ new WeakMap();
   async function consultantCard(ctx) {
