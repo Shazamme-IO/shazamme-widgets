@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { hrefPath, localPath, profileHref } from './data';
+import { hrefPath, localPath, photoUrl, profileHref } from './data';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const VERSION = JSON.parse(readFileSync(join(here, '..', '..', 'package.json'), 'utf8')).version as string;
@@ -69,6 +69,8 @@ function sized(track: HTMLElement, scrollWidth = 1000, clientWidth = 400) {
   Object.defineProperty(track, 'scrollWidth', { value: scrollWidth, configurable: true });
   Object.defineProperty(track, 'clientWidth', { value: clientWidth, configurable: true });
 }
+/** Lets the live region's deferred announcement land (real timers). */
+const tick = () => new Promise((r) => setTimeout(r, 5));
 const lives = (el: HTMLElement) => [...el.querySelectorAll('.shm-cc-live')].map((n) => n.textContent);
 
 beforeEach(() => {
@@ -721,18 +723,23 @@ describe('review fixes: filter bar status and search', () => {
     const status = element.querySelector('[role="status"]')!;
     expect(status.textContent).toBe('');
     click(element, 'Finance');
+    await tick();
     expect(status.textContent).toBe('2 consultants shown');
     click(element, 'Technology');
+    await tick();
     expect(status.textContent).toBe('1 consultant shown');
     click(element, 'All');
+    await tick();
     expect(status.textContent).toBe('3 consultants shown');
   });
 
   it('uses the site builder wording for the count', async () => {
     const { element } = await mount({ Consultants: rows }, { showClassificationFilter: 'true', resultsCountOne: 'Eén ({n})', resultsCountMany: '{n} people' });
     click(element, 'Finance');
+    await tick();
     expect(element.querySelector('[role="status"]')!.textContent).toBe('2 people');
     click(element, 'Technology');
+    await tick();
     expect(element.querySelector('[role="status"]')!.textContent).toBe('Eén (1)');
   });
 
@@ -785,6 +792,7 @@ describe('review fixes: filter bar status and search', () => {
       const before = vi.getTimerCount();
       for (const text of ['Finance', 'Technology', 'All', 'Finance']) click(element, text);
       expect(clearSpy).toHaveBeenCalledTimes(4);
+      vi.advanceTimersByTime(0);
       expect(vi.getTimerCount()).toBe(before);
       const track = element.querySelector<HTMLElement>('.shm-cc-track')!;
       sized(track);
@@ -897,10 +905,10 @@ describe('review fixes: slider keys, direction and autoplay', () => {
     expect(track.scrollBy).toHaveBeenCalledTimes(3);
   });
 
-  it('names the slider once: the region, not the list inside it', async () => {
+  it('names the region and its scrollable list apart, so neither repeats the other', async () => {
     const { element } = await mount({ Consultants: TEAM }, { layout: 'slider', ariaLabel: 'Meet the team' });
     expect(element.querySelector('.shm-cc-slider')!.getAttribute('aria-label')).toBe('Meet the team');
-    expect(element.querySelector('.shm-cc-track')!.hasAttribute('aria-label')).toBe(false);
+    expect(element.querySelector('.shm-cc-track')!.getAttribute('aria-label')).toBe('Meet the team list');
   });
 });
 
@@ -955,5 +963,100 @@ describe('review fixes: contact names, social networks, photos and ids', () => {
     expect(idB).toMatch(/^shm-cc-[a-z0-9]+-[a-z0-9]+-q$/);
     expect(idB).not.toBe(idC);
     expect(b.element.querySelector(`label[for="${idB}"]`)).not.toBeNull();
+  });
+});
+
+describe('second review fixes', () => {
+  beforeEach(() => {
+    (HTMLElement.prototype as any).scrollBy = vi.fn();
+    (HTMLElement.prototype as any).scrollTo = vi.fn();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  it('a non-looping autoplay row that fits on screen does not pause itself, and Play stays on', async () => {
+    vi.useFakeTimers();
+    const { element } = await mount({ Consultants: TEAM }, { layout: 'slider', autoplay: 'true', infinite: 'false', sliderSpeed: '3000' });
+    const slider = element.querySelector<HTMLElement>('.shm-cc-slider')!;
+    const track = element.querySelector<HTMLElement>('.shm-cc-track')!;
+    sized(track, 400, 400);
+    const pause = element.querySelector<HTMLButtonElement>('[data-shm-cc-pause]')!;
+    vi.advanceTimersByTime(9000);
+    expect(pause.getAttribute('aria-label')).toBe('Pause');
+    expect(slider.classList.contains('is-paused')).toBe(false);
+    pause.click();
+    pause.click();
+    vi.advanceTimersByTime(9000);
+    expect(pause.getAttribute('aria-label')).toBe('Pause');
+    expect(track.scrollBy).not.toHaveBeenCalled();
+    sized(track, 1000, 400);
+    vi.advanceTimersByTime(3000);
+    expect(track.scrollBy).toHaveBeenCalledTimes(1);
+  });
+
+  const sectors = [
+    consultant({ consultantID: 'a', firstName: 'Priya', classification: '[{"Profession":"Finance"}]', sortOrder: 1 }),
+    consultant({ consultantID: 'b', firstName: 'Tom', classification: '[{"Profession":"Finance"}]', sortOrder: 2 }),
+    consultant({ consultantID: 'c', firstName: 'Ana', classification: '[{"Profession":"Legal"}]', sortOrder: 3 }),
+    consultant({ consultantID: 'd', firstName: 'Sam', classification: '[{"Profession":"Legal"}]', sortOrder: 4 }),
+  ];
+  const click = (el: HTMLElement, text: string) =>
+    [...el.querySelectorAll<HTMLButtonElement>('.shm-cc-filter')].find((b) => b.textContent === text)!.click();
+
+  it('re-announces the count when two filter changes show the same number', async () => {
+    vi.useFakeTimers();
+    const { element } = await mount({ Consultants: sectors }, { showClassificationFilter: 'true' });
+    const status = element.querySelector('[role="status"]')!;
+    const seen: string[] = [];
+    const observer = new MutationObserver(() => seen.push(status.textContent ?? ''));
+    observer.observe(status, { childList: true, characterData: true, subtree: true });
+    click(element, 'Finance');
+    await Promise.resolve();
+    vi.advanceTimersByTime(0);
+    await Promise.resolve();
+    expect(status.textContent).toBe('2 consultants shown');
+    click(element, 'Legal');
+    expect(status.textContent).toBe('');
+    await Promise.resolve();
+    vi.advanceTimersByTime(0);
+    await Promise.resolve();
+    expect(status.textContent).toBe('2 consultants shown');
+    observer.disconnect();
+    expect(seen.filter((t) => t === '2 consultants shown')).toHaveLength(2);
+  });
+
+  it('drops a pending announcement when the widget is torn down', async () => {
+    vi.useFakeTimers();
+    const { element } = await mount({ Consultants: sectors }, { showClassificationFilter: 'true' });
+    const status = element.querySelector('[role="status"]')!;
+    const before = vi.getTimerCount();
+    click(element, 'Finance');
+    expect(vi.getTimerCount()).toBe(before + 1);
+    (element as any).__shmCcDestroy();
+    expect(vi.getTimerCount()).toBe(before);
+    vi.advanceTimersByTime(10);
+    expect(status.textContent).toBe('');
+  });
+
+  it('gives the focusable slider list its own escaped name', async () => {
+    const { element } = await mount({ Consultants: TEAM }, { layout: 'slider', ariaLabel: 'Tom & "Ana" <b>' });
+    const track = element.querySelector('.shm-cc-track')!;
+    expect(track.getAttribute('aria-label')).toBe('Tom & "Ana" <b> list');
+    expect(element.querySelector('.shm-cc-track b')).toBeNull();
+    const plain = await mount({ Consultants: TEAM }, { layout: 'slider' });
+    expect(plain.element.querySelector('.shm-cc-track')!.getAttribute('aria-label')).toBe('Our consultants list');
+  });
+
+  it('keeps a custom port when it upgrades a photo to https, and drops only the http default :80', async () => {
+    expect(photoUrl({ photoURL: 'http://photos.example.com:8080/p.jpg' })).toBe('https://photos.example.com:8080/p.jpg');
+    expect(photoUrl({ photoURL: 'HTTP://Photos.example.com:8443/a/p.jpg?x=1' })).toBe('https://Photos.example.com:8443/a/p.jpg?x=1');
+    expect(photoUrl({ photoURL: 'http://photos.example.com:80/p.jpg' })).toBe('https://photos.example.com/p.jpg');
+    expect(photoUrl({ photoURL: 'http://user@photos.example.com:80/p.jpg' })).toBe('https://user@photos.example.com/p.jpg');
+    expect(photoUrl({ photoURL: 'http://photos.example.com:8000/x:80/p.jpg' })).toBe('https://photos.example.com:8000/x:80/p.jpg');
+    expect(photoUrl({ photoURL: 'https://photos.example.com:9443/p.jpg' })).toBe('https://photos.example.com:9443/p.jpg');
+    const { element } = await mount({ Consultants: [consultant({ photoURL: 'http://photos.example.com:8080/p.jpg' })] }, { avatar: 'photo-with-initials-fallback' });
+    expect(element.querySelector('img')!.getAttribute('src')).toBe('https://photos.example.com:8080/p.jpg');
   });
 });

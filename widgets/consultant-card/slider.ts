@@ -101,6 +101,7 @@ export function mountSlider(scope: HTMLElement, s: SliderSettings): () => void {
     ? startAutoplay(slider, track, pauseButton, s, reduced, {
       advance: () => go(1, s.infinite),
       atEnd,
+      fits: () => max() <= EDGE,
       rewind: () => moveTo(track, 0, smooth),
     })
     : noop;
@@ -120,6 +121,8 @@ interface Motion {
   /** Moves one card on; false when it is at the last card and does not loop. */
   advance: () => boolean;
   atEnd: () => boolean;
+  /** The whole row is on screen: there is nothing to move, so the timer waits instead of pausing. */
+  fits: () => boolean;
   rewind: () => void;
 }
 
@@ -135,7 +138,7 @@ function startAutoplay(slider: HTMLElement, track: HTMLElement, pauseButton: HTM
   };
   const onToggle = (): void => {
     paused = !paused;
-    if (!paused && !s.infinite && motion.atEnd()) motion.rewind();
+    if (!paused && !s.infinite && !motion.fits() && motion.atEnd()) motion.rewind();
     label();
   };
   const onEnter = (): void => { hovered = true; };
@@ -149,7 +152,7 @@ function startAutoplay(slider: HTMLElement, track: HTMLElement, pauseButton: HTM
   slider.addEventListener('focusout', onFocusOut);
   label();
   const timer = window.setInterval(() => {
-    if (paused || hovered || focused || document.visibilityState === 'hidden') return;
+    if (paused || hovered || focused || document.visibilityState === 'hidden' || motion.fits()) return;
     if (motion.advance()) return;
     paused = true;
     label();

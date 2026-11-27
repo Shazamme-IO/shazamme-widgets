@@ -146,11 +146,14 @@ export function parseList(v: unknown, objectKey: string): string[] {
 /**
  * The console's photo fields, in the order the platform Consultant widget reads them (photoURL
  * first). An http address is asked for over https, so the photo never makes the page mixed
- * content; a host without https fails to load and the card falls back (see photoErrorHandler).
+ * content. A custom port is kept as written; only an explicit :80 (the http default, which never
+ * speaks https) is dropped. A host without https fails to load and the card falls back (see
+ * photoErrorHandler).
  */
 export function photoUrl(row: Raw): string {
   const url = safeUrl(row.photoURL) || safeUrl(row.externalPhotoURL) || safeUrl(row.s3URL);
-  return url.replace(/^http:\/\//i, 'https://');
+  if (!/^http:\/\//i.test(url)) return url;
+  return url.replace(/^http:\/\/([^/?#]*?):80(?=[/?#]|$)/i, 'http://$1').replace(/^http:\/\//i, 'https://');
 }
 
 const SOCIAL_FIELDS: Record<SocialKey, string> = {

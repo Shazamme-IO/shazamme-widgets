@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 86535663d3ee. Registers window.ShazammeWidget["<name>"].
+ * Build 4dc7685c458c. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var __shazWidgetExport = (() => {
@@ -239,7 +239,8 @@ var __shazWidgetExport = (() => {
   }
   function photoUrl(row) {
     const url = safeUrl(row.photoURL) || safeUrl(row.externalPhotoURL) || safeUrl(row.s3URL);
-    return url.replace(/^http:\/\//i, "https://");
+    if (!/^http:\/\//i.test(url)) return url;
+    return url.replace(/^http:\/\/([^/?#]*?):80(?=[/?#]|$)/i, "http://$1").replace(/^http:\/\//i, "https://");
   }
   var SOCIAL_FIELDS = {
     linkedin: "linkedInURL",
@@ -520,7 +521,7 @@ var __shazWidgetExport = (() => {
     const pause = s.autoplay ? controlButton("shm-cc-pause", "data-shm-cc-pause", s.pauseLabel, ICONS.pause) : "";
     const arrows = s.arrows ? controlButton("shm-cc-prev", "data-shm-cc-prev", s.previousLabel, ICONS.previous) + controlButton("shm-cc-next", "data-shm-cc-next", s.nextLabel, ICONS.next) : "";
     const controls = pause || arrows ? `<div class="shm-cc-controls">${pause}${arrows}</div>` : "";
-    return `<div class="shm-cc-slider" role="region" aria-roledescription="carousel" aria-label="${esc(s.ariaLabel)}"><ul class="shm-cc-grid shm-cc-track" role="list" tabindex="0" data-shm-cc-track>${itemsHtml(items, s, counts)}</ul>${controls}</div>`;
+    return `<div class="shm-cc-slider" role="region" aria-roledescription="carousel" aria-label="${esc(s.ariaLabel)}"><ul class="shm-cc-grid shm-cc-track" role="list" tabindex="0" aria-label="${esc(`${s.ariaLabel} list`)}" data-shm-cc-track>${itemsHtml(items, s, counts)}</ul>${controls}</div>`;
   }
   function resultsText(n, s) {
     return (n === 1 ? s.resultsCountOne : s.resultsCountMany).replace(/\{n\}/g, String(n));
@@ -632,6 +633,7 @@ var __shazWidgetExport = (() => {
     const stopAutoplay = s.autoplay ? startAutoplay(slider, track, pauseButton, s, reduced, {
       advance: () => go(1, s.infinite),
       atEnd,
+      fits: () => max() <= EDGE,
       rewind: () => moveTo(track, 0, smooth)
     }) : noop;
     return () => {
@@ -656,7 +658,7 @@ var __shazWidgetExport = (() => {
     };
     const onToggle = () => {
       paused = !paused;
-      if (!paused && !s.infinite && motion.atEnd()) motion.rewind();
+      if (!paused && !s.infinite && !motion.fits() && motion.atEnd()) motion.rewind();
       label();
     };
     const onEnter = () => {
@@ -678,7 +680,7 @@ var __shazWidgetExport = (() => {
     slider.addEventListener("focusout", onFocusOut);
     label();
     const timer = window.setInterval(() => {
-      if (paused || hovered || focused || document.visibilityState === "hidden") return;
+      if (paused || hovered || focused || document.visibilityState === "hidden" || motion.fits()) return;
       if (motion.advance()) return;
       paused = true;
       label();
@@ -730,13 +732,22 @@ var __shazWidgetExport = (() => {
     let active = { sector: "", location: "", query: "" };
     let teardownSlider = mountSlider(results, s);
     let pending = 0;
+    let announcing = 0;
+    const announce = (text) => {
+      window.clearTimeout(announcing);
+      status.textContent = "";
+      announcing = window.setTimeout(() => {
+        announcing = 0;
+        status.textContent = text;
+      }, 0);
+    };
     const update = (next) => {
       if (sameFilters(next, active)) return;
       active = next;
       teardownSlider();
       const shown = applyFilters(items, active);
       results.innerHTML = listHtml(shown, s, counts);
-      status.textContent = shown.length ? resultsText(shown.length, s) : s.noMatchText;
+      announce(shown.length ? resultsText(shown.length, s) : s.noMatchText);
       teardownSlider = mountSlider(results, s);
     };
     const onClick = (e) => {
@@ -760,6 +771,7 @@ var __shazWidgetExport = (() => {
     search == null ? void 0 : search.addEventListener("input", onInput);
     return () => {
       window.clearTimeout(pending);
+      window.clearTimeout(announcing);
       teardownSlider();
       tools.removeEventListener("click", onClick);
       search == null ? void 0 : search.removeEventListener("input", onInput);

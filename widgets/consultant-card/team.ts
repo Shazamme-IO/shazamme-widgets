@@ -52,6 +52,17 @@ export function mountTeam(stage: HTMLElement, items: Consultant[], s: Settings, 
   let teardownSlider = mountSlider(results, s);
 
   let pending = 0;
+  let announcing = 0;
+
+  /** Clears the live region, then fills it a tick later, so the same count twice in a row is still read out. */
+  const announce = (text: string): void => {
+    window.clearTimeout(announcing);
+    status.textContent = '';
+    announcing = window.setTimeout(() => {
+      announcing = 0;
+      status.textContent = text;
+    }, 0);
+  };
 
   /** Redraws the list and announces how many are shown (or the no-match message) after every real change. */
   const update = (next: ActiveFilters): void => {
@@ -60,7 +71,7 @@ export function mountTeam(stage: HTMLElement, items: Consultant[], s: Settings, 
     teardownSlider();
     const shown = applyFilters(items, active);
     results.innerHTML = listHtml(shown, s, counts);
-    status.textContent = shown.length ? resultsText(shown.length, s) : s.noMatchText;
+    announce(shown.length ? resultsText(shown.length, s) : s.noMatchText);
     teardownSlider = mountSlider(results, s);
   };
 
@@ -84,6 +95,7 @@ export function mountTeam(stage: HTMLElement, items: Consultant[], s: Settings, 
   search?.addEventListener('input', onInput);
   return () => {
     window.clearTimeout(pending);
+    window.clearTimeout(announcing);
     teardownSlider();
     tools.removeEventListener('click', onClick);
     search?.removeEventListener('input', onInput);

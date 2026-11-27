@@ -139,7 +139,7 @@ export function sliderHtml(items: Consultant[], s: Settings, counts: Map<string,
   const controls = pause || arrows ? `<div class="shm-cc-controls">${pause}${arrows}</div>` : '';
   return (
     `<div class="shm-cc-slider" role="region" aria-roledescription="carousel" aria-label="${esc(s.ariaLabel)}">` +
-    `<ul class="shm-cc-grid shm-cc-track" role="list" tabindex="0" data-shm-cc-track>${itemsHtml(items, s, counts)}</ul>` +
+    `<ul class="shm-cc-grid shm-cc-track" role="list" tabindex="0" aria-label="${esc(`${s.ariaLabel} list`)}" data-shm-cc-track>${itemsHtml(items, s, counts)}</ul>` +
     `${controls}</div>`
   );
 }
