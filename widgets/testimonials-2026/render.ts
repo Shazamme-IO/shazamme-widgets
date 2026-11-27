@@ -20,6 +20,15 @@ export function initials(name: string): string {
   return (first + last).toUpperCase() || '?';
 }
 
+/** The wall's role headline stands in for the person's name wherever the card says who it is from; every other layout uses the name. */
+export function displayName(t: Testimonial, s: Settings): string {
+  return usesRoleHeadline(t, s) ? t.position : t.name;
+}
+
+function usesRoleHeadline(t: Testimonial, s: Settings): boolean {
+  return s.layout === 'wall' && s.wallHeadline === 'role' && s.showPosition && Boolean(t.position);
+}
+
 const STAR_ROW = '★★★★★';
 const CHEVRON_LEFT = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const CHEVRON_RIGHT = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -59,10 +68,10 @@ export function starsHtml(rating: number): string {
 function photoHtml(t: Testimonial, s: Settings, extra = ''): string {
   if (!s.showPhoto) return '';
   const cls = extra ? `shm-tm-photo ${extra}` : 'shm-tm-photo';
-  if (t.photo) {
+  if (t.photo && (s.layout !== 'wall' || s.wallPhotos)) {
     return `<span class="${cls}"><img src="${esc(t.photo)}" alt="" width="64" height="64" loading="lazy" decoding="async"></span>`;
   }
-  return `<span class="${cls} shm-tm-initials" aria-hidden="true">${esc(initials(t.name))}</span>`;
+  return `<span class="${cls} shm-tm-initials" aria-hidden="true">${esc(initials(displayName(t, s)))}</span>`;
 }
 
 /** The visible label plus the person's name for screen readers, so each button has its own name. */
@@ -87,19 +96,48 @@ function consultantHtml(t: Testimonial, ctx: CardCtx): string {
   return `<span class="shm-tm-consultant">${label}${name}</span>`;
 }
 
+function wallLines(t: Testimonial, s: Settings): { head: string; sub: string } {
+  const head = displayName(t, s);
+  const rest = usesRoleHeadline(t, s) ? [s.showCompany ? t.company : ''] : [s.showPosition ? t.position : '', s.showCompany ? t.company : ''];
+  return { head, sub: rest.filter(Boolean).join(' · ') };
+}
+
+function wallPersonHtml(t: Testimonial, ctx: CardCtx): string {
+  const s = ctx.settings;
+  const { head, sub } = wallLines(t, s);
+  const subHtml = sub ? `<span class="shm-tm-role">${esc(sub)}</span>` : '';
+  return (
+    `<figcaption class="shm-tm-person">${photoHtml(t, s)}` +
+    `<span class="shm-tm-meta"><span class="shm-tm-name">${esc(head)}</span>${subHtml}${dateHtml(t, ctx)}${consultantHtml(t, ctx)}</span></figcaption>`
+  );
+}
+
+function dateHtml(t: Testimonial, ctx: CardCtx): string {
+  if (!ctx.settings.showDate || t.dateMs === null) return '';
+  const f = formatDate(t.dateMs, ctx.settings.dateFormat, ctx.locale);
+  return `<time class="shm-tm-date"${f.iso ? ` datetime="${esc(f.iso)}"` : ''}>${esc(f.text)}</time>`;
+}
+
 export function personHtml(t: Testimonial, ctx: CardCtx): string {
   const s = ctx.settings;
+  if (s.layout === 'wall') return wallPersonHtml(t, ctx);
   const role = s.showPosition && t.position ? `<span class="shm-tm-role">${esc(t.position)}</span>` : '';
   const company = s.showCompany && t.company ? `<span class="shm-tm-company">${esc(t.company)}</span>` : '';
-  let date = '';
-  if (s.showDate && t.dateMs !== null) {
-    const f = formatDate(t.dateMs, s.dateFormat, ctx.locale);
-    date = `<time class="shm-tm-date"${f.iso ? ` datetime="${esc(f.iso)}"` : ''}>${esc(f.text)}</time>`;
-  }
+  const date = dateHtml(t, ctx);
   return (
     `<figcaption class="shm-tm-person">${photoHtml(t, s)}` +
     `<span class="shm-tm-meta"><span class="shm-tm-name">${esc(t.name)}</span>${role}${company}${date}${consultantHtml(t, ctx)}</span></figcaption>`
   );
+}
+
+/** The wall layout wraps the quote in curly quotes; every other layout is the bare text. */
+function quoteText(t: Testimonial, s: Settings): string {
+  return s.layout === 'wall' ? `“${esc(t.quote)}”` : esc(t.quote);
+}
+
+/** Wall layout only: the card at the chosen 1-based position is the accent card. 0 means none. */
+function accentClass(index: number, s: Settings): string {
+  return s.layout === 'wall' && s.wallAccent > 0 && index + 1 === s.wallAccent ? ' is-accent' : '';
 }
 
 export function cardHtml(t: Testimonial, index: number, ctx: CardCtx): string {
@@ -108,10 +146,10 @@ export function cardHtml(t: Testimonial, index: number, ctx: CardCtx): string {
   const mark = s.showQuoteMark ? `<span class="shm-tm-mark" aria-hidden="true">${QUOTE_MARK}</span>` : '';
   const stars = s.showRating && t.rating !== null ? starsHtml(t.rating) : '';
   const popup = s.readMore === 'dialog' ? ' aria-haspopup="dialog"' : '';
-  const more = s.readMore === 'off' ? '' : `<button type="button" class="shm-tm-more"${popup} hidden>${moreLabelHtml(s.readMoreText, t.name)}</button>`;
+  const more = s.readMore === 'off' ? '' : `<button type="button" class="shm-tm-more"${popup} hidden>${moreLabelHtml(s.readMoreText, displayName(t, s))}</button>`;
   return (
-    `<figure class="shm-tm-card" data-index="${index}"><div class="shm-tm-body">${mark}${stars}` +
-    `<blockquote class="shm-tm-quote"><p class="shm-tm-text" id="${esc(textId)}">${esc(t.quote)}</p></blockquote>${more}</div>` +
+    `<figure class="shm-tm-card${accentClass(index, s)}" data-index="${index}"><div class="shm-tm-body">${mark}${stars}` +
+    `<blockquote class="shm-tm-quote"><p class="shm-tm-text" id="${esc(textId)}">${quoteText(t, s)}</p></blockquote>${more}</div>` +
     `${personHtml(t, ctx)}</figure>`
   );
 }
@@ -160,7 +198,7 @@ export function carouselHtml(items: Testimonial[], ctx: CardCtx): string {
 function dotHtml(t: Testimonial, i: number, s: Settings, avatar: boolean): string {
   const label = `Show testimonial ${i + 1}`;
   const inner = avatar ? photoHtml(t, { ...s, showPhoto: true }, 'shm-tm-dot-photo') : '';
-  return `<button type="button" class="shm-tm-dot${avatar ? ' is-avatar' : ''}" data-page="${i}" data-name="${esc(t.name)}" aria-label="${esc(label)}">${inner}</button>`;
+  return `<button type="button" class="shm-tm-dot${avatar ? ' is-avatar' : ''}" data-page="${i}" data-name="${esc(displayName(t, s))}" aria-label="${esc(label)}">${inner}</button>`;
 }
 
 export function dialogHtml(t: Testimonial, ctx: CardCtx, titleId: string, closeLabel: string): string {
@@ -169,8 +207,8 @@ export function dialogHtml(t: Testimonial, ctx: CardCtx, titleId: string, closeL
     `<div class="shm-tm-dialog-backdrop" data-close></div>` +
     `<div class="shm-tm-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="${esc(titleId)}" aria-describedby="${esc(titleId)}-q">` +
     `<button type="button" class="shm-tm-dialog-close" aria-label="${esc(closeLabel)}">×</button>` +
-    `<span class="shm-tm-sr" id="${esc(titleId)}">Testimonial from ${esc(t.name)}</span>` +
-    `<figure class="shm-tm-dialog-card">${stars}<blockquote class="shm-tm-dialog-quote"><p id="${esc(titleId)}-q">${esc(t.quote)}</p></blockquote>` +
+    `<span class="shm-tm-sr" id="${esc(titleId)}">Testimonial from ${esc(displayName(t, ctx.settings))}</span>` +
+    `<figure class="shm-tm-dialog-card">${stars}<blockquote class="shm-tm-dialog-quote"><p id="${esc(titleId)}-q">${quoteText(t, ctx.settings)}</p></blockquote>` +
     `${personHtml(t, ctx)}</figure></div>`
   );
 }

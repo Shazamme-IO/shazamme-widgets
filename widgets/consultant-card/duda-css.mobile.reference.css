@@ -1,0 +1,3 @@
+/* Consultant Card: mobile only (767px and below) */
+.shm-cc.is-mode-team .shm-cc-card { gap: 14px; padding: 22px; }
+.shm-cc.is-mode-job .shm-cc-job { padding: 22px; }

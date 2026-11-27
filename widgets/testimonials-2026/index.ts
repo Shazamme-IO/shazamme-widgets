@@ -15,7 +15,7 @@ import {
 } from './data';
 import { mountCarousel, prefersReducedMotion, type Carousel } from './carousel';
 import { openDialog, type DialogHandle } from './dialog';
-import { carouselHtml, dialogHtml, esc, initials, listHtml, loadMoreHtml, moreLabelHtml, schemaJsonLd, statusHtml, tagFilterHtml, type CardCtx } from './render';
+import { carouselHtml, dialogHtml, displayName, esc, initials, listHtml, loadMoreHtml, moreLabelHtml, schemaJsonLd, statusHtml, tagFilterHtml, type CardCtx } from './render';
 import { readSettings, type Settings } from './settings';
 
 interface WidgetContext {
@@ -193,7 +193,7 @@ class Instance {
     if (!item) return;
     if (this.s.readMore === 'expand') {
       const open = card.classList.toggle('is-expanded');
-      btn.innerHTML = moreLabelHtml(open ? this.s.readLessText : this.s.readMoreText, item.name);
+      btn.innerHTML = moreLabelHtml(open ? this.s.readLessText : this.s.readMoreText, displayName(item, this.s));
       return;
     }
     this.dialog?.close();

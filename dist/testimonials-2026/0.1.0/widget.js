@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 996f15e38b78. Registers window.ShazammeWidget["<name>"].
+ * Build e7e7958f684d. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var __shazWidgetExport = (() => {
@@ -32,10 +32,12 @@ var __shazWidgetExport = (() => {
     columns: { min: 1, max: 4 },
     maxTestimonials: { min: 0, max: 200 },
     pageSize: { min: 0, max: 100 },
+    wallAccent: { min: 0, max: 12 },
     quoteLines: { min: 0, max: 30 },
     autoplaySeconds: { min: 2, max: 60 }
   };
-  var LAYOUTS = ["slider", "grid", "list", "featured"];
+  var LAYOUTS = ["slider", "grid", "list", "featured", "wall"];
+  var WALL_HEADLINES = ["name", "role"];
   var SORTS = ["newest", "oldest", "random", "manual"];
   var READ_MORE = ["expand", "dialog", "off"];
   var PAGINATIONS = ["dots", "avatars", "none"];
@@ -81,6 +83,9 @@ var __shazWidgetExport = (() => {
       sortOrder: toChoice(c.sortOrder, SORTS, "newest"),
       maxTestimonials: toInt(c.maxTestimonials, 0, LIMITS.maxTestimonials.min, LIMITS.maxTestimonials.max),
       layout: toChoice(c.testimonialLayout, LAYOUTS, "slider"),
+      wallAccent: toInt(c.wallAccent, 2, LIMITS.wallAccent.min, LIMITS.wallAccent.max),
+      wallHeadline: toChoice(c.wallHeadline, WALL_HEADLINES, "name"),
+      wallPhotos: toBool(c.wallPhotos, false),
       columnsDesktop: toInt(c.columnsDesktop, 3, LIMITS.columns.min, LIMITS.columns.max),
       columnsTablet: toInt(c.columnsTablet, 2, LIMITS.columns.min, LIMITS.columns.max),
       columnsMobile: toInt(c.columnsMobile, 1, LIMITS.columns.min, LIMITS.columns.max),
@@ -635,6 +640,12 @@ var __shazWidgetExport = (() => {
     const last = words.length > 1 ? (_c = Array.from(words[words.length - 1])[0]) != null ? _c : "" : "";
     return (first + last).toUpperCase() || "?";
   }
+  function displayName(t, s) {
+    return usesRoleHeadline(t, s) ? t.position : t.name;
+  }
+  function usesRoleHeadline(t, s) {
+    return s.layout === "wall" && s.wallHeadline === "role" && s.showPosition && Boolean(t.position);
+  }
   var STAR_ROW = "\u2605\u2605\u2605\u2605\u2605";
   var CHEVRON_LEFT = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   var CHEVRON_RIGHT = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -663,10 +674,10 @@ var __shazWidgetExport = (() => {
   function photoHtml(t, s, extra = "") {
     if (!s.showPhoto) return "";
     const cls = extra ? `shm-tm-photo ${extra}` : "shm-tm-photo";
-    if (t.photo) {
+    if (t.photo && (s.layout !== "wall" || s.wallPhotos)) {
       return `<span class="${cls}"><img src="${esc(t.photo)}" alt="" width="64" height="64" loading="lazy" decoding="async"></span>`;
     }
-    return `<span class="${cls} shm-tm-initials" aria-hidden="true">${esc(initials(t.name))}</span>`;
+    return `<span class="${cls} shm-tm-initials" aria-hidden="true">${esc(initials(displayName(t, s)))}</span>`;
   }
   function moreLabelHtml(text, name) {
     return `${esc(text)}<span class="shm-tm-sr"> from ${esc(name)}</span>`;
@@ -680,16 +691,35 @@ var __shazWidgetExport = (() => {
     const name = ctx.settings.linkConsultant && path ? `<a class="shm-tm-consultant-link" href="${esc(path)}">${esc(c.name)}</a>` : esc(c.name);
     return `<span class="shm-tm-consultant">${label}${name}</span>`;
   }
+  function wallLines(t, s) {
+    const head = displayName(t, s);
+    const rest = usesRoleHeadline(t, s) ? [s.showCompany ? t.company : ""] : [s.showPosition ? t.position : "", s.showCompany ? t.company : ""];
+    return { head, sub: rest.filter(Boolean).join(" \xB7 ") };
+  }
+  function wallPersonHtml(t, ctx) {
+    const s = ctx.settings;
+    const { head, sub } = wallLines(t, s);
+    const subHtml = sub ? `<span class="shm-tm-role">${esc(sub)}</span>` : "";
+    return `<figcaption class="shm-tm-person">${photoHtml(t, s)}<span class="shm-tm-meta"><span class="shm-tm-name">${esc(head)}</span>${subHtml}${dateHtml(t, ctx)}${consultantHtml(t, ctx)}</span></figcaption>`;
+  }
+  function dateHtml(t, ctx) {
+    if (!ctx.settings.showDate || t.dateMs === null) return "";
+    const f = formatDate(t.dateMs, ctx.settings.dateFormat, ctx.locale);
+    return `<time class="shm-tm-date"${f.iso ? ` datetime="${esc(f.iso)}"` : ""}>${esc(f.text)}</time>`;
+  }
   function personHtml(t, ctx) {
     const s = ctx.settings;
+    if (s.layout === "wall") return wallPersonHtml(t, ctx);
     const role = s.showPosition && t.position ? `<span class="shm-tm-role">${esc(t.position)}</span>` : "";
     const company = s.showCompany && t.company ? `<span class="shm-tm-company">${esc(t.company)}</span>` : "";
-    let date = "";
-    if (s.showDate && t.dateMs !== null) {
-      const f = formatDate(t.dateMs, s.dateFormat, ctx.locale);
-      date = `<time class="shm-tm-date"${f.iso ? ` datetime="${esc(f.iso)}"` : ""}>${esc(f.text)}</time>`;
-    }
+    const date = dateHtml(t, ctx);
     return `<figcaption class="shm-tm-person">${photoHtml(t, s)}<span class="shm-tm-meta"><span class="shm-tm-name">${esc(t.name)}</span>${role}${company}${date}${consultantHtml(t, ctx)}</span></figcaption>`;
+  }
+  function quoteText(t, s) {
+    return s.layout === "wall" ? `\u201C${esc(t.quote)}\u201D` : esc(t.quote);
+  }
+  function accentClass(index, s) {
+    return s.layout === "wall" && s.wallAccent > 0 && index + 1 === s.wallAccent ? " is-accent" : "";
   }
   function cardHtml(t, index, ctx) {
     const s = ctx.settings;
@@ -697,8 +727,8 @@ var __shazWidgetExport = (() => {
     const mark = s.showQuoteMark ? `<span class="shm-tm-mark" aria-hidden="true">${QUOTE_MARK}</span>` : "";
     const stars = s.showRating && t.rating !== null ? starsHtml(t.rating) : "";
     const popup = s.readMore === "dialog" ? ' aria-haspopup="dialog"' : "";
-    const more = s.readMore === "off" ? "" : `<button type="button" class="shm-tm-more"${popup} hidden>${moreLabelHtml(s.readMoreText, t.name)}</button>`;
-    return `<figure class="shm-tm-card" data-index="${index}"><div class="shm-tm-body">${mark}${stars}<blockquote class="shm-tm-quote"><p class="shm-tm-text" id="${esc(textId)}">${esc(t.quote)}</p></blockquote>${more}</div>${personHtml(t, ctx)}</figure>`;
+    const more = s.readMore === "off" ? "" : `<button type="button" class="shm-tm-more"${popup} hidden>${moreLabelHtml(s.readMoreText, displayName(t, s))}</button>`;
+    return `<figure class="shm-tm-card${accentClass(index, s)}" data-index="${index}"><div class="shm-tm-body">${mark}${stars}<blockquote class="shm-tm-quote"><p class="shm-tm-text" id="${esc(textId)}">${quoteText(t, s)}</p></blockquote>${more}</div>${personHtml(t, ctx)}</figure>`;
   }
   function tagFilterHtml(tags, s) {
     if (!s.showTagFilter || tags.length < 2) return "";
@@ -731,11 +761,11 @@ var __shazWidgetExport = (() => {
   function dotHtml(t, i, s, avatar) {
     const label = `Show testimonial ${i + 1}`;
     const inner = avatar ? photoHtml(t, { ...s, showPhoto: true }, "shm-tm-dot-photo") : "";
-    return `<button type="button" class="shm-tm-dot${avatar ? " is-avatar" : ""}" data-page="${i}" data-name="${esc(t.name)}" aria-label="${esc(label)}">${inner}</button>`;
+    return `<button type="button" class="shm-tm-dot${avatar ? " is-avatar" : ""}" data-page="${i}" data-name="${esc(displayName(t, s))}" aria-label="${esc(label)}">${inner}</button>`;
   }
   function dialogHtml(t, ctx, titleId, closeLabel) {
     const stars = ctx.settings.showRating && t.rating !== null ? starsHtml(t.rating) : "";
-    return `<div class="shm-tm-dialog-backdrop" data-close></div><div class="shm-tm-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="${esc(titleId)}" aria-describedby="${esc(titleId)}-q"><button type="button" class="shm-tm-dialog-close" aria-label="${esc(closeLabel)}">\xD7</button><span class="shm-tm-sr" id="${esc(titleId)}">Testimonial from ${esc(t.name)}</span><figure class="shm-tm-dialog-card">${stars}<blockquote class="shm-tm-dialog-quote"><p id="${esc(titleId)}-q">${esc(t.quote)}</p></blockquote>${personHtml(t, ctx)}</figure></div>`;
+    return `<div class="shm-tm-dialog-backdrop" data-close></div><div class="shm-tm-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="${esc(titleId)}" aria-describedby="${esc(titleId)}-q"><button type="button" class="shm-tm-dialog-close" aria-label="${esc(closeLabel)}">\xD7</button><span class="shm-tm-sr" id="${esc(titleId)}">Testimonial from ${esc(displayName(t, ctx.settings))}</span><figure class="shm-tm-dialog-card">${stars}<blockquote class="shm-tm-dialog-quote"><p id="${esc(titleId)}-q">${quoteText(t, ctx.settings)}</p></blockquote>${personHtml(t, ctx)}</figure></div>`;
   }
   var SCHEMA_BEST = 5;
   function schemaJsonLd(items, s) {
@@ -923,7 +953,7 @@ var __shazWidgetExport = (() => {
       if (!item) return;
       if (this.s.readMore === "expand") {
         const open = card.classList.toggle("is-expanded");
-        btn.innerHTML = moreLabelHtml(open ? this.s.readLessText : this.s.readMoreText, item.name);
+        btn.innerHTML = moreLabelHtml(open ? this.s.readLessText : this.s.readMoreText, displayName(item, this.s));
         return;
       }
       (_a = this.dialog) == null ? void 0 : _a.close();

@@ -106,6 +106,40 @@
 .shm-tm.is-layout-featured .shm-tm-photo { width: 72px; height: 72px; }
 .shm-tm.is-layout-featured .shm-tm-meta { align-items: center; }
 
+/* Proof wall: opt-in layout (testimonialLayout = wall). Defaults are the dark-band design; every value is a Design Editor key. Nothing here applies to the other layouts. */
+.shm-tm.is-layout-wall .shm-tm-heading { color: #f7f5ef; }
+.shm-tm.is-layout-wall .shm-tm-intro { color: #c9ccd6; }
+.shm-tm.is-layout-wall .shm-tm-grid { gap: 16px; }
+.shm-tm.is-layout-wall .shm-tm-card { gap: 28px; padding: 32px; border: 1px solid rgba(247, 245, 239, 0.1); border-radius: 20px; background-color: #1a2036; box-shadow: none; justify-content: space-between; }
+.shm-tm.is-layout-wall .shm-tm-card.is-accent { border-color: transparent; background-color: #d4f34a; }
+.shm-tm.is-layout-wall .shm-tm-mark { display: none; }
+.shm-tm.is-layout-wall .shm-tm-quote { color: #f7f5ef; font-size: 20px; font-style: italic; line-height: 1.5; }
+.shm-tm.is-layout-wall .shm-tm-card.is-accent .shm-tm-quote { color: #101423; }
+.shm-tm.is-layout-wall .shm-tm-stars { color: #d4f34a; }
+.shm-tm.is-layout-wall .shm-tm-card.is-accent .shm-tm-stars { color: #101423; }
+.shm-tm.is-layout-wall .shm-tm-stars-off { color: #6b7080; }
+.shm-tm.is-layout-wall .shm-tm-person { gap: 14px; }
+.shm-tm.is-layout-wall .shm-tm-photo { width: 44px; height: 44px; border-radius: 50%; }
+.shm-tm.is-layout-wall .shm-tm-initials { background-color: #d4f34a; color: #101423; font-size: 16px; font-weight: 800; }
+.shm-tm.is-layout-wall .shm-tm-card.is-accent .shm-tm-initials { background-color: #101423; color: #f7f5ef; }
+.shm-tm.is-layout-wall .shm-tm-name { color: #f7f5ef; font-size: 16px; font-weight: 700; }
+.shm-tm.is-layout-wall .shm-tm-card.is-accent .shm-tm-name { color: #101423; }
+.shm-tm.is-layout-wall .shm-tm-role, .shm-tm.is-layout-wall .shm-tm-date, .shm-tm.is-layout-wall .shm-tm-consultant { color: #aeb3c2; font-size: 14px; font-weight: 400; }
+.shm-tm.is-layout-wall .shm-tm-card.is-accent .shm-tm-role, .shm-tm.is-layout-wall .shm-tm-card.is-accent .shm-tm-date, .shm-tm.is-layout-wall .shm-tm-card.is-accent .shm-tm-consultant { color: #3a4a00; }
+.shm-tm.is-layout-wall .shm-tm-consultant-link { color: #d4f34a; }
+.shm-tm.is-layout-wall .shm-tm-card.is-accent .shm-tm-consultant-link { color: #101423; }
+.shm-tm.is-layout-wall .shm-tm-more { color: #d4f34a; }
+.shm-tm.is-layout-wall .shm-tm-more:hover { color: #f7f5ef; }
+.shm-tm.is-layout-wall .shm-tm-card.is-accent .shm-tm-more { color: #101423; }
+.shm-tm.is-layout-wall .shm-tm-card.is-accent .shm-tm-more:hover { color: #3a4a00; }
+.shm-tm.is-layout-wall .shm-tm-chip { border-color: rgba(247, 245, 239, 0.5); background-color: transparent; color: #f7f5ef; }
+.shm-tm.is-layout-wall .shm-tm-chip:hover { background-color: rgba(247, 245, 239, 0.12); }
+.shm-tm.is-layout-wall .shm-tm-chip[aria-pressed="true"], .shm-tm.is-layout-wall .shm-tm-chip[aria-pressed="true"]:hover { border-color: #d4f34a; background-color: #d4f34a; color: #101423; }
+.shm-tm.is-layout-wall .shm-tm-loadmore { border-color: #f7f5ef; background-color: transparent; color: #f7f5ef; }
+.shm-tm.is-layout-wall .shm-tm-loadmore:hover { border-color: #d4f34a; background-color: #d4f34a; color: #101423; }
+.shm-tm.is-layout-wall :focus-visible { outline-color: #d4f34a; }
+.shm-tm.is-layout-wall .shm-tm-card.is-accent :focus-visible { outline-color: #101423; }
+
 /* Read more pop-up (it lives on the page body, outside .shm-tm) */
 .shm-tm-dialog { position: fixed; inset: 0; z-index: 2147483000; display: flex; align-items: center; justify-content: center; padding: 16px; font-family: inherit; }
 .shm-tm-dialog-backdrop { position: absolute; inset: 0; background-color: rgba(17, 24, 39, 0.65); }
