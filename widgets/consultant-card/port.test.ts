@@ -13,6 +13,7 @@ const VERSION = JSON.parse(readFileSync(join(here, '..', '..', 'package.json'), 
 const BUNDLE = readFileSync(join(here, '..', '..', 'dist', 'consultant-card', VERSION, 'widget.min.js'), 'utf8');
 const SHELL = readFileSync(join(here, 'content.hbs'), 'utf8').replace(/\{\{\w+\}\}/g, '');
 const read = (f: string) => readFileSync(join(here, f), 'utf8');
+const CONTENT_PROMPTS = ['1-content', '2-card', '4-details', '5-contact', '6-social', '7-layout', '8-filters'];
 
 type Win = Record<string, any>;
 const win = window as unknown as Win;
@@ -290,7 +291,7 @@ describe('empty settings and the editor', () => {
 
 describe('Duda AI prompts and CSS', () => {
   it('lists every setting the code reads, once, and nothing else', () => {
-    const prompts = ['1-content', '2-card'].map((n) => read(`duda-ai-prompt-${n}.md`)).join('\n');
+    const prompts = CONTENT_PROMPTS.map((n) => read(`duda-ai-prompt-${n}.md`)).join('\n');
     const promptKeys = [...prompts.matchAll(/\| key: (\w+) \|/g)].map((m) => m[1]);
     const readKeys = [...new Set([...read('settings.ts').matchAll(/\bc\.(\w+)/g)].map((m) => m[1]))];
     expect([...promptKeys].sort()).toEqual([...readKeys].sort());
@@ -299,8 +300,8 @@ describe('Duda AI prompts and CSS', () => {
 
   it('backs every Design Editor line with its selector and default in the shared CSS', () => {
     const css = read('duda-css.reference.css');
-    const lines = [...read('duda-ai-prompt-3-design.md').matchAll(/selector: (.+?) \| property: ([\w-]+) \| default: (.+)$/gm)];
-    expect(lines.length).toBeGreaterThan(30);
+    const lines = [...['3-design', '9-design-more'].map((n) => read(`duda-ai-prompt-${n}.md`)).join('\n').matchAll(/selector: (.+?) \| property: ([\w-]+) \| default: (.+)$/gm)];
+    expect(lines.length).toBeGreaterThan(90);
     for (const [, selector, property, def] of lines) {
       const rules = css.split('\n').filter((l) => l.startsWith(`${selector.trim()} {`) || l.includes(`${selector.trim()},`));
       expect(rules.length, selector).toBeGreaterThan(0);
@@ -308,12 +309,354 @@ describe('Duda AI prompts and CSS', () => {
     }
   });
 
-  it('never ships a photo style or an img rule', () => {
-    expect(read('duda-css.reference.css')).not.toMatch(/\bimg\b/);
-    expect(read('render.ts')).not.toMatch(/<img|photoURL/);
+  it('keeps one Duda AI prompt per Content Editor tab, each a short list', () => {
+    for (const n of CONTENT_PROMPTS) {
+      const fields = [...read(`duda-ai-prompt-${n}.md`).matchAll(/\| key: (\w+) \|/g)];
+      expect(fields.length, n).toBeGreaterThan(0);
+      expect(fields.length, n).toBeLessThanOrEqual(24);
+    }
+  });
+
+  it('styles photos only through the classes the photo setting adds', () => {
+    expect(read('duda-css.reference.css')).not.toMatch(/(^|[\s,])img\b/m);
   });
 
   it('has a root Handlebars template with no config. prefix', () => {
     expect(read('content.hbs')).not.toContain('config.');
+  });
+});
+
+describe('photos', () => {
+  it('shows the photoURL photo as a decorative image of a fixed size', async () => {
+    const { element } = await mount({ Consultants: TEAM }, { avatar: 'photo' });
+    const imgs = [...element.querySelectorAll<HTMLImageElement>('img.shm-cc-photo-img')];
+    expect(imgs).toHaveLength(3);
+    expect(imgs[0].getAttribute('src')).toBe('https://cdn.example.com/p.jpg');
+    expect(imgs[0].getAttribute('alt')).toBe('');
+    expect([imgs[0].getAttribute('width'), imgs[0].getAttribute('height'), imgs[0].getAttribute('loading')]).toEqual(['64', '64', 'lazy']);
+    expect(imgs[0].parentElement!.getAttribute('aria-hidden')).toBe('true');
+    expect(element.querySelector('.shm-cc-badge')).toBeNull();
+  });
+
+  it('falls back to externalPhotoURL, and refuses an address that is not http(s)', async () => {
+    const rows = [
+      consultant({ consultantID: 'x', photoURL: null, externalPhotoURL: 'https://cdn.example.com/ext.jpg', sortOrder: 1 }),
+      consultant({ consultantID: 'y', firstName: 'Bad', lastName: 'Url', photoURL: 'javascript:alert(1)', externalPhotoURL: null, sortOrder: 2 }),
+    ];
+    const { element } = await mount({ Consultants: rows }, { avatar: 'photo-with-initials-fallback' });
+    expect(element.querySelector('img')!.getAttribute('src')).toBe('https://cdn.example.com/ext.jpg');
+    expect([...element.querySelectorAll('.shm-cc-badge')].map((b) => b.textContent)).toEqual(['BU']);
+  });
+
+  it('shows a plain placeholder for a consultant with no photo (photo), or the initials (fallback)', async () => {
+    const rows = [consultant({ photoURL: '', externalPhotoURL: '' })];
+    const photo = await mount({ Consultants: rows }, { avatar: 'photo' });
+    expect(photo.element.querySelector('.shm-cc-photo.is-missing svg')).not.toBeNull();
+    expect(photo.element.querySelector('img')).toBeNull();
+    const fallback = await mount({ Consultants: rows }, { avatar: 'photo-with-initials-fallback' });
+    expect(fallback.element.querySelector('.shm-cc-badge')!.textContent).toBe('PS');
+  });
+
+  it('swaps a photo that fails to load for the initials or the placeholder', async () => {
+    const fallback = await mount({ Consultants: TEAM }, { avatar: 'photo-with-initials-fallback' });
+    fallback.element.querySelector('img')!.dispatchEvent(new Event('error'));
+    expect(fallback.element.querySelector('.shm-cc-card .shm-cc-badge')!.textContent).toBe('TR');
+    expect(fallback.element.querySelectorAll('img')).toHaveLength(2);
+    const photo = await mount({ Consultants: TEAM }, { avatar: 'photo' });
+    photo.element.querySelector('img')!.dispatchEvent(new Event('error'));
+    expect(photo.element.querySelector('.shm-cc-photo.is-missing svg')).not.toBeNull();
+  });
+
+  it('escapes the photo address', async () => {
+    const { element } = await mount({ Consultants: [consultant({ photoURL: 'https://x.example.com/a.jpg" onerror="alert(1)' })] }, { avatar: 'photo' });
+    const img = element.querySelector('img')!;
+    expect(img.getAttribute('onerror')).toBeNull();
+    expect(img.getAttribute('src')).toContain('onerror');
+  });
+});
+
+describe('contact lines', () => {
+  it('shows the mobile as its own line, and then the phone line shows only the phone', async () => {
+    const rows = [consultant({ phone: '', mobile: '0400 111 222' }), consultant({ consultantID: 'z', firstName: 'Both', phone: '02 9999 0000', mobile: '0411 000 111', sortOrder: 2 })];
+    const off = await mount({ Consultants: rows }, { showPhone: 'show' });
+    expect([...off.element.querySelectorAll('.shm-cc-phone')].map((a) => a.textContent)).toEqual(['0400 111 222', '02 9999 0000']);
+    const on = await mount({ Consultants: rows }, { showPhone: 'show', showMobile: 'true' });
+    expect([...on.element.querySelectorAll('.shm-cc-phone')].map((a) => a.textContent)).toEqual(['02 9999 0000']);
+    expect([...on.element.querySelectorAll('.shm-cc-mobile')].map((a) => a.getAttribute('href'))).toEqual(['tel:0400111222', 'tel:0411000111']);
+  });
+
+  it('adds an icon before the text, or shows the icon alone with the number as its name', async () => {
+    const both = await mount({ Consultants: TEAM }, { showPhone: 'show', showPhoneIcon: 'true', showEmail: 'show', showEmailIcon: 'true' });
+    const phone = both.element.querySelector('.shm-cc-phone')!;
+    expect(phone.classList.contains('has-icon')).toBe(true);
+    expect(phone.querySelector('svg[aria-hidden="true"]')).not.toBeNull();
+    expect(phone.querySelector('.shm-cc-text')!.textContent).toBe('+61 2 0000 0000');
+    const iconOnly = await mount({ Consultants: TEAM }, { showEmail: 'show', showEmailIcon: 'true', showEmailLabel: 'false' });
+    const email = iconOnly.element.querySelector('.shm-cc-email')!;
+    expect(email.classList.contains('is-icon-only')).toBe(true);
+    expect(email.getAttribute('aria-label')).toBe('tom@example.com');
+    expect(email.textContent).toBe('');
+    expect(iconOnly.element.querySelector('.shm-cc-contact')!.classList.contains('is-icons')).toBe(true);
+  });
+
+  it('hides a line with both its icon and its text switched off', async () => {
+    const { element } = await mount({ Consultants: TEAM }, { showPhone: 'show', showPhoneLabel: 'false' });
+    expect(element.querySelector('.shm-cc-phone')).toBeNull();
+    expect(element.querySelector('.shm-cc-contact')).toBeNull();
+  });
+});
+
+describe('social links', () => {
+  const social = consultant({
+    linkedInURL: 'https://www.linkedin.com/in/priya', facebookURL: 'https://facebook.com/priya', twitterURL: 'https://x.com/priya',
+    googleURL: 'https://g.page/priya', weChatURL: 'weixin://dl/chat?priya',
+  });
+
+  it('shows only the networks switched on, as icon links that open in a new tab', async () => {
+    const { element } = await mount({ Consultants: [social] }, { showLinkedin: 'true', showTwitter: 'true' });
+    const links = [...element.querySelectorAll<HTMLAnchorElement>('.shm-cc-social-link')];
+    expect(links.map((a) => a.getAttribute('href'))).toEqual(['https://www.linkedin.com/in/priya', 'https://x.com/priya']);
+    expect(links.map((a) => a.getAttribute('aria-label'))).toEqual(['LinkedIn: Priya Shah', 'X: Priya Shah']);
+    expect(links.every((a) => a.target === '_blank' && a.rel === 'noopener noreferrer' && a.querySelector('svg'))).toBe(true);
+    expect(links.every((a) => a.classList.contains('is-icon-only'))).toBe(true);
+  });
+
+  it('shows the words when asked, and lets the site builder rename them', async () => {
+    const { element } = await mount({ Consultants: [social] }, { showFacebook: 'true', showFacebookLabel: 'true', showFacebookIcon: 'false', facebookText: 'Facebook page' });
+    const link = element.querySelector('.shm-cc-facebook')!;
+    expect(link.querySelector('svg')).toBeNull();
+    expect(link.textContent).toBe('Facebook page');
+    expect(link.getAttribute('aria-label')).toBe('Facebook page: Priya Shah');
+  });
+
+  it('never links a social address that is not http(s), and skips a consultant without one', async () => {
+    const rows = [social, consultant({ consultantID: 'n', firstName: 'No', lastName: 'Links', linkedInURL: null, sortOrder: 2 })];
+    const { element } = await mount({ Consultants: rows }, { showWeChat: 'true', showLinkedin: 'true', showGoogle: 'true' });
+    expect(element.querySelector('.shm-cc-wechat')).toBeNull();
+    expect(element.querySelectorAll('.shm-cc-social')).toHaveLength(1);
+    expect(element.querySelectorAll('.shm-cc-social-link')).toHaveLength(2);
+  });
+
+  it('escapes a social link and the consultant name in its label', async () => {
+    const rows = [consultant({ firstName: '"><img src=x>', linkedInURL: 'https://x.example.com/"><script>1</script>' })];
+    const { element } = await mount({ Consultants: rows }, { showLinkedin: 'true' });
+    expect(element.querySelector('.shm-cc-stage img, .shm-cc-stage script')).toBeNull();
+    expect(element.querySelector('.shm-cc-linkedin')!.getAttribute('aria-label')).toBe('LinkedIn: "> Shah');
+    expect(element.querySelector('.shm-cc-linkedin')!.getAttribute('href')).toBe('https://x.example.com/"><script>1</script>');
+  });
+});
+
+describe('location, sector, description and button', () => {
+  const rich = consultant({
+    businessLocation: '[{"LocationName":"Sydney"},{"LocationName":"Melbourne"}]', classification: '[{"Profession":"Accounting"},{"Profession":"Finance"}]',
+    shortDescription: '<p>Twenty years in <b>finance</b> recruitment.</p>',
+  });
+
+  it('reads the console lists and shows them on request', async () => {
+    const { element } = await mount({ Consultants: [rich] }, { showLocation: 'true', showLocationIcon: 'true', showSector: 'true', showDescription: 'true' });
+    expect(element.querySelector('.shm-cc-location')!.textContent).toBe('Sydney, Melbourne');
+    expect(element.querySelector('.shm-cc-location svg')).not.toBeNull();
+    expect(element.querySelector('.shm-cc-sector')!.textContent).toBe('Accounting, Finance');
+    const desc = element.querySelector<HTMLElement>('.shm-cc-desc')!;
+    expect(desc.textContent).toBe('Twenty years in finance recruitment.');
+    expect(desc.classList.contains('is-clamped')).toBe(true);
+    expect(desc.style.getPropertyValue('--shm-cc-lines')).toBe('3');
+  });
+
+  it('uses the plain-text location and sector fields when the lists are empty', async () => {
+    const rows = [consultant({ businessLocation: null, businessLocation2: 'Perth, Darwin', classification: null, classification2: 'Mining' })];
+    const { element } = await mount({ Consultants: rows }, { showLocation: 'true', showSector: 'true', descriptionLines: '0', showDescription: 'true' });
+    expect(element.querySelector('.shm-cc-location')!.textContent).toBe('Perth, Darwin');
+    expect(element.querySelector('.shm-cc-sector')!.textContent).toBe('Mining');
+  });
+
+  it('draws the profile button to the consultant page, or the chosen profile page, in a new tab when asked', async () => {
+    const own = await mount({ Consultants: TEAM }, { showButton: 'true' });
+    const button = own.element.querySelector<HTMLAnchorElement>('.shm-cc-button')!;
+    expect(button.textContent).toBe('View profile');
+    expect(button.getAttribute('href')).toBe('/consultant/tom-reilly');
+    expect(button.hasAttribute('target')).toBe(false);
+    const page = await mount({ Consultants: TEAM }, { showButton: 'true', buttonText: 'Meet Tom', profilePage: '/our-team/', newTab: 'true' });
+    const b = page.element.querySelector<HTMLAnchorElement>('.shm-cc-button')!;
+    expect([b.textContent, b.getAttribute('href'), b.target, b.rel]).toEqual(['Meet Tom', '/our-team/tom-reilly', '_blank', 'noopener']);
+    expect(page.element.querySelector('a.shm-cc-name')!.getAttribute('href')).toBe('/our-team/tom-reilly');
+  });
+
+  it('draws no button for a consultant without a page', async () => {
+    const { element } = await mount({ Consultants: [consultant({ consultantURL: null })] }, { showButton: 'true' });
+    expect(element.querySelector('.shm-cc-button')).toBeNull();
+  });
+
+  it('filters by a JSON classification and by location from the settings', async () => {
+    const rows = [rich, consultant({ consultantID: 'q', firstName: 'Other', classification: '[{"Profession":"Legal"}]', businessLocation: '[{"LocationName":"Perth"}]', sortOrder: 2 })];
+    expect(names((await mount({ Consultants: rows }, { classification: 'finance' })).element)).toEqual(['Priya Shah']);
+    expect(names((await mount({ Consultants: rows }, { location: 'perth, hobart' })).element)).toEqual(['Other Shah']);
+    const none = await mount({ Consultants: rows }, { location: 'Hobart' }, { inEditor: true });
+    expect(none.element.querySelector('.shm-cc-editor-note')!.textContent).toContain('Location "hobart"');
+  });
+});
+
+describe('card layout options', () => {
+  it('adds a root class only for a choice that is not the default', async () => {
+    const plain = await mount({ Consultants: TEAM });
+    expect(plain.element.querySelector('.shm-cc')!.className).toBe('shm-cc is-mode-team is-ready');
+    const set = await mount({ Consultants: TEAM }, { itemLayout: 'portrait', align: 'center', layout: 'slider', filterAlign: 'right' });
+    expect(set.element.querySelector('.shm-cc')!.className).toBe('shm-cc is-mode-team is-item-portrait is-align-center is-layout-slider is-filters-right is-ready');
+    const back = await mount({ Consultants: TEAM }, { itemLayout: 'side' });
+    expect(back.element.querySelector('.shm-cc')!.classList.contains('is-item-side')).toBe(true);
+  });
+});
+
+describe('slider', () => {
+  beforeEach(() => {
+    (HTMLElement.prototype as any).scrollBy = vi.fn();
+    (HTMLElement.prototype as any).scrollTo = vi.fn();
+  });
+
+  it('draws a labelled, keyboard-scrollable row with real buttons, sized by slides to show', async () => {
+    const { element } = await mount({ Consultants: TEAM }, { layout: 'slider', slidesToShow: '2', columnsTablet: '3' });
+    const region = element.querySelector('.shm-cc-slider')!;
+    expect(region.getAttribute('role')).toBe('region');
+    expect(region.getAttribute('aria-roledescription')).toBe('carousel');
+    expect(element.querySelector('.shm-cc-track')!.getAttribute('tabindex')).toBe('0');
+    expect([...element.querySelectorAll('button.shm-cc-arrow')].map((b) => b.getAttribute('aria-label'))).toEqual(['Previous consultants', 'Next consultants']);
+    const root = element.querySelector<HTMLElement>('.shm-cc')!;
+    expect([root.style.getPropertyValue('--shm-cc-cols-d'), root.style.getPropertyValue('--shm-cc-cols-t'), root.style.getPropertyValue('--shm-cc-cols-m')]).toEqual(['2', '2', '1']);
+  });
+
+  it('moves with the arrows and the arrow keys', async () => {
+    const { element } = await mount({ Consultants: TEAM }, { layout: 'slider' });
+    const track = element.querySelector<HTMLElement>('.shm-cc-track')!;
+    Object.defineProperty(track, 'scrollWidth', { value: 1000, configurable: true });
+    Object.defineProperty(track, 'clientWidth', { value: 400, configurable: true });
+    element.querySelector<HTMLButtonElement>('[data-shm-cc-next]')!.click();
+    expect(track.scrollBy).toHaveBeenCalledTimes(1);
+    track.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    expect(track.scrollBy).toHaveBeenCalledTimes(2);
+    element.querySelector<HTMLButtonElement>('[data-shm-cc-prev]')!.click();
+    expect(track.scrollTo).toHaveBeenCalledWith({ left: 600, behavior: 'smooth' });
+  });
+
+  it('marks the ends when it does not loop, and has no buttons when arrows are off', async () => {
+    const stop = await mount({ Consultants: TEAM }, { layout: 'slider', infinite: 'false' });
+    expect(stop.element.querySelector('[data-shm-cc-prev]')!.getAttribute('aria-disabled')).toBe('true');
+    const none = await mount({ Consultants: TEAM }, { layout: 'slider', arrows: 'false' });
+    expect(none.element.querySelector('.shm-cc-controls')).toBeNull();
+  });
+
+  it('autoplays with a pause button, and stops the timer when the editor re-runs', async () => {
+    vi.useFakeTimers();
+    try {
+      const element: HTMLElement = document.createElement('div');
+      element.innerHTML = SHELL;
+      document.body.appendChild(element);
+      const run = (config: Record<string, string>) => win.ShazammeWidget['consultant-card']({ element, data: { config, siteId: 's' }, shazamme: fakeSdk({ Consultants: TEAM }) });
+      await run({ layout: 'slider', autoplay: 'true', sliderSpeed: '3000' });
+      const track = element.querySelector<HTMLElement>('.shm-cc-track')!;
+      Object.defineProperty(track, 'scrollWidth', { value: 1000, configurable: true });
+      Object.defineProperty(track, 'clientWidth', { value: 400, configurable: true });
+      vi.advanceTimersByTime(3000);
+      expect(track.scrollBy).toHaveBeenCalledTimes(1);
+      const pause = element.querySelector<HTMLButtonElement>('[data-shm-cc-pause]')!;
+      pause.click();
+      expect(pause.getAttribute('aria-label')).toBe('Play');
+      vi.advanceTimersByTime(9000);
+      expect(track.scrollBy).toHaveBeenCalledTimes(1);
+      pause.click();
+      await run({});
+      vi.advanceTimersByTime(9000);
+      expect(track.scrollBy).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('starts paused for visitors who turned off motion', async () => {
+    const original = window.matchMedia;
+    (window as any).matchMedia = (q: string) => ({ matches: q.includes('reduce'), media: q, addEventListener() {}, removeEventListener() {} });
+    try {
+      const { element } = await mount({ Consultants: TEAM }, { layout: 'slider', autoplay: 'true' });
+      expect(element.querySelector('[data-shm-cc-pause]')!.getAttribute('aria-label')).toBe('Play');
+    } finally {
+      (window as any).matchMedia = original;
+    }
+  });
+});
+
+describe('filter bar', () => {
+  const rows = [
+    consultant({ consultantID: 'a', firstName: 'Priya', lastName: 'Shah', classification: '[{"Profession":"Finance"}]', businessLocation: '[{"LocationName":"Sydney"}]', sortOrder: 1 }),
+    consultant({ consultantID: 'b', firstName: 'Tom', lastName: 'Reilly', positionTitle: 'Tech lead', classification: '[{"Profession":"Technology"}]', businessLocation: '[{"LocationName":"Melbourne"}]', sortOrder: 2 }),
+    consultant({ consultantID: 'c', firstName: 'Ana', lastName: 'Costa', classification: '[{"Profession":"Finance"},{"Profession":"Legal"}]', businessLocation: '[{"LocationName":"Melbourne"}]', sortOrder: 3 }),
+  ];
+  const pressed = (el: HTMLElement, group: string) => [...el.querySelectorAll(`[data-shm-cc-group="${group}"] [aria-pressed="true"]`)].map((b) => b.textContent);
+
+  it('draws one button per sector and location, A to Z, after All', async () => {
+    const { element } = await mount({ Consultants: rows }, { showClassificationFilter: 'true', showLocationFilter: 'true' });
+    const groups = [...element.querySelectorAll<HTMLElement>('.shm-cc-filters')];
+    expect(groups.map((g) => g.getAttribute('aria-label'))).toEqual(['Filter by sector', 'Filter by location']);
+    expect([...groups[0].querySelectorAll('button')].map((b) => b.textContent)).toEqual(['All', 'Finance', 'Legal', 'Technology']);
+    expect([...groups[1].querySelectorAll('button')].map((b) => b.textContent)).toEqual(['All', 'Melbourne', 'Sydney']);
+    expect(pressed(element, 'sector')).toEqual(['All']);
+  });
+
+  it('filters by a sector and a location together, and All clears one', async () => {
+    const { element } = await mount({ Consultants: rows }, { showClassificationFilter: 'true', showLocationFilter: 'true' });
+    const click = (group: string, text: string) =>
+      [...element.querySelectorAll<HTMLButtonElement>(`[data-shm-cc-group="${group}"] button`)].find((b) => b.textContent === text)!.click();
+    click('sector', 'Finance');
+    expect(names(element)).toEqual(['Priya Shah', 'Ana Costa']);
+    expect(pressed(element, 'sector')).toEqual(['Finance']);
+    click('location', 'Melbourne');
+    expect(names(element)).toEqual(['Ana Costa']);
+    click('sector', 'All');
+    expect(names(element)).toEqual(['Tom Reilly', 'Ana Costa']);
+  });
+
+  it('searches names and job titles, and says so when nothing matches', async () => {
+    const { element } = await mount({ Consultants: rows }, { showSearch: 'true' });
+    const input = element.querySelector<HTMLInputElement>('input[type="search"]')!;
+    expect(element.querySelector(`label[for="${input.id}"]`)!.textContent).toBe('Search by name');
+    input.value = 'tech';
+    input.dispatchEvent(new Event('input'));
+    expect(names(element)).toEqual(['Tom Reilly']);
+    input.value = 'zzz';
+    input.dispatchEvent(new Event('input'));
+    expect(names(element)).toEqual([]);
+    expect(element.querySelector('.shm-cc-nomatch')!.textContent).toBe('No consultants match your search.');
+    expect(element.querySelector('[role="status"]')!.textContent).toBe('No consultants match your search.');
+  });
+
+  it('filters inside the slider too', async () => {
+    (HTMLElement.prototype as any).scrollBy = vi.fn();
+    const { element } = await mount({ Consultants: rows }, { showSearch: 'true', layout: 'slider' });
+    const input = element.querySelector<HTMLInputElement>('input[type="search"]')!;
+    input.value = 'ana';
+    input.dispatchEvent(new Event('input'));
+    expect(element.querySelectorAll('.shm-cc-track .shm-cc-card')).toHaveLength(1);
+  });
+
+  it('tells the site builder why a filter row is missing, and gives each copy its own ids', async () => {
+    const plain = [consultant(), consultant({ consultantID: 'z', firstName: 'Zed', sortOrder: 3 })];
+    const { element } = await mount({ Consultants: plain }, { showClassificationFilter: 'true', showSearch: 'true' }, { inEditor: true });
+    expect(element.querySelector('.shm-cc-editor-note')!.textContent).toContain('sector');
+    expect(element.querySelector('.shm-cc-filters')).toBeNull();
+    const other = await mount({ Consultants: plain }, { showSearch: 'true' });
+    expect(other.element.querySelector('input')!.id).not.toBe(element.querySelector('input')!.id);
+  });
+});
+
+describe('job page with the new options', () => {
+  it('gets the same mobile, social, photo and button options', async () => {
+    const rows = [consultant({ consultantID: 'a', linkedInURL: 'https://www.linkedin.com/in/priya' })];
+    const jobs = [job({ jobID: 'J1', contactEmail: 'priya@example.com' })];
+    const { element } = await mount({ Consultants: rows, Jobs: jobs }, { mode: 'job', jobID: 'J1', showMobile: 'true', showLinkedin: 'true', avatar: 'photo', showButton: 'true', layout: 'slider', showSearch: 'true' });
+    const panel = element.querySelector('.shm-cc-job')!;
+    expect(panel.querySelector('.shm-cc-mobile')!.getAttribute('href')).toBe('tel:0400000000');
+    expect(panel.querySelector('.shm-cc-linkedin')).not.toBeNull();
+    expect(panel.querySelector('img.shm-cc-photo-img')).not.toBeNull();
+    expect(panel.querySelector('.shm-cc-button')!.getAttribute('href')).toBe('/consultant/priya-shah');
+    expect(element.querySelector('.shm-cc-slider, .shm-cc-tools')).toBeNull();
+    expect(element.querySelector('.shm-cc')!.classList.contains('is-layout-slider')).toBe(false);
   });
 });

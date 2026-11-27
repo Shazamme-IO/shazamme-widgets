@@ -1,5 +1,5 @@
-// LAST UPDATED: 2026-11-27 11:20 AEDT (v0.1.65)
-// Change: first release of Consultant Card, pinned to jsDelivr tag v0.1.65 (pending: the tag exists only after Rick merges the PR).
+// LAST UPDATED: 2026-11-27 15:23 AEDT (v0.1.67)
+// Change: photos as an option (initials stay the default), per-item contact and social toggles with icon and text, location, sector, description, profile button, slider and filter bar; pinned to v0.1.67 (pending: the tag exists only after Rick merges the PR).
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab.
 //
@@ -15,7 +15,7 @@
 // ===========================================================================
 (function () {
   var NAME = "consultant-card";
-  var TAG = "v0.1.65";
+  var TAG = "v0.1.67";
   var BUNDLE = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" + TAG + "/dist/" + NAME + "/0.1.0/widget.min.js";
   var SDK = "https://sdk.shazamme.io/js/shazamme-1.0.3.min.js";
   window.__shazSDKPromise = window.__shazSDKPromise || new Promise(function (res, rej) {
