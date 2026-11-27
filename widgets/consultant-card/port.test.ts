@@ -6,7 +6,8 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { hrefPath, localPath, profileHref } from './data';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const VERSION = JSON.parse(readFileSync(join(here, '..', '..', 'package.json'), 'utf8')).version as string;
@@ -57,6 +58,17 @@ async function mount(collections: Record<string, unknown>, config: Record<string
 }
 
 const names = (el: HTMLElement) => [...el.querySelectorAll('.shm-cc-name')].map((n) => n.textContent);
+const SEARCH_WAIT_MS = 170;
+/** Types into the search box and waits out the debounce (real timers). */
+async function typeSearch(input: HTMLInputElement, value: string) {
+  input.value = value;
+  input.dispatchEvent(new Event('input'));
+  await new Promise((r) => setTimeout(r, SEARCH_WAIT_MS));
+}
+function sized(track: HTMLElement, scrollWidth = 1000, clientWidth = 400) {
+  Object.defineProperty(track, 'scrollWidth', { value: scrollWidth, configurable: true });
+  Object.defineProperty(track, 'clientWidth', { value: clientWidth, configurable: true });
+}
 const lives = (el: HTMLElement) => [...el.querySelectorAll('.shm-cc-live')].map((n) => n.textContent);
 
 beforeEach(() => {
@@ -394,7 +406,7 @@ describe('contact lines', () => {
     const iconOnly = await mount({ Consultants: TEAM }, { showEmail: 'show', showEmailIcon: 'true', showEmailLabel: 'false' });
     const email = iconOnly.element.querySelector('.shm-cc-email')!;
     expect(email.classList.contains('is-icon-only')).toBe(true);
-    expect(email.getAttribute('aria-label')).toBe('tom@example.com');
+    expect(email.getAttribute('aria-label')).toBe('Email: tom@example.com');
     expect(email.textContent).toBe('');
     expect(iconOnly.element.querySelector('.shm-cc-contact')!.classList.contains('is-icons')).toBe(true);
   });
@@ -620,13 +632,13 @@ describe('filter bar', () => {
     const { element } = await mount({ Consultants: rows }, { showSearch: 'true' });
     const input = element.querySelector<HTMLInputElement>('input[type="search"]')!;
     expect(element.querySelector(`label[for="${input.id}"]`)!.textContent).toBe('Search by name');
-    input.value = 'tech';
-    input.dispatchEvent(new Event('input'));
+    await typeSearch(input, 'tech');
     expect(names(element)).toEqual(['Tom Reilly']);
-    input.value = 'zzz';
-    input.dispatchEvent(new Event('input'));
+    await typeSearch(input, 'zzz');
     expect(names(element)).toEqual([]);
-    expect(element.querySelector('.shm-cc-nomatch')!.textContent).toBe('No consultants match your search.');
+    const nomatch = element.querySelector('.shm-cc-nomatch')!;
+    expect(nomatch.textContent).toBe('No consultants match your search.');
+    expect(nomatch.getAttribute('aria-hidden')).toBe('true');
     expect(element.querySelector('[role="status"]')!.textContent).toBe('No consultants match your search.');
   });
 
@@ -634,8 +646,7 @@ describe('filter bar', () => {
     (HTMLElement.prototype as any).scrollBy = vi.fn();
     const { element } = await mount({ Consultants: rows }, { showSearch: 'true', layout: 'slider' });
     const input = element.querySelector<HTMLInputElement>('input[type="search"]')!;
-    input.value = 'ana';
-    input.dispatchEvent(new Event('input'));
+    await typeSearch(input, 'ana');
     expect(element.querySelectorAll('.shm-cc-track .shm-cc-card')).toHaveLength(1);
   });
 
@@ -663,5 +674,286 @@ describe('job page with the new options', () => {
     expect(element.querySelector('.shm-cc')!.classList.contains('is-layout-slider')).toBe(false);
     const portrait = await mount({ Consultants: rows, Jobs: jobs }, { mode: 'job', jobID: 'J1', itemLayout: 'portrait' });
     expect(portrait.element.querySelector('.shm-cc')!.classList.contains('is-item-portrait')).toBe(false);
+  });
+});
+
+describe('review fixes: links stay on the site', () => {
+  it('collapses leading slashes so an address never becomes a link to another host', () => {
+    expect(hrefPath('https://x.com//evil.com/p')).toBe('/evil.com/p');
+    expect(hrefPath('https://x.com///evil.com/p?q=1')).toBe('/evil.com/p?q=1');
+    expect(hrefPath('/\\evil')).toBe('');
+    expect(hrefPath('https://x.com/\\evil')).toBe('');
+    expect(hrefPath('//evil.com/p')).toBe('');
+    expect(localPath('/\\/\\evil.com')).toBe('/evil.com');
+    expect(profileHref({ path: '/evil.com/p' }, '\\\\evil')).toBe('/%5C%5Cevil/p');
+  });
+
+  it('renders no name link or button whose href starts with // or /\\', async () => {
+    const rows = [
+      consultant({ consultantID: 'a', consultantURL: 'https://x.com//evil.com/p', sortOrder: 1 }),
+      consultant({ consultantID: 'b', firstName: 'Back', consultantURL: '/\\evil', sortOrder: 2 }),
+      consultant({ consultantID: 'c', firstName: 'Triple', consultantURL: 'https://x.com///evil.com', sortOrder: 3 }),
+    ];
+    const configs: Record<string, string>[] = [{ showButton: 'true' }, { showButton: 'true', profilePage: 'team' }];
+    for (const config of configs) {
+      const { element } = await mount({ Consultants: rows }, config);
+      const hrefs = [...element.querySelectorAll('.shm-cc-stage a[href]')].map((a) => a.getAttribute('href')!);
+      expect(hrefs.length, JSON.stringify(config)).toBeGreaterThan(0);
+      expect(hrefs.filter((h) => /^[/\\][/\\]/.test(h)), JSON.stringify(config)).toEqual([]);
+    }
+    const own = await mount({ Consultants: rows }, { showButton: 'true' });
+    expect(own.element.querySelector('a.shm-cc-name')!.getAttribute('href')).toBe('/evil.com/p');
+    expect(own.element.querySelector('.shm-cc-button')!.getAttribute('href')).toBe('/evil.com/p');
+  });
+});
+
+describe('review fixes: filter bar status and search', () => {
+  const rows = [
+    consultant({ consultantID: 'a', firstName: 'Priya', classification: '[{"Profession":"Finance"}]', sortOrder: 1 }),
+    consultant({ consultantID: 'b', firstName: 'Tom', classification: '[{"Profession":"Technology"}]', sortOrder: 2 }),
+    consultant({ consultantID: 'c', firstName: 'Ana', classification: '[{"Profession":"Finance"}]', sortOrder: 3 }),
+  ];
+  const click = (el: HTMLElement, text: string) =>
+    [...el.querySelectorAll<HTMLButtonElement>('.shm-cc-filter')].find((b) => b.textContent === text)!.click();
+
+  it('announces how many consultants are shown after every filter change', async () => {
+    const { element } = await mount({ Consultants: rows }, { showClassificationFilter: 'true' });
+    const status = element.querySelector('[role="status"]')!;
+    expect(status.textContent).toBe('');
+    click(element, 'Finance');
+    expect(status.textContent).toBe('2 consultants shown');
+    click(element, 'Technology');
+    expect(status.textContent).toBe('1 consultant shown');
+    click(element, 'All');
+    expect(status.textContent).toBe('3 consultants shown');
+  });
+
+  it('uses the site builder wording for the count', async () => {
+    const { element } = await mount({ Consultants: rows }, { showClassificationFilter: 'true', resultsCountOne: 'Eén ({n})', resultsCountMany: '{n} people' });
+    click(element, 'Finance');
+    expect(element.querySelector('[role="status"]')!.textContent).toBe('2 people');
+    click(element, 'Technology');
+    expect(element.querySelector('[role="status"]')!.textContent).toBe('Eén (1)');
+  });
+
+  it('waits for the visitor to stop typing before it redraws the list', async () => {
+    vi.useFakeTimers();
+    try {
+      const { element } = await mount({ Consultants: rows }, { showSearch: 'true' });
+      const input = element.querySelector<HTMLInputElement>('input[type="search"]')!;
+      for (const v of ['a', 'an', 'ana']) {
+        input.value = v;
+        input.dispatchEvent(new Event('input'));
+        vi.advanceTimersByTime(100);
+      }
+      expect(names(element)).toHaveLength(3);
+      vi.advanceTimersByTime(150);
+      expect(names(element)).toEqual(['Ana Shah']);
+      expect(element.querySelector('[role="status"]')!.textContent).toBe('1 consultant shown');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not restart the slider timer on every key', async () => {
+    vi.useFakeTimers();
+    (HTMLElement.prototype as any).scrollBy = vi.fn();
+    const setIntervalSpy = vi.spyOn(window, 'setInterval');
+    try {
+      const { element } = await mount({ Consultants: rows }, { showSearch: 'true', layout: 'slider', autoplay: 'true' });
+      expect(setIntervalSpy).toHaveBeenCalledTimes(1);
+      const input = element.querySelector<HTMLInputElement>('input[type="search"]')!;
+      for (const v of ['p', 'pr', 'pri', 'priy']) {
+        input.value = v;
+        input.dispatchEvent(new Event('input'));
+        vi.advanceTimersByTime(50);
+      }
+      vi.advanceTimersByTime(200);
+      expect(setIntervalSpy).toHaveBeenCalledTimes(2);
+    } finally {
+      setIntervalSpy.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
+  it('leaves no stray timers or listeners after filter changes redraw the slider', async () => {
+    vi.useFakeTimers();
+    (HTMLElement.prototype as any).scrollBy = vi.fn();
+    const clearSpy = vi.spyOn(window, 'clearInterval');
+    try {
+      const { element } = await mount({ Consultants: rows }, { showClassificationFilter: 'true', layout: 'slider', autoplay: 'true', sliderSpeed: '3000' });
+      const before = vi.getTimerCount();
+      for (const text of ['Finance', 'Technology', 'All', 'Finance']) click(element, text);
+      expect(clearSpy).toHaveBeenCalledTimes(4);
+      expect(vi.getTimerCount()).toBe(before);
+      const track = element.querySelector<HTMLElement>('.shm-cc-track')!;
+      sized(track);
+      const scrollBy = vi.fn();
+      track.scrollBy = scrollBy;
+      vi.advanceTimersByTime(3000);
+      expect(scrollBy).toHaveBeenCalledTimes(1);
+    } finally {
+      clearSpy.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe('review fixes: slider keys, direction and autoplay', () => {
+  beforeEach(() => {
+    (HTMLElement.prototype as any).scrollBy = vi.fn();
+    (HTMLElement.prototype as any).scrollTo = vi.fn();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  it('ignores the arrow keys with Alt, Ctrl, Cmd or Shift held, so browser shortcuts still work', async () => {
+    const { element } = await mount({ Consultants: TEAM }, { layout: 'slider' });
+    const track = element.querySelector<HTMLElement>('.shm-cc-track')!;
+    sized(track);
+    for (const mod of ['altKey', 'ctrlKey', 'metaKey', 'shiftKey']) {
+      const e = new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true, [mod]: true });
+      track.dispatchEvent(e);
+      expect(e.defaultPrevented, mod).toBe(false);
+    }
+    expect(track.scrollBy).not.toHaveBeenCalled();
+    track.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    expect(track.scrollBy).toHaveBeenCalledTimes(1);
+  });
+
+  it('follows the reading direction on a right to left page', async () => {
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({ width: 200, height: 100, top: 0, left: 0, right: 200, bottom: 100, x: 0, y: 0, toJSON: () => ({}) } as DOMRect);
+    const { element } = await mount({ Consultants: TEAM }, { layout: 'slider', infinite: 'false' });
+    const track = element.querySelector<HTMLElement>('.shm-cc-track')!;
+    track.style.direction = 'rtl';
+    sized(track);
+    track.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    expect(track.scrollBy).not.toHaveBeenCalled();
+    track.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+    expect(track.scrollBy).toHaveBeenCalledWith({ left: -200, behavior: 'smooth' });
+    element.querySelector<HTMLButtonElement>('[data-shm-cc-next]')!.click();
+    expect(track.scrollBy).toHaveBeenLastCalledWith({ left: -200, behavior: 'smooth' });
+    track.style.direction = 'ltr';
+    track.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    expect(track.scrollBy).toHaveBeenLastCalledWith({ left: 200, behavior: 'smooth' });
+  });
+
+  it('stops at the last card when it does not loop, and Play starts it again from the first', async () => {
+    vi.useFakeTimers();
+    const { element } = await mount({ Consultants: TEAM }, { layout: 'slider', autoplay: 'true', infinite: 'false', sliderSpeed: '3000' });
+    const track = element.querySelector<HTMLElement>('.shm-cc-track')!;
+    sized(track);
+    Object.defineProperty(track, 'scrollLeft', { value: 600, configurable: true, writable: true });
+    vi.advanceTimersByTime(3000);
+    expect(track.scrollBy).not.toHaveBeenCalled();
+    expect(track.scrollTo).not.toHaveBeenCalled();
+    const pause = element.querySelector<HTMLButtonElement>('[data-shm-cc-pause]')!;
+    expect(pause.getAttribute('aria-label')).toBe('Play');
+    expect(element.querySelector('.shm-cc-slider')!.classList.contains('is-paused')).toBe(true);
+    pause.click();
+    expect(track.scrollTo).toHaveBeenCalledWith({ left: 0, behavior: 'smooth' });
+    expect(pause.getAttribute('aria-label')).toBe('Pause');
+  });
+
+  it('still loops back to the first card on its own when infinite is on', async () => {
+    vi.useFakeTimers();
+    const { element } = await mount({ Consultants: TEAM }, { layout: 'slider', autoplay: 'true', sliderSpeed: '3000' });
+    const track = element.querySelector<HTMLElement>('.shm-cc-track')!;
+    sized(track);
+    Object.defineProperty(track, 'scrollLeft', { value: 600, configurable: true, writable: true });
+    vi.advanceTimersByTime(3000);
+    expect(track.scrollTo).toHaveBeenCalledWith({ left: 0, behavior: 'smooth' });
+    expect(element.querySelector('[data-shm-cc-pause]')!.getAttribute('aria-label')).toBe('Pause');
+  });
+
+  it('pauses while pointed at, while focus is in the row, and in a hidden tab', async () => {
+    vi.useFakeTimers();
+    const { element } = await mount({ Consultants: TEAM }, { layout: 'slider', autoplay: 'true', sliderSpeed: '3000' });
+    const slider = element.querySelector<HTMLElement>('.shm-cc-slider')!;
+    const track = element.querySelector<HTMLElement>('.shm-cc-track')!;
+    sized(track);
+    slider.dispatchEvent(new MouseEvent('mouseenter'));
+    vi.advanceTimersByTime(3000);
+    expect(track.scrollBy).toHaveBeenCalledTimes(0);
+    slider.dispatchEvent(new MouseEvent('mouseleave'));
+    vi.advanceTimersByTime(3000);
+    expect(track.scrollBy).toHaveBeenCalledTimes(1);
+    track.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    vi.advanceTimersByTime(3000);
+    expect(track.scrollBy).toHaveBeenCalledTimes(1);
+    track.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null }));
+    vi.advanceTimersByTime(3000);
+    expect(track.scrollBy).toHaveBeenCalledTimes(2);
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    try {
+      vi.advanceTimersByTime(3000);
+      expect(track.scrollBy).toHaveBeenCalledTimes(2);
+    } finally {
+      delete (document as any).visibilityState;
+    }
+    vi.advanceTimersByTime(3000);
+    expect(track.scrollBy).toHaveBeenCalledTimes(3);
+  });
+
+  it('names the slider once: the region, not the list inside it', async () => {
+    const { element } = await mount({ Consultants: TEAM }, { layout: 'slider', ariaLabel: 'Meet the team' });
+    expect(element.querySelector('.shm-cc-slider')!.getAttribute('aria-label')).toBe('Meet the team');
+    expect(element.querySelector('.shm-cc-track')!.hasAttribute('aria-label')).toBe(false);
+  });
+});
+
+describe('review fixes: contact names, social networks, photos and ids', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('names an icon-only contact link by what it is, in the site builder wording', async () => {
+    const config = { showPhone: 'show', showPhoneIcon: 'true', showPhoneLabel: 'false', showMobile: 'true', showMobileIcon: 'true', showMobileLabel: 'false', showEmail: 'show', showEmailIcon: 'true', showEmailLabel: 'false' };
+    const plain = await mount({ Consultants: [consultant()] }, config);
+    expect(['.shm-cc-phone', '.shm-cc-mobile', '.shm-cc-email'].map((c) => plain.element.querySelector(c)!.getAttribute('aria-label')))
+      .toEqual(['Phone: +61 2 0000 0000', 'Mobile: 0400 000 000', 'Email: priya@example.com']);
+    const worded = await mount({ Consultants: [consultant()] }, { ...config, phoneText: 'Tel', mobileText: 'Cell', emailText: 'E-mail' });
+    expect(['.shm-cc-phone', '.shm-cc-mobile', '.shm-cc-email'].map((c) => worded.element.querySelector(c)!.getAttribute('aria-label')))
+      .toEqual(['Tel: +61 2 0000 0000', 'Cell: 0400 000 000', 'E-mail: priya@example.com']);
+    const texted = await mount({ Consultants: [consultant()] }, { showPhone: 'show', showPhoneIcon: 'true' });
+    expect(texted.element.querySelector('.shm-cc-phone')!.hasAttribute('aria-label')).toBe(false);
+  });
+
+  it('draws Facebook, Google and WeChat in order, each with its logo, address and name', async () => {
+    const row = consultant({ facebookURL: 'https://facebook.com/priya', googleURL: 'https://g.page/priya', weChatURL: 'https://u.wechat.com/priya' });
+    const { element } = await mount({ Consultants: [row] }, { showFacebook: 'true', showGoogle: 'true', showWeChat: 'true', showGoogleLabel: 'true', googleText: 'Google profile' });
+    const links = [...element.querySelectorAll<HTMLAnchorElement>('.shm-cc-social-link')];
+    expect(links.map((a) => [...a.classList].find((c) => /^shm-cc-(facebook|google|wechat)$/.test(c)))).toEqual(['shm-cc-facebook', 'shm-cc-google', 'shm-cc-wechat']);
+    expect(links.map((a) => a.getAttribute('href'))).toEqual(['https://facebook.com/priya', 'https://g.page/priya', 'https://u.wechat.com/priya']);
+    expect(links.map((a) => a.getAttribute('aria-label'))).toEqual(['Facebook: Priya Shah', 'Google profile: Priya Shah', 'WeChat: Priya Shah']);
+    expect(links.every((a) => a.querySelector('svg'))).toBe(true);
+    expect(links[1].textContent).toBe('Google profile');
+    expect(links[1].classList.contains('is-icon-only')).toBe(false);
+    expect(links[0].classList.contains('is-icon-only')).toBe(true);
+  });
+
+  it('loads photos over https with no referrer, keeping the fallback', async () => {
+    const rows = [consultant({ photoURL: 'http://cdn.example.com/p.jpg' })];
+    const { element } = await mount({ Consultants: rows }, { avatar: 'photo-with-initials-fallback' });
+    const img = element.querySelector('img')!;
+    expect(img.getAttribute('src')).toBe('https://cdn.example.com/p.jpg');
+    expect(img.getAttribute('referrerpolicy')).toBe('no-referrer');
+    img.dispatchEvent(new Event('error'));
+    expect(element.querySelector('.shm-cc-badge')!.textContent).toBe('PS');
+  });
+
+  it('gives each copy its own ids from crypto.randomUUID, with a fallback without it', async () => {
+    vi.stubGlobal('crypto', { randomUUID: () => 'fixed-uuid' });
+    const a = await mount({ Consultants: TEAM }, { showSearch: 'true' });
+    expect(a.element.querySelector('input')!.id).toBe('shm-cc-fixed-uuid-q');
+    vi.stubGlobal('crypto', undefined);
+    const b = await mount({ Consultants: TEAM }, { showSearch: 'true' });
+    const c = await mount({ Consultants: TEAM }, { showSearch: 'true' });
+    const [idB, idC] = [b, c].map((m) => m.element.querySelector('input')!.id);
+    expect(idB).toMatch(/^shm-cc-[a-z0-9]+-[a-z0-9]+-q$/);
+    expect(idB).not.toBe(idC);
+    expect(b.element.querySelector(`label[for="${idB}"]`)).not.toBeNull();
   });
 });
