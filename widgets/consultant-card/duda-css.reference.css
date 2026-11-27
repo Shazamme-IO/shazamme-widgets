@@ -25,8 +25,11 @@
 /* Card (team) */
 .shm-cc.is-mode-team .shm-cc-card { position: relative; display: flex; flex-direction: column; gap: 18px; height: 100%; margin: 0; padding: 28px; border: 1px solid #e4e1d8; border-radius: 20px; background-color: #ffffff; color: #101423; text-align: left; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
 .shm-cc.is-mode-team .shm-cc-card:hover { border-color: #101423; }
-.shm-cc.is-mode-team .shm-cc-card:has(.shm-cc-name:focus-visible) { outline: 3px solid #1d4ed8; outline-offset: 2px; }
-.shm-cc.is-mode-team .shm-cc-name:focus-visible { outline: none; }
+.shm-cc.is-mode-team .shm-cc-card:hover a.shm-cc-name { text-decoration: underline; }
+@supports selector(:has(*)) {
+  .shm-cc.is-mode-team .shm-cc-card:has(.shm-cc-name:focus-visible) { outline: 3px solid #1d4ed8; outline-offset: 2px; }
+  .shm-cc.is-mode-team .shm-cc-name:focus-visible { outline: none; }
+}
 .shm-cc.is-mode-team a.shm-cc-name::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
 .shm-cc.is-mode-team .shm-cc-contact a { position: relative; z-index: 1; }
 

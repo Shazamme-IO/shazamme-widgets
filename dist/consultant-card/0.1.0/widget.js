@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 220723891715. Registers window.ShazammeWidget["<name>"].
+ * Build 3ebca6309df5. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var __shazWidgetExport = (() => {
@@ -87,7 +87,7 @@ var __shazWidgetExport = (() => {
   }
 
   // widgets/consultant-card/data.ts
-  var EMAIL_PATTERN = /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/;
+  var EMAIL_PATTERN = /^[A-Za-z0-9._%+'-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/;
   function safeUrl(v) {
     const s = typeof v === "string" ? v.trim() : "";
     if (!s || /[\\\u0000-\u001f\u007f]/.test(s)) return "";
@@ -104,14 +104,20 @@ var __shazWidgetExport = (() => {
     doc.querySelectorAll("script, style").forEach((el) => el.remove());
     return ((_a = doc.body.textContent) != null ? _a : "").trim();
   }
-  function pathOf(v) {
+  function hrefPath(v) {
     const url = safeUrl(v);
     if (!url) return "";
+    if (url.startsWith("/")) return url;
     try {
-      return (url.startsWith("/") ? url : new URL(url).pathname).replace(/\/+$/, "").toLowerCase();
+      const u = new URL(url);
+      return `${u.pathname}${u.search}`;
     } catch (e) {
       return "";
     }
+  }
+  function pathKey(v) {
+    const href = hrefPath(v);
+    return href ? href.split(/[?#]/)[0].replace(/\/+$/, "").toLowerCase() : "";
   }
   function cleanEmail(v) {
     const s = toText(v);
@@ -119,9 +125,10 @@ var __shazWidgetExport = (() => {
   }
   var MIN_PHONE_DIGITS = 6;
   function telHref(phone) {
-    const digits = phone.replace(/\D/g, "");
+    const main = phone.split(/\s*(?:ext\.?|x|#)/i)[0];
+    const digits = main.replace(/\D/g, "");
     if (digits.length < MIN_PHONE_DIGITS) return "";
-    return `tel:${phone.trim().startsWith("+") ? "+" : ""}${digits}`;
+    return `tel:${main.trim().startsWith("+") ? "+" : ""}${digits}`;
   }
   function initials(name) {
     var _a, _b, _c;
@@ -148,7 +155,8 @@ var __shazWidgetExport = (() => {
       role: plainText(row.positionTitle),
       email: cleanEmail(row.eMail),
       phone: plainText(row.phone) || plainText(row.mobile),
-      path: pathOf(row.consultantURL),
+      path: hrefPath(row.consultantURL),
+      key: pathKey(row.consultantURL),
       classification: toText(row.classification).toLowerCase(),
       sortOrder: Number.isFinite(sort) ? sort : Number.MAX_SAFE_INTEGER
     };
@@ -172,26 +180,27 @@ var __shazWidgetExport = (() => {
     return !(row.activeStatus === false || row.activeStatus === "false");
   }
   function countLiveRoles(jobEntries, consultants) {
-    var _a;
-    const counts = /* @__PURE__ */ new Map();
+    var _a, _b;
     const rows = Array.isArray(jobEntries) ? jobEntries : [];
     const byEmail = /* @__PURE__ */ new Map();
-    const byPath = /* @__PURE__ */ new Map();
+    const byKey = /* @__PURE__ */ new Map();
     for (const c of consultants) {
       if (c.email) byEmail.set(c.email.toLowerCase(), c);
-      if (c.path) byPath.set(c.path, c);
+      if (c.key) byKey.set(c.key, c);
     }
-    let known = false;
+    const matched = /* @__PURE__ */ new Map();
     for (const entry of rows) {
       const row = rowData(entry);
       if (!row || !isLive(row)) continue;
       const email = cleanEmail(row.contactEmail).toLowerCase();
-      const path = pathOf(row.consultantURL);
-      if (email || path) known = true;
-      const owner = email && byEmail.get(email) || path && byPath.get(path) || null;
-      if (owner) counts.set(owner.id, ((_a = counts.get(owner.id)) != null ? _a : 0) + 1);
+      const key = pathKey(row.consultantURL);
+      const owner = email && byEmail.get(email) || key && byKey.get(key) || null;
+      if (owner) matched.set(owner.id, ((_a = matched.get(owner.id)) != null ? _a : 0) + 1);
     }
-    return { known, counts };
+    if (matched.size === 0) return { known: false, counts: /* @__PURE__ */ new Map() };
+    const counts = /* @__PURE__ */ new Map();
+    for (const c of consultants) if (c.email || c.key) counts.set(c.id, (_b = matched.get(c.id)) != null ? _b : 0);
+    return { known: true, counts };
   }
   function findJob(entries, jobId) {
     if (!Array.isArray(entries) || !jobId) return null;
@@ -204,12 +213,12 @@ var __shazWidgetExport = (() => {
   }
   function consultantForJob(job, consultants) {
     const email = cleanEmail(job.contactEmail);
-    const path = pathOf(job.consultantURL);
-    const match = email && consultants.find((c) => c.email.toLowerCase() === email.toLowerCase()) || path && consultants.find((c) => c.path === path) || null;
+    const key = pathKey(job.consultantURL);
+    const match = email && consultants.find((c) => c.email.toLowerCase() === email.toLowerCase()) || key && consultants.find((c) => c.key === key) || null;
     if (match) return match;
     const name = plainText(job.contactName);
     if (!name) return null;
-    return { id: "job-contact", name, role: "", email, phone: plainText(job.contactPhone), path, classification: "", sortOrder: 0 };
+    return { id: "job-contact", name, role: "", email, phone: plainText(job.contactPhone), path: hrefPath(job.consultantURL), key, classification: "", sortOrder: 0 };
   }
   function loadRows(sdk, collection, siteId, inEditor) {
     var _a;
@@ -256,10 +265,9 @@ var __shazWidgetExport = (() => {
     return parts.length ? `<span class="shm-cc-contact">${parts.join("")}</span>` : "";
   }
   function liveHtml(c, s, counts) {
-    var _a;
     if (!s.showLiveRoles || counts === null) return "";
-    const n = (_a = counts.get(c.id)) != null ? _a : 0;
-    if (n === 0 && !s.showZeroRoles) return "";
+    const n = counts.get(c.id);
+    if (n === void 0 || n === 0 && !s.showZeroRoles) return "";
     return `<span class="shm-cc-live">${esc(liveRolesText(n, s))}</span>`;
   }
   function cardHtml(c, s, counts) {
@@ -313,34 +321,33 @@ var __shazWidgetExport = (() => {
       root.hidden = true;
     }
   }
-  async function liveCounts(sdk, s, siteId, inEditor, all) {
-    if (!s.showLiveRoles) return null;
-    try {
-      const jobs = await loadRows(sdk, JOBS, siteId, inEditor);
-      const result = countLiveRoles(jobs, all);
-      return result.known ? result.counts : null;
-    } catch (err) {
-      console.error("[consultant-card] live roles unavailable", err);
-      return null;
-    }
+  function countsFrom(jobs, consultants) {
+    if (jobs === null) return null;
+    const result = countLiveRoles(jobs, consultants);
+    return result.known ? result.counts : null;
   }
   async function renderTeam(sdk, s, siteId, inEditor) {
-    const all = normaliseConsultants(await loadRows(sdk, CONSULTANTS, siteId, inEditor));
+    const consultantsLoad = loadRows(sdk, CONSULTANTS, siteId, inEditor);
+    const countsLoad = s.showLiveRoles ? loadRows(sdk, JOBS, siteId, inEditor).catch((err) => {
+      console.error("[consultant-card] live roles unavailable", err);
+      return null;
+    }) : Promise.resolve(null);
+    const all = normaliseConsultants(await consultantsLoad);
     const items = selectConsultants(all, s);
     if (items.length === 0) {
       return { note: all.length === 0 ? "the Consultants collection has no visible rows." : `no consultants match the Classification "${s.classification}".` };
     }
-    const counts = await liveCounts(sdk, s, siteId, inEditor, all);
-    return { html: teamHtml(items, s, counts) };
+    return { html: teamHtml(items, s, countsFrom(await countsLoad, all)) };
   }
   async function ownerOfJob(sdk, s, siteId, inEditor) {
     const [jobRows, consultantRows] = await Promise.all([
-      loadRows(sdk, JOBS, siteId, inEditor),
+      loadRows(sdk, JOBS, siteId, inEditor).catch(() => null),
       loadRows(sdk, CONSULTANTS, siteId, inEditor).catch(() => [])
     ]);
     const all = normaliseConsultants(consultantRows);
     const job = findJob(jobRows, s.jobId);
-    if (job) return { consultant: consultantForJob(job, all), all };
+    const fromJob = job ? consultantForJob(job, all) : null;
+    if (fromJob) return { consultant: fromJob, all };
     return { consultant: await consultantFromApi(sdk, s.jobId).catch(() => null), all };
   }
   async function renderJob(sdk, s, siteId, inEditor) {
@@ -349,8 +356,9 @@ var __shazWidgetExport = (() => {
     }
     const { consultant, all } = await ownerOfJob(sdk, s, siteId, inEditor);
     if (!consultant) return { note: `no consultant is assigned to job ${s.jobId}.`, live: s.noConsultantMessage };
-    const counts = await liveCounts(sdk, s, siteId, inEditor, all.some((c) => c.id === consultant.id) ? all : [...all, consultant]);
-    return { html: jobHtml(consultant, s, counts) };
+    const everyone = all.some((c) => c.id === consultant.id) ? all : [...all, consultant];
+    const jobs = s.showLiveRoles ? await loadRows(sdk, JOBS, siteId, inEditor).catch(() => null) : null;
+    return { html: jobHtml(consultant, s, countsFrom(jobs, everyone)) };
   }
   var runs = /* @__PURE__ */ new WeakMap();
   async function consultantCard(ctx) {

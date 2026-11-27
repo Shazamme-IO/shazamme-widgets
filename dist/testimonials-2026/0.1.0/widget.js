@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 1c4847a537c6. Registers window.ShazammeWidget["<name>"].
+ * Build 7d614faf0479. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var __shazWidgetExport = (() => {
@@ -640,6 +640,12 @@ var __shazWidgetExport = (() => {
     const last = words.length > 1 ? (_c = Array.from(words[words.length - 1])[0]) != null ? _c : "" : "";
     return (first + last).toUpperCase() || "?";
   }
+  function displayName(t, s) {
+    return usesRoleHeadline(t, s) ? t.position : t.name;
+  }
+  function usesRoleHeadline(t, s) {
+    return s.layout === "wall" && s.wallHeadline === "role" && s.showPosition && Boolean(t.position);
+  }
   var STAR_ROW = "\u2605\u2605\u2605\u2605\u2605";
   var CHEVRON_LEFT = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   var CHEVRON_RIGHT = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -671,7 +677,7 @@ var __shazWidgetExport = (() => {
     if (t.photo && (s.layout !== "wall" || s.wallPhotos)) {
       return `<span class="${cls}"><img src="${esc(t.photo)}" alt="" width="64" height="64" loading="lazy" decoding="async"></span>`;
     }
-    return `<span class="${cls} shm-tm-initials" aria-hidden="true">${esc(initials(t.name))}</span>`;
+    return `<span class="${cls} shm-tm-initials" aria-hidden="true">${esc(initials(displayName(t, s)))}</span>`;
   }
   function moreLabelHtml(text, name) {
     return `${esc(text)}<span class="shm-tm-sr"> from ${esc(name)}</span>`;
@@ -686,10 +692,8 @@ var __shazWidgetExport = (() => {
     return `<span class="shm-tm-consultant">${label}${name}</span>`;
   }
   function wallLines(t, s) {
-    const asRole = s.wallHeadline === "role" && t.position;
-    const head = asRole ? t.position : t.name;
-    const rest = asRole ? [] : [s.showPosition ? t.position : "", s.showCompany ? t.company : ""];
-    if (asRole && s.showCompany) rest.push(t.company);
+    const head = displayName(t, s);
+    const rest = usesRoleHeadline(t, s) ? [s.showCompany ? t.company : ""] : [s.showPosition ? t.position : "", s.showCompany ? t.company : ""];
     return { head, sub: rest.filter(Boolean).join(" \xB7 ") };
   }
   function wallPersonHtml(t, ctx) {
@@ -723,7 +727,7 @@ var __shazWidgetExport = (() => {
     const mark = s.showQuoteMark ? `<span class="shm-tm-mark" aria-hidden="true">${QUOTE_MARK}</span>` : "";
     const stars = s.showRating && t.rating !== null ? starsHtml(t.rating) : "";
     const popup = s.readMore === "dialog" ? ' aria-haspopup="dialog"' : "";
-    const more = s.readMore === "off" ? "" : `<button type="button" class="shm-tm-more"${popup} hidden>${moreLabelHtml(s.readMoreText, t.name)}</button>`;
+    const more = s.readMore === "off" ? "" : `<button type="button" class="shm-tm-more"${popup} hidden>${moreLabelHtml(s.readMoreText, displayName(t, s))}</button>`;
     return `<figure class="shm-tm-card${accentClass(index, s)}" data-index="${index}"><div class="shm-tm-body">${mark}${stars}<blockquote class="shm-tm-quote"><p class="shm-tm-text" id="${esc(textId)}">${quoteText(t, s)}</p></blockquote>${more}</div>${personHtml(t, ctx)}</figure>`;
   }
   function tagFilterHtml(tags, s) {
@@ -761,7 +765,7 @@ var __shazWidgetExport = (() => {
   }
   function dialogHtml(t, ctx, titleId, closeLabel) {
     const stars = ctx.settings.showRating && t.rating !== null ? starsHtml(t.rating) : "";
-    return `<div class="shm-tm-dialog-backdrop" data-close></div><div class="shm-tm-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="${esc(titleId)}" aria-describedby="${esc(titleId)}-q"><button type="button" class="shm-tm-dialog-close" aria-label="${esc(closeLabel)}">\xD7</button><span class="shm-tm-sr" id="${esc(titleId)}">Testimonial from ${esc(t.name)}</span><figure class="shm-tm-dialog-card">${stars}<blockquote class="shm-tm-dialog-quote"><p id="${esc(titleId)}-q">${esc(t.quote)}</p></blockquote>${personHtml(t, ctx)}</figure></div>`;
+    return `<div class="shm-tm-dialog-backdrop" data-close></div><div class="shm-tm-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="${esc(titleId)}" aria-describedby="${esc(titleId)}-q"><button type="button" class="shm-tm-dialog-close" aria-label="${esc(closeLabel)}">\xD7</button><span class="shm-tm-sr" id="${esc(titleId)}">Testimonial from ${esc(displayName(t, ctx.settings))}</span><figure class="shm-tm-dialog-card">${stars}<blockquote class="shm-tm-dialog-quote"><p id="${esc(titleId)}-q">${quoteText(t, ctx.settings)}</p></blockquote>${personHtml(t, ctx)}</figure></div>`;
   }
   var SCHEMA_BEST = 5;
   function schemaJsonLd(items, s) {
@@ -949,7 +953,7 @@ var __shazWidgetExport = (() => {
       if (!item) return;
       if (this.s.readMore === "expand") {
         const open = card.classList.toggle("is-expanded");
-        btn.innerHTML = moreLabelHtml(open ? this.s.readLessText : this.s.readMoreText, item.name);
+        btn.innerHTML = moreLabelHtml(open ? this.s.readLessText : this.s.readMoreText, displayName(item, this.s));
         return;
       }
       (_a = this.dialog) == null ? void 0 : _a.close();

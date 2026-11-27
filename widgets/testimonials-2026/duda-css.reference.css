@@ -107,6 +107,8 @@
 .shm-tm.is-layout-featured .shm-tm-meta { align-items: center; }
 
 /* Proof wall: opt-in layout (testimonialLayout = wall). Defaults are the dark-band design; every value is a Design Editor key. Nothing here applies to the other layouts. */
+.shm-tm.is-layout-wall .shm-tm-heading { color: #f7f5ef; }
+.shm-tm.is-layout-wall .shm-tm-intro { color: #c9ccd6; }
 .shm-tm.is-layout-wall .shm-tm-grid { gap: 16px; }
 .shm-tm.is-layout-wall .shm-tm-card { gap: 28px; padding: 32px; border: 1px solid rgba(247, 245, 239, 0.1); border-radius: 20px; background-color: #1a2036; box-shadow: none; justify-content: space-between; }
 .shm-tm.is-layout-wall .shm-tm-card.is-accent { border-color: transparent; background-color: #d4f34a; }

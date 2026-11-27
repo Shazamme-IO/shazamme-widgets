@@ -2,6 +2,8 @@ Build the third part of the Design Editor for this widget: the proof wall layout
 
 **Wall cards**
 
+- Heading colour | selector: .shm-tm.is-layout-wall .shm-tm-heading | property: color | default: #f7f5ef
+- Intro colour | selector: .shm-tm.is-layout-wall .shm-tm-intro | property: color | default: #c9ccd6
 - Space between cards | selector: .shm-tm.is-layout-wall .shm-tm-grid | property: gap | default: 16px
 - Card background | selector: .shm-tm.is-layout-wall .shm-tm-card | property: background-color | default: #1a2036
 - Card border | selector: .shm-tm.is-layout-wall .shm-tm-card | property: border | default: 1px solid rgba(247, 245, 239, 0.1)

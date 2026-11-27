@@ -82,6 +82,19 @@ describe('wall layout', () => {
     expect(el.querySelector('.shm-tm-role')!.textContent).toBe('Analytical');
   });
 
+  it('puts the job title in the badge, the labels and the pop-up, so the name is not on the card', async () => {
+    const el = await mount([row({ who: 'Ada Lovelace', position: 'Head of Finance', company: 'Analytical' })], { wallHeadline: 'role' });
+    expect(el.querySelector('.shm-tm-initials')!.textContent).toBe('HF');
+    expect(el.querySelector('.shm-tm-card')!.textContent).not.toContain('Ada');
+    expect(el.querySelector('.shm-tm-more')!.innerHTML).toContain('from Head of Finance');
+  });
+
+  it('uses the name when the job title is switched off, even with the role headline', async () => {
+    const el = await mount([row({ who: 'Ada Lovelace', position: 'Engineer', company: 'Analytical' })], { wallHeadline: 'role', showPosition: 'false' });
+    expect(el.querySelector('.shm-tm-name')!.textContent).toBe('Ada Lovelace');
+    expect(el.querySelector('.shm-tm-role')!.textContent).toBe('Analytical');
+  });
+
   it('falls back to the name when there is no job title, and hides an empty second line', async () => {
     const el = await mount([row({ who: 'Ada Lovelace', position: '', company: '' })], { wallHeadline: 'role' });
     expect(el.querySelector('.shm-tm-name')!.textContent).toBe('Ada Lovelace');

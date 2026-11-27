@@ -80,6 +80,13 @@ describe('team mode', () => {
     expect(first.querySelector('a.shm-cc-name')!.getAttribute('href')).toBe('/consultant/tom-reilly');
   });
 
+  it('keeps the case of the profile link but matches on any case', async () => {
+    const rows = [consultant({ consultantURL: 'https://demo.example.com/Consultant/Priya-Shah?ref=A' })];
+    const { element } = await mount({ Consultants: rows, Jobs: [job({ consultantURL: '/consultant/priya-shah/' })] });
+    expect(element.querySelector('a.shm-cc-name')!.getAttribute('href')).toBe('/Consultant/Priya-Shah?ref=A');
+    expect(lives(element)).toEqual(['1 live role']);
+  });
+
   it('keeps the name as plain text when linking is off', async () => {
     const { element } = await mount({ Consultants: TEAM }, { linkProfile: 'false' });
     expect(element.querySelector('a.shm-cc-name')).toBeNull();
@@ -163,6 +170,18 @@ describe('live roles', () => {
     expect(lives(element)).toEqual([]);
   });
 
+  it('hides the line when the jobs name people who are not on the list (no false "0 live roles")', async () => {
+    const strangers = [job({ contactEmail: 'someone-else@example.com' }), job({ consultantURL: 'https://x.example.com/consultant/nobody' })];
+    const { element } = await mount({ Consultants: TEAM, Jobs: strangers }, { showZeroRoles: 'true' });
+    expect(lives(element)).toEqual([]);
+  });
+
+  it('gives no count to a consultant who has neither an email nor a page to match on', async () => {
+    const team = [...TEAM, consultant({ consultantID: 'd', firstName: 'No', lastName: 'Contact', eMail: null, consultantURL: null, sortOrder: 9 })];
+    const { element } = await mount({ Consultants: team, Jobs: [job({ contactEmail: 'priya@example.com' })] }, { showZeroRoles: 'true' });
+    expect(lives(element)).toEqual(['0 live roles', '1 live role', '0 live roles']);
+  });
+
   it('still shows the cards when the jobs cannot be loaded', async () => {
     const { element } = await mount({ Consultants: TEAM, Jobs: new Error('boom') });
     expect(names(element)).toHaveLength(3);
@@ -201,6 +220,20 @@ describe('job mode', () => {
     const sdk = fakeSdk({ Consultants: [], Jobs: [] }, { site: async () => ({ siteID: 'S1' }), submit });
     const { element } = await mount({}, { mode: 'job', jobID: 'ZZ' }, { sdk });
     expect(submit).toHaveBeenCalledWith({ action: 'Get Consultant By Job', jobID: 'ZZ', siteID: 'S1' });
+    expect(names(element)).toEqual(['Api Person']);
+  });
+
+  it('does not dial an extension, and refuses an email that carries mailto headers', async () => {
+    const rows = [consultant({ consultantID: 'x', phone: '+61 2 9999 8888 ext 12', eMail: 'a@b.co?bcc=x@y.com' })];
+    const { element } = await mount({ Consultants: rows, Jobs: [job({ jobID: 'J9', consultantURL: '/consultant/priya-shah' })] }, { mode: 'job', jobID: 'J9' });
+    expect(element.querySelector('.shm-cc-phone')!.getAttribute('href')).toBe('tel:+61299998888');
+    expect(element.querySelector('.shm-cc-email')).toBeNull();
+  });
+
+  it('asks the API when the Jobs collection cannot be loaded', async () => {
+    const submit = vi.fn(async () => ({ response: { items: [consultant({ firstName: 'Api', lastName: 'Person' }).data] } }));
+    const sdk = fakeSdk({ Consultants: [], Jobs: new Error('down') }, { site: async () => ({ siteID: 'S1' }), submit });
+    const { element } = await mount({}, { mode: 'job', jobID: 'ZZ' }, { sdk });
     expect(names(element)).toEqual(['Api Person']);
   });
 

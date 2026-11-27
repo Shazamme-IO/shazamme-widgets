@@ -13,5 +13,5 @@ Add a tab called "Layout" to the Content Editor of this widget. Add these fields
 
 Proof wall (only used when the layout is wall)
 - Highlighted card position | key: wallAccent | type: number | default: 2 | help: Which card gets the highlight colour, counting from 1. 2 is the middle card of the first row of three. 0 highlights none.
-- Show name or job title first | key: wallHeadline | type: dropdown | default: name | options: name, role | help: Name puts the person's name in bold, with job title and company under it. Role puts the job title in bold, with the company under it (use this for anonymous quotes).
+- Show name or job title first | key: wallHeadline | type: dropdown | default: name | options: name, role | help: Name puts the person's name in bold, with job title and company under it. Role puts the job title in bold, with the company under it, and the round badge shows the job title's initials. The person's name is not shown on the card or in the pop-up; the optional search engine review markup still uses the real name. Needs Show job title to be on, otherwise the name is used.
 - Use photos instead of initials | key: wallPhotos | type: toggle | default: false | help: Off shows a round badge with the person's initials. Turn on only if you have permission to show people's photos.

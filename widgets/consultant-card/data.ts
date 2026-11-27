@@ -10,6 +10,7 @@ export interface Consultant {
   email: string;
   phone: string;
   path: string;
+  key: string;
   classification: string;
   sortOrder: number;
 }
@@ -22,7 +23,7 @@ export interface LiveRoles {
 
 type Raw = Record<string, unknown>;
 
-const EMAIL_PATTERN = /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/;
+const EMAIL_PATTERN = /^[A-Za-z0-9._%+'-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/;
 
 /** http(s) or site-relative URLs only. Anything else (javascript:, data:, //host) renders as nothing. */
 export function safeUrl(v: unknown): string {
@@ -43,14 +44,23 @@ export function plainText(v: unknown): string {
   return (doc.body.textContent ?? '').trim();
 }
 
-export function pathOf(v: unknown): string {
+/** The consultant's page as a link: the path of the address, keeping its case, so a case-sensitive slug still works. */
+export function hrefPath(v: unknown): string {
   const url = safeUrl(v);
   if (!url) return '';
+  if (url.startsWith('/')) return url;
   try {
-    return (url.startsWith('/') ? url : new URL(url).pathname).replace(/\/+$/, '').toLowerCase();
+    const u = new URL(url);
+    return `${u.pathname}${u.search}`;
   } catch {
     return '';
   }
+}
+
+/** The same page for matching a job to a consultant: path only, no trailing slash, any case. */
+export function pathKey(v: unknown): string {
+  const href = hrefPath(v);
+  return href ? href.split(/[?#]/)[0].replace(/\/+$/, '').toLowerCase() : '';
 }
 
 export function cleanEmail(v: unknown): string {
@@ -60,11 +70,12 @@ export function cleanEmail(v: unknown): string {
 
 const MIN_PHONE_DIGITS = 6;
 
-/** Digits and a leading plus only, so a phone number can sit in a tel: link. Too short to be a number gives nothing. */
+/** Digits and a leading plus only, so a phone number can sit in a tel: link. An extension ("ext 12", "x12", "#12") is not dialled. */
 export function telHref(phone: string): string {
-  const digits = phone.replace(/\D/g, '');
+  const main = phone.split(/\s*(?:ext\.?|x|#)/i)[0];
+  const digits = main.replace(/\D/g, '');
   if (digits.length < MIN_PHONE_DIGITS) return '';
-  return `tel:${phone.trim().startsWith('+') ? '+' : ''}${digits}`;
+  return `tel:${main.trim().startsWith('+') ? '+' : ''}${digits}`;
 }
 
 export function initials(name: string): string {
@@ -92,7 +103,8 @@ export function toConsultant(row: Raw, index: number): Consultant | null {
     role: plainText(row.positionTitle),
     email: cleanEmail(row.eMail),
     phone: plainText(row.phone) || plainText(row.mobile),
-    path: pathOf(row.consultantURL),
+    path: hrefPath(row.consultantURL),
+    key: pathKey(row.consultantURL),
     classification: toText(row.classification).toLowerCase(),
     sortOrder: Number.isFinite(sort) ? sort : Number.MAX_SAFE_INTEGER,
   };
@@ -124,29 +136,32 @@ function isLive(row: Raw): boolean {
 
 /**
  * Jobs name their consultant by contactEmail (the same link Jobs on Consultants uses) and
- * by consultantURL. A job matches a consultant on either. A feed where no job carries
- * either field cannot say who owns what, so the counts are "not known" and the line stays hidden.
+ * by consultantURL. A job matches a consultant on either. Counts are only "known" once at
+ * least one live job matches a consultant: a feed that never names anyone we list cannot say
+ * who owns what, so the line stays hidden instead of claiming "0 live roles" for everyone.
+ * A consultant with neither an email nor a page cannot be matched, so they get no count.
  */
 export function countLiveRoles(jobEntries: unknown, consultants: Consultant[]): LiveRoles {
-  const counts = new Map<string, number>();
   const rows = Array.isArray(jobEntries) ? jobEntries : [];
   const byEmail = new Map<string, Consultant>();
-  const byPath = new Map<string, Consultant>();
+  const byKey = new Map<string, Consultant>();
   for (const c of consultants) {
     if (c.email) byEmail.set(c.email.toLowerCase(), c);
-    if (c.path) byPath.set(c.path, c);
+    if (c.key) byKey.set(c.key, c);
   }
-  let known = false;
+  const matched = new Map<string, number>();
   for (const entry of rows) {
     const row = rowData(entry);
     if (!row || !isLive(row)) continue;
     const email = cleanEmail(row.contactEmail).toLowerCase();
-    const path = pathOf(row.consultantURL);
-    if (email || path) known = true;
-    const owner = (email && byEmail.get(email)) || (path && byPath.get(path)) || null;
-    if (owner) counts.set(owner.id, (counts.get(owner.id) ?? 0) + 1);
+    const key = pathKey(row.consultantURL);
+    const owner = (email && byEmail.get(email)) || (key && byKey.get(key)) || null;
+    if (owner) matched.set(owner.id, (matched.get(owner.id) ?? 0) + 1);
   }
-  return { known, counts };
+  if (matched.size === 0) return { known: false, counts: new Map() };
+  const counts = new Map<string, number>();
+  for (const c of consultants) if (c.email || c.key) counts.set(c.id, matched.get(c.id) ?? 0);
+  return { known: true, counts };
 }
 
 export function findJob(entries: unknown, jobId: string): Raw | null {
@@ -162,15 +177,15 @@ export function findJob(entries: unknown, jobId: string): Raw | null {
 /** The consultant who owns a job: matched in the Consultants collection, else built from the job's own contact fields. */
 export function consultantForJob(job: Raw, consultants: Consultant[]): Consultant | null {
   const email = cleanEmail(job.contactEmail);
-  const path = pathOf(job.consultantURL);
+  const key = pathKey(job.consultantURL);
   const match =
     (email && consultants.find((c) => c.email.toLowerCase() === email.toLowerCase())) ||
-    (path && consultants.find((c) => c.path === path)) ||
+    (key && consultants.find((c) => c.key === key)) ||
     null;
   if (match) return match;
   const name = plainText(job.contactName);
   if (!name) return null;
-  return { id: 'job-contact', name, role: '', email, phone: plainText(job.contactPhone), path, classification: '', sortOrder: 0 };
+  return { id: 'job-contact', name, role: '', email, phone: plainText(job.contactPhone), path: hrefPath(job.consultantURL), key, classification: '', sortOrder: 0 };
 }
 
 export interface Sdk {

@@ -68,38 +68,35 @@ function showNote(root: HTMLElement, stage: HTMLElement, inEditor: boolean, mess
   }
 }
 
-async function liveCounts(sdk: Sdk, s: Settings, siteId: string, inEditor: boolean, all: Consultant[]): Promise<Map<string, number> | null> {
-  if (!s.showLiveRoles) return null;
-  try {
-    const jobs = await loadRows(sdk, JOBS, siteId, inEditor);
-    const result = countLiveRoles(jobs, all);
-    return result.known ? result.counts : null;
-  } catch (err) {
-    console.error('[consultant-card] live roles unavailable', err);
-    return null;
-  }
+/** Live role counts when the jobs say who owns them, otherwise null (the line stays hidden). */
+function countsFrom(jobs: unknown, consultants: Consultant[]): Map<string, number> | null {
+  if (jobs === null) return null;
+  const result = countLiveRoles(jobs, consultants);
+  return result.known ? result.counts : null;
 }
 
 type Outcome = { html: string } | { note: string; live?: string };
 
 async function renderTeam(sdk: Sdk, s: Settings, siteId: string, inEditor: boolean): Promise<Outcome> {
-  const all = normaliseConsultants(await loadRows(sdk, CONSULTANTS, siteId, inEditor));
+  const consultantsLoad = loadRows(sdk, CONSULTANTS, siteId, inEditor);
+  const countsLoad = s.showLiveRoles ? loadRows(sdk, JOBS, siteId, inEditor).catch((err) => { console.error('[consultant-card] live roles unavailable', err); return null; }) : Promise.resolve(null);
+  const all = normaliseConsultants(await consultantsLoad);
   const items = selectConsultants(all, s);
   if (items.length === 0) {
     return { note: all.length === 0 ? 'the Consultants collection has no visible rows.' : `no consultants match the Classification "${s.classification}".` };
   }
-  const counts = await liveCounts(sdk, s, siteId, inEditor, all);
-  return { html: teamHtml(items, s, counts) };
+  return { html: teamHtml(items, s, countsFrom(await countsLoad, all)) };
 }
 
 async function ownerOfJob(sdk: Sdk, s: Settings, siteId: string, inEditor: boolean): Promise<{ consultant: Consultant | null; all: Consultant[] }> {
   const [jobRows, consultantRows] = await Promise.all([
-    loadRows(sdk, JOBS, siteId, inEditor),
+    loadRows(sdk, JOBS, siteId, inEditor).catch(() => null),
     loadRows(sdk, CONSULTANTS, siteId, inEditor).catch(() => []),
   ]);
   const all = normaliseConsultants(consultantRows);
   const job = findJob(jobRows, s.jobId);
-  if (job) return { consultant: consultantForJob(job, all), all };
+  const fromJob = job ? consultantForJob(job, all) : null;
+  if (fromJob) return { consultant: fromJob, all };
   return { consultant: await consultantFromApi(sdk, s.jobId).catch(() => null), all };
 }
 
@@ -109,8 +106,9 @@ async function renderJob(sdk: Sdk, s: Settings, siteId: string, inEditor: boolea
   }
   const { consultant, all } = await ownerOfJob(sdk, s, siteId, inEditor);
   if (!consultant) return { note: `no consultant is assigned to job ${s.jobId}.`, live: s.noConsultantMessage };
-  const counts = await liveCounts(sdk, s, siteId, inEditor, all.some((c) => c.id === consultant.id) ? all : [...all, consultant]);
-  return { html: jobHtml(consultant, s, counts) };
+  const everyone = all.some((c) => c.id === consultant.id) ? all : [...all, consultant];
+  const jobs = s.showLiveRoles ? await loadRows(sdk, JOBS, siteId, inEditor).catch(() => null) : null;
+  return { html: jobHtml(consultant, s, countsFrom(jobs, everyone)) };
 }
 
 type Destroyable = HTMLElement & { __shmCcDestroy?: () => void };

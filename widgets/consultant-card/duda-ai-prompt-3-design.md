@@ -25,15 +25,15 @@ Build the Design Editor for this widget. Every line is one style a site builder 
 
 **Name, job title and live roles**
 
-- Name colour | selector: .shm-cc .shm-cc-name | property: color | default: #101423
-- Name size | selector: .shm-cc .shm-cc-name | property: font-size | default: 19px
+- Name colour (team) | selector: .shm-cc .shm-cc-name | property: color | default: #101423
+- Name size (all) | selector: .shm-cc .shm-cc-name | property: font-size | default: 19px
 - Name weight | selector: .shm-cc .shm-cc-name | property: font-weight | default: 700
-- Job title colour | selector: .shm-cc .shm-cc-role | property: color | default: #4b5060
-- Job title size | selector: .shm-cc .shm-cc-role | property: font-size | default: 15px
-- Live roles colour | selector: .shm-cc .shm-cc-live | property: color | default: #101423
+- Job title colour (team) | selector: .shm-cc .shm-cc-role | property: color | default: #4b5060
+- Job title size (team) | selector: .shm-cc .shm-cc-role | property: font-size | default: 15px
+- Live roles colour (team) | selector: .shm-cc .shm-cc-live | property: color | default: #101423
 - Live roles size | selector: .shm-cc .shm-cc-live | property: font-size | default: 14px
 - Live roles weight | selector: .shm-cc .shm-cc-live | property: font-weight | default: 600
-- Live roles divider line | selector: .shm-cc .shm-cc-live | property: border-top | default: 1px solid #e4e1d8
+- Live roles divider line (team) | selector: .shm-cc .shm-cc-live | property: border-top | default: 1px solid #e4e1d8
 - Contact text size | selector: .shm-cc .shm-cc-contact | property: font-size | default: 15px
 
 **Job page card**
@@ -51,5 +51,7 @@ Build the Design Editor for this widget. Every line is one style a site builder 
 - Job badge text size | selector: .shm-cc.is-mode-job .shm-cc-badge | property: font-size | default: 22px
 - Job name colour | selector: .shm-cc.is-mode-job .shm-cc-name | property: color | default: #f7f5ef
 - Job title colour on the panel | selector: .shm-cc.is-mode-job .shm-cc-role | property: color | default: #c9ccd6
+- Job title size on the panel | selector: .shm-cc.is-mode-job .shm-cc-role | property: font-size | default: 14px
+- Live roles colour on the panel | selector: .shm-cc.is-mode-job .shm-cc-live | property: color | default: #f7f5ef
 - Phone and email colour | selector: .shm-cc.is-mode-job .shm-cc-contact | property: color | default: #f7f5ef
 - Focus outline on the panel | selector: .shm-cc.is-mode-job :focus-visible | property: outline-color | default: #d4f34a

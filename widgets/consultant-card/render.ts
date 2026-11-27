@@ -35,8 +35,8 @@ function contactHtml(c: Consultant, s: Settings): string {
 /** A line only when the count is real: unknown hides it, zero hides it unless the site builder asked to see it. */
 function liveHtml(c: Consultant, s: Settings, counts: Map<string, number> | null): string {
   if (!s.showLiveRoles || counts === null) return '';
-  const n = counts.get(c.id) ?? 0;
-  if (n === 0 && !s.showZeroRoles) return '';
+  const n = counts.get(c.id);
+  if (n === undefined || (n === 0 && !s.showZeroRoles)) return '';
   return `<span class="shm-cc-live">${esc(liveRolesText(n, s))}</span>`;
 }
 
