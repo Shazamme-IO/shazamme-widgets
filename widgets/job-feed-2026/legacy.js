@@ -58,14 +58,8 @@ function UX() {
         const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         const on = (v) => v !== false && v !== 'false' && v !== 0 && v !== '0';
         const text = (v) => (typeof v === 'string' || typeof v === 'number' ? String(v).trim() : '');
-        const num = (v) => { const n = parseFloat(String(v == null ? '' : v).replace(/[^0-9.-]/g, '')); return n > 0 ? n : 0; };
-        const code = (text(j.currencyCode) || text(j.salaryCurrency) || text(j.currency)).toUpperCase();
-        const symbols = { AUD: '$', USD: '$', NZD: '$', CAD: '$', SGD: '$', HKD: '$', GBP: '£', EUR: '€', INR: '₹', JPY: '¥', ZAR: 'R' };
-        const money = (n) => `${symbols[code] || (/^[A-Z]{3}$/.test(code) ? code + ' ' : '')}${Math.round(n).toLocaleString('en-AU')}`;
-        const from = num(j.salaryFrom) || num(j.realSalaryFrom);
-        const to = num(j.salaryTo) || num(j.realSalaryTo);
-        const range = from && to && from !== to ? `${money(from)} – ${money(to)}` : (from || to ? money(from || to) : '');
-        const pay = text(j.salaryText) || range;
+        // Amount plus the recruiter's wording ("$150,000 – $170,000 + super"): core/salary, shared with Job Board and Jobs by Industry.
+        const pay = shmCore.payLine(j);
         const showCountry = data.config.chipShowCountry === true || data.config.chipShowCountry === 'true';
         const where = [text(j.city), text(j.state), showCountry ? text(j.country) : ''].filter(Boolean).join(', ');
         const type = on(data.config.chipShowWorkType) ? text(j.workType) : '';

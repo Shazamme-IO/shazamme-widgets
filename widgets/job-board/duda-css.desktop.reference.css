@@ -1,0 +1,5 @@
+/* 1024px and up: filters sit in a sidebar beside the results (below that they open from the Filters button). */
+@media (min-width: 1024px) {
+  .shm-jb .shm-jb-layout { grid-template-columns: minmax(220px, 280px) minmax(0, 1fr); gap: 40px; }
+  .shm-jb .shm-jb-layout.is-wide { grid-template-columns: minmax(0, 1fr); }
+}

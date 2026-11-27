@@ -131,6 +131,14 @@ describe('keyword-ticker bundle', () => {
       expect(sdk.calls[0]).toMatchObject({ path: '/job-results/site-1', isExternal: true });
     });
 
+    it('leaves out a profession whose only jobs have activeStatus "false" (intended change in core/site-jobs)', async () => {
+      const el = await mount({ source: 'professions' }, { shazamme: sdkWith([...jobs, { category: 'Legal', activeStatus: 'false' }, { category: 'Retail', activeStatus: 'true' }]) });
+      const list = words(el.querySelector('.shm-kt-static')!, '.shm-kt-word');
+      expect(list).not.toContain('Legal');
+      expect(list).not.toContain('Mining');
+      expect(list).toContain('Retail');
+    });
+
     it('ignores the typed words when the source is professions', async () => {
       const el = await mount({ source: 'professions', words: 'Typed' }, { shazamme: sdkWith(jobs) });
       expect(words(el.querySelector('.shm-kt-static')!, '.shm-kt-word')).not.toContain('Typed');

@@ -4,6 +4,7 @@
 // window.ShazammeWidget["jobs-by-industry"].
 
 import type { DudaData } from '../../core/config';
+import { payLineDefaultAud } from '../../core/salary';
 import { clampInt, esc, flag, listOf, loadSiteJobs, pick, safeUrl, text, type SiteJob } from '../../core/site-jobs';
 
 interface WidgetContext {
@@ -120,25 +121,12 @@ export function readSettings(config: Record<string, unknown>, root?: Element): S
   };
 }
 
-function formatMoney(amount: number, currency: string): string {
-  try {
-    return new Intl.NumberFormat('en', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount);
-  } catch {
-    return String(amount);
-  }
-}
-
-/** Salary text from the advert; failing that, the from and to figures when the advert shows its salary. */
+/**
+ * Salary from the advert through core/salary's payLineDefaultAud. As before core/salary, the older "salary" field stands in
+ * for salaryText, and a row with no currency is read as AUD.
+ */
 export function payFor(f: Record<string, unknown>): string {
-  const written = text(f.salaryText) || text(f.salary);
-  if (written) return written;
-  if (f.isDisplaySalary === false) return '';
-  const from = Number(f.salaryFrom);
-  const to = Number(f.salaryTo);
-  const currency = text(f.currencyCode) || 'AUD';
-  if (from > 0 && to > from) return `${formatMoney(from, currency)} – ${formatMoney(to, currency)}`;
-  if (from > 0) return formatMoney(from, currency);
-  return '';
+  return payLineDefaultAud({ ...f, salaryText: text(f.salaryText) || text(f.salary) });
 }
 
 export function whereFor(f: Record<string, unknown>, format: LocationFormat): string {

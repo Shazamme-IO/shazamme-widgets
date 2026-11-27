@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build da293709a3d3. Registers window.ShazammeWidget["<name>"].
+ * Build e8c97f05a478. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var __shazWidgetExport = (() => {
@@ -83,7 +83,7 @@ var __shazWidgetExport = (() => {
     const rows = [];
     for (const item of list) {
       const fields = (_a = item == null ? void 0 : item.data) != null ? _a : item;
-      if (!fields || typeof fields !== "object" || fields.activeStatus === false) continue;
+      if (!fields || typeof fields !== "object" || fields.activeStatus === false || fields.activeStatus === "false") continue;
       const fromUrl = (_b = text(fields.jobURL).split(/[?#]/)[0].split("/").filter(Boolean).pop()) != null ? _b : "";
       rows.push({ fields, pageItemUrl: text(item.page_item_url) || fromUrl });
     }

@@ -1,0 +1,16 @@
+/* 767px and below: the search stacks, buttons take the mobile padding, the Filters button and pager go full width. */
+.shm-jb .shm-jb-search { flex-direction: column; align-items: stretch; gap: 14px; margin-bottom: 28px; padding: 22px 18px; text-align: center; }
+.shm-jb .shm-jb-prompt { font-size: 18px; }
+.shm-jb .shm-jb-fields { flex: 1 1 auto; flex-direction: column; }
+.shm-jb .shm-jb-input { flex: 0 0 auto; width: 100%; }
+.shm-jb .shm-jb-search-btn { width: 100%; }
+
+.shm-jb .shm-jb-btn { padding: 14px 24px; }
+.shm-jb .shm-jb-open { width: 100%; }
+
+.shm-jb .shm-jb-head { margin-bottom: 16px; }
+.shm-jb .shm-jb-count { font-size: 20px; }
+.shm-jb .shm-jb-card { min-height: 0; padding: 24px; }
+.shm-jb .shm-jb-pager .shm-jb-prev, .shm-jb .shm-jb-pager .shm-jb-next { flex: 1 1 40%; }
+.shm-jb .shm-jb-pages { order: -1; flex: 1 1 100%; justify-content: center; }
+.shm-jb .shm-jb-loadmore { width: 100%; }

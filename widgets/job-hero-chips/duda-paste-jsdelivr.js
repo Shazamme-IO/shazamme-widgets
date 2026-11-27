@@ -1,5 +1,5 @@
-// LAST UPDATED: 2026-11-27 12:00 AEDT (v1)
-// Change: first release of Job Hero Chips, pinned to jsDelivr tag v0.1.63 (pending: the tag exists only after Rick merges the PR).
+// LAST UPDATED: 2026-11-27 17:47 AEDT (v0.1.70)
+// Change: salary chip shows the amount before suffix wording ("$150,000 – $170,000 + super", was "+ super"); other wording shows as written.
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab.
 //
@@ -15,7 +15,7 @@
 // ===========================================================================
 (function () {
   var NAME = "job-hero-chips";
-  var TAG = "v0.1.63";
+  var TAG = "v0.1.70";
   var BUNDLE = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" + TAG + "/dist/" + NAME + "/0.1.0/widget.min.js";
   var SDK = "https://sdk.shazamme.io/js/shazamme-1.0.3.min.js";
   window.__shazSDKPromise = window.__shazSDKPromise || new Promise(function (res, rej) {

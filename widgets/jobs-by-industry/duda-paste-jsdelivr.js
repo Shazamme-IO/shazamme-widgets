@@ -1,5 +1,5 @@
-// LAST UPDATED: 2026-11-27 11:45 AEDT (v0.1.64)
-// Change: New widget. Jobs by Industry, a tab list of professions with live jobs beside a panel of job cards.
+// LAST UPDATED: 2026-11-27 17:47 AEDT (v0.1.70)
+// Change: salary shows the amount before suffix wording ("$150,000 – $170,000 + super", was "+ super"); other wording shows as written.
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
 // existing widget JS.
@@ -17,7 +17,7 @@
 // ===========================================================================
 (function () {
   var NAME = "jobs-by-industry";
-  var TAG = "v0.1.64";
+  var TAG = "v0.1.70";
   var BUNDLE = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" + TAG + "/dist/" + NAME + "/0.1.0/widget.min.js";
   var SDK = "https://sdk.shazamme.io/js/shazamme-1.0.3.min.js";
   // One script tag per page, however many copies of the widget share it.

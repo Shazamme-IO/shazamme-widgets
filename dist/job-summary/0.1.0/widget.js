@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 0b8a84eaea4a. Registers window.ShazammeWidget["<name>"].
+ * Build 0bbbf8e296f0. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var __shazWidgetExport = (() => {
@@ -27,21 +27,49 @@ var __shazWidgetExport = (() => {
     default: () => jobSummary
   });
 
+  // core/salary.ts
+  var SYMBOLS = { AUD: "$", USD: "$", NZD: "$", CAD: "$", SGD: "$", HKD: "$", GBP: "\xA3", EUR: "\u20AC", INR: "\u20B9", JPY: "\xA5", ZAR: "R" };
+  function str(v) {
+    if (typeof v === "string") return v.trim();
+    if (typeof v === "number" && Number.isFinite(v)) return String(v);
+    return "";
+  }
+  function amount(v) {
+    const n = parseFloat(str(v).replace(/[^0-9.-]/g, ""));
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  }
+  function ends(f) {
+    return { from: amount(f.salaryFrom) || amount(f.realSalaryFrom), to: amount(f.salaryTo) || amount(f.realSalaryTo) };
+  }
+  var THREE_LETTERS = /^[A-Za-z]{3}$/;
+  function codeFor(f) {
+    const code = str(f.currencyCode) || str(f.salaryCurrency) || str(f.currency);
+    if (code) return code.toUpperCase();
+    const given = str(f.currencySymbol);
+    return THREE_LETTERS.test(given) ? given.toUpperCase() : "";
+  }
+  function symbolFor(f) {
+    const code = codeFor(f);
+    if (SYMBOLS[code]) return SYMBOLS[code];
+    const given = str(f.currencySymbol);
+    if (given && !THREE_LETTERS.test(given)) return given;
+    if (/^[A-Z]{3}$/.test(code)) return `${code} `;
+    return "";
+  }
+  function money(n, symbol) {
+    return `${symbol}${Math.round(n).toLocaleString("en-AU")}`;
+  }
+  function salaryRange(row) {
+    if (!row || typeof row !== "object") return "";
+    const { from, to } = ends(row);
+    const symbol = symbolFor(row);
+    if (from && to && from !== to) return `${money(Math.min(from, to), symbol)} \u2013 ${money(Math.max(from, to), symbol)}`;
+    const one = from || to;
+    return one ? money(one, symbol) : "";
+  }
+
   // widgets/_job-page/job.ts
   var JOBS_COLLECTION = "Jobs";
-  var SYMBOLS = {
-    AUD: "$",
-    USD: "$",
-    NZD: "$",
-    CAD: "$",
-    SGD: "$",
-    HKD: "$",
-    GBP: "\xA3",
-    EUR: "\u20AC",
-    INR: "\u20B9",
-    JPY: "\xA5",
-    ZAR: "R"
-  };
   var SAMPLE_JOB = {
     jobName: "Financial Controller",
     category: "Accounting & Finance",
@@ -71,26 +99,9 @@ var __shazWidgetExport = (() => {
   function esc(v) {
     return text(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   }
-  function amount(v) {
-    const n = parseFloat(text(v).replace(/[^0-9.-]/g, ""));
-    return Number.isFinite(n) && n > 0 ? n : 0;
-  }
   function currencyCode(job) {
     const code = text(job.currencyCode) || text(job.salaryCurrency) || text(job.currency);
     return /^[A-Za-z]{3}$/.test(code) ? code.toUpperCase() : "";
-  }
-  function money(n, code) {
-    var _a;
-    const symbol = (_a = SYMBOLS[code]) != null ? _a : code ? `${code} ` : "";
-    return `${symbol}${Math.round(n).toLocaleString("en-AU")}`;
-  }
-  function salaryRange(job) {
-    const from = amount(job.salaryFrom) || amount(job.realSalaryFrom);
-    const to = amount(job.salaryTo) || amount(job.realSalaryTo);
-    const code = currencyCode(job);
-    if (from && to && from !== to) return `${money(from, code)} \u2013 ${money(to, code)}`;
-    const one = from || to;
-    return one ? money(one, code) : "";
   }
   function locationLine(job) {
     return [text(job.city), text(job.state), text(job.country)].filter(Boolean).join(", ");

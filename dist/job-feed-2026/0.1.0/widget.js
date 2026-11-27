@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build cf801c230cfb. Registers window.ShazammeWidget["<name>"].
+ * Build 16fd5491157c. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -64,6 +64,73 @@ var __shazWidgetExport = (() => {
     installScriptLoader();
   }
 
+  // core/salary.ts
+  var SYMBOLS = { AUD: "$", USD: "$", NZD: "$", CAD: "$", SGD: "$", HKD: "$", GBP: "\xA3", EUR: "\u20AC", INR: "\u20B9", JPY: "\xA5", ZAR: "R" };
+  var UNIT = { hourly: "per hour", daily: "per day", weekly: "per week", monthly: "per month" };
+  var SUFFIX_RE = /^(\+|&|per\b|plus\b|pro[\s-]?rata\b|base\b|p\.?\s?[ahdw]\.?(\s|$)|inc\.?\b|incl\.?\b|including\b|ote\b|\()/i;
+  function str(v) {
+    if (typeof v === "string") return v.trim();
+    if (typeof v === "number" && Number.isFinite(v)) return String(v);
+    return "";
+  }
+  function amount(v) {
+    const n = parseFloat(str(v).replace(/[^0-9.-]/g, ""));
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  }
+  function isHidden(f2) {
+    return f2.isDisplaySalary === false || str(f2.isDisplaySalary).toLowerCase() === "false";
+  }
+  function ends(f2) {
+    return { from: amount(f2.salaryFrom) || amount(f2.realSalaryFrom), to: amount(f2.salaryTo) || amount(f2.realSalaryTo) };
+  }
+  var THREE_LETTERS = /^[A-Za-z]{3}$/;
+  var SYMBOL_AMOUNT_RE = /[$£€¥₹]\s?\d/;
+  function codeFor(f2) {
+    const code = str(f2.currencyCode) || str(f2.salaryCurrency) || str(f2.currency);
+    if (code) return code.toUpperCase();
+    const given = str(f2.currencySymbol);
+    return THREE_LETTERS.test(given) ? given.toUpperCase() : "";
+  }
+  function symbolFor(f2) {
+    const code = codeFor(f2);
+    if (SYMBOLS[code]) return SYMBOLS[code];
+    const given = str(f2.currencySymbol);
+    if (given && !THREE_LETTERS.test(given)) return given;
+    if (/^[A-Z]{3}$/.test(code)) return `${code} `;
+    return "";
+  }
+  function money(n, symbol) {
+    return `${symbol}${Math.round(n).toLocaleString("en-AU")}`;
+  }
+  function salaryRange(row) {
+    if (!row || typeof row !== "object") return "";
+    const { from, to } = ends(row);
+    const symbol = symbolFor(row);
+    if (from && to && from !== to) return `${money(Math.min(from, to), symbol)} \u2013 ${money(Math.max(from, to), symbol)}`;
+    const one = from || to;
+    return one ? money(one, symbol) : "";
+  }
+  function figuresIn(wording) {
+    return [...wording.matchAll(/(\d[\d,]*(?:\.\d+)?)\s*(k\b)?/gi)].map((m) => parseFloat(m[1].replace(/,/g, "")) * (m[2] ? 1e3 : 1));
+  }
+  function statesPay(wording, row) {
+    if (SYMBOL_AMOUNT_RE.test(wording)) return true;
+    const { from, to } = ends(row);
+    return figuresIn(wording).some((n) => n === from || n === to);
+  }
+  function payLine(row) {
+    if (!row || typeof row !== "object" || isHidden(row)) return "";
+    const wording = str(row.salaryText);
+    const range = salaryRange(row);
+    if (wording && (statesPay(wording, row) || !SUFFIX_RE.test(wording))) return wording;
+    if (!range) return "";
+    if (!wording) {
+      const unit = UNIT[str(row.salaryType).toLowerCase()];
+      return unit ? `${range} ${unit}` : range;
+    }
+    return `${range} ${wording}`;
+  }
+
   // dist/.gen/job-feed-2026.index.js
   function legacyController(ctx) {
     var _a, _b;
@@ -104,17 +171,7 @@ var __shazWidgetExport = (() => {
         const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
         const on = (v) => v !== false && v !== "false" && v !== 0 && v !== "0";
         const text = (v) => typeof v === "string" || typeof v === "number" ? String(v).trim() : "";
-        const num = (v) => {
-          const n = parseFloat(String(v == null ? "" : v).replace(/[^0-9.-]/g, ""));
-          return n > 0 ? n : 0;
-        };
-        const code = (text(j.currencyCode) || text(j.salaryCurrency) || text(j.currency)).toUpperCase();
-        const symbols = { AUD: "$", USD: "$", NZD: "$", CAD: "$", SGD: "$", HKD: "$", GBP: "\xA3", EUR: "\u20AC", INR: "\u20B9", JPY: "\xA5", ZAR: "R" };
-        const money = (n) => `${symbols[code] || (/^[A-Z]{3}$/.test(code) ? code + " " : "")}${Math.round(n).toLocaleString("en-AU")}`;
-        const from = num(j.salaryFrom) || num(j.realSalaryFrom);
-        const to = num(j.salaryTo) || num(j.realSalaryTo);
-        const range = from && to && from !== to ? `${money(from)} \u2013 ${money(to)}` : from || to ? money(from || to) : "";
-        const pay = text(j.salaryText) || range;
+        const pay = payLine(j);
         const showCountry = data.config.chipShowCountry === true || data.config.chipShowCountry === "true";
         const where = [text(j.city), text(j.state), showCountry ? text(j.country) : ""].filter(Boolean).join(", ");
         const type = on(data.config.chipShowWorkType) ? text(j.workType) : "";

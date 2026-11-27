@@ -7,6 +7,7 @@ import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect, beforeEach } from 'vitest';
+import { payFor } from './index';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const VERSION = JSON.parse(readFileSync(join(here, '..', '..', 'package.json'), 'utf8')).version as string;
@@ -216,6 +217,40 @@ describe('jobs-by-industry bundle', () => {
     expect(hidden.querySelector('.shm-jbi-card-pay')).toBeNull();
     const undisclosed = await mount({}, { shazamme: sdk([job('X', 'Data', { salaryText: null, isDisplaySalary: false, salaryFrom: 1, salaryTo: 2 })]) });
     expect(undisclosed.querySelector('.shm-jbi-card-pay')).toBeNull();
+  });
+
+  it('puts the amount in front of the advert wording, as the live feed sends it ("+ super" only)', async () => {
+    const rows = [job('Financial Controller', 'Finance', { salaryText: '+ super', isDisplaySalary: true, salaryFrom: '150000', salaryTo: '170000', currencyCode: 'AUD', currencySymbol: 'AUD' })];
+    const el = await mount({}, { shazamme: sdk(rows) });
+    expect(el.querySelector('.shm-jbi-card-pay')!.textContent).toBe('$150,000 – $170,000 + super');
+  });
+
+  it('leaves out jobs whose activeStatus is the string "false" (intended change in core/site-jobs)', async () => {
+    const rows = [job('Nurse', 'Healthcare'), job('Closed Text', 'Healthcare', { activeStatus: 'false' }), job('Open Text', 'Healthcare', { activeStatus: 'true' })];
+    const el = await mount({}, { shazamme: sdk(rows) });
+    expect(cards(el)).toEqual(expect.arrayContaining(['Nurse', 'Open Text']));
+    expect(cards(el)).not.toContain('Closed Text');
+    expect(el.querySelector('.shm-jbi-tab-count')!.textContent).toBe('2 live roles');
+  });
+
+  it('salary (3a) shows standalone wording as written even when there is a range', async () => {
+    const rows = [job('Analyst', 'Data', { salaryText: 'Negotiable depending on experience', isDisplaySalary: true, salaryFrom: 90000, salaryTo: 110000, currencyCode: 'AUD' })];
+    const el = await mount({}, { shazamme: sdk(rows) });
+    expect(el.querySelector('.shm-jbi-card-pay')!.textContent).toBe('Negotiable depending on experience');
+  });
+
+  it('salary (3c) falls back to the salary field, and reads a row with no currency as AUD, as before', () => {
+    expect(payFor({ salaryText: '', salary: '$95,000 + super', salaryFrom: 95000 })).toBe('$95,000 + super');
+    expect(payFor({ salary: 'per annum + super', salaryFrom: 95000, salaryTo: 105000 })).toBe('$95,000 – $105,000 per annum + super');
+    expect(payFor({ salaryText: null, salaryFrom: 90000, salaryTo: 110000 })).toBe('$90,000 – $110,000');
+    expect(payFor({ salaryFrom: 90000, salaryTo: 110000, currencySymbol: '£' })).toBe('£90,000 – £110,000');
+    expect(payFor({ salaryFrom: 90000, salaryTo: 110000, currencySymbol: 'NZD' })).toBe('$90,000 – $110,000');
+    expect(payFor({ salaryFrom: 90000, salaryTo: 110000, currencyCode: 'GBP' })).toBe('£90,000 – £110,000');
+  });
+
+  it('salary (3f) hides the wording when the advert hides its salary (intended change: it used to show)', () => {
+    expect(payFor({ salaryText: 'Competitive', isDisplaySalary: false })).toBe('');
+    expect(payFor({ salary: '$95,000', isDisplaySalary: 'false' })).toBe('');
   });
 
   it('escapes job and industry text instead of rendering it as HTML', async () => {

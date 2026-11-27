@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build c6807befaa10. Registers window.ShazammeWidget["<name>"].
+ * Build 977a410b82be. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var __shazWidgetExport = (() => {
@@ -30,6 +30,81 @@ var __shazWidgetExport = (() => {
     readSettings: () => readSettings,
     whereFor: () => whereFor
   });
+
+  // core/salary.ts
+  var SYMBOLS = { AUD: "$", USD: "$", NZD: "$", CAD: "$", SGD: "$", HKD: "$", GBP: "\xA3", EUR: "\u20AC", INR: "\u20B9", JPY: "\xA5", ZAR: "R" };
+  var UNIT = { hourly: "per hour", daily: "per day", weekly: "per week", monthly: "per month" };
+  var SUFFIX_RE = /^(\+|&|per\b|plus\b|pro[\s-]?rata\b|base\b|p\.?\s?[ahdw]\.?(\s|$)|inc\.?\b|incl\.?\b|including\b|ote\b|\()/i;
+  function str(v) {
+    if (typeof v === "string") return v.trim();
+    if (typeof v === "number" && Number.isFinite(v)) return String(v);
+    return "";
+  }
+  function amount(v) {
+    const n = parseFloat(str(v).replace(/[^0-9.-]/g, ""));
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  }
+  function isHidden(f) {
+    return f.isDisplaySalary === false || str(f.isDisplaySalary).toLowerCase() === "false";
+  }
+  function ends(f) {
+    return { from: amount(f.salaryFrom) || amount(f.realSalaryFrom), to: amount(f.salaryTo) || amount(f.realSalaryTo) };
+  }
+  var THREE_LETTERS = /^[A-Za-z]{3}$/;
+  var SYMBOL_AMOUNT_RE = /[$£€¥₹]\s?\d/;
+  function codeFor(f) {
+    const code = str(f.currencyCode) || str(f.salaryCurrency) || str(f.currency);
+    if (code) return code.toUpperCase();
+    const given = str(f.currencySymbol);
+    return THREE_LETTERS.test(given) ? given.toUpperCase() : "";
+  }
+  function hasCurrency(row) {
+    if (!row || typeof row !== "object") return false;
+    return !!(codeFor(row) || str(row.currencySymbol));
+  }
+  function symbolFor(f) {
+    const code = codeFor(f);
+    if (SYMBOLS[code]) return SYMBOLS[code];
+    const given = str(f.currencySymbol);
+    if (given && !THREE_LETTERS.test(given)) return given;
+    if (/^[A-Z]{3}$/.test(code)) return `${code} `;
+    return "";
+  }
+  function money(n, symbol) {
+    return `${symbol}${Math.round(n).toLocaleString("en-AU")}`;
+  }
+  function salaryRange(row) {
+    if (!row || typeof row !== "object") return "";
+    const { from, to } = ends(row);
+    const symbol = symbolFor(row);
+    if (from && to && from !== to) return `${money(Math.min(from, to), symbol)} \u2013 ${money(Math.max(from, to), symbol)}`;
+    const one = from || to;
+    return one ? money(one, symbol) : "";
+  }
+  function figuresIn(wording) {
+    return [...wording.matchAll(/(\d[\d,]*(?:\.\d+)?)\s*(k\b)?/gi)].map((m) => parseFloat(m[1].replace(/,/g, "")) * (m[2] ? 1e3 : 1));
+  }
+  function statesPay(wording, row) {
+    if (SYMBOL_AMOUNT_RE.test(wording)) return true;
+    const { from, to } = ends(row);
+    return figuresIn(wording).some((n) => n === from || n === to);
+  }
+  function payLine(row) {
+    if (!row || typeof row !== "object" || isHidden(row)) return "";
+    const wording = str(row.salaryText);
+    const range = salaryRange(row);
+    if (wording && (statesPay(wording, row) || !SUFFIX_RE.test(wording))) return wording;
+    if (!range) return "";
+    if (!wording) {
+      const unit = UNIT[str(row.salaryType).toLowerCase()];
+      return unit ? `${range} ${unit}` : range;
+    }
+    return `${range} ${wording}`;
+  }
+  function payLineDefaultAud(row) {
+    if (!row || typeof row !== "object") return "";
+    return payLine(hasCurrency(row) ? row : { ...row, currencyCode: "AUD" });
+  }
 
   // core/site-jobs.ts
   var SDK_READY_TIMEOUT_MS = 1200;
@@ -96,7 +171,7 @@ var __shazWidgetExport = (() => {
     const rows = [];
     for (const item of list) {
       const fields = (_a = item == null ? void 0 : item.data) != null ? _a : item;
-      if (!fields || typeof fields !== "object" || fields.activeStatus === false) continue;
+      if (!fields || typeof fields !== "object" || fields.activeStatus === false || fields.activeStatus === "false") continue;
       const fromUrl = (_b = text(fields.jobURL).split(/[?#]/)[0].split("/").filter(Boolean).pop()) != null ? _b : "";
       rows.push({ fields, pageItemUrl: text(item.page_item_url) || fromUrl });
     }
@@ -186,23 +261,8 @@ var __shazWidgetExport = (() => {
       profiles
     };
   }
-  function formatMoney(amount, currency) {
-    try {
-      return new Intl.NumberFormat("en", { style: "currency", currency, maximumFractionDigits: 0 }).format(amount);
-    } catch (e) {
-      return String(amount);
-    }
-  }
   function payFor(f) {
-    const written = text(f.salaryText) || text(f.salary);
-    if (written) return written;
-    if (f.isDisplaySalary === false) return "";
-    const from = Number(f.salaryFrom);
-    const to = Number(f.salaryTo);
-    const currency = text(f.currencyCode) || "AUD";
-    if (from > 0 && to > from) return `${formatMoney(from, currency)} \u2013 ${formatMoney(to, currency)}`;
-    if (from > 0) return formatMoney(from, currency);
-    return "";
+    return payLineDefaultAud({ ...f, salaryText: text(f.salaryText) || text(f.salary) });
   }
   function whereFor(f, format) {
     const parts = [text(f.city)];
