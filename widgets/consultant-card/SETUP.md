@@ -26,6 +26,7 @@ Content Editor tabs: Content (1), Card (2), Photo and details (4), Contact (5), 
 
 1. Edit the TypeScript, then `npm run check` and commit `dist/consultant-card`.
 2. Before opening the PR, set `TAG` in `duda-paste-jsdelivr.js` to the next free `v0.1.x`. After the merge, tag the merge commit with it and check the jsDelivr URL returns 200 with the new code.
+   This version: **pending tag `v0.1.67`**. The latest existing tag is `v0.1.65` and `v0.1.66` is reserved for the Job Board widget, so the stub is pinned to `v0.1.67`, which exists only once Rick tags the merge commit. `package.json` stays at `0.1.0` (the bundle path).
 3. Repaste the stub only when `TAG` changed. Sites don't need republishing.
 4. A change to the default output must update `golden.test.ts` on purpose (say so in the PR): the live placements rely on it.
 
@@ -36,3 +37,11 @@ Collection `Consultants`: `consultantID`, `firstName`, `lastName`, `positionTitl
 **How a job links to a consultant.** A job names its consultant by `contactEmail` (matches the consultant's `eMail`, ignoring case) or by `consultantURL` (matches the consultant's page). These are the same fields Jobs on Consultants filters on. If no job in the feed carries either field, nobody's count is known, so the "N live roles" line is hidden rather than showing 0. A consultant with no live jobs hides the line unless `showZeroRoles` is on.
 
 **Profile page.** Empty uses each consultant's own `consultantURL` path. Set (for example `consultant`), the name and button go to `/consultant/<last part of their address>`, as the Consultant widget's `consultantPage` does.
+
+**Profile links stay on the site.** Leading slashes and backslashes in a consultant's address collapse to one `/`, so an address such as `https://x.com//evil.com/p` links to `/evil.com/p` on this site, never to another host.
+
+**Photos** are requested over https (an `http://` address is upgraded) with `referrerpolicy="no-referrer"`; a photo that fails to load falls back to the initials or the placeholder.
+
+**Filter bar announcements.** After every search (150 ms after the last key) or button press, a hidden status line reads out `resultsCountOne` / `resultsCountMany` ("3 consultants shown"), or `noMatchText` when nothing matches (the visible message is then hidden from screen readers so it is not read twice).
+
+**Slider keys.** Left and Right arrows move the row (not with Alt, Ctrl, Cmd or Shift, so browser shortcuts still work); on a right to left page they follow the reading direction. Autoplay without `infinite` stops at the last card and its button turns to Play.
