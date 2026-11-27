@@ -1,5 +1,5 @@
-// LAST UPDATED: 2026-11-27 11:20 AEDT (v0.1.64)
-// Change: first release of Consultant Card, pinned to jsDelivr tag v0.1.64 (pending: the tag exists only after Rick merges the PR).
+// LAST UPDATED: 2026-11-27 11:20 AEDT (v0.1.65)
+// Change: first release of Consultant Card, pinned to jsDelivr tag v0.1.65 (pending: the tag exists only after Rick merges the PR).
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab.
 //
@@ -15,7 +15,7 @@
 // ===========================================================================
 (function () {
   var NAME = "consultant-card";
-  var TAG = "v0.1.64";
+  var TAG = "v0.1.65";
   var BUNDLE = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" + TAG + "/dist/" + NAME + "/0.1.0/widget.min.js";
   var SDK = "https://sdk.shazamme.io/js/shazamme-1.0.3.min.js";
   window.__shazSDKPromise = window.__shazSDKPromise || new Promise(function (res, rej) {
