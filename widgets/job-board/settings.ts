@@ -65,6 +65,7 @@ export interface Settings {
   prevText: string;
   nextText: string;
   pagerLabel: string;
+  pageAriaText: string;
   showSort: boolean;
   defaultSort: Sort;
   sortLabel: string;
@@ -126,6 +127,7 @@ export function readSettings(config: Record<string, unknown> = {}): Settings {
     prevText: t('prevText', 'Previous'),
     nextText: t('nextText', 'Next'),
     pagerLabel: t('pagerLabel', 'Job pages'),
+    pageAriaText: t('pageAriaText', 'Page {count}'),
     showSort: flag(config.showSort, true),
     defaultSort: pick(config.defaultSort, SORTS, 'newest'),
     sortLabel: t('sortLabel', 'Sort by'),

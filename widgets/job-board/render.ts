@@ -11,7 +11,7 @@ const FILTER = '<svg aria-hidden="true" focusable="false" width="16" height="16"
 
 export function shellHtml(id: string, s: Settings, state: State): string {
   const search = s.showSearch
-    ? `<form class="shm-jb-search" role="search" aria-label="${esc(s.searchButtonLabel)}"${s.searchOverlap ? ` style="margin-top:-${s.searchOverlap}px"` : ''}>` +
+    ? `<form class="shm-jb-search" role="search"${s.searchOverlap ? ` style="margin-top:-${s.searchOverlap}px"` : ''}>` +
       (s.searchPrompt ? `<p class="shm-jb-prompt">${esc(s.searchPrompt)}</p>` : '') +
       '<div class="shm-jb-fields">' +
       `<input class="shm-jb-input" type="search" name="keyword" autocomplete="off" placeholder="${esc(s.keywordPlaceholder)}" aria-label="${esc(s.keywordPlaceholder)}" value="${esc(state.keyword)}">` +
@@ -117,7 +117,7 @@ export function pagerHtml(current: number, total: number, shown: number, all: nu
     .map((n) =>
       n === '…'
         ? '<span class="shm-jb-gap" aria-hidden="true">…</span>'
-        : `<button type="button" class="shm-jb-page${n === current ? ' is-current' : ''}" data-page="${n}"${n === current ? ' aria-current="page"' : ''}>${n}</button>`,
+        : `<button type="button" class="shm-jb-page${n === current ? ' is-current' : ''}" data-page="${n}" aria-label="${esc(fill(s.pageAriaText, n))}"${n === current ? ' aria-current="page"' : ''}>${n}</button>`,
     )
     .join('');
   return (

@@ -26,10 +26,20 @@ export const COLLECTION_PAGE_SIZE = 100;
 export const COLLECTION_MAX_PAGES = 20;
 /** How long a widget waits for the collection before using the Shazamme job feed instead. */
 export const COLLECTION_TIMEOUT_MS = 4000;
+/** Duda can add dmAPI.loadCollectionsAPI a moment after the widget runs: look again every 50ms for up to 1.5s. */
+export const DMAPI_POLL_MS = 50;
+export const DMAPI_WAIT_MS = 1500;
+/** Pages read at the same time once the total is known. */
+export const COLLECTION_CONCURRENCY = 5;
+
+/** Set by the caller to stop a read that is no longer wanted (it timed out, or a newer run started). */
+export interface ReadSignal {
+  aborted: boolean;
+}
 
 interface CollectionPage {
   values?: unknown[];
-  page?: { pageNumber?: number; totalPages?: number };
+  page?: { pageNumber?: number; totalPages?: number; totalItems?: number };
 }
 interface CollectionQuery {
   pageSize(n: number): CollectionQuery;
@@ -167,16 +177,31 @@ export async function loadSiteJobs(shazamme: unknown, data: DudaData | undefined
   return pending;
 }
 
-/** Rows of a Duda collection on this site, read with Duda's Collections API (dmAPI). Rejects when it cannot be read. */
-export async function loadCollectionJobs(name: string, inEditor: boolean): Promise<SiteJob[]> {
+type CollectionsLoader = NonNullable<DmApi['loadCollectionsAPI']>;
+
+/** dmAPI.loadCollectionsAPI once Duda has added it, waiting up to DMAPI_WAIT_MS. Rejects when it never appears. */
+export async function waitForCollectionsApi(waitMs = DMAPI_WAIT_MS, signal?: ReadSignal): Promise<CollectionsLoader> {
   const win = window as Win;
-  const loader = win.dmAPI?.loadCollectionsAPI;
-  if (typeof loader !== 'function') throw new Error('The Duda collections API is not on this page.');
+  const started = Date.now();
+  for (;;) {
+    const loader = win.dmAPI?.loadCollectionsAPI;
+    if (typeof loader === 'function') return loader.bind(win.dmAPI);
+    if (signal?.aborted) throw new Error('The collection read was stopped.');
+    if (Date.now() - started >= waitMs) throw new Error('The Duda collections API is not on this page.');
+    await new Promise((resolve) => setTimeout(resolve, DMAPI_POLL_MS));
+  }
+}
+
+/** Rows of a Duda collection on this site, read with Duda's Collections API (dmAPI). Rejects when it cannot be read. */
+export async function loadCollectionJobs(name: string, inEditor: boolean, signal?: ReadSignal): Promise<SiteJob[]> {
+  const win = window as Win;
   const cache = (win.__shmSiteJobs = win.__shmSiteJobs ?? new Map());
   const key = `collection:${name}`;
   const hit = cache.get(key);
   if (hit && !inEditor) return hit;
-  const pending = loader.call(win.dmAPI).then((api) => readAllPages(name, (n) => api.data(name).pageSize(COLLECTION_PAGE_SIZE).pageNumber(n).get()));
+  const pending = waitForCollectionsApi(DMAPI_WAIT_MS, signal)
+    .then((loader) => loader())
+    .then((api) => readAllPages(name, (n) => api.data(name).pageSize(COLLECTION_PAGE_SIZE).pageNumber(n).get(), signal));
   if (!inEditor) {
     cache.set(key, pending);
     pending.catch(() => cache.delete(key));
@@ -191,13 +216,13 @@ function pageValues(res: CollectionPage | unknown[] | undefined): unknown[] {
   return Array.isArray(res?.values) ? res.values : [];
 }
 
-function pageMeta(res: CollectionPage | unknown[] | undefined): { echo: number; total: number; size: number } {
-  const page = (Array.isArray(res) ? undefined : res?.page) as { pageNumber?: unknown; totalPages?: unknown; pageSize?: unknown } | undefined;
+function pageMeta(res: CollectionPage | unknown[] | undefined): { echo: number; total: number; size: number; items: number } {
+  const page = (Array.isArray(res) ? undefined : res?.page) as { pageNumber?: unknown; totalPages?: unknown; pageSize?: unknown; totalItems?: unknown } | undefined;
   const whole = (v: unknown): number => {
     const n = Number(v);
     return Number.isFinite(n) && n > 0 ? Math.trunc(n) : 0;
   };
-  return { echo: Number(page?.pageNumber ?? NaN), total: whole(page?.totalPages), size: whole(page?.pageSize) };
+  return { echo: Number(page?.pageNumber ?? NaN), total: whole(page?.totalPages), size: whole(page?.pageSize), items: whole(page?.totalItems) };
 }
 
 /** Rows once each: a repeated page_item_url (an API that pages from 1 answers page 0 and page 1 alike) is dropped. */
@@ -211,15 +236,38 @@ function dedupe(rows: SiteJob[]): SiteJob[] {
   });
 }
 
+/** Results of get(first..first+count-1) in order, at most COLLECTION_CONCURRENCY in flight. */
+async function readPool(first: number, count: number, get: PageGetter, signal?: ReadSignal): Promise<unknown[][]> {
+  const out: unknown[][] = new Array(count);
+  let next = 0;
+  const worker = async (): Promise<void> => {
+    while (next < count) {
+      const i = next;
+      next += 1;
+      stopIfAborted(signal);
+      out[i] = pageValues(await get(first + i));
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(COLLECTION_CONCURRENCY, count) }, worker));
+  return out;
+}
+
+function stopIfAborted(signal?: ReadSignal): void {
+  if (signal?.aborted) throw new Error('The collection read was stopped.');
+}
+
 /**
- * Every page of a collection. Page 0 first; its totalPages lets the rest load in parallel. A short page (fewer than
- * 100 rows) ends the read whatever totalPages says, and a full last page keeps reading one page at a time, so a
- * missing or wrong totalPages, or an API that counts pages from 1, still reads every row. Stops at 20 pages.
+ * Every page of a collection. Page 0 first; its totalPages lets the rest load, five at a time. A short page (fewer
+ * than 100 rows) ends the read whatever totalPages says, and a full last page keeps reading one page at a time, so a
+ * missing or wrong totalPages, or an API that counts pages from 1, still reads every row. Stops at 20 pages, and
+ * between pages once the signal is aborted.
  */
-export async function readAllPages(name: string, get: PageGetter): Promise<SiteJob[]> {
+export async function readAllPages(name: string, get: PageGetter, signal?: ReadSignal): Promise<SiteJob[]> {
+  stopIfAborted(signal);
   let first = await get(0);
   let base = pageMeta(first).echo === 1 ? 1 : 0;
   if (!pageValues(first).length && !pageMeta(first).total) {
+    stopIfAborted(signal);
     const one = await get(1);
     if (pageValues(one).length) {
       first = one;
@@ -231,29 +279,42 @@ export async function readAllPages(name: string, get: PageGetter): Promise<SiteJ
   const pages: unknown[][] = [pageValues(first)];
   const full = (): boolean => pages[pages.length - 1].length >= size;
   const total = Math.min(meta.total, COLLECTION_MAX_PAGES);
-  if (total > 1) {
-    const rest = await Promise.all(Array.from({ length: total - 1 }, (_, i) => get(base + 1 + i)));
-    pages.push(...rest.map(pageValues));
+  if (total > 1) pages.push(...(await readPool(base + 1, total - 1, get, signal)));
+  while (full() && pages.length < COLLECTION_MAX_PAGES) {
+    stopIfAborted(signal);
+    pages.push(pageValues(await get(base + pages.length)));
   }
-  while (full() && pages.length < COLLECTION_MAX_PAGES) pages.push(pageValues(await get(base + pages.length)));
-  if (full() && pages.length >= COLLECTION_MAX_PAGES) {
+  if (full() && pages.length >= COLLECTION_MAX_PAGES && (await hasMoreRows(meta, () => get(base + COLLECTION_MAX_PAGES), signal))) {
     console.warn(`[site-jobs] collection "${name}" has more than ${COLLECTION_MAX_PAGES * COLLECTION_PAGE_SIZE} rows; only the first ${COLLECTION_MAX_PAGES} pages are shown`);
   }
   return dedupe(toRows(pages.flat()));
 }
 
+/** After 20 full pages: is there a 21st? totalItems or totalPages answer it; without either, one more page is read. */
+async function hasMoreRows(meta: ReturnType<typeof pageMeta>, next: () => Promise<CollectionPage | unknown[]>, signal?: ReadSignal): Promise<boolean> {
+  if (meta.items) return meta.items > COLLECTION_MAX_PAGES * COLLECTION_PAGE_SIZE;
+  if (meta.total) return meta.total > COLLECTION_MAX_PAGES;
+  stopIfAborted(signal);
+  return pageValues(await next()).length > 0;
+}
+
 /** The promise, or a rejection once ms have passed. The timer is cleared either way. */
-function withTimeout<T>(work: Promise<T>, ms: number, what: string): Promise<T> {
+function withTimeout<T>(work: Promise<T>, ms: number, what: string, onLate?: () => void): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const late = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`${what} took longer than ${ms}ms`)), ms);
+    timer = setTimeout(() => {
+      onLate?.();
+      reject(new Error(`${what} took longer than ${ms}ms`));
+    }, ms);
   });
   return Promise.race([work, late]).finally(() => clearTimeout(timer));
 }
 
 /**
- * Jobs from the named Duda collection when it can be read within 4 seconds and has rows, else the Shazamme job feed.
- * A blank collection name goes straight to the feed.
+ * Jobs from the named Duda collection when it can be read within 4 seconds, else the Shazamme job feed. An empty
+ * collection is a real answer (the site has no live jobs) and is used as it is; only a failed or slow read falls
+ * back. A blank collection name goes straight to the feed. A late read is stopped when the time runs out, and in
+ * the editor when the caller's signal is aborted (on the live site the read is shared by every copy on the page).
  */
 export async function loadJobsFrom(
   collection: string,
@@ -261,11 +322,20 @@ export async function loadJobsFrom(
   data: DudaData | undefined,
   inEditor: boolean,
   collectionTimeoutMs = COLLECTION_TIMEOUT_MS,
+  signal?: ReadSignal,
 ): Promise<{ jobs: SiteJob[]; source: JobSource }> {
   if (collection) {
+    let late = false;
+    const read: ReadSignal = {
+      get aborted() {
+        return late || (inEditor && !!signal?.aborted);
+      },
+    };
     try {
-      const jobs = await withTimeout(loadCollectionJobs(collection, inEditor), collectionTimeoutMs, `The "${collection}" collection`);
-      if (jobs.length) return { jobs, source: 'collection' };
+      const jobs = await withTimeout(loadCollectionJobs(collection, inEditor, read), collectionTimeoutMs, `The "${collection}" collection`, () => {
+        late = true;
+      });
+      return { jobs, source: 'collection' };
     } catch (err) {
       if (inEditor) console.warn(`[site-jobs] collection "${collection}" could not be read, using the job feed`, err);
     }

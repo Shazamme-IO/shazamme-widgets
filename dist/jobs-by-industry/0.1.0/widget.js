@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 4ec7c80094da. Registers window.ShazammeWidget["<name>"].
+ * Build 977a410b82be. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var __shazWidgetExport = (() => {
@@ -100,6 +100,10 @@ var __shazWidgetExport = (() => {
       return unit ? `${range} ${unit}` : range;
     }
     return `${range} ${wording}`;
+  }
+  function payLineDefaultAud(row) {
+    if (!row || typeof row !== "object") return "";
+    return payLine(hasCurrency(row) ? row : { ...row, currencyCode: "AUD" });
   }
 
   // core/site-jobs.ts
@@ -258,11 +262,7 @@ var __shazWidgetExport = (() => {
     };
   }
   function payFor(f) {
-    return payLine({
-      ...f,
-      salaryText: text(f.salaryText) || text(f.salary),
-      ...hasCurrency(f) ? {} : { currencyCode: "AUD" }
-    });
+    return payLineDefaultAud({ ...f, salaryText: text(f.salaryText) || text(f.salary) });
   }
   function whereFor(f, format) {
     const parts = [text(f.city)];

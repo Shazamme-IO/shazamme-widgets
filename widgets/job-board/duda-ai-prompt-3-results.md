@@ -8,6 +8,7 @@ Build the Content Editor for this widget. Create one tab called "Results". Keep 
 - Previous page button | key: prevText | type: text | default: Previous
 - Next page button | key: nextText | type: text | default: Next
 - Page list name for screen readers | key: pagerLabel | type: text | default: Job pages
+- Page button name for screen readers | key: pageAriaText | type: text | default: Page {count} | help: {count} becomes the page number.
 
 **Sorting**
 

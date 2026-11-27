@@ -69,8 +69,9 @@ async function mount(config: Row = {}, opts: { inEditor?: boolean; shazamme?: un
     delete win.__shmSiteJobs;
     win.eval(BUNDLE.replace('"use strict";', ''));
   }
+  // Without a dm option the page's collection cannot be read (it fails at once), so the board uses the job feed.
   if ('dm' in opts) win.dmAPI = opts.dm;
-  else delete win.dmAPI;
+  else win.dmAPI = { loadCollectionsAPI: () => Promise.reject(new Error('No collection on this test page')) };
   win.history.replaceState(null, '', opts.url ?? '/jobs');
   const host = win.document.createElement('div');
   host.id = opts.id ?? 'widget';
@@ -129,14 +130,11 @@ describe('job-board bundle', () => {
     expect(el.querySelector('.shm-jb-note')!.textContent).toBe('Connected to the "Jobs" collection: 5 live jobs.');
   });
 
-  it('falls back to the job feed when the collection cannot be read or is empty, and when the name is cleared', async () => {
+  it('falls back to the job feed when the collection cannot be read, and when the name is cleared', async () => {
     const s1 = sdk();
     const el = await mount({ jobsCollection: 'Vacancies' }, { dm: dmApi(new Error('No collection')), shazamme: s1, inEditor: true });
     expect(s1.calls[0]).toMatchObject({ path: '/job-results/site-1' });
     expect(el.querySelector('.shm-jb-note')!.textContent).toContain('job feed (the "Vacancies" collection could not be read');
-    const s2 = sdk();
-    await mount({}, { dm: dmApi([]), shazamme: s2 });
-    expect(s2.calls).toHaveLength(1);
     const dm = dmApi(ROWS);
     await mount({ jobsCollection: '' }, { dm, shazamme: sdk() });
     expect(dm.asked).toHaveLength(0);
@@ -476,6 +474,119 @@ describe('job-board review fixes', () => {
     expect(opt.querySelector('.shm-jb-option-count')!.getAttribute('aria-hidden')).toBe('true');
     expect(opt.querySelector('.shm-jb-sr')!.textContent).toBe(' (3 jobs)');
     expect(opt.querySelector('label')!.textContent).toBe('Permanent3 (3 jobs)');
+  });
+});
+
+describe('job-board review 3 fixes', () => {
+  beforeEach(() => { document.body.innerHTML = ''; document.body.style.overflow = ''; });
+  afterEach(() => vi.restoreAllMocks());
+
+  it('#1 waits for dmAPI.loadCollectionsAPI when Duda adds it after the widget runs', async () => {
+    const win = window as unknown as Win;
+    const dm = dmApi(ROWS.slice(0, 3));
+    setTimeout(() => { win.dmAPI = dm; }, 120);
+    const s1 = sdk();
+    const el = await mount({}, { dm: undefined, shazamme: s1, inEditor: true });
+    expect(dm.asked.length).toBeGreaterThan(0);
+    expect(s1.calls).toHaveLength(0);
+    expect(el.querySelector('.shm-jb-note')!.textContent).toContain('Connected to the "Jobs" collection: 3 live jobs');
+  });
+
+  it('#2 an empty collection shows the no-jobs message without reading the feed, and the editor note names the collection', async () => {
+    const s1 = sdk();
+    const el = await mount({ noJobsText: 'Nothing open' }, { dm: dmApi([]), shazamme: s1, inEditor: true });
+    expect(s1.calls).toHaveLength(0);
+    expect(el.querySelector('.shm-jb-empty-title')!.textContent).toBe('Nothing open');
+    expect(el.querySelector('.shm-jb-note')!.textContent).toContain('Connected to the "Jobs" collection: it has no live jobs');
+    const failed = await mount({}, { dm: dmApi(new Error('No collection')), shazamme: sdk(), inEditor: true });
+    expect(failed.querySelector('.shm-jb-note')!.textContent).toContain('from the site job feed (the "Jobs" collection could not be read');
+  });
+
+  it('#3 unticks an accented value that came from the address without its accent (?city=Montreal, data Montréal)', async () => {
+    const el = await mount({}, { url: '/jobs?city=Montreal', shazamme: sdk([...ROWS, row(7, { jobName: 'Analyst', category: 'Finance', city: 'Montréal', country: 'Canada' })]) });
+    expect(titles(el)).toEqual(['Analyst']);
+    const box = checkbox(el, 'city', 'Montréal');
+    expect(box.checked).toBe(true);
+    tickBox(box);
+    expect(titles(el)).toHaveLength(6);
+    expect(window.location.search).toBe('');
+    expect(el.querySelector('.shm-jb-open-count')!.textContent).toBe('');
+  });
+
+  it('#5 does not push a history entry when the address would not change', async () => {
+    const el = await mount({ pageSize: '3' });
+    const h = spyHistory();
+    (el.querySelector('.shm-jb-side .shm-jb-clear') as HTMLButtonElement).click();
+    expect(h.pushes).toBe(0);
+    submit(el, 'job');
+    submit(el, 'job');
+    expect(h.pushes).toBe(1);
+    (el.querySelector('.shm-jb-page[data-page="1"]') as HTMLButtonElement).click();
+    h.restore();
+    expect(h.pushes).toBe(1);
+    expect(h.replaces).toBe(0);
+  });
+
+  it('#9 Back to a page past the end shows the last page and corrects the address', async () => {
+    const el = await mount({ pageSize: '3' });
+    window.history.pushState(null, '', '/jobs?page=9&workModel=Remote');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    expect(titles(el)).toEqual(['Job 4', 'Cloud Engineer']);
+    expect(window.location.search).toBe('?workModel=Remote');
+    window.history.pushState(null, '', '/jobs?page=7');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    expect(el.querySelector('.shm-jb-page.is-current')!.textContent).toBe('2');
+    expect(window.location.search).toBe('?page=2');
+  });
+
+  it('#10 names each page button "Page N" for screen readers, from a setting', async () => {
+    const el = await mount({ pageSize: '3' });
+    expect([...el.querySelectorAll('.shm-jb-page')].map((b) => b.getAttribute('aria-label'))).toEqual(['Page 1', 'Page 2']);
+    const de = await mount({ pageSize: '3', pageAriaText: 'Seite {count}' });
+    expect(de.querySelector('.shm-jb-page[data-page="2"]')!.getAttribute('aria-label')).toBe('Seite 2');
+  });
+
+  it('#10 the search form is a search landmark without an aria-label that repeats the button', async () => {
+    const el = await mount({ searchButtonLabel: 'Search jobs' });
+    const form = el.querySelector('form.shm-jb-search')!;
+    expect(form.getAttribute('role')).toBe('search');
+    expect(form.hasAttribute('aria-label')).toBe(false);
+    expect(el.querySelector('.shm-jb-search-btn')!.getAttribute('aria-label')).toBe('Search jobs');
+  });
+
+  it('#10 Esc closes only the sheet opened last, and is left alone when no sheet handles it', async () => {
+    const a = await mount({ syncAddress: 'false' }, { id: 'a' });
+    const b = await mount({ syncAddress: 'false' }, { id: 'b', keep: true });
+    const esc = () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    expect(esc()).toBe(true);
+    a.querySelector<HTMLButtonElement>('.shm-jb-open')!.click();
+    b.querySelector<HTMLButtonElement>('.shm-jb-open')!.click();
+    expect(esc()).toBe(false);
+    expect(b.querySelector('.shm-jb-side')!.classList.contains('is-open')).toBe(false);
+    expect(a.querySelector('.shm-jb-side')!.classList.contains('is-open')).toBe(true);
+    const used = (e: Event) => e.preventDefault();
+    window.addEventListener('keydown', used, { capture: true, once: true });
+    esc();
+    expect(a.querySelector('.shm-jb-side')!.classList.contains('is-open')).toBe(true);
+    expect(esc()).toBe(false);
+    expect(a.querySelector('.shm-jb-side')!.classList.contains('is-open')).toBe(false);
+    expect(esc()).toBe(true);
+    expect(document.body.style.overflow).toBe('');
+  });
+
+  it('#10 a board removed while its sheet is open lifts the scroll lock and inert, and stops listening', async () => {
+    const el = await mount();
+    const outside = document.createElement('p');
+    document.body.appendChild(outside);
+    el.querySelector<HTMLButtonElement>('.shm-jb-open')!.click();
+    expect(document.body.style.overflow).toBe('hidden');
+    expect(outside.hasAttribute('inert')).toBe(true);
+    const removed = vi.spyOn(window, 'removeEventListener');
+    el.remove();
+    await tick();
+    expect(document.body.style.overflow).toBe('');
+    expect(document.querySelectorAll('[inert]')).toHaveLength(0);
+    expect(removed).toHaveBeenCalledWith('popstate', expect.any(Function));
   });
 });
 

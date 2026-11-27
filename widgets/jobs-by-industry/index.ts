@@ -4,7 +4,7 @@
 // window.ShazammeWidget["jobs-by-industry"].
 
 import type { DudaData } from '../../core/config';
-import { hasCurrency, payLine } from '../../core/salary';
+import { payLineDefaultAud } from '../../core/salary';
 import { clampInt, esc, flag, listOf, loadSiteJobs, pick, safeUrl, text, type SiteJob } from '../../core/site-jobs';
 
 interface WidgetContext {
@@ -122,15 +122,11 @@ export function readSettings(config: Record<string, unknown>, root?: Element): S
 }
 
 /**
- * Salary from the advert through core/salary's payLine. As before core/salary, the older "salary" field stands in
+ * Salary from the advert through core/salary's payLineDefaultAud. As before core/salary, the older "salary" field stands in
  * for salaryText, and a row with no currency is read as AUD.
  */
 export function payFor(f: Record<string, unknown>): string {
-  return payLine({
-    ...f,
-    salaryText: text(f.salaryText) || text(f.salary),
-    ...(hasCurrency(f) ? {} : { currencyCode: 'AUD' }),
-  });
+  return payLineDefaultAud({ ...f, salaryText: text(f.salaryText) || text(f.salary) });
 }
 
 export function whereFor(f: Record<string, unknown>, format: LocationFormat): string {

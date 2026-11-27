@@ -233,3 +233,30 @@ describe('review fix #9: job links stay on the site', () => {
     }
   });
 });
+
+describe('review 3 fix #6: salary with no currency field', () => {
+  it('reads a row with no currency as AUD, as Jobs by Industry does', async () => {
+    const { payFor } = await import('../jobs-by-industry/index');
+    const fields = { jobName: 'Analyst', salaryFrom: 90000, salaryTo: 110000, salaryType: 'Annual', isDisplaySalary: true };
+    const card = toCard({ pageItemUrl: 'a', fields }, s);
+    expect(card.pay).toBe('$90,000 – $110,000');
+    expect(card.pay).toBe(payFor(fields));
+    expect(toCard({ pageItemUrl: 'b', fields: { ...fields, currencyCode: 'GBP' } }, s).pay).toBe('£90,000 – £110,000');
+  });
+});
+
+describe('review 3 fix #8: comma-separated keywords', () => {
+  it('matches any of several comma-separated keywords, as the Job Search widget does', () => {
+    expect(names(filterJobs(JOBS, base({ keyword: 'cloud, mining' })))).toEqual(['Cloud Engineer', 'Job 5']);
+  });
+
+  it('keeps the words inside one term ANDed', () => {
+    expect(names(filterJobs(JOBS, base({ keyword: 'finance lead, zzz' })))).toEqual(['Job 1']);
+    expect(filterJobs(JOBS, base({ keyword: 'finance zzz' }))).toHaveLength(0);
+  });
+
+  it('ignores empty terms between commas', () => {
+    expect(names(filterJobs(JOBS, base({ keyword: ' , cloud ,, ' })))).toEqual(['Cloud Engineer']);
+    expect(filterJobs(JOBS, base({ keyword: ' , ' }))).toHaveLength(5);
+  });
+});

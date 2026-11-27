@@ -106,6 +106,15 @@ export function payLine(row: Row): string {
   return `${range} ${wording}`;
 }
 
+/**
+ * payLine for a row that may name no currency: such a row is read as AUD (the feed leaves the currency off for
+ * Australian jobs), so every job widget shows "$150,000" for it, not a bare "150,000".
+ */
+export function payLineDefaultAud(row: Row): string {
+  if (!row || typeof row !== 'object') return '';
+  return payLine(hasCurrency(row) ? row : { ...row, currencyCode: 'AUD' });
+}
+
 /** Top of the pay range as a yearly figure, for sorting by salary. 0 when there is no amount or it is hidden. */
 export function annualPay(row: Row): number {
   if (!row || typeof row !== 'object' || isHidden(row)) return 0;

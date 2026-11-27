@@ -2,7 +2,7 @@
 // the page address. Facet counts are worked out against every other active filter, so each count is the number
 // of jobs a click would show.
 
-import { annualPay, payLine } from '../../core/salary';
+import { annualPay, payLineDefaultAud } from '../../core/salary';
 import { text, type SiteJob } from '../../core/site-jobs';
 import { GROUP_IDS, SORTS, type GroupId, type LocationFormat, type Settings, type Sort } from './settings';
 
@@ -51,9 +51,20 @@ const LOCATION_FIELDS = ['city', 'state', 'country', 'postalCode', 'location', '
 
 export const valueOf = (job: SiteJob, id: GroupId): string => VALUE[id](job.fields);
 
-const fold = (s: string): string => s.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '');
+/** Lower case with accents dropped, so "Montréal" and "montreal" are the same value. */
+export const fold = (s: string): string => s.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '');
 
 const words = (query: string): string[] => fold(query).split(/[\s,]+/).filter(Boolean);
+
+/**
+ * Keyword search terms, as the Job Search widget reads them: commas separate alternatives (any one may match) and
+ * the words inside one term must all match. "nurse, aged care" finds nurses and aged-care jobs.
+ */
+export const keywordTerms = (query: string): string[][] =>
+  query.split(',').map((term) => fold(term).split(/\s+/).filter(Boolean)).filter((t) => t.length > 0);
+
+const matchesKeywords = (hay: string, terms: readonly string[][]): boolean =>
+  !terms.length || terms.some((term) => term.every((w) => hay.includes(w)));
 
 interface Entry {
   job: SiteJob;
@@ -122,14 +133,14 @@ export interface SearchResult {
  */
 export function searchBoard(jobs: readonly SiteJob[], state: State, groups: Settings['groups']): SearchResult {
   const { entries, totals } = indexFor(jobs);
-  const kw = words(state.keyword);
+  const kw = keywordTerms(state.keyword);
   const loc = words(state.location);
   const picks = GROUP_IDS.filter((id) => state.selected[id]?.length).map((id) => [id, new Set((state.selected[id] ?? []).map(fold))] as const);
   const shown = groups.map((g) => g.id);
   const live = Object.fromEntries(shown.map((id) => [id, new Map<string, number>()])) as Partial<Record<GroupId, Map<string, number>>>;
   const matched: SiteJob[] = [];
   for (const e of entries) {
-    if (!kw.every((w) => e.kw.includes(w)) || !loc.every((w) => e.loc.includes(w))) continue;
+    if (!matchesKeywords(e.kw, kw) || !loc.every((w) => e.loc.includes(w))) continue;
     let misses = 0;
     let missed: GroupId | undefined;
     for (const [id, set] of picks) {
@@ -235,7 +246,7 @@ export function toCard(job: SiteJob, s: Settings): Card {
   return {
     label,
     title: text(f.jobName) || text(f.positionTitle),
-    pay: s.showSalary ? payLine(f) || s.noSalaryText : '',
+    pay: s.showSalary ? payLineDefaultAud(f) || s.noSalaryText : '',
     where: whereFor(f, s.locationFormat),
     workType: s.showWorkType ? valueOf(job, 'workType') : '',
     workModel: s.showWorkModel ? text(f.workModel) : '',

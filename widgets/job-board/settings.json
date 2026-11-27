@@ -188,6 +188,11 @@
       "default": "Job pages"
     },
     {
+      "key": "pageAriaText",
+      "type": "text",
+      "default": "Page {count}"
+    },
+    {
       "key": "showSort",
       "type": "boolean",
       "default": true

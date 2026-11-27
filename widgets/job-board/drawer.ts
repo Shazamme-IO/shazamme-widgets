@@ -1,6 +1,7 @@
 // The filter panel below 1024px: the sidebar becomes a modal dialog. Focus moves in and is kept inside (Tab and
 // Shift+Tab wrap), Esc closes, focus goes back to the Filters button, the page behind does not scroll and is inert.
-// The scroll lock is counted across every open sheet on the page, so it lifts only when the last one closes.
+// The scroll lock is counted across every open sheet on the page, so it lifts only when the last one closes. Esc
+// closes only the sheet opened last, and a sheet whose widget Duda removes while it is open closes itself.
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -13,6 +14,8 @@ export interface Drawer {
 
 let locks = 0;
 let savedOverflow = '';
+/** Open sheets, the one opened last at the end: only it answers Esc. */
+const stack: object[] = [];
 
 function lockScroll(): void {
   if (locks === 0) {
@@ -43,16 +46,31 @@ function inertOutside(side: HTMLElement, keep: HTMLElement): HTMLElement[] {
   return changed;
 }
 
-export function createDrawer(side: HTMLElement, opener: HTMLButtonElement, backdrop: HTMLElement): Drawer {
+/**
+ * onGone runs when the sheet is found removed from the page (while open, or on the next key press), after the sheet
+ * has closed and lifted its scroll lock and inert attributes.
+ */
+export function createDrawer(side: HTMLElement, opener: HTMLButtonElement, backdrop: HTMLElement, onGone?: () => void): Drawer {
   let open = false;
   let inerted: HTMLElement[] = [];
+  let watcher: MutationObserver | null = null;
+  const token = {};
+
+  const gone = (): boolean => {
+    if (side.isConnected) return false;
+    api.close(false);
+    onGone?.();
+    return true;
+  };
 
   const focusables = (): HTMLElement[] =>
     [...side.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((el) => !el.closest('[hidden]'));
 
   const onKey = (e: KeyboardEvent): void => {
-    if (!open) return;
+    if (!open || gone()) return;
     if (e.key === 'Escape') {
+      // Something else already used this Esc (a menu inside the sheet), or a sheet opened later is on top.
+      if (e.defaultPrevented || stack[stack.length - 1] !== token) return;
       e.preventDefault();
       api.close(true);
       return;
@@ -83,7 +101,12 @@ export function createDrawer(side: HTMLElement, opener: HTMLButtonElement, backd
       opener.setAttribute('aria-expanded', 'true');
       lockScroll();
       inerted = inertOutside(side, backdrop);
+      stack.push(token);
       document.addEventListener('keydown', onKey, true);
+      if (typeof MutationObserver === 'function') {
+        watcher = new MutationObserver(() => void gone());
+        watcher.observe(document.body, { childList: true, subtree: true });
+      }
       const target = side.querySelector<HTMLElement>('.shm-jb-close') ?? focusables()[0];
       target?.focus();
     },
@@ -98,8 +121,12 @@ export function createDrawer(side: HTMLElement, opener: HTMLButtonElement, backd
       for (const el of inerted) el.removeAttribute('inert');
       inerted = [];
       unlockScroll();
+      const at = stack.indexOf(token);
+      if (at >= 0) stack.splice(at, 1);
+      watcher?.disconnect();
+      watcher = null;
       document.removeEventListener('keydown', onKey, true);
-      if (returnFocus) opener.focus();
+      if (returnFocus && opener.isConnected) opener.focus();
     },
     isOpen: () => open,
     destroy() {

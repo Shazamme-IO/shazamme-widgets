@@ -1,5 +1,5 @@
-// LAST UPDATED: 2026-11-27 16:01 AEDT (v0.1.66)
-// Change: New widget. Job Board, search panel, filters with live counts (a sheet on mobile) and job cards with sort and pages. Review fixes: reads every collection page, 4s collection timeout, load-error message with retry.
+// LAST UPDATED: 2026-11-27 17:47 AEDT (v0.1.70)
+// Change: New widget. Job Board, search panel, filters with live counts (a sheet on mobile) and job cards with sort and pages. Reads every collection page (5 at a time, 4s timeout, waits up to 1.5s for Duda's collections API); an empty collection shows the no-jobs message; comma keywords match any term; a row with no currency reads as AUD; Back past the last page shows the last page; page buttons say "Page N"; Esc closes only the top sheet.
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
 // existing widget JS.
@@ -17,7 +17,7 @@
 // ===========================================================================
 (function () {
   var NAME = "job-board";
-  var TAG = "v0.1.66";
+  var TAG = "v0.1.70";
   var BUNDLE = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" + TAG + "/dist/" + NAME + "/0.1.0/widget.min.js";
   var SDK = "https://sdk.shazamme.io/js/shazamme-1.0.3.min.js";
   // One script tag per page, however many copies of the widget share it.

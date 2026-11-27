@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 299ff44af252. Registers window.ShazammeWidget["<name>"].
+ * Build 050ba0bc6729. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var __shazWidgetExport = (() => {
@@ -32,6 +32,9 @@ var __shazWidgetExport = (() => {
   var COLLECTION_PAGE_SIZE = 100;
   var COLLECTION_MAX_PAGES = 20;
   var COLLECTION_TIMEOUT_MS = 4e3;
+  var DMAPI_POLL_MS = 50;
+  var DMAPI_WAIT_MS = 1500;
+  var COLLECTION_CONCURRENCY = 5;
   function text(v) {
     if (typeof v === "string") return v.trim();
     if (typeof v === "number" && Number.isFinite(v)) return String(v);
@@ -117,16 +120,26 @@ var __shazWidgetExport = (() => {
     }
     return pending;
   }
-  async function loadCollectionJobs(name, inEditor) {
-    var _a, _b;
+  async function waitForCollectionsApi(waitMs = DMAPI_WAIT_MS, signal) {
+    var _a;
     const win = window;
-    const loader = (_a = win.dmAPI) == null ? void 0 : _a.loadCollectionsAPI;
-    if (typeof loader !== "function") throw new Error("The Duda collections API is not on this page.");
-    const cache = win.__shmSiteJobs = (_b = win.__shmSiteJobs) != null ? _b : /* @__PURE__ */ new Map();
+    const started = Date.now();
+    for (; ; ) {
+      const loader = (_a = win.dmAPI) == null ? void 0 : _a.loadCollectionsAPI;
+      if (typeof loader === "function") return loader.bind(win.dmAPI);
+      if (signal == null ? void 0 : signal.aborted) throw new Error("The collection read was stopped.");
+      if (Date.now() - started >= waitMs) throw new Error("The Duda collections API is not on this page.");
+      await new Promise((resolve) => setTimeout(resolve, DMAPI_POLL_MS));
+    }
+  }
+  async function loadCollectionJobs(name, inEditor, signal) {
+    var _a;
+    const win = window;
+    const cache = win.__shmSiteJobs = (_a = win.__shmSiteJobs) != null ? _a : /* @__PURE__ */ new Map();
     const key = `collection:${name}`;
     const hit = cache.get(key);
     if (hit && !inEditor) return hit;
-    const pending = loader.call(win.dmAPI).then((api) => readAllPages(name, (n) => api.data(name).pageSize(COLLECTION_PAGE_SIZE).pageNumber(n).get()));
+    const pending = waitForCollectionsApi(DMAPI_WAIT_MS, signal).then((loader) => loader()).then((api) => readAllPages(name, (n) => api.data(name).pageSize(COLLECTION_PAGE_SIZE).pageNumber(n).get(), signal));
     if (!inEditor) {
       cache.set(key, pending);
       pending.catch(() => cache.delete(key));
@@ -144,7 +157,7 @@ var __shazWidgetExport = (() => {
       const n = Number(v);
       return Number.isFinite(n) && n > 0 ? Math.trunc(n) : 0;
     };
-    return { echo: Number((_a = page == null ? void 0 : page.pageNumber) != null ? _a : NaN), total: whole(page == null ? void 0 : page.totalPages), size: whole(page == null ? void 0 : page.pageSize) };
+    return { echo: Number((_a = page == null ? void 0 : page.pageNumber) != null ? _a : NaN), total: whole(page == null ? void 0 : page.totalPages), size: whole(page == null ? void 0 : page.pageSize), items: whole(page == null ? void 0 : page.totalItems) };
   }
   function dedupe(rows) {
     const seen = /* @__PURE__ */ new Set();
@@ -155,10 +168,29 @@ var __shazWidgetExport = (() => {
       return true;
     });
   }
-  async function readAllPages(name, get) {
+  async function readPool(first, count, get, signal) {
+    const out = new Array(count);
+    let next = 0;
+    const worker = async () => {
+      while (next < count) {
+        const i = next;
+        next += 1;
+        stopIfAborted(signal);
+        out[i] = pageValues(await get(first + i));
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(COLLECTION_CONCURRENCY, count) }, worker));
+    return out;
+  }
+  function stopIfAborted(signal) {
+    if (signal == null ? void 0 : signal.aborted) throw new Error("The collection read was stopped.");
+  }
+  async function readAllPages(name, get, signal) {
+    stopIfAborted(signal);
     let first = await get(0);
     let base = pageMeta(first).echo === 1 ? 1 : 0;
     if (!pageValues(first).length && !pageMeta(first).total) {
+      stopIfAborted(signal);
       const one = await get(1);
       if (pageValues(one).length) {
         first = one;
@@ -170,28 +202,45 @@ var __shazWidgetExport = (() => {
     const pages = [pageValues(first)];
     const full = () => pages[pages.length - 1].length >= size;
     const total = Math.min(meta.total, COLLECTION_MAX_PAGES);
-    if (total > 1) {
-      const rest = await Promise.all(Array.from({ length: total - 1 }, (_, i) => get(base + 1 + i)));
-      pages.push(...rest.map(pageValues));
+    if (total > 1) pages.push(...await readPool(base + 1, total - 1, get, signal));
+    while (full() && pages.length < COLLECTION_MAX_PAGES) {
+      stopIfAborted(signal);
+      pages.push(pageValues(await get(base + pages.length)));
     }
-    while (full() && pages.length < COLLECTION_MAX_PAGES) pages.push(pageValues(await get(base + pages.length)));
-    if (full() && pages.length >= COLLECTION_MAX_PAGES) {
+    if (full() && pages.length >= COLLECTION_MAX_PAGES && await hasMoreRows(meta, () => get(base + COLLECTION_MAX_PAGES), signal)) {
       console.warn(`[site-jobs] collection "${name}" has more than ${COLLECTION_MAX_PAGES * COLLECTION_PAGE_SIZE} rows; only the first ${COLLECTION_MAX_PAGES} pages are shown`);
     }
     return dedupe(toRows(pages.flat()));
   }
-  function withTimeout(work, ms, what) {
+  async function hasMoreRows(meta, next, signal) {
+    if (meta.items) return meta.items > COLLECTION_MAX_PAGES * COLLECTION_PAGE_SIZE;
+    if (meta.total) return meta.total > COLLECTION_MAX_PAGES;
+    stopIfAborted(signal);
+    return pageValues(await next()).length > 0;
+  }
+  function withTimeout(work, ms, what, onLate) {
     let timer;
     const late = new Promise((_, reject) => {
-      timer = setTimeout(() => reject(new Error(`${what} took longer than ${ms}ms`)), ms);
+      timer = setTimeout(() => {
+        onLate == null ? void 0 : onLate();
+        reject(new Error(`${what} took longer than ${ms}ms`));
+      }, ms);
     });
     return Promise.race([work, late]).finally(() => clearTimeout(timer));
   }
-  async function loadJobsFrom(collection, shazamme, data, inEditor, collectionTimeoutMs = COLLECTION_TIMEOUT_MS) {
+  async function loadJobsFrom(collection, shazamme, data, inEditor, collectionTimeoutMs = COLLECTION_TIMEOUT_MS, signal) {
     if (collection) {
+      let late = false;
+      const read = {
+        get aborted() {
+          return late || inEditor && !!(signal == null ? void 0 : signal.aborted);
+        }
+      };
       try {
-        const jobs = await withTimeout(loadCollectionJobs(collection, inEditor), collectionTimeoutMs, `The "${collection}" collection`);
-        if (jobs.length) return { jobs, source: "collection" };
+        const jobs = await withTimeout(loadCollectionJobs(collection, inEditor, read), collectionTimeoutMs, `The "${collection}" collection`, () => {
+          late = true;
+        });
+        return { jobs, source: "collection" };
       } catch (err) {
         if (inEditor) console.warn(`[site-jobs] collection "${collection}" could not be read, using the job feed`, err);
       }
@@ -226,6 +275,10 @@ var __shazWidgetExport = (() => {
     if (code) return code.toUpperCase();
     const given = str(f.currencySymbol);
     return THREE_LETTERS.test(given) ? given.toUpperCase() : "";
+  }
+  function hasCurrency(row) {
+    if (!row || typeof row !== "object") return false;
+    return !!(codeFor(row) || str(row.currencySymbol));
   }
   function symbolFor(f) {
     const code = codeFor(f);
@@ -265,6 +318,10 @@ var __shazWidgetExport = (() => {
       return unit ? `${range} ${unit}` : range;
     }
     return `${range} ${wording}`;
+  }
+  function payLineDefaultAud(row) {
+    if (!row || typeof row !== "object") return "";
+    return payLine(hasCurrency(row) ? row : { ...row, currencyCode: "AUD" });
   }
   function annualPay(row) {
     var _a;
@@ -340,6 +397,7 @@ var __shazWidgetExport = (() => {
       prevText: t("prevText", "Previous"),
       nextText: t("nextText", "Next"),
       pagerLabel: t("pagerLabel", "Job pages"),
+      pageAriaText: t("pageAriaText", "Page {count}"),
       showSort: flag(config.showSort, true),
       defaultSort: pick(config.defaultSort, SORTS, "newest"),
       sortLabel: t("sortLabel", "Sort by"),
@@ -381,6 +439,8 @@ var __shazWidgetExport = (() => {
   var valueOf = (job, id) => VALUE[id](job.fields);
   var fold = (s) => s.toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "");
   var words = (query) => fold(query).split(/[\s,]+/).filter(Boolean);
+  var keywordTerms = (query) => query.split(",").map((term) => fold(term).split(/\s+/).filter(Boolean)).filter((t) => t.length > 0);
+  var matchesKeywords = (hay, terms) => !terms.length || terms.some((term) => term.every((w) => hay.includes(w)));
   var indexes = /* @__PURE__ */ new WeakMap();
   function buildIndex(jobs) {
     const totals = Object.fromEntries(GROUP_IDS.map((id) => [id, /* @__PURE__ */ new Map()]));
@@ -414,7 +474,7 @@ var __shazWidgetExport = (() => {
   function searchBoard(jobs, state, groups) {
     var _a;
     const { entries, totals } = indexFor(jobs);
-    const kw = words(state.keyword);
+    const kw = keywordTerms(state.keyword);
     const loc = words(state.location);
     const picks = GROUP_IDS.filter((id) => {
       var _a2;
@@ -427,7 +487,7 @@ var __shazWidgetExport = (() => {
     const live = Object.fromEntries(shown.map((id) => [id, /* @__PURE__ */ new Map()]));
     const matched = [];
     for (const e of entries) {
-      if (!kw.every((w) => e.kw.includes(w)) || !loc.every((w) => e.loc.includes(w))) continue;
+      if (!matchesKeywords(e.kw, kw) || !loc.every((w) => e.loc.includes(w))) continue;
       let misses = 0;
       let missed;
       for (const [id, set] of picks) {
@@ -509,7 +569,7 @@ var __shazWidgetExport = (() => {
     return {
       label,
       title: text(f.jobName) || text(f.positionTitle),
-      pay: s.showSalary ? payLine(f) || s.noSalaryText : "",
+      pay: s.showSalary ? payLineDefaultAud(f) || s.noSalaryText : "",
       where: whereFor(f, s.locationFormat),
       workType: s.showWorkType ? valueOf(job, "workType") : "",
       workModel: s.showWorkModel ? text(f.workModel) : "",
@@ -559,6 +619,7 @@ var __shazWidgetExport = (() => {
   var FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
   var locks = 0;
   var savedOverflow = "";
+  var stack = [];
   function lockScroll() {
     if (locks === 0) {
       savedOverflow = document.body.style.overflow;
@@ -584,13 +645,22 @@ var __shazWidgetExport = (() => {
     }
     return changed;
   }
-  function createDrawer(side, opener, backdrop) {
+  function createDrawer(side, opener, backdrop, onGone) {
     let open = false;
     let inerted = [];
+    let watcher = null;
+    const token = {};
+    const gone = () => {
+      if (side.isConnected) return false;
+      api.close(false);
+      onGone == null ? void 0 : onGone();
+      return true;
+    };
     const focusables = () => [...side.querySelectorAll(FOCUSABLE)].filter((el) => !el.closest("[hidden]"));
     const onKey = (e) => {
-      if (!open) return;
+      if (!open || gone()) return;
       if (e.key === "Escape") {
+        if (e.defaultPrevented || stack[stack.length - 1] !== token) return;
         e.preventDefault();
         api.close(true);
         return;
@@ -621,7 +691,12 @@ var __shazWidgetExport = (() => {
         opener.setAttribute("aria-expanded", "true");
         lockScroll();
         inerted = inertOutside(side, backdrop);
+        stack.push(token);
         document.addEventListener("keydown", onKey, true);
+        if (typeof MutationObserver === "function") {
+          watcher = new MutationObserver(() => void gone());
+          watcher.observe(document.body, { childList: true, subtree: true });
+        }
         const target = (_a = side.querySelector(".shm-jb-close")) != null ? _a : focusables()[0];
         target == null ? void 0 : target.focus();
       },
@@ -636,8 +711,12 @@ var __shazWidgetExport = (() => {
         for (const el of inerted) el.removeAttribute("inert");
         inerted = [];
         unlockScroll();
+        const at = stack.indexOf(token);
+        if (at >= 0) stack.splice(at, 1);
+        watcher == null ? void 0 : watcher.disconnect();
+        watcher = null;
         document.removeEventListener("keydown", onKey, true);
-        if (returnFocus) opener.focus();
+        if (returnFocus && opener.isConnected) opener.focus();
       },
       isOpen: () => open,
       destroy() {
@@ -653,7 +732,7 @@ var __shazWidgetExport = (() => {
   var CLOSE = '<svg aria-hidden="true" focusable="false" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 3l12 12M15 3L3 15"></path></svg>';
   var FILTER = '<svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4h12M4.5 8h7M7 12h2"></path></svg>';
   function shellHtml(id, s, state) {
-    const search = s.showSearch ? `<form class="shm-jb-search" role="search" aria-label="${esc(s.searchButtonLabel)}"${s.searchOverlap ? ` style="margin-top:-${s.searchOverlap}px"` : ""}>` + (s.searchPrompt ? `<p class="shm-jb-prompt">${esc(s.searchPrompt)}</p>` : "") + `<div class="shm-jb-fields"><input class="shm-jb-input" type="search" name="keyword" autocomplete="off" placeholder="${esc(s.keywordPlaceholder)}" aria-label="${esc(s.keywordPlaceholder)}" value="${esc(state.keyword)}">` + (s.showLocationSearch ? `<input class="shm-jb-input" type="search" name="location" autocomplete="off" placeholder="${esc(s.locationPlaceholder)}" aria-label="${esc(s.locationPlaceholder)}" value="${esc(state.location)}">` : "") + `<button class="shm-jb-search-btn" type="submit" aria-label="${esc(s.searchButtonLabel)}">${SEARCH}</button></div></form>` : "";
+    const search = s.showSearch ? `<form class="shm-jb-search" role="search"${s.searchOverlap ? ` style="margin-top:-${s.searchOverlap}px"` : ""}>` + (s.searchPrompt ? `<p class="shm-jb-prompt">${esc(s.searchPrompt)}</p>` : "") + `<div class="shm-jb-fields"><input class="shm-jb-input" type="search" name="keyword" autocomplete="off" placeholder="${esc(s.keywordPlaceholder)}" aria-label="${esc(s.keywordPlaceholder)}" value="${esc(state.keyword)}">` + (s.showLocationSearch ? `<input class="shm-jb-input" type="search" name="location" autocomplete="off" placeholder="${esc(s.locationPlaceholder)}" aria-label="${esc(s.locationPlaceholder)}" value="${esc(state.location)}">` : "") + `<button class="shm-jb-search-btn" type="submit" aria-label="${esc(s.searchButtonLabel)}">${SEARCH}</button></div></form>` : "";
     const side = s.showFilters ? `<button type="button" class="shm-jb-btn shm-jb-btn-primary shm-jb-open" aria-expanded="false" aria-controls="${id}-side">${FILTER}<span class="shm-jb-open-text">${esc(s.filtersButtonText)}</span><span class="shm-jb-open-count"></span></button><div class="shm-jb-backdrop" hidden></div><aside class="shm-jb-side" id="${id}-side" aria-labelledby="${id}-side-title"><div class="shm-jb-side-head"><h2 class="shm-jb-side-title" id="${id}-side-title">${esc(s.filtersTitle)}</h2><button type="button" class="shm-jb-close" aria-label="${esc(s.closeText)}">${CLOSE}</button></div><div class="shm-jb-facets"></div><div class="shm-jb-side-foot"><button type="button" class="shm-jb-btn shm-jb-btn-secondary shm-jb-clear">${esc(s.clearText)}</button><button type="button" class="shm-jb-btn shm-jb-btn-primary shm-jb-apply"></button></div></aside>` : "";
     const sort = s.showSort ? `<label class="shm-jb-sort"><span class="shm-jb-sort-label">${esc(s.sortLabel)}</span><select class="shm-jb-sort-select" name="sort">` + SORTS.map((k) => `<option value="${k}"${k === state.sort ? " selected" : ""}>${esc(s.sortNames[k])}</option>`).join("") + "</select></label>" : "";
     return search + `<div class="shm-jb-layout${s.showFilters ? "" : " is-wide"}">` + side + `<div class="shm-jb-results"><div class="shm-jb-head"><p class="shm-jb-count" role="status" aria-live="polite" tabindex="-1"></p>${sort}</div><div class="shm-jb-note" hidden></div><ul class="shm-jb-grid" role="list" aria-busy="true"></ul><div class="shm-jb-empty" hidden></div><nav class="shm-jb-pager" aria-label="${esc(s.pagerLabel)}" hidden></nav></div></div>`;
@@ -688,7 +767,7 @@ var __shazWidgetExport = (() => {
     }
     if (total <= 1) return "";
     const nums = pageList(current, total).map(
-      (n) => n === "\u2026" ? '<span class="shm-jb-gap" aria-hidden="true">\u2026</span>' : `<button type="button" class="shm-jb-page${n === current ? " is-current" : ""}" data-page="${n}"${n === current ? ' aria-current="page"' : ""}>${n}</button>`
+      (n) => n === "\u2026" ? '<span class="shm-jb-gap" aria-hidden="true">\u2026</span>' : `<button type="button" class="shm-jb-page${n === current ? " is-current" : ""}" data-page="${n}" aria-label="${esc(fill(s.pageAriaText, n))}"${n === current ? ' aria-current="page"' : ""}>${n}</button>`
     ).join("");
     return `<button type="button" class="shm-jb-btn shm-jb-btn-secondary shm-jb-prev" data-page="${current - 1}"${current <= 1 ? " disabled" : ""}>${esc(s.prevText)}</button><span class="shm-jb-pages">${nums}</span><button type="button" class="shm-jb-btn shm-jb-btn-secondary shm-jb-next" data-page="${current + 1}"${current >= total ? " disabled" : ""}>${esc(s.nextText)}</button>`;
   }
@@ -705,6 +784,7 @@ var __shazWidgetExport = (() => {
   var NAME = "job-board";
   var runs = /* @__PURE__ */ new WeakMap();
   var teardowns = /* @__PURE__ */ new WeakMap();
+  var reads = /* @__PURE__ */ new WeakMap();
   var uid = 0;
   function release(element) {
     var _a;
@@ -722,6 +802,7 @@ var __shazWidgetExport = (() => {
     return new Set(s.groupsOpen === "first" ? ids.slice(0, 1) : ids);
   }
   function sourceNote(source, count, s) {
+    if (source === "collection" && !count) return `Connected to the "${s.jobsCollection}" collection: it has no live jobs, so the board shows the no-jobs message.`;
     if (source === "collection") return `Connected to the "${s.jobsCollection}" collection: ${count} live jobs.`;
     const why = s.jobsCollection ? ` (the "${s.jobsCollection}" collection could not be read on this page)` : "";
     return `Showing ${count} live jobs from the site job feed${why}.`;
@@ -743,7 +824,7 @@ var __shazWidgetExport = (() => {
     const backdrop = q(stage, ".shm-jb-backdrop");
     const apply = q(stage, ".shm-jb-apply");
     const note = q(stage, ".shm-jb-note");
-    const drawer = side && opener && backdrop ? createDrawer(side, opener, backdrop) : null;
+    const drawer = side && opener && backdrop ? createDrawer(side, opener, backdrop, () => teardown()) : null;
     if (inEditor) {
       note.hidden = false;
       note.textContent = sourceNote(source, jobs.length, s);
@@ -777,12 +858,13 @@ var __shazWidgetExport = (() => {
       renderFacets();
     };
     const commit = (mode) => {
-      if (s.syncAddress && !inEditor) {
-        const url = `${window.location.pathname}${writeAddress(window.location.search, state, s.defaultSort)}`;
-        if (mode === "push") window.history.pushState({ shmJobBoard: true }, "", url);
-        else window.history.replaceState(window.history.state, "", url);
-      }
       render();
+      if (!s.syncAddress || inEditor) return;
+      const { pathname, search } = window.location;
+      const url = `${pathname}${writeAddress(search, state, s.defaultSort)}`;
+      if (url === `${pathname}${search}`) return;
+      if (mode === "push") window.history.pushState({ shmJobBoard: true }, "", url);
+      else window.history.replaceState(window.history.state, "", url);
     };
     const syncInputs = () => {
       const kw = q(stage, "[name=keyword]");
@@ -820,7 +902,7 @@ var __shazWidgetExport = (() => {
         const box = el;
         const group = box.dataset.group;
         const now = (_a2 = state.selected[group]) != null ? _a2 : [];
-        const next = box.checked ? [...now, box.value] : now.filter((v) => v.toLowerCase() !== box.value.toLowerCase());
+        const next = box.checked ? [...now, box.value] : now.filter((v) => fold(v) !== fold(box.value));
         state = { ...state, selected: { ...state.selected, [group]: next }, page: 1 };
         commit("replace");
         focusIn(`.shm-jb-check[data-group="${group}"]`, (c) => c.value === box.value);
@@ -880,7 +962,7 @@ var __shazWidgetExport = (() => {
       }
       state = freshState(s, inEditor);
       syncInputs();
-      render();
+      commit("replace");
     };
     const wide = typeof window.matchMedia === "function" ? window.matchMedia("(min-width: 1024px)") : null;
     const onWide = () => {
@@ -929,8 +1011,12 @@ var __shazWidgetExport = (() => {
     const run = ((_c = runs.get(element)) != null ? _c : 0) + 1;
     runs.set(element, run);
     const id = `shm-jb-${uid += 1}`;
+    const earlier = reads.get(element);
+    if (earlier) earlier.aborted = true;
+    const read = { aborted: false };
+    reads.set(element, read);
     try {
-      const { jobs, source } = await loadJobsFrom(s.jobsCollection, ctx.shazamme, data, inEditor);
+      const { jobs, source } = await loadJobsFrom(s.jobsCollection, ctx.shazamme, data, inEditor, void 0, read);
       if (runs.get(element) !== run) return;
       release(element);
       teardowns.set(element, mountBoard(stage, { jobs, source }, s, inEditor, id));

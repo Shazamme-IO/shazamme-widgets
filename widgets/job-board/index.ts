@@ -4,8 +4,8 @@
 // build as window.ShazammeWidget["job-board"].
 
 import type { DudaData } from '../../core/config';
-import { loadJobsFrom, type JobSource, type SiteJob } from '../../core/site-jobs';
-import { activeFilterCount, pageCount, readAddress, searchBoard, sortJobs, toCard, visibleJobs, writeAddress, type Facet, type State } from './board';
+import { loadJobsFrom, type JobSource, type ReadSignal, type SiteJob } from '../../core/site-jobs';
+import { activeFilterCount, fold, pageCount, readAddress, searchBoard, sortJobs, toCard, visibleJobs, writeAddress, type Facet, type State } from './board';
 import { createDrawer } from './drawer';
 import { cardHtml, countText, emptyHtml, errorHtml, facetsHtml, pagerHtml, shellHtml, type FacetView } from './render';
 import { fill, readSettings, SORTS, type GroupId, type Settings } from './settings';
@@ -19,6 +19,8 @@ interface WidgetContext {
 const NAME = 'job-board';
 const runs = new WeakMap<HTMLElement, number>();
 const teardowns = new WeakMap<HTMLElement, () => void>();
+/** The read each element is waiting on, so a newer run can stop the older one. */
+const reads = new WeakMap<HTMLElement, ReadSignal>();
 let uid = 0;
 
 function release(element: HTMLElement): void {
@@ -41,6 +43,7 @@ function openGroups(s: Settings): Set<string> {
 }
 
 function sourceNote(source: JobSource, count: number, s: Settings): string {
+  if (source === 'collection' && !count) return `Connected to the "${s.jobsCollection}" collection: it has no live jobs, so the board shows the no-jobs message.`;
   if (source === 'collection') return `Connected to the "${s.jobsCollection}" collection: ${count} live jobs.`;
   const why = s.jobsCollection ? ` (the "${s.jobsCollection}" collection could not be read on this page)` : '';
   return `Showing ${count} live jobs from the site job feed${why}.`;
@@ -74,7 +77,8 @@ function mountBoard(stage: HTMLElement, { jobs, source, retry }: Mount, s: Setti
   const backdrop = q<HTMLElement>(stage, '.shm-jb-backdrop');
   const apply = q<HTMLButtonElement>(stage, '.shm-jb-apply');
   const note = q<HTMLElement>(stage, '.shm-jb-note')!;
-  const drawer = side && opener && backdrop ? createDrawer(side, opener, backdrop) : null;
+  // The sheet notices when Duda removes the widget while it is open, and the board then stops listening.
+  const drawer = side && opener && backdrop ? createDrawer(side, opener, backdrop, () => teardown()) : null;
 
   if (inEditor) {
     note.hidden = false;
@@ -112,13 +116,15 @@ function mountBoard(stage: HTMLElement, { jobs, source, retry }: Mount, s: Setti
     renderFacets();
   };
 
+  /** Render, then write the state (its page already clamped by render) to the address. An unchanged address is left alone. */
   const commit = (mode: HistoryMode): void => {
-    if (s.syncAddress && !inEditor) {
-      const url = `${window.location.pathname}${writeAddress(window.location.search, state, s.defaultSort)}`;
-      if (mode === 'push') window.history.pushState({ shmJobBoard: true }, '', url);
-      else window.history.replaceState(window.history.state, '', url);
-    }
     render();
+    if (!s.syncAddress || inEditor) return;
+    const { pathname, search } = window.location;
+    const url = `${pathname}${writeAddress(search, state, s.defaultSort)}`;
+    if (url === `${pathname}${search}`) return;
+    if (mode === 'push') window.history.pushState({ shmJobBoard: true }, '', url);
+    else window.history.replaceState(window.history.state, '', url);
   };
 
   const syncInputs = (): void => {
@@ -155,7 +161,7 @@ function mountBoard(stage: HTMLElement, { jobs, source, retry }: Mount, s: Setti
       const box = el as HTMLInputElement;
       const group = box.dataset.group as GroupId;
       const now = state.selected[group] ?? [];
-      const next = box.checked ? [...now, box.value] : now.filter((v) => v.toLowerCase() !== box.value.toLowerCase());
+      const next = box.checked ? [...now, box.value] : now.filter((v) => fold(v) !== fold(box.value));
       state = { ...state, selected: { ...state.selected, [group]: next }, page: 1 };
       commit('replace');
       focusIn(`.shm-jb-check[data-group="${group}"]`, (c) => (c as HTMLInputElement).value === box.value);
@@ -218,7 +224,8 @@ function mountBoard(stage: HTMLElement, { jobs, source, retry }: Mount, s: Setti
     }
     state = freshState(s, inEditor);
     syncInputs();
-    render();
+    // A page past the end (jobs closed since the entry was made) shows the last page, and the address says so.
+    commit('replace');
   };
 
   const wide = typeof window.matchMedia === 'function' ? window.matchMedia('(min-width: 1024px)') : null;
@@ -270,9 +277,13 @@ export default async function jobBoard(ctx: WidgetContext): Promise<void> {
   const run = (runs.get(element) ?? 0) + 1;
   runs.set(element, run);
   const id = `shm-jb-${(uid += 1)}`;
+  const earlier = reads.get(element);
+  if (earlier) earlier.aborted = true;
+  const read: ReadSignal = { aborted: false };
+  reads.set(element, read);
 
   try {
-    const { jobs, source } = await loadJobsFrom(s.jobsCollection, ctx.shazamme, data, inEditor);
+    const { jobs, source } = await loadJobsFrom(s.jobsCollection, ctx.shazamme, data, inEditor, undefined, read);
     if (runs.get(element) !== run) return;
     release(element);
     teardowns.set(element, mountBoard(stage, { jobs, source }, s, inEditor, id));

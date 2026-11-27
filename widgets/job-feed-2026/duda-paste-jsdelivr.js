@@ -1,4 +1,4 @@
-// LAST UPDATED: 2026-11-27 16:01 AEDT (v0.1.66)
+// LAST UPDATED: 2026-11-27 17:47 AEDT (v0.1.70)
 // Change: chip card salary shows the amount before suffix wording ("$150,000 – $170,000 + super", was "+ super"); other wording shows as written; default card unchanged. Carries v0.1.63 chip card and v0.1.40.
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
@@ -16,7 +16,7 @@
 // ===========================================================================
 (function () {
   var NAME = "job-feed-2026";
-  var TAG = "v0.1.66";
+  var TAG = "v0.1.70";
   var BUNDLE = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" + TAG + "/dist/" + NAME + "/0.1.0/widget.min.js";
   var SDK = "https://sdk.shazamme.io/js/shazamme-1.0.3.min.js";
   window.__shazSDKPromise = window.__shazSDKPromise || new Promise(function (res) {
