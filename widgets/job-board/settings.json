@@ -1,0 +1,303 @@
+{
+  "_comment": "Every data.config key Job Board reads. The Duda Content Editor is built from duda-ai-prompt-1..4; port.test.ts keeps this file, settings.ts and those prompts in step. Duda sends dropdowns and numbers as strings and toggles as booleans or strings; readSettings coerces both. Nothing is required: with every field left alone the widget shows the site's live jobs.",
+  "widget": "job-board",
+  "fields": [
+    {
+      "key": "jobsCollection",
+      "type": "text",
+      "default": "Jobs"
+    },
+    {
+      "key": "detailsPage",
+      "type": "text",
+      "default": "/job-details"
+    },
+    {
+      "key": "syncAddress",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "showSearch",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "searchPrompt",
+      "type": "text",
+      "default": "Looking for your next opportunity?"
+    },
+    {
+      "key": "keywordPlaceholder",
+      "type": "text",
+      "default": "Keyword"
+    },
+    {
+      "key": "locationPlaceholder",
+      "type": "text",
+      "default": "Location"
+    },
+    {
+      "key": "showLocationSearch",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "searchButtonLabel",
+      "type": "text",
+      "default": "Search jobs"
+    },
+    {
+      "key": "searchOverlap",
+      "type": "number",
+      "default": 0,
+      "min": 0,
+      "max": 240
+    },
+    {
+      "key": "showFilters",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "filterGroups",
+      "type": "text",
+      "default": "profession, workType, workModel, country, city"
+    },
+    {
+      "key": "labelProfession",
+      "type": "text",
+      "default": "Profession"
+    },
+    {
+      "key": "labelRole",
+      "type": "text",
+      "default": "Role"
+    },
+    {
+      "key": "labelWorkType",
+      "type": "text",
+      "default": "Work type"
+    },
+    {
+      "key": "labelWorkModel",
+      "type": "text",
+      "default": "Work model"
+    },
+    {
+      "key": "labelCountry",
+      "type": "text",
+      "default": "Country"
+    },
+    {
+      "key": "labelState",
+      "type": "text",
+      "default": "State"
+    },
+    {
+      "key": "labelCity",
+      "type": "text",
+      "default": "City"
+    },
+    {
+      "key": "optionsShown",
+      "type": "number",
+      "default": 8,
+      "min": 1,
+      "max": 50
+    },
+    {
+      "key": "groupsOpen",
+      "type": "dropdown",
+      "default": "all",
+      "options": [
+        "all",
+        "first",
+        "none"
+      ]
+    },
+    {
+      "key": "showMoreText",
+      "type": "text",
+      "default": "Show more"
+    },
+    {
+      "key": "showLessText",
+      "type": "text",
+      "default": "Show less"
+    },
+    {
+      "key": "filtersTitle",
+      "type": "text",
+      "default": "Filter jobs"
+    },
+    {
+      "key": "filtersButtonText",
+      "type": "text",
+      "default": "Filters"
+    },
+    {
+      "key": "closeText",
+      "type": "text",
+      "default": "Close filters"
+    },
+    {
+      "key": "applyText",
+      "type": "text",
+      "default": "Show {count} jobs"
+    },
+    {
+      "key": "clearText",
+      "type": "text",
+      "default": "Clear all"
+    },
+    {
+      "key": "pageSize",
+      "type": "number",
+      "default": 12,
+      "min": 3,
+      "max": 60
+    },
+    {
+      "key": "paging",
+      "type": "dropdown",
+      "default": "pages",
+      "options": [
+        "pages",
+        "loadmore"
+      ]
+    },
+    {
+      "key": "loadMoreText",
+      "type": "text",
+      "default": "Load more jobs"
+    },
+    {
+      "key": "prevText",
+      "type": "text",
+      "default": "Previous"
+    },
+    {
+      "key": "nextText",
+      "type": "text",
+      "default": "Next"
+    },
+    {
+      "key": "pagerLabel",
+      "type": "text",
+      "default": "Job pages"
+    },
+    {
+      "key": "showSort",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "defaultSort",
+      "type": "dropdown",
+      "default": "newest",
+      "options": [
+        "newest",
+        "salary-high",
+        "salary-low"
+      ]
+    },
+    {
+      "key": "sortLabel",
+      "type": "text",
+      "default": "Sort by"
+    },
+    {
+      "key": "sortNewest",
+      "type": "text",
+      "default": "Newest"
+    },
+    {
+      "key": "sortSalaryHigh",
+      "type": "text",
+      "default": "Highest salary"
+    },
+    {
+      "key": "sortSalaryLow",
+      "type": "text",
+      "default": "Lowest salary"
+    },
+    {
+      "key": "countOne",
+      "type": "text",
+      "default": "{count} job"
+    },
+    {
+      "key": "countMany",
+      "type": "text",
+      "default": "{count} jobs"
+    },
+    {
+      "key": "cardLabel",
+      "type": "dropdown",
+      "default": "profession",
+      "options": [
+        "profession",
+        "role",
+        "none"
+      ]
+    },
+    {
+      "key": "headingTag",
+      "type": "dropdown",
+      "default": "h3",
+      "options": [
+        "h2",
+        "h3",
+        "h4",
+        "p"
+      ]
+    },
+    {
+      "key": "showSalary",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "noSalaryText",
+      "type": "text",
+      "default": "Competitive"
+    },
+    {
+      "key": "locationFormat",
+      "type": "dropdown",
+      "default": "city-state",
+      "options": [
+        "city",
+        "city-state",
+        "city-country",
+        "city-state-country"
+      ]
+    },
+    {
+      "key": "showWorkType",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "showWorkModel",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "key": "emptyTitle",
+      "type": "text",
+      "default": "No jobs match your search"
+    },
+    {
+      "key": "emptyText",
+      "type": "text",
+      "default": "Try removing a filter or searching for something broader."
+    },
+    {
+      "key": "noJobsText",
+      "type": "text",
+      "default": "There are no live jobs right now. Check back soon."
+    }
+  ]
+}

@@ -8,6 +8,8 @@
 // where the per-job record carries only ids. With no bound jobID it matches the page address
 // to the job's own address, so the widget still works on a page where nothing was bound.
 
+import { payLine, salaryRange } from '../../core/salary';
+
 export type JobRow = Record<string, unknown>;
 
 export interface Sdk {
@@ -17,10 +19,6 @@ export interface Sdk {
 }
 
 export const JOBS_COLLECTION = 'Jobs';
-
-const SYMBOLS: Readonly<Record<string, string>> = {
-  AUD: '$', USD: '$', NZD: '$', CAD: '$', SGD: '$', HKD: '$', GBP: '£', EUR: '€', INR: '₹', JPY: '¥', ZAR: 'R',
-};
 
 /** Shown in the Design Editor only, so a site builder can style the widget before a real job loads. */
 export const SAMPLE_JOB: Readonly<JobRow> = {
@@ -61,35 +59,16 @@ export function esc(v: unknown): string {
   return text(v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string);
 }
 
-/** The feed uses -1 for "no salary set", so a negative or zero amount is no amount. */
-function amount(v: unknown): number {
-  const n = parseFloat(text(v).replace(/[^0-9.-]/g, ''));
-  return Number.isFinite(n) && n > 0 ? n : 0;
-}
-
 export function currencyCode(job: JobRow): string {
   const code = text(job.currencyCode) || text(job.salaryCurrency) || text(job.currency);
   return /^[A-Za-z]{3}$/.test(code) ? code.toUpperCase() : '';
 }
 
-function money(n: number, code: string): string {
-  const symbol = SYMBOLS[code] ?? (code ? `${code} ` : '');
-  return `${symbol}${Math.round(n).toLocaleString('en-AU')}`;
-}
+export { salaryRange };
 
-/** "$150,000 – $170,000", or one figure when only one end is set, or "" when there is no amount. */
-export function salaryRange(job: JobRow): string {
-  const from = amount(job.salaryFrom) || amount(job.realSalaryFrom);
-  const to = amount(job.salaryTo) || amount(job.realSalaryTo);
-  const code = currencyCode(job);
-  if (from && to && from !== to) return `${money(from, code)} – ${money(to, code)}`;
-  const one = from || to;
-  return one ? money(one, code) : '';
-}
-
-/** The pay text the recruiter wrote, else the formatted range. */
+/** The formatted range with the recruiter's wording ("+ super") after it; see core/salary. */
 export function salaryLine(job: JobRow): string {
-  return text(job.salaryText) || salaryRange(job);
+  return payLine(job);
 }
 
 export function locationLine(job: JobRow): string {

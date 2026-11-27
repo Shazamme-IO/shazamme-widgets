@@ -85,6 +85,11 @@ describe('job-hero-chips', () => {
     expect(sdk.calls.length).toBe(1);
   });
 
+  it('puts the amount in front of the advert wording, as the live feed sends it ("+ super" only)', () => {
+    const job = { salaryText: '+ super', salaryFrom: '150000', salaryTo: '170000', currencyCode: 'AUD', currencySymbol: 'AUD', isDisplaySalary: true };
+    expect(buildChips(job, { chip1: 'salary', chip2: 'none', chip3: 'none', chip4: 'none' })[0].value).toBe('$150,000 – $170,000 + super');
+  });
+
   it('buildChips defaults match the prompt', () => {
     expect(buildChips({ city: 'X', workType: 'W', workModel: 'M', salaryText: 'S' }, {}).map((c) => c.kind)).toEqual(['location', 'workType', 'workModel', 'salary']);
   });

@@ -1,5 +1,5 @@
-// LAST UPDATED: 2026-11-27 12:00 AEDT (v0.1.63)
-// Change: opt-in chip card (cardStyle = chips); the default card is unchanged. Also carries v0.1.40: a lone job is centred in the row.
+// LAST UPDATED: 2026-11-27 15:18 AEDT (v0.1.66)
+// Change: chip card salary shows the amount before the advert wording ("$150,000 – $170,000 + super", was "+ super"); default card unchanged. Carries v0.1.63 chip card and v0.1.40.
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
 // existing widget JS.
@@ -16,7 +16,7 @@
 // ===========================================================================
 (function () {
   var NAME = "job-feed-2026";
-  var TAG = "v0.1.63";
+  var TAG = "v0.1.66";
   var BUNDLE = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" + TAG + "/dist/" + NAME + "/0.1.0/widget.min.js";
   var SDK = "https://sdk.shazamme.io/js/shazamme-1.0.3.min.js";
   window.__shazSDKPromise = window.__shazSDKPromise || new Promise(function (res) {

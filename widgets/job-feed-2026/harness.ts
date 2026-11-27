@@ -8,6 +8,7 @@ import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import * as shmCore from '../../core/legacy-core';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const src = readFileSync(join(here, 'legacy.js'), 'utf8');
@@ -35,23 +36,43 @@ export const CONFIGS: Record<string, Record<string, unknown>> = {
 
 const tick = () => new Promise((r) => setTimeout(r, 30));
 
+function stubSdk(jobs: Job[]) {
+  const widget = { log: () => widget, sub: () => widget, pub: () => undefined };
+  return {
+    ready: () => Promise.resolve(),
+    site: () => Promise.resolve({ siteID: 'site1' }),
+    fetch: () => Promise.resolve(jobs.map((j) => ({ data: { ...j.data } }))),
+    script: () => Promise.resolve(),
+    style: () => Promise.resolve(),
+    bag: () => ({}),
+    register: () => widget,
+  };
+}
+
+/** Runs the built dist bundle (what jsDelivr serves), so a helper the build injects is proven to be in scope. */
+export async function renderBundle(config: Record<string, unknown>, jobs: Job[] = JOBS): Promise<string> {
+  const version = JSON.parse(readFileSync(join(here, '..', '..', 'package.json'), 'utf8')).version as string;
+  const bundle = readFileSync(join(here, '..', '..', 'dist', 'job-feed-2026', version, 'widget.min.js'), 'utf8');
+  document.body.innerHTML = '<div id="w"><div data-rel="content-main"></div></div>';
+  const win = window as unknown as Record<string, any>;
+  delete win.ShazammeWidget;
+  // jsdom never fires script onload; the bundle's shared loader keeps a stub that is already set.
+  win.__shazLoadScript = () => Promise.resolve();
+  win.eval(bundle);
+  const shazamme = stubSdk(jobs);
+  Object.assign(globalThis, { $, shazamme });
+  win.ShazammeWidget['job-feed-2026']({ element: document.getElementById('w'), data: { config, siteId: 'd1', inEditor: false, device: 'desktop' }, $, shazamme });
+  await tick();
+  await tick();
+  return (document.querySelector('[data-rel=content-main]') as HTMLElement).innerHTML.replace(/>\s+</g, '><').trim();
+}
+
 export async function render(config: Record<string, unknown>, jobs: Job[] = JOBS): Promise<string> {
   document.body.innerHTML = '<div id="w"><div data-rel="content-main"></div></div>';
-  const widget = { log: () => widget, sub: () => widget, pub: () => undefined };
-  Object.assign(globalThis, {
-    $,
-    shazamme: {
-      ready: () => Promise.resolve(),
-      site: () => Promise.resolve({ siteID: 'site1' }),
-      fetch: () => Promise.resolve(jobs.map((j) => ({ data: { ...j.data } }))),
-      script: () => Promise.resolve(),
-      style: () => Promise.resolve(),
-      bag: () => ({}),
-      register: () => widget,
-    },
-  });
+  Object.assign(globalThis, { $, shazamme: stubSdk(jobs) });
   const data = { config, siteId: 'd1', inEditor: false, device: 'desktop' };
-  new Function('element', 'data', src)(document.getElementById('w'), data);
+  // The build puts shmCore (core/legacy-core.ts) in scope for a legacy body that uses it; do the same here.
+  new Function('element', 'data', 'shmCore', src)(document.getElementById('w'), data, shmCore);
   await tick();
   await tick();
   return (document.querySelector('[data-rel=content-main]') as HTMLElement).innerHTML.replace(/>\s+</g, '><').trim();

@@ -218,6 +218,12 @@ describe('jobs-by-industry bundle', () => {
     expect(undisclosed.querySelector('.shm-jbi-card-pay')).toBeNull();
   });
 
+  it('puts the amount in front of the advert wording, as the live feed sends it ("+ super" only)', async () => {
+    const rows = [job('Financial Controller', 'Finance', { salaryText: '+ super', isDisplaySalary: true, salaryFrom: '150000', salaryTo: '170000', currencyCode: 'AUD', currencySymbol: 'AUD' })];
+    const el = await mount({}, { shazamme: sdk(rows) });
+    expect(el.querySelector('.shm-jbi-card-pay')!.textContent).toBe('$150,000 – $170,000 + super');
+  });
+
   it('escapes job and industry text instead of rendering it as HTML', async () => {
     const rows = [job('<img src=x onerror=alert(1)>', '<b>Evil</b>', { city: '"><script>', salaryText: '<i>$</i>' })];
     const el = await mount({ industries: [{ name: '<b>Evil</b>', blurb: '<u>hi</u>' }] }, { shazamme: sdk(rows) });

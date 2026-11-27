@@ -17,7 +17,23 @@ const SDK_READY_TIMEOUT_MS = 1200;
 const CONSULTANTS_COLLECTION = 'Consultants';
 const CONSULTANTS_ACTION = 'Get Consultants';
 
-type Win = Window & { __shmSiteJobs?: Map<string, Promise<SiteJob[]>> };
+/** Duda's Collections API pages at 100 rows; 20 pages covers any recruiter's live jobs. */
+const COLLECTION_PAGE_SIZE = 100;
+const COLLECTION_MAX_PAGES = 20;
+
+interface CollectionQuery {
+  pageSize(n: number): CollectionQuery;
+  pageNumber(n: number): CollectionQuery;
+  get(): Promise<{ values?: unknown[]; page?: { totalPages?: number } }>;
+}
+interface DmApi {
+  loadCollectionsAPI?: () => Promise<{ data(name: string): CollectionQuery }>;
+}
+
+type Win = Window & { __shmSiteJobs?: Map<string, Promise<SiteJob[]>>; dmAPI?: DmApi };
+
+/** Where a widget's jobs came from: the site's Duda collection or the Shazamme job feed. */
+export type JobSource = 'collection' | 'feed';
 
 interface ReadyClient {
   _sid?: string;
@@ -113,7 +129,7 @@ function toRows(raw: unknown): SiteJob[] {
   const rows: SiteJob[] = [];
   for (const item of list as Array<Record<string, unknown>>) {
     const fields = (item?.data ?? item) as Record<string, unknown> | undefined;
-    if (!fields || typeof fields !== 'object' || fields.activeStatus === false) continue;
+    if (!fields || typeof fields !== 'object' || fields.activeStatus === false || fields.activeStatus === 'false') continue;
     const fromUrl = text(fields.jobURL).split(/[?#]/)[0].split('/').filter(Boolean).pop() ?? '';
     rows.push({ fields, pageItemUrl: text(item.page_item_url) || fromUrl });
   }
@@ -139,6 +155,53 @@ export async function loadSiteJobs(shazamme: unknown, data: DudaData | undefined
     pending.catch(() => cache.delete(key));
   }
   return pending;
+}
+
+/** Rows of a Duda collection on this site, read with Duda's Collections API (dmAPI). Rejects when it cannot be read. */
+export async function loadCollectionJobs(name: string, inEditor: boolean): Promise<SiteJob[]> {
+  const win = window as Win;
+  const loader = win.dmAPI?.loadCollectionsAPI;
+  if (typeof loader !== 'function') throw new Error('The Duda collections API is not on this page.');
+  const cache = (win.__shmSiteJobs = win.__shmSiteJobs ?? new Map());
+  const key = `collection:${name}`;
+  const hit = cache.get(key);
+  if (hit && !inEditor) return hit;
+  const pending = (async () => {
+    const api = await loader.call(win.dmAPI);
+    const values: unknown[] = [];
+    for (let page = 0; page < COLLECTION_MAX_PAGES; page += 1) {
+      const res = await api.data(name).pageSize(COLLECTION_PAGE_SIZE).pageNumber(page).get();
+      values.push(...(Array.isArray(res?.values) ? res.values : []));
+      if (page + 1 >= (Number(res?.page?.totalPages) || 1)) break;
+    }
+    return toRows(values);
+  })();
+  if (!inEditor) {
+    cache.set(key, pending);
+    pending.catch(() => cache.delete(key));
+  }
+  return pending;
+}
+
+/**
+ * Jobs from the named Duda collection when it can be read and has rows, else the Shazamme job feed.
+ * A blank collection name goes straight to the feed.
+ */
+export async function loadJobsFrom(
+  collection: string,
+  shazamme: unknown,
+  data: DudaData | undefined,
+  inEditor: boolean,
+): Promise<{ jobs: SiteJob[]; source: JobSource }> {
+  if (collection) {
+    try {
+      const jobs = await loadCollectionJobs(collection, inEditor);
+      if (jobs.length) return { jobs, source: 'collection' };
+    } catch (err) {
+      if (inEditor) console.warn(`[site-jobs] collection "${collection}" could not be read, using the job feed`, err);
+    }
+  }
+  return { jobs: await loadSiteJobs(shazamme, data, inEditor), source: 'feed' };
 }
 
 /** Consultants shown on the site (isVisible is not false). Rejects when the collection cannot be read. */
