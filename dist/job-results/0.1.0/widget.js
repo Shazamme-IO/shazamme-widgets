@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 5d1c019736c8. Registers window.ShazammeWidget["<name>"].
+ * Build 52262a9e29c2. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -355,7 +355,7 @@ var __shazWidgetExport = (() => {
         if (location.length > 0) details.push(`<div class="shmLocation">${location.join(", ")}</div>`);
         if (data.config.showSalary && salary !== "") details.push(`<div class="shmSalary">${salary}</div>`);
         if (data.config.showBasicSalary && ((_d = j.salary) == null ? void 0 : _d.length) > 0) details.push(`<div class="shmSalary">${j.salary}</div>`);
-        if (data.config.showDate && !isNaN(jobDate)) details.push(`<div class="shmJobDateCreated">${jobDate.toLocaleDateString()}</div>`);
+        if (data.config.showDate && !isNaN(jobDate)) details.push(`<div class="shmJobDateCreated">${this._postedDateText(j, jobDate)}</div>`);
         if (data.config.showWorkType && j.workType) details.push(`<div class="work-type">${j.workType}</div>`);
         if (data.config.showWorkModel && j.workModel) details.push(`<div class="work-model">${j.workModel}</div>`);
         if (data.config.showCategory && j.category) details.push(`<div class="jobCategory">${j.category}</div>`);
@@ -667,6 +667,22 @@ var __shazWidgetExport = (() => {
             </div> ` || ""}
         </div>
         `;
+      };
+      this._postedDateText = (j, jobDate) => {
+        if (data.config.useJobPostedDate && typeof j.postedDate === "string" && j.postedDate.trim() !== "") {
+          return $("<div>").text(j.postedDate.trim()).html();
+        }
+        return jobDate.toLocaleDateString();
+      };
+      this.showLoadingMessage = (showing = true) => {
+        const list = this.el.find("[data-rel=job-results-list]");
+        if (!showing) {
+          list.find(".shmLoadingMessage").remove();
+          return;
+        }
+        const text = typeof data.config.loadingText === "string" ? data.config.loadingText.trim() : "";
+        if (text === "" || list.children().length > 0) return;
+        list.append($('<p class="shmLoadingMessage" role="status">').text(text)).show();
       };
       this.showJobResults = (html) => {
         this.el.find("[data-rel=job-results-map]").hide();
@@ -1195,6 +1211,7 @@ var __shazWidgetExport = (() => {
         ux.reveal();
       }).catch((e) => {
         console.warn("[job-results] showJobs failed", e);
+        ux.showLoadingMessage(false);
         ux.reveal();
       });
       if (data.inEditor && Object.keys(activeFilter).length > 0) {
@@ -1876,6 +1893,7 @@ var __shazWidgetExport = (() => {
         enableProximitySearch();
       }
       ux.showLoading();
+      ux.showLoadingMessage();
       shazamme.site().then((s) => {
         var _a2, _b2;
         const site = shazamme.bag("site-config");
@@ -1910,6 +1928,9 @@ var __shazWidgetExport = (() => {
         showFilters();
         w.pub("job-search-set", activeFilter);
         ux.showLoading(false);
+      }).catch((e) => {
+        ux.showLoadingMessage(false);
+        throw e;
       });
       if (data.config.showSalaryFilter) {
         ux.showSalaryFilter().onChange((sender, args) => {

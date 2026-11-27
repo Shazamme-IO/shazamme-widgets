@@ -376,7 +376,7 @@ function UX() {
 
         if (data.config.showSalary && salary !== '') details.push(`<div class="shmSalary">${salary}</div>`);
         if (data.config.showBasicSalary && j.salary?.length > 0) details.push(`<div class="shmSalary">${j.salary}</div>`);
-        if (data.config.showDate && !isNaN(jobDate)) details.push(`<div class="shmJobDateCreated">${jobDate.toLocaleDateString()}</div>`);
+        if (data.config.showDate && !isNaN(jobDate)) details.push(`<div class="shmJobDateCreated">${this._postedDateText(j, jobDate)}</div>`);
 
         if (data.config.showWorkType && j.workType) details.push(`<div class="work-type">${j.workType}</div>`);
         if (data.config.showWorkModel && j.workModel) details.push(`<div class="work-model">${j.workModel}</div>`);
@@ -738,6 +738,34 @@ function UX() {
         `;
     }
 
+
+    // Off by default: the card shows the day the job changed in the visitor's own
+    // locale and time zone. With useJobPostedDate it shows the job's posted date
+    // exactly as the Modern card and the Job Feed do, so every list agrees.
+    this._postedDateText = (j, jobDate) => {
+        if (data.config.useJobPostedDate && typeof j.postedDate === 'string' && j.postedDate.trim() !== '') {
+            return $('<div>').text(j.postedDate.trim()).html();
+        }
+
+        return jobDate.toLocaleDateString();
+    }
+
+    // Off by default: with loadingText set, the empty results list says so while the
+    // jobs are fetched. showJobResults empties the list, which removes it.
+    this.showLoadingMessage = (showing = true) => {
+        const list = this.el.find('[data-rel=job-results-list]');
+
+        if (!showing) {
+            list.find('.shmLoadingMessage').remove();
+            return;
+        }
+
+        const text = typeof data.config.loadingText === 'string' ? data.config.loadingText.trim() : '';
+
+        if (text === '' || list.children().length > 0) return;
+
+        list.append($('<p class="shmLoadingMessage" role="status">').text(text)).show();
+    }
 
     this.showJobResults = (html) => {
         this.el.find('[data-rel=job-results-map]').hide();
@@ -1473,7 +1501,7 @@ let showJobs = (pageNumber) => {
         }
 
         ux.reveal();
-    }).catch( e => { console.warn('[job-results] showJobs failed', e); ux.reveal(); } );
+    }).catch( e => { console.warn('[job-results] showJobs failed', e); ux.showLoadingMessage(false); ux.reveal(); } );
 
     if (data.inEditor && Object.keys(activeFilter).length > 0) {
         ux.el.find('[data-rel=default-filter]').show();
@@ -2237,6 +2265,7 @@ const main = (w) => {
     }
 
     ux.showLoading();
+    ux.showLoadingMessage();
 
     shazamme
         .site()
@@ -2284,6 +2313,11 @@ const main = (w) => {
 
             w.pub('job-search-set', activeFilter);
             ux.showLoading(false);
+        })
+        .catch( e => {
+            ux.showLoadingMessage(false);
+
+            throw e;
         });
 
     if (data.config.showSalaryFilter) {
