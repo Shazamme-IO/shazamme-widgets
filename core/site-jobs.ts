@@ -236,16 +236,22 @@ function dedupe(rows: SiteJob[]): SiteJob[] {
   });
 }
 
-/** Results of get(first..first+count-1) in order, at most COLLECTION_CONCURRENCY in flight. */
+/** Results of get(first..first+count-1) in order, at most COLLECTION_CONCURRENCY in flight. One failed page stops the rest. */
 async function readPool(first: number, count: number, get: PageGetter, signal?: ReadSignal): Promise<unknown[][]> {
   const out: unknown[][] = new Array(count);
   let next = 0;
+  let failed = false;
   const worker = async (): Promise<void> => {
-    while (next < count) {
+    while (next < count && !failed) {
       const i = next;
       next += 1;
       stopIfAborted(signal);
-      out[i] = pageValues(await get(first + i));
+      try {
+        out[i] = pageValues(await get(first + i));
+      } catch (err) {
+        failed = true;
+        throw err;
+      }
     }
   };
   await Promise.all(Array.from({ length: Math.min(COLLECTION_CONCURRENCY, count) }, worker));
@@ -295,7 +301,12 @@ async function hasMoreRows(meta: ReturnType<typeof pageMeta>, next: () => Promis
   if (meta.items) return meta.items > COLLECTION_MAX_PAGES * COLLECTION_PAGE_SIZE;
   if (meta.total) return meta.total > COLLECTION_MAX_PAGES;
   stopIfAborted(signal);
-  return pageValues(await next()).length > 0;
+  try {
+    return pageValues(await next()).length > 0;
+  } catch {
+    // The 2,000 rows already read are good; a failed check only means no warning.
+    return false;
+  }
 }
 
 /** The promise, or a rejection once ms have passed. The timer is cleared either way. */

@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 050ba0bc6729. Registers window.ShazammeWidget["<name>"].
+ * Build b3eb59a2368e. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var __shazWidgetExport = (() => {
@@ -171,12 +171,18 @@ var __shazWidgetExport = (() => {
   async function readPool(first, count, get, signal) {
     const out = new Array(count);
     let next = 0;
+    let failed = false;
     const worker = async () => {
-      while (next < count) {
+      while (next < count && !failed) {
         const i = next;
         next += 1;
         stopIfAborted(signal);
-        out[i] = pageValues(await get(first + i));
+        try {
+          out[i] = pageValues(await get(first + i));
+        } catch (err) {
+          failed = true;
+          throw err;
+        }
       }
     };
     await Promise.all(Array.from({ length: Math.min(COLLECTION_CONCURRENCY, count) }, worker));
@@ -216,7 +222,11 @@ var __shazWidgetExport = (() => {
     if (meta.items) return meta.items > COLLECTION_MAX_PAGES * COLLECTION_PAGE_SIZE;
     if (meta.total) return meta.total > COLLECTION_MAX_PAGES;
     stopIfAborted(signal);
-    return pageValues(await next()).length > 0;
+    try {
+      return pageValues(await next()).length > 0;
+    } catch (e) {
+      return false;
+    }
   }
   function withTimeout(work, ms, what, onLate) {
     let timer;

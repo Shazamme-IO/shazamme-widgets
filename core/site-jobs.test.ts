@@ -293,4 +293,27 @@ describe('review 3 fix #7: bounded, stoppable paging', () => {
     expect(m.asked).toHaveLength(COLLECTION_MAX_PAGES + 1);
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('more than 2000 rows'));
   });
+
+  it('stops asking for more pages once one page fails', async () => {
+    const m = api(rows(COLLECTION_PAGE_SIZE * 20));
+    const get = async (n: number) => {
+      if (n === 1) throw new Error('page 1 failed');
+      await new Promise((r) => setTimeout(r, 2));
+      return m.get(n);
+    };
+    await expect(readAllPages('Jobs', get)).rejects.toThrow('page 1 failed');
+    await new Promise((r) => setTimeout(r, 20));
+    expect(m.asked.length).toBeLessThanOrEqual(COLLECTION_CONCURRENCY);
+  });
+
+  it('keeps the 2000 rows when the 21st-page check fails', async () => {
+    const m = api(rows(COLLECTION_PAGE_SIZE * COLLECTION_MAX_PAGES), { totalPages: false });
+    const out = await readAllPages('Jobs', async (n) => {
+      if (n === COLLECTION_MAX_PAGES) throw new Error('probe failed');
+      const r = (await m.get(n)) as { page: Row };
+      delete r.page.totalItems;
+      return r;
+    });
+    expect(out).toHaveLength(2000);
+  });
 });
