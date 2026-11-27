@@ -1,4 +1,4 @@
-// LAST UPDATED: 2026-11-27 11:30 AEDT (v0.1.63)
+// LAST UPDATED: 2026-11-27 11:30 AEDT (v0.1.64)
 // Change: New widget. Live Stats, a bento grid of stat tiles with typed or live numbers (open roles, industries, countries, consultants).
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
@@ -17,7 +17,7 @@
 // ===========================================================================
 (function () {
   var NAME = "live-stats";
-  var TAG = "v0.1.63";
+  var TAG = "v0.1.64";
   var BUNDLE = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" + TAG + "/dist/" + NAME + "/0.1.0/widget.min.js";
   var SDK = "https://sdk.shazamme.io/js/shazamme-1.0.3.min.js";
   // One script tag per page, however many copies of the widget share it.

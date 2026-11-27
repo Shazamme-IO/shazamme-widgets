@@ -1,4 +1,4 @@
-// LAST UPDATED: 2026-11-27 11:20 AEDT (v0.1.63)
+// LAST UPDATED: 2026-11-27 11:20 AEDT (v0.1.64)
 // Change: New widget. Keyword Ticker, a full-width band of words scrolling right to left, typed in or taken from the site's professions.
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
@@ -21,7 +21,7 @@
 // ===========================================================================
 (function () {
   var NAME = "keyword-ticker";
-  var TAG = "v0.1.63";
+  var TAG = "v0.1.64";
   var BUNDLE = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" + TAG + "/dist/" + NAME + "/0.1.0/widget.min.js";
   var SDK = "https://sdk.shazamme.io/js/shazamme-1.0.3.min.js";
   var cfg = (data && data.config) || {};

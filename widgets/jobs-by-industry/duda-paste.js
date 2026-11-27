@@ -1,4 +1,4 @@
-// LAST UPDATED: 2026-11-27 11:45 AEDT (v0.1.63)
+// LAST UPDATED: 2026-11-27 11:45 AEDT (v0.1.64)
 // Change: New widget. Jobs by Industry, a tab list of professions with live jobs beside a panel of job cards.
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
