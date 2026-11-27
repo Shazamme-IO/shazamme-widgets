@@ -1,0 +1,55 @@
+.shm-kt {
+  box-sizing: border-box;
+  width: 100%;
+  overflow: hidden;
+  background-color: #D4F34A;
+  color: #101423;
+  border-top: 1px solid #101423;
+  border-bottom: 1px solid #101423;
+  font-family: Montserrat, sans-serif;
+  font-size: 20px;
+  font-weight: 900;
+  font-style: italic;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.shm-kt *, .shm-kt *::before, .shm-kt *::after { box-sizing: border-box; }
+
+.shm-kt .shm-kt-viewport { overflow: hidden; }
+.shm-kt .shm-kt-track {
+  display: flex;
+  width: max-content;
+  padding: 18px 0;
+  white-space: nowrap;
+  animation: shm-kt-scroll var(--shm-kt-duration, 40s) linear infinite;
+}
+.shm-kt.is-ltr .shm-kt-track { animation-direction: reverse; }
+.shm-kt.is-pausable:hover .shm-kt-track { animation-play-state: paused; }
+@keyframes shm-kt-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.shm-kt .shm-kt-group { display: flex; flex: none; }
+.shm-kt .shm-kt-item { display: inline-flex; align-items: center; gap: 40px; margin-right: 40px; }
+.shm-kt .shm-kt-word { color: inherit; }
+.shm-kt .shm-kt-dot {
+  display: inline-block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #101423;
+}
+
+/* The same words once, for visitors who asked for less motion. Not rendered otherwise, so a screen reader never meets the moving copy or this one twice. */
+.shm-kt .shm-kt-static { display: none; margin: 0; padding: 18px 24px; list-style: none; flex-wrap: wrap; gap: 8px 0; }
+.shm-kt .shm-kt-static-item { display: inline-flex; align-items: center; gap: 40px; margin-right: 40px; }
+
+.shm-kt .shm-kt-empty { margin: 0; padding: 16px; border: 1px dashed #101423; font-family: sans-serif; font-size: 14px; font-style: normal; font-weight: 400; letter-spacing: 0; text-transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .shm-kt .shm-kt-viewport { display: none; }
+  .shm-kt .shm-kt-static { display: flex; }
+}
