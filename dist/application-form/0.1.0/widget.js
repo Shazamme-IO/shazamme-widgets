@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 5da22ef60b7a. Registers window.ShazammeWidget["<name>"].
+ * Build 893edafdc946. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -692,6 +692,7 @@ Typed by the candidate on the website, ${(/* @__PURE__ */ new Date()).toLocaleDa
       $(".applyText").show();
     }
     function showScreeningQuestions() {
+      if (!getJobID()) return;
       shazamme.site().then((s) => shazamme.fetch({
         path: `/job-results/${s.siteID}/${getJobID()}`,
         isExternal: true,
@@ -806,6 +807,20 @@ Typed by the candidate on the website, ${(/* @__PURE__ */ new Date()).toLocaleDa
           return (r == null ? void 0 : r.status) && ((_b = (_a = r == null ? void 0 : r.response) == null ? void 0 : _a.items) == null ? void 0 : _b.find((x) => x.jobID === getJobID()));
         }) || Promise.resolve(false)
       );
+    }
+    function showNoJob() {
+      $(".shmApplicationMainContainer").hide();
+      $(".section-no-job-message").show();
+    }
+    function installNativeInputStyles() {
+      if (data.config.styleNativeInputs === false || document.getElementById("shz-apply-native-inputs")) return;
+      const css = `
+        :where(.shmApplicationMainContainer input[type=radio], .shmApplicationMainContainer input[type=checkbox]) { accent-color: currentColor; }
+        :where(.shmApplicationMainContainer input[type=file])::file-selector-button {
+            font: inherit; color: inherit; background: transparent; cursor: pointer;
+            border: 1px solid currentColor; border-radius: 6px; padding: .5em 1em; margin-right: 12px;
+        }`;
+      $('<style id="shz-apply-native-inputs">').text(css).prependTo("head");
     }
     const main = (w) => {
       const register = () => {
@@ -1154,8 +1169,11 @@ ${invalid.join("\n")}`);
         });
       }
       shazamme.store("applicationURL", window.location.href);
-      shazamme.store("jobID", getJobID());
-      if (!data.inEditor) {
+      getJobID() && shazamme.store("jobID", getJobID());
+      installNativeInputStyles();
+      if (!data.inEditor && !getJobID()) {
+        showNoJob();
+      } else if (!data.inEditor) {
         shazamme.site().then((s) => shazamme.fetch({
           path: `/job-results/${s.siteID}/${getJobID()}`,
           isExternal: true,
@@ -1170,8 +1188,7 @@ ${invalid.join("\n")}`);
               w.pub("job-application-fixed-job", j.data.jobID, true);
             }
           } else {
-            $(".shmApplicationMainContainer").hide();
-            $(".section-no-job-message").show();
+            showNoJob();
           }
         });
       }
