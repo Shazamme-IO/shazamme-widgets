@@ -1,0 +1,4 @@
+/* Job Search Hero: mobile only (767px and below) */
+.shm-jh { padding: 12px; }
+.shm-jh .shm-jh-field-keyword, .shm-jh .shm-jh-field-location, .shm-jh .shm-jh-field-worktype { flex: 1 1 100%; }
+.shm-jh .shm-jh-button { flex: 1 1 100%; padding: 0 24px; }
