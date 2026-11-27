@@ -19,6 +19,11 @@ describe('payLine', () => {
     expect(payLine(demo({ salaryFrom: '90000', salaryTo: '110000', currencyCode: 'USD', salaryText: 'base + $180,000 OTE' }))).toBe('$90,000 – $110,000 base + $180,000 OTE');
   });
 
+  it('sets off wording that stands on its own with a comma', () => {
+    expect(payLine(demo({ salaryText: 'Super included' }))).toBe('$150,000 – $170,000, Super included');
+    expect(payLine(demo({ salaryText: 'Up to $20k bonus' }))).toBe('$150,000 – $170,000, Up to $20k bonus');
+  });
+
   it('uses the wording alone when it already states the amount', () => {
     expect(payLine(demo({ salaryText: '$150,000 – $170,000 + super' }))).toBe('$150,000 – $170,000 + super');
     expect(payLine(demo({ salaryText: '$150k - $170k plus super' }))).toBe('$150k - $170k plus super');

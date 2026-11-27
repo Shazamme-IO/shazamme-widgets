@@ -2,5 +2,4 @@
 @media (min-width: 1024px) {
   .shm-jb .shm-jb-layout { grid-template-columns: minmax(220px, 280px) minmax(0, 1fr); gap: 40px; }
   .shm-jb .shm-jb-layout.is-wide { grid-template-columns: minmax(0, 1fr); }
-  .shm-jb .shm-jb-side { position: sticky; top: 24px; }
 }

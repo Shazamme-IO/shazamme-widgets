@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build a06e4570c8d2. Registers window.ShazammeWidget["<name>"].
+ * Build b7c815329ef9. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var __shazWidgetExport = (() => {
@@ -81,7 +81,7 @@ var __shazWidgetExport = (() => {
     }
     const { from, to } = ends(row);
     if (figuresIn(wording).some((n) => n === from || n === to)) return wording;
-    return `${range} ${wording}`;
+    return SUFFIX_RE.test(wording) ? `${range} ${wording}` : `${range}, ${wording}`;
   }
 
   // widgets/_job-page/job.ts

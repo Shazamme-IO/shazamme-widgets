@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 4b4d284ecd2a. Registers window.ShazammeWidget["<name>"].
+ * Build 6d3d3747af90. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var __shazWidgetExport = (() => {
@@ -209,7 +209,7 @@ var __shazWidgetExport = (() => {
     }
     const { from, to } = ends(row);
     if (figuresIn(wording).some((n) => n === from || n === to)) return wording;
-    return `${range} ${wording}`;
+    return SUFFIX_RE.test(wording) ? `${range} ${wording}` : `${range}, ${wording}`;
   }
   function annualPay(row) {
     var _a;
@@ -437,7 +437,7 @@ var __shazWidgetExport = (() => {
     const params = new URLSearchParams(search);
     const selected = {};
     for (const id of GROUP_IDS) {
-      const values = params.getAll(id).flatMap((v) => v.split("|")).map((v) => v.trim()).filter(Boolean);
+      const values = params.getAll(id).map((v) => v.trim()).filter(Boolean);
       if (values.length) selected[id] = [...new Set(values)];
     }
     let keyword = (_a = params.get("keyword")) != null ? _a : "";
@@ -812,7 +812,7 @@ var __shazWidgetExport = (() => {
       teardowns.set(element, mountBoard(stage, [], "feed", s, inEditor, id));
       if (inEditor) {
         const note = stage.querySelector(".shm-jb-note");
-        if (note) note.innerHTML = `Job Board could not read any jobs: ${esc(err instanceof Error ? err.message : String(err))}`;
+        if (note) note.textContent = `Job Board could not read any jobs: ${err instanceof Error ? err.message : String(err)}`;
       }
     } finally {
       if (runs.get(element) === run) root.classList.add("is-ready");

@@ -185,7 +185,7 @@ export function readAddress(search: string, hash: string, defaultSort: Sort): St
   const params = new URLSearchParams(search);
   const selected: State['selected'] = {};
   for (const id of GROUP_IDS) {
-    const values = params.getAll(id).flatMap((v) => v.split('|')).map((v) => v.trim()).filter(Boolean);
+    const values = params.getAll(id).map((v) => v.trim()).filter(Boolean);
     if (values.length) selected[id] = [...new Set(values)];
   }
   let keyword = params.get('keyword') ?? '';

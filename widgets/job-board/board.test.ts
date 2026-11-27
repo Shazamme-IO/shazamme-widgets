@@ -108,6 +108,11 @@ describe('page address', () => {
     expect(readAddress('?sort=bogus&page=-3', '#top', 'newest')).toMatchObject({ keyword: '', sort: 'newest', page: 1 });
   });
 
+  it('round-trips a value that contains a bar or an ampersand', () => {
+    const url = writeAddress('', base({ selected: { profession: ['Sales | Marketing', 'Accounting & Finance'] } }), 'newest');
+    expect(readAddress(url, '', 'newest').selected).toEqual({ profession: ['Sales | Marketing', 'Accounting & Finance'] });
+  });
+
   it('writes only what differs from the defaults and keeps other parameters', () => {
     const url = writeAddress('?preview=true&keyword=old', base({ keyword: 'data', selected: { city: ['Sydney', 'Perth'] }, page: 3 }), 'newest');
     expect(url).toBe('?preview=true&keyword=data&city=Sydney&city=Perth&page=3');

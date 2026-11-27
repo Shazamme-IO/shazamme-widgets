@@ -75,7 +75,8 @@ export function payLine(row: Row): string {
   }
   const { from, to } = ends(row);
   if (figuresIn(wording).some((n) => n === from || n === to)) return wording;
-  return `${range} ${wording}`;
+  // "+ super" and "per hour" follow the amount; wording that stands alone ("Super included") is set off with a comma.
+  return SUFFIX_RE.test(wording) ? `${range} ${wording}` : `${range}, ${wording}`;
 }
 
 /** Top of the pay range as a yearly figure, for sorting by salary. 0 when there is no amount or it is hidden. */

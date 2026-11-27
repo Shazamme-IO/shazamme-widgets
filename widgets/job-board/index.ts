@@ -4,7 +4,7 @@
 // build as window.ShazammeWidget["job-board"].
 
 import type { DudaData } from '../../core/config';
-import { esc, loadJobsFrom, type JobSource, type SiteJob } from '../../core/site-jobs';
+import { loadJobsFrom, type JobSource, type SiteJob } from '../../core/site-jobs';
 import {
   activeFilterCount, buildFacets, filterJobs, pageCount, readAddress, sortJobs, toCard, visibleJobs, writeAddress, type State,
 } from './board';
@@ -257,7 +257,7 @@ export default async function jobBoard(ctx: WidgetContext): Promise<void> {
     teardowns.set(element, mountBoard(stage, [], 'feed', s, inEditor, id));
     if (inEditor) {
       const note = stage.querySelector<HTMLElement>('.shm-jb-note');
-      if (note) note.innerHTML = `Job Board could not read any jobs: ${esc(err instanceof Error ? err.message : String(err))}`;
+      if (note) note.textContent = `Job Board could not read any jobs: ${err instanceof Error ? err.message : String(err)}`;
     }
   } finally {
     if (runs.get(element) === run) root.classList.add('is-ready');
