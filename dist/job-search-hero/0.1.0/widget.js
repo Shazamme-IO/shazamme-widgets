@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 799c07d80f0e. Registers window.ShazammeWidget["<name>"].
+ * Build 1fe5c76ab437. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var __shazWidgetExport = (() => {
@@ -97,7 +97,7 @@ var __shazWidgetExport = (() => {
     const frag = hashAt === -1 ? "" : raw.slice(hashAt);
     const isAbsolute = /^https?:\/\//i.test(base);
     if (!isAbsolute && /^[a-z][a-z0-9+.-]*:/i.test(base)) return buildResultsUrl(DEFAULTS.resultsPage, params);
-    const path = isAbsolute ? base : `/${base.replace(/^\/+/, "")}`;
+    const path = isAbsolute ? base : `/${base.replace(/^[/\\]+/, "")}`;
     const sep = path.includes("?") ? "&" : "?";
     return `${path}${query ? sep + query : ""}${frag}`;
   }
@@ -137,7 +137,6 @@ var __shazWidgetExport = (() => {
     q(form, "[name=location]").placeholder = s.locationPlaceholder;
     q(form, ".shm-jh-field-worktype .shm-jh-label").textContent = s.workTypeLabel;
     q(form, ".shm-jh-field-location").hidden = !s.showLocation;
-    q(form, ".shm-jh-button-text").textContent = countLabel(s, 0);
   }
   function distinctWorkTypes(rows) {
     var _a;
@@ -168,7 +167,7 @@ var __shazWidgetExport = (() => {
     }
   }
   async function jobSearchHero(ctx) {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d, _e, _f;
     const element = ctx == null ? void 0 : ctx.element;
     if (!element || typeof element.querySelector !== "function") return;
     (_a = element.__shmJhOff) == null ? void 0 : _a.call(element);
@@ -178,7 +177,9 @@ var __shazWidgetExport = (() => {
     const s = readSettings(data.config);
     const form = ensureForm(element);
     applyText(form, s);
-    fillWorkTypes(form, s, []);
+    const last = (_c = element.__shmJhLast) != null ? _c : { count: 0, labels: [] };
+    q(form, ".shm-jh-button-text").textContent = countLabel(s, last.count);
+    fillWorkTypes(form, s, last.labels);
     prefillFromAddress(form);
     const onSubmit = (e) => {
       e.preventDefault();
@@ -191,17 +192,19 @@ var __shazWidgetExport = (() => {
     };
     form.addEventListener("submit", onSubmit);
     element.__shmJhOff = () => form.removeEventListener("submit", onSubmit);
-    const run = ((_c = runs.get(element)) != null ? _c : 0) + 1;
+    const run = ((_d = runs.get(element)) != null ? _d : 0) + 1;
     runs.set(element, run);
     try {
-      const sdk = (_d = ctx.shazamme) != null ? _d : window.shazamme;
+      const sdk = (_e = ctx.shazamme) != null ? _e : window.shazamme;
       if (!sdk) return;
-      await Promise.resolve((_e = sdk.ready) == null ? void 0 : _e.call(sdk, text(data.siteId), data.page));
+      await Promise.resolve((_f = sdk.ready) == null ? void 0 : _f.call(sdk, text(data.siteId), data.page));
       const rows = await loadJobRows(sdk, inEditor);
       if (runs.get(element) !== run) return;
       const count = Array.isArray(rows) ? rows.length : 0;
+      const labels = distinctWorkTypes(rows);
+      element.__shmJhLast = { count, labels };
       q(form, ".shm-jh-button-text").textContent = countLabel(s, count);
-      fillWorkTypes(form, s, distinctWorkTypes(rows));
+      fillWorkTypes(form, s, labels);
       prefillFromAddress(form);
     } catch (e) {
       console.error(`[${WIDGET_NAME}]`, e);

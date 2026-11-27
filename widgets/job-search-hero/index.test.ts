@@ -68,6 +68,17 @@ describe('job-search-hero', () => {
     expect(btn(bad)).toBe('Search roles');
   });
 
+  it('a re-run keeps the work types and count it already had instead of blanking them', async () => {
+    const el = mount(SHELL);
+    await run(el, {});
+    (el.querySelector('[name=workType]') as HTMLSelectElement).value = 'Permanent';
+    const slow = { ...fakeSdk(), fetch: () => new Promise(() => undefined) };
+    void run(el, {}, {}, slow as never);
+    await new Promise((r) => setTimeout(r, 5));
+    expect(btn(el)).toBe('Search 3 roles');
+    expect((el.querySelector('[name=workType]') as HTMLSelectElement).value).toBe('Permanent');
+  });
+
   it('submit is stopped in the editor, and a re-run does not stack listeners', async () => {
     const el = mount(SHELL);
     await run(el, {}, { inEditor: true });
@@ -86,6 +97,8 @@ describe('buildResultsUrl', () => {
   it('keeps an absolute address, a query it already has and a fragment, and refuses other schemes', () => {
     expect(buildResultsUrl('https://careers.example.com/jobs?x=1#top', { keyword: 'a' })).toBe('https://careers.example.com/jobs?x=1&keyword=a#top');
     expect(buildResultsUrl('javascript:alert(1)', { keyword: 'a' })).toBe('/job-results?keyword=a');
+    expect(buildResultsUrl('/\\evil.example', { keyword: 'a' })).toBe('/evil.example?keyword=a');
+    expect(buildResultsUrl('//evil.example/x', {})).toBe('/evil.example/x');
   });
 });
 

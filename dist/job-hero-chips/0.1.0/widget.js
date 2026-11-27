@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build be23485375ba. Registers window.ShazammeWidget["<name>"].
+ * Build c4918264877d. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var __shazWidgetExport = (() => {
@@ -277,6 +277,7 @@ var __shazWidgetExport = (() => {
       if (loaded == null ? void 0 : loaded.isSample) setNote(root, SAMPLE_NOTE);
     } catch (e) {
       console.error(`[${WIDGET_NAME}]`, e);
+      if (runs.get(element) !== run) return;
       root.classList.add("is-empty");
       root.hidden = !inEditor;
       if (inEditor) setNote(root, "The job could not be loaded.");

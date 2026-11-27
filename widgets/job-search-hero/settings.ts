@@ -70,7 +70,7 @@ export function buildResultsUrl(page: string, params: Record<string, string>): s
   const frag = hashAt === -1 ? '' : raw.slice(hashAt);
   const isAbsolute = /^https?:\/\//i.test(base);
   if (!isAbsolute && /^[a-z][a-z0-9+.-]*:/i.test(base)) return buildResultsUrl(DEFAULTS.resultsPage, params);
-  const path = isAbsolute ? base : `/${base.replace(/^\/+/, '')}`;
+  const path = isAbsolute ? base : `/${base.replace(/^[/\\]+/, '')}`;
   const sep = path.includes('?') ? '&' : '?';
   return `${path}${query ? sep + query : ''}${frag}`;
 }

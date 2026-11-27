@@ -18,7 +18,7 @@ const WIDGET_NAME = 'job-search-hero';
 const URL_PARAMS = ['keyword', 'location', 'workType'] as const;
 const runs = new WeakMap<HTMLElement, number>();
 
-type Teardown = HTMLElement & { __shmJhOff?: () => void };
+type Teardown = HTMLElement & { __shmJhOff?: () => void; __shmJhLast?: { count: number; labels: string[] } };
 
 const FORM_HTML = `
   <label class="shm-jh-field shm-jh-field-keyword"><span class="shm-jh-label"></span><input class="shm-jh-input" type="text" name="keyword" autocomplete="off"></label>
@@ -49,7 +49,6 @@ function applyText(form: HTMLFormElement, s: HeroSettings): void {
   q<HTMLInputElement>(form, '[name=location]').placeholder = s.locationPlaceholder;
   q(form, '.shm-jh-field-worktype .shm-jh-label').textContent = s.workTypeLabel;
   q(form, '.shm-jh-field-location').hidden = !s.showLocation;
-  q(form, '.shm-jh-button-text').textContent = countLabel(s, 0);
 }
 
 function distinctWorkTypes(rows: unknown): string[] {
@@ -93,7 +92,9 @@ export default async function jobSearchHero(ctx: WidgetContext): Promise<void> {
   const s = readSettings(data.config);
   const form = ensureForm(element);
   applyText(form, s);
-  fillWorkTypes(form, s, []);
+  const last = element.__shmJhLast ?? { count: 0, labels: [] };
+  q(form, '.shm-jh-button-text').textContent = countLabel(s, last.count);
+  fillWorkTypes(form, s, last.labels);
   prefillFromAddress(form);
 
   const onSubmit = (e: Event): void => {
@@ -114,8 +115,10 @@ export default async function jobSearchHero(ctx: WidgetContext): Promise<void> {
     const rows = await loadJobRows(sdk, inEditor);
     if (runs.get(element) !== run) return;
     const count = Array.isArray(rows) ? rows.length : 0;
+    const labels = distinctWorkTypes(rows);
+    element.__shmJhLast = { count, labels };
     q(form, '.shm-jh-button-text').textContent = countLabel(s, count);
-    fillWorkTypes(form, s, distinctWorkTypes(rows));
+    fillWorkTypes(form, s, labels);
     prefillFromAddress(form);
   } catch (e) {
     console.error(`[${WIDGET_NAME}]`, e);

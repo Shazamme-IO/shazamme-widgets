@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build d4a102bdf80a. Registers window.ShazammeWidget["<name>"].
+ * Build ad3c749ec9db. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -113,7 +113,7 @@ var __shazWidgetExport = (() => {
         const money = (n) => `${symbols[code] || (/^[A-Z]{3}$/.test(code) ? code + " " : "")}${Math.round(n).toLocaleString("en-AU")}`;
         const from = num(j.salaryFrom) || num(j.realSalaryFrom);
         const to = num(j.salaryTo) || num(j.realSalaryTo);
-        const range = from && to ? `${money(from)} \u2013 ${money(to)}` : from || to ? money(from || to) : "";
+        const range = from && to && from !== to ? `${money(from)} \u2013 ${money(to)}` : from || to ? money(from || to) : "";
         const pay = text(j.salaryText) || range;
         const showCountry = data.config.chipShowCountry === true || data.config.chipShowCountry === "true";
         const where = [text(j.city), text(j.state), showCountry ? text(j.country) : ""].filter(Boolean).join(", ");
@@ -123,7 +123,7 @@ var __shazWidgetExport = (() => {
         const href = /^(https?:\/\/|\/)/i.test(j.detailsUri || "") ? j.detailsUri : "#";
         return `
             <div class="shm-cc-slide" data-rel="entry-job">
-                <a class="shm-cc-card" href="${esc(href)}" target="${data.config.jobLinkButtonABlank ? "_blank" : "_self"}">
+                <a class="shm-cc-card" href="${esc(href)}" target="${data.config.jobLinkButtonABlank ? "_blank" : "_self"}"${data.config.jobLinkButtonABlank ? ' rel="noopener"' : ""}>
                     <span class="shm-cc-title">${esc(j.jobName)}</span>
                     ${on(data.config.chipShowLocation) && where ? `<span class="shm-cc-where">${esc(where)}</span>` : ""}
                     ${chips ? `<span class="shm-cc-chips">${chips}</span>` : ""}

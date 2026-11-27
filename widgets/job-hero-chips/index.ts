@@ -87,6 +87,7 @@ export default async function jobHeroChips(ctx: WidgetContext): Promise<void> {
     if (loaded?.isSample) setNote(root, SAMPLE_NOTE);
   } catch (e) {
     console.error(`[${WIDGET_NAME}]`, e);
+    if (runs.get(element) !== run) return;
     root.classList.add('is-empty');
     root.hidden = !inEditor;
     if (inEditor) setNote(root, 'The job could not be loaded.');

@@ -44,7 +44,17 @@ describe('job-feed-2026 chip card', () => {
   });
 });
 
-describe('job-feed-2026 chip card salary sentinel', () => {
+describe('job-feed-2026 chip card salary edge cases', () => {
+  it('shows one figure when from and to are equal', async () => {
+    const job = { data: { jobID: 'j7', jobName: 'Driver', workType: 'Casual', salaryText: '', salaryFrom: '60000', salaryTo: '60000', currencyCode: 'AUD', changedOnUTC: '2026-01-01T00:00:00', jobURL: 'https://x.example/job-details/driver-7' } };
+    expect(cards(await render(cfg(), [job]))[0].querySelector('.shm-cc-pay')?.textContent).toBe('$60,000');
+  });
+
+  it('adds rel noopener only when the link opens a new tab', async () => {
+    expect(cards(await render(cfg({ jobLinkButtonABlank: true })))[0].querySelector('a')?.getAttribute('rel')).toBe('noopener');
+    expect(cards(await render(cfg()))[0].querySelector('a')?.hasAttribute('rel')).toBe(false);
+  });
+
   it('treats the feed\'s -1 as no salary', async () => {
     const job = { data: { jobID: 'j8', jobName: 'Clerk', workType: 'Casual', salaryText: '', salaryFrom: null, salaryTo: null, realSalaryFrom: -1, realSalaryTo: -1, changedOnUTC: '2026-01-01T00:00:00', jobURL: 'https://x.example/job-details/clerk-8' } };
     expect(cards(await render(cfg(), [job]))[0].querySelector('.shm-cc-pay')).toBeNull();
