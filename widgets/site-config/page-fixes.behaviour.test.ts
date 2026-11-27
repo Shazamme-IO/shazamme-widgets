@@ -233,6 +233,36 @@ describe('installStickyApply side effects', () => {
   });
 });
 
+describe('fitApplyButtons', () => {
+  const fit = make('function fitApplyButtons(', 'fitApplyButtons');
+  const rules = () => Array.from(document.querySelectorAll('style#shz-apply-fit-style')).map((s) => s.textContent || '');
+
+  beforeEach(() => { document.head.innerHTML = ''; });
+
+  it('caps the Dynamic Application button at the width of its column', () => {
+    fit();
+    expect(rules()).toHaveLength(1);
+    expect(rules()[0]).toMatch(/div\.shLinkApplyBtn\{max-width:100%\}/);
+  });
+
+  it('sets no width, padding or important flag, so Design panel choices still apply', () => {
+    fit();
+    expect(rules()[0]).not.toMatch(/!important|(^|[{;])width|padding/);
+  });
+
+  it('adds the stylesheet once however often it runs', () => {
+    fit();
+    fit();
+    expect(rules()).toHaveLength(1);
+  });
+
+  it('runs on every page, not only after a watched control appears', () => {
+    const install = body('function installPageFixes() {');
+    expect(install.indexOf('fitApplyButtons()')).toBeGreaterThan(-1);
+    expect(install.indexOf('fitApplyButtons()')).toBeLessThan(install.indexOf('const run = '));
+  });
+});
+
 describe('installPageFixes', () => {
   it('installs once per page', () => {
     expect(body('function installPageFixes() {')).toMatch(/if \(window\.__szPageFixes\) return;/);

@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 89d28305276d. Registers window.ShazammeWidget["<name>"].
+ * Build 12030b27b5af. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -502,7 +502,8 @@ var __shazWidgetExport = (() => {
       stickyRetries: 40,
       stickyZ: 9998,
       settleMs: 100,
-      watchSelector: ".control-salary-slider, input[type=checkbox]"
+      watchSelector: ".control-salary-slider, input[type=checkbox]",
+      applyFitStyleId: "shz-apply-fit-style"
     };
     const centreOf = (r) => r.top + r.height / 2;
     const centredLabels = /* @__PURE__ */ new WeakSet();
@@ -547,6 +548,13 @@ var __shazWidgetExport = (() => {
         label.style.setProperty("align-items", "center");
         label.style.setProperty("gap", `${PageFix.labelGapPx}px`);
       });
+    }
+    function fitApplyButtons() {
+      if (document.getElementById(PageFix.applyFitStyleId)) return;
+      const sheet = document.createElement("style");
+      sheet.id = PageFix.applyFitStyleId;
+      sheet.textContent = "div.shLinkApplyBtn{max-width:100%}";
+      document.head.appendChild(sheet);
     }
     function installStickyApply() {
       var _a, _b;
@@ -655,6 +663,7 @@ var __shazWidgetExport = (() => {
     function installPageFixes() {
       if (window.__szPageFixes) return;
       window.__szPageFixes = true;
+      fitApplyButtons();
       const run = () => {
         if (!document.querySelector(PageFix.watchSelector)) return;
         thinSalaryTracks();

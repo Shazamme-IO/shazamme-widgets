@@ -632,6 +632,7 @@ const PageFix = {
     stickyZ: 9998,
     settleMs: 100,
     watchSelector: '.control-salary-slider, input[type=checkbox]',
+    applyFitStyleId: 'shz-apply-fit-style',
 };
 
 const centreOf = (r) => r.top + r.height / 2;
@@ -702,6 +703,21 @@ function centreCheckboxLabels(root = document) {
         label.style.setProperty('align-items', 'center');
         label.style.setProperty('gap', `${PageFix.labelGapPx}px`);
     });
+}
+
+// The Design panel can give the Dynamic Application button a fixed pixel width. Where
+// its column is narrower (a sidebar between tablet and wide desktop) the button runs
+// past the screen and the page scrolls sideways. A max-width caps it at its column
+// without overriding the width, padding or colours set in the panel, and only changes
+// a button that is wider than its column.
+function fitApplyButtons() {
+    if (document.getElementById(PageFix.applyFitStyleId)) return;
+
+    const sheet = document.createElement('style');
+
+    sheet.id = PageFix.applyFitStyleId;
+    sheet.textContent = 'div.shLinkApplyBtn{max-width:100%}';
+    document.head.appendChild(sheet);
 }
 
 // Opt-in: put class "sz-sticky-apply" on the Apply button widget of the job details
@@ -832,6 +848,8 @@ function installPageFixes() {
     if (window.__szPageFixes) return;
 
     window.__szPageFixes = true;
+
+    fitApplyButtons();
 
     const run = () => {
         if (!document.querySelector(PageFix.watchSelector)) return;
