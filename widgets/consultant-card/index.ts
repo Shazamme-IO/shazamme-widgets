@@ -53,7 +53,7 @@ function ensureShell(element: HTMLElement): { root: HTMLElement; stage: HTMLElem
 function optionClasses(s: Settings): string[] {
   return [
     `is-mode-${s.mode}`,
-    s.itemLayout !== 'stacked' ? `is-item-${s.itemLayout}` : '',
+    s.mode === 'team' && s.itemLayout !== 'stacked' ? `is-item-${s.itemLayout}` : '',
     s.align !== 'left' ? `is-align-${s.align}` : '',
     s.mode === 'team' && s.layout !== 'grid' ? `is-layout-${s.layout}` : '',
     s.filterAlign !== 'left' ? `is-filters-${s.filterAlign}` : '',

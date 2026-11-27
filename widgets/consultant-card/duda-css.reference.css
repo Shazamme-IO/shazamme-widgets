@@ -60,11 +60,11 @@
 .shm-cc .shm-cc-photo.is-missing .shm-cc-icon { width: 50%; height: 50%; }
 .shm-cc.is-mode-job .shm-cc-photo { width: 60px; height: 60px; }
 
-/* Card layouts (itemLayout): side puts the picture beside the name, portrait makes it full width */
+/* Card layouts (itemLayout, team only; the job card already sits beside the name): side puts the picture beside the name, portrait makes it full width */
 .shm-cc.is-mode-team.is-item-side .shm-cc-card { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; }
 .shm-cc.is-mode-team.is-item-side .shm-cc-card > :not(.shm-cc-badge):not(.shm-cc-photo):not(.shm-cc-id) { grid-column: 1 / -1; }
-.shm-cc.is-item-portrait .shm-cc-photo { width: 100%; height: auto; aspect-ratio: 1 / 1; }
-.shm-cc.is-item-portrait .shm-cc-badge { width: 100%; height: auto; aspect-ratio: 1 / 1; font-size: 56px; }
+.shm-cc.is-mode-team.is-item-portrait .shm-cc-photo { width: 100%; height: auto; aspect-ratio: 1 / 1; }
+.shm-cc.is-mode-team.is-item-portrait .shm-cc-badge { width: 100%; height: auto; aspect-ratio: 1 / 1; font-size: 56px; }
 
 /* Alignment (align: center) */
 .shm-cc.is-align-center .shm-cc-card { align-items: center; text-align: center; }

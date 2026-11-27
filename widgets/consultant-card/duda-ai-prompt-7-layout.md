@@ -8,7 +8,7 @@ Grid or slider
 - Move on its own | key: autoplay | type: toggle | default: false | help: The slider moves by itself, with a pause button. It stops while a visitor points at it or uses the keyboard in it, and never moves for visitors who turned off motion.
 - Time between moves (milliseconds) | key: sliderSpeed | type: number | default: 5000 | help: 2000 to 20000. 5000 is five seconds.
 - Show arrows | key: arrows | type: toggle | default: true | help: Previous and next buttons under the slider.
-- Loop back to the start | key: infinite | type: toggle | default: true | help: After the last card the next button goes back to the first. Off stops at the ends.
+- Loop back to the start | key: infinite | type: toggle | default: true | help: After the last card the next button goes back to the first. Off stops the arrows at the ends. A slider that moves on its own always starts again from the first card.
 
 Slider button names (read out by screen readers)
 - Previous button name | key: previousLabel | type: text | default: Previous consultants | help: Not shown on the page.

@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 517ee7538ee0. Registers window.ShazammeWidget["<name>"].
+ * Build 752533f45148. Registers window.ShazammeWidget["<name>"].
  */
 "use strict";
 var __shazWidgetExport = (() => {
@@ -562,7 +562,10 @@ var __shazWidgetExport = (() => {
     const sync = () => {
       const gap = getComputedStyle(track).columnGap;
       if (gap && gap !== "normal") track.style.setProperty("--shm-cc-gap-px", gap);
-      slider.classList.toggle("is-static", max() <= EDGE);
+      const isStatic = max() <= EDGE;
+      slider.classList.toggle("is-static", isStatic);
+      if (isStatic) track.removeAttribute("tabindex");
+      else track.setAttribute("tabindex", "0");
       if (s.infinite) return;
       prev == null ? void 0 : prev.setAttribute("aria-disabled", String(atStart()));
       next == null ? void 0 : next.setAttribute("aria-disabled", String(atEnd()));
@@ -741,7 +744,7 @@ var __shazWidgetExport = (() => {
   function optionClasses(s) {
     return [
       `is-mode-${s.mode}`,
-      s.itemLayout !== "stacked" ? `is-item-${s.itemLayout}` : "",
+      s.mode === "team" && s.itemLayout !== "stacked" ? `is-item-${s.itemLayout}` : "",
       s.align !== "left" ? `is-align-${s.align}` : "",
       s.mode === "team" && s.layout !== "grid" ? `is-layout-${s.layout}` : "",
       s.filterAlign !== "left" ? `is-filters-${s.filterAlign}` : ""

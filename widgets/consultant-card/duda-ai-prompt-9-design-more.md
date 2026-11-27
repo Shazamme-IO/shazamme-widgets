@@ -11,7 +11,8 @@ Add these styles to the Design Editor of this widget, after the styles it alread
 - Photo focus point | selector: .shm-cc .shm-cc-photo-img | property: object-position | default: center top
 - Job page photo width | selector: .shm-cc.is-mode-job .shm-cc-photo | property: width | default: 60px
 - Job page photo height | selector: .shm-cc.is-mode-job .shm-cc-photo | property: height | default: 60px
-- Portrait layout photo shape (width to height) | selector: .shm-cc.is-item-portrait .shm-cc-photo | property: aspect-ratio | default: 1 / 1
+- Portrait layout photo shape (width to height) | selector: .shm-cc.is-mode-team.is-item-portrait .shm-cc-photo | property: aspect-ratio | default: 1 / 1
+- Portrait layout initials size | selector: .shm-cc.is-mode-team.is-item-portrait .shm-cc-badge | property: font-size | default: 56px
 
 **Location, sector and description**
 

@@ -4,7 +4,7 @@ Add a tab called "Photo and details" to the Content Editor of this widget. Add t
 
 Picture
 - Picture | key: avatar | type: dropdown | default: initials | options: initials, photo, photo-with-initials-fallback | help: Initials shows a badge with the consultant's initials. Photo shows the photo from the Shazamme console (a plain placeholder when there is none). Photo with initials fallback shows the photo, or the initials when there is no photo or it cannot load.
-- Card layout | key: itemLayout | type: dropdown | default: stacked | options: stacked, side, portrait | help: Stacked puts the picture above the name. Side puts it beside the name. Portrait makes the picture the full width of the card.
+- Card layout | key: itemLayout | type: dropdown | default: stacked | options: stacked, side, portrait | help: Team list only (the job page card always has the picture beside the name). Stacked puts the picture above the name. Side puts it beside the name. Portrait makes the picture the full width of the card.
 - Alignment | key: align | type: dropdown | default: left | options: left, center | help: Lines up the picture and text on the left or in the centre of the card.
 
 More about the consultant

@@ -518,7 +518,6 @@ describe('slider', () => {
     const region = element.querySelector('.shm-cc-slider')!;
     expect(region.getAttribute('role')).toBe('region');
     expect(region.getAttribute('aria-roledescription')).toBe('carousel');
-    expect(element.querySelector('.shm-cc-track')!.getAttribute('tabindex')).toBe('0');
     expect([...element.querySelectorAll('button.shm-cc-arrow')].map((b) => b.getAttribute('aria-label'))).toEqual(['Previous consultants', 'Next consultants']);
     const root = element.querySelector<HTMLElement>('.shm-cc')!;
     expect([root.style.getPropertyValue('--shm-cc-cols-d'), root.style.getPropertyValue('--shm-cc-cols-t'), root.style.getPropertyValue('--shm-cc-cols-m')]).toEqual(['2', '2', '1']);
@@ -527,8 +526,12 @@ describe('slider', () => {
   it('moves with the arrows and the arrow keys', async () => {
     const { element } = await mount({ Consultants: TEAM }, { layout: 'slider' });
     const track = element.querySelector<HTMLElement>('.shm-cc-track')!;
+    expect(track.hasAttribute('tabindex')).toBe(false);
     Object.defineProperty(track, 'scrollWidth', { value: 1000, configurable: true });
     Object.defineProperty(track, 'clientWidth', { value: 400, configurable: true });
+    track.dispatchEvent(new Event('scroll'));
+    await new Promise((r) => setTimeout(r, 40));
+    expect(track.getAttribute('tabindex')).toBe('0');
     element.querySelector<HTMLButtonElement>('[data-shm-cc-next]')!.click();
     expect(track.scrollBy).toHaveBeenCalledTimes(1);
     track.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
@@ -658,5 +661,7 @@ describe('job page with the new options', () => {
     expect(panel.querySelector('.shm-cc-button')!.getAttribute('href')).toBe('/consultant/priya-shah');
     expect(element.querySelector('.shm-cc-slider, .shm-cc-tools')).toBeNull();
     expect(element.querySelector('.shm-cc')!.classList.contains('is-layout-slider')).toBe(false);
+    const portrait = await mount({ Consultants: rows, Jobs: jobs }, { mode: 'job', jobID: 'J1', itemLayout: 'portrait' });
+    expect(portrait.element.querySelector('.shm-cc')!.classList.contains('is-item-portrait')).toBe(false);
   });
 });

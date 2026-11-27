@@ -42,7 +42,10 @@ export function mountSlider(scope: HTMLElement, s: SliderSettings): () => void {
   const sync = (): void => {
     const gap = getComputedStyle(track).columnGap;
     if (gap && gap !== 'normal') track.style.setProperty('--shm-cc-gap-px', gap);
-    slider.classList.toggle('is-static', max() <= EDGE);
+    const isStatic = max() <= EDGE;
+    slider.classList.toggle('is-static', isStatic);
+    if (isStatic) track.removeAttribute('tabindex');
+    else track.setAttribute('tabindex', '0');
     if (s.infinite) return;
     prev?.setAttribute('aria-disabled', String(atStart()));
     next?.setAttribute('aria-disabled', String(atEnd()));
