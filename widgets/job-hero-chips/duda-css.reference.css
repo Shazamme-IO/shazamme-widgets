@@ -1,0 +1,11 @@
+/* Job Hero Chips: shared CSS. Every rule starts with .shm-jc. The defaults suit a dark hero. */
+.shm-jc, .shm-jc *, .shm-jc *::before, .shm-jc *::after { box-sizing: border-box; }
+.shm-jc[hidden], .shm-jc [hidden] { display: none !important; }
+.shm-jc { width: 100%; color: #F7F5EF; font-family: inherit; }
+.shm-jc:not(.is-ready):not(.is-empty) { min-height: 40px; }
+.shm-jc .shm-jc-list { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.shm-jc .shm-jc-chip { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; max-width: 100%; margin: 0; padding: 0 16px; border-radius: 999px; background-color: rgba(247, 245, 239, 0.12); color: #F7F5EF; font-size: 15px; font-weight: 600; line-height: 1.3; }
+.shm-jc .shm-jc-text { min-width: 0; overflow-wrap: anywhere; }
+.shm-jc .shm-jc-icon { flex: 0 0 auto; color: #D4F34A; }
+.shm-jc .shm-jc-chip.is-highlight { background-color: #D4F34A; color: #101423; font-weight: 700; }
+.shm-jc .shm-jc-note { margin: 12px 0 0; padding: 10px 12px; border: 2px dashed #B45309; border-radius: 8px; background-color: #FFFBEB; color: #78350F; font: 13px/1.5 system-ui, sans-serif; }

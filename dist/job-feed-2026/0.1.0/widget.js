@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build 143075346793. Registers window.ShazammeWidget["<name>"].
+ * Build ad3c749ec9db. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -100,7 +100,42 @@ var __shazWidgetExport = (() => {
         return data.inEditor ? addQuery(`/site/${data.siteId}${path}`, `preview=true&insitepreview=true&dm_device=desktop${query ? "&" + query : ""}`) : query ? addQuery(`https://${window.location.hostname}${path}`, query) : `https://${window.location.hostname}${path}`;
       };
       this.loadScript = (src) => window.__shazLoadScript(src);
+      this.jobElChips = (j) => {
+        const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+        const on = (v) => v !== false && v !== "false" && v !== 0 && v !== "0";
+        const text = (v) => typeof v === "string" || typeof v === "number" ? String(v).trim() : "";
+        const num = (v) => {
+          const n = parseFloat(String(v == null ? "" : v).replace(/[^0-9.-]/g, ""));
+          return n > 0 ? n : 0;
+        };
+        const code = (text(j.currencyCode) || text(j.salaryCurrency) || text(j.currency)).toUpperCase();
+        const symbols = { AUD: "$", USD: "$", NZD: "$", CAD: "$", SGD: "$", HKD: "$", GBP: "\xA3", EUR: "\u20AC", INR: "\u20B9", JPY: "\xA5", ZAR: "R" };
+        const money = (n) => `${symbols[code] || (/^[A-Z]{3}$/.test(code) ? code + " " : "")}${Math.round(n).toLocaleString("en-AU")}`;
+        const from = num(j.salaryFrom) || num(j.realSalaryFrom);
+        const to = num(j.salaryTo) || num(j.realSalaryTo);
+        const range = from && to && from !== to ? `${money(from)} \u2013 ${money(to)}` : from || to ? money(from || to) : "";
+        const pay = text(j.salaryText) || range;
+        const showCountry = data.config.chipShowCountry === true || data.config.chipShowCountry === "true";
+        const where = [text(j.city), text(j.state), showCountry ? text(j.country) : ""].filter(Boolean).join(", ");
+        const type = on(data.config.chipShowWorkType) ? text(j.workType) : "";
+        const model = on(data.config.chipShowWorkModel) ? text(j.workModel) : "";
+        const chips = [type && `<span class="shm-cc-chip shm-cc-chip-type">${esc(type)}</span>`, model && `<span class="shm-cc-chip shm-cc-chip-model">${esc(model)}</span>`].filter(Boolean).join("");
+        const href = /^(https?:\/\/|\/)/i.test(j.detailsUri || "") ? j.detailsUri : "#";
+        return `
+            <div class="shm-cc-slide" data-rel="entry-job">
+                <a class="shm-cc-card" href="${esc(href)}" target="${data.config.jobLinkButtonABlank ? "_blank" : "_self"}"${data.config.jobLinkButtonABlank ? ' rel="noopener"' : ""}>
+                    <span class="shm-cc-title">${esc(j.jobName)}</span>
+                    ${on(data.config.chipShowLocation) && where ? `<span class="shm-cc-where">${esc(where)}</span>` : ""}
+                    ${chips ? `<span class="shm-cc-chips">${chips}</span>` : ""}
+                    ${on(data.config.chipShowSalary) && pay ? `<span class="shm-cc-pay">${esc(pay)}</span>` : ""}
+                </a>
+            </div>
+        `;
+      };
       this.jobElStandard = (j) => {
+        if (data.config.cardStyle === "chips") {
+          return this.jobElChips(j);
+        }
         let jobDate = /* @__PURE__ */ new Date(j.changedOnUTC + "Z");
         let isNew = jobDate && !isNaN(jobDate.getTime()) && (+/* @__PURE__ */ new Date() - jobDate) / (1e3 * 3600 * 24) <= 1;
         let startDate = new Date(j.jobStartDate || void 0);

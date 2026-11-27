@@ -1,0 +1,10 @@
+/* Job Summary: shared CSS. Every rule starts with .shm-js. */
+.shm-js, .shm-js *, .shm-js *::before, .shm-js *::after { box-sizing: border-box; }
+.shm-js[hidden], .shm-js [hidden] { display: none !important; }
+.shm-js { width: 100%; padding: 28px; border: 1px solid #E4E1D8; border-radius: 22px; background-color: #FFFFFF; box-shadow: none; color: #101423; font-family: inherit; text-align: left; }
+.shm-js:not(.is-ready):not(.is-empty) { min-height: 280px; }
+.shm-js .shm-js-heading { margin: 0 0 12px; color: #4A5A12; font-size: 13px; font-weight: 700; letter-spacing: 0.16em; line-height: 1.3; text-transform: uppercase; }
+.shm-js .shm-js-list { display: grid; grid-template-columns: auto 1fr; column-gap: 20px; margin: 0; }
+.shm-js .shm-js-label { margin: 0; padding: 12px 0; border-top: 1px solid #EEEBE3; color: #5B6070; font-size: 14px; line-height: 1.4; }
+.shm-js .shm-js-value { min-width: 0; margin: 0; padding: 12px 0; border-top: 1px solid #EEEBE3; color: #101423; font-size: 15px; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; text-align: right; }
+.shm-js .shm-js-note { margin: 14px 0 0; padding: 10px 12px; border: 2px dashed #B45309; border-radius: 8px; background-color: #FFFBEB; color: #78350F; font: 13px/1.5 system-ui, sans-serif; }

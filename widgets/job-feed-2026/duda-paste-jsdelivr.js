@@ -1,5 +1,5 @@
-// LAST UPDATED: 2026-11-06 12:59 AEDT (v0.1.40)
-// Change: Round 3: a lone job (fewer jobs than cards per view) is centred in the row.
+// LAST UPDATED: 2026-11-27 12:00 AEDT (v0.1.63)
+// Change: opt-in chip card (cardStyle = chips); the default card is unchanged. Also carries v0.1.40: a lone job is centred in the row.
 // ===========================================================================
 // PASTE THIS ENTIRE FILE into the Duda widget's JavaScript tab, replacing the
 // existing widget JS.
@@ -16,7 +16,7 @@
 // ===========================================================================
 (function () {
   var NAME = "job-feed-2026";
-  var TAG = "v0.1.40";
+  var TAG = "v0.1.63";
   var BUNDLE = "https://cdn.jsdelivr.net/gh/Shazamme-IO/shazamme-widgets@" + TAG + "/dist/" + NAME + "/0.1.0/widget.min.js";
   var SDK = "https://sdk.shazamme.io/js/shazamme-1.0.3.min.js";
   window.__shazSDKPromise = window.__shazSDKPromise || new Promise(function (res) {
