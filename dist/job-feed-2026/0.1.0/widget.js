@@ -1,5 +1,5 @@
 /* shazamme-widgets — shazamme-widgets v0.1.0
- * Build ae8c953b7a4e. Registers window.ShazammeWidget["<name>"].
+ * Build 16fd5491157c. Registers window.ShazammeWidget["<name>"].
  */
 
 var __shazWidgetExport = (() => {
@@ -589,6 +589,34 @@ var __shazWidgetExport = (() => {
           this.style.setProperty("max-width", share, "important");
         });
         this.growWrapper();
+        this.fitCards();
+      };
+      this.fitCards = () => {
+        const cards = this.el.find(".container-card-content").get();
+        cards.forEach((c) => c.style.removeProperty("height"));
+        const sizes = cards.map((c) => {
+          const box = c.getBoundingClientRect();
+          const css = getComputedStyle(c);
+          const num = (v) => parseFloat(v) || 0;
+          const bottom = Array.from(c.children).reduce((low, k) => Math.max(low, k.getBoundingClientRect().bottom), box.top);
+          const frame = num(css.paddingTop) + num(css.paddingBottom) + num(css.borderTopWidth) + num(css.borderBottomWidth);
+          return {
+            c,
+            height: box.height,
+            needed: Math.ceil(bottom - box.top + num(css.paddingBottom) + num(css.borderBottomWidth)),
+            frame: css.boxSizing === "border-box" ? 0 : frame
+          };
+        });
+        if (sizes.length === 0 || sizes.some((x) => x.height === 0) || !sizes.some((x) => x.needed > x.height + 1)) return;
+        const tallest = Math.max(...sizes.map((x) => x.needed));
+        sizes.forEach((x) => x.c.style.setProperty("height", `${tallest - x.frame}px`, "important"));
+      };
+      this.watchCards = () => {
+        var _a2;
+        if (typeof ResizeObserver === "undefined") return;
+        (_a2 = this.cardObserver) == null ? void 0 : _a2.disconnect();
+        this.cardObserver = new ResizeObserver(() => this.fitCards());
+        this.cardObserver.observe(this.el.get(0));
       };
       this.growWrapper = () => {
         const wrapper = this.el.get(0).closest(".widget-wrapper");
@@ -789,6 +817,23 @@ var __shazWidgetExport = (() => {
         return parts.length > 0 ? parts.join(" ") : data.config.noSalaryText || "";
       };
     }
+    const lastPathSegment = (path) => {
+      const seg = String(path || "").split("?")[0].split("#")[0].split("/").filter(Boolean).pop() || "";
+      try {
+        return decodeURIComponent(seg).toLowerCase();
+      } catch (e) {
+        return seg.toLowerCase();
+      }
+    };
+    const isViewedJob = (job, pathname) => {
+      if (!(job == null ? void 0 : job.jobURL)) return false;
+      try {
+        const seg = lastPathSegment(new URL(job.jobURL).pathname);
+        return seg !== "" && seg === lastPathSegment(pathname);
+      } catch (e) {
+        return false;
+      }
+    };
     const ux = new UX();
     let main = (w) => {
       var _a2, _b2;
@@ -821,7 +866,7 @@ var __shazWidgetExport = (() => {
         const reload = () => {
           shazamme.fetch(Collection.job).then((c) => {
             let container = $("<div />");
-            let jobs = c.filter((j) => filteredJob(j, filters)).slice(0, parseInt(data.config.jobLimit || "1"));
+            let jobs = c.filter((j) => filteredJob(j, filters)).filter((j) => data.config.boundJobID || !isViewedJob(j.data, window.location.pathname)).slice(0, parseInt(data.config.jobLimit || "1"));
             let hasJobs = jobs.length > 0;
             if (hasJobs) {
               container.append(
@@ -848,6 +893,9 @@ var __shazWidgetExport = (() => {
             ux.el.find("[data-rel=content-main]").empty().append(container);
             if (data.config.useSlides && hasJobs) {
               ux.loadSlides().then((s2) => slides = s2);
+            } else if (hasJobs) {
+              ux.fitCards();
+              ux.watchCards();
             }
           });
         };

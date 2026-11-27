@@ -1,7 +1,8 @@
-// Consultant Card: an initials-badge card for the Shazamme "Consultants" collection.
-// "team" mode is a grid of consultants with their live role count; "job" mode is the
-// card of the consultant who owns the current job (the Consultant on Jobs job).
-// Never shows a photo. Registered by the build as window.ShazammeWidget["consultant-card"].
+// Consultant Card: a card for the Shazamme "Consultants" collection, initials by default
+// or the consultant's photo. "team" mode is a grid (or slider) of consultants with their
+// live role count, optional contact and social links, and an optional filter bar; "job"
+// mode is the card of the consultant who owns the current job (the Consultant on Jobs job).
+// Registered by the build as window.ShazammeWidget["consultant-card"].
 
 import type { DudaData } from '../../core/config';
 import {
@@ -15,8 +16,10 @@ import {
   type Consultant,
   type Sdk,
 } from './data';
-import { esc, jobHtml, teamHtml } from './render';
+import { ICONS } from './icons';
+import { esc, jobHtml } from './render';
 import { readSettings, type Settings } from './settings';
+import { mountTeam } from './team';
 
 interface WidgetContext {
   element: HTMLElement;
@@ -28,6 +31,8 @@ const WIDGET_NAME = 'consultant-card';
 const CONSULTANTS = 'Consultants';
 const JOBS = 'Jobs';
 const GENERIC_ERROR = 'The consultants could not be loaded.';
+/** Root classes the settings add. Each is added only for a non-default choice, so the default root is unchanged. */
+const OPTION_CLASS_PREFIXES = ['is-mode-', 'is-item-', 'is-align-', 'is-layout-', 'is-filters-'];
 
 function ensureShell(element: HTMLElement): { root: HTMLElement; stage: HTMLElement } {
   let root = element.querySelector<HTMLElement>('.shm-cc');
@@ -45,16 +50,27 @@ function ensureShell(element: HTMLElement): { root: HTMLElement; stage: HTMLElem
   return { root, stage };
 }
 
+function optionClasses(s: Settings): string[] {
+  return [
+    `is-mode-${s.mode}`,
+    s.mode === 'team' && s.itemLayout !== 'stacked' ? `is-item-${s.itemLayout}` : '',
+    s.align !== 'left' ? `is-align-${s.align}` : '',
+    s.mode === 'team' && s.layout !== 'grid' ? `is-layout-${s.layout}` : '',
+    s.filterAlign !== 'left' ? `is-filters-${s.filterAlign}` : '',
+  ].filter(Boolean);
+}
+
 function applyShell(root: HTMLElement, s: Settings): void {
   Array.from(root.classList)
-    .filter((c) => c.startsWith('is-mode-'))
+    .filter((c) => OPTION_CLASS_PREFIXES.some((p) => c.startsWith(p)))
     .forEach((c) => root.classList.remove(c));
-  root.classList.add(`is-mode-${s.mode}`);
+  optionClasses(s).forEach((c) => root.classList.add(c));
   root.classList.remove('is-ready', 'is-empty');
   root.hidden = false;
-  root.style.setProperty('--shm-cc-cols-d', String(s.columnsDesktop));
-  root.style.setProperty('--shm-cc-cols-t', String(s.columnsTablet));
-  root.style.setProperty('--shm-cc-cols-m', String(s.columnsMobile));
+  const slider = s.mode === 'team' && s.layout === 'slider';
+  root.style.setProperty('--shm-cc-cols-d', String(slider ? s.slidesToShow : s.columnsDesktop));
+  root.style.setProperty('--shm-cc-cols-t', String(slider ? Math.min(s.columnsTablet, s.slidesToShow) : s.columnsTablet));
+  root.style.setProperty('--shm-cc-cols-m', String(slider ? Math.min(s.columnsMobile, s.slidesToShow) : s.columnsMobile));
 }
 
 /** In the editor a note says what is missing; on the live site an empty widget renders nothing. */
@@ -75,17 +91,25 @@ function countsFrom(jobs: unknown, consultants: Consultant[]): Map<string, numbe
   return result.known ? result.counts : null;
 }
 
-type Outcome = { html: string } | { note: string; live?: string };
+type Outcome =
+  | { html: string }
+  | { team: Consultant[]; counts: Map<string, number> | null }
+  | { note: string; live?: string };
+
+function noMatchNote(all: Consultant[], s: Settings): string {
+  if (all.length === 0) return 'the Consultants collection has no visible rows.';
+  if (s.classification && s.location) return `no consultants match the Classification "${s.classification}" and the Location "${s.location}".`;
+  if (s.location) return `no consultants match the Location "${s.location}".`;
+  return `no consultants match the Classification "${s.classification}".`;
+}
 
 async function renderTeam(sdk: Sdk, s: Settings, siteId: string, inEditor: boolean): Promise<Outcome> {
   const consultantsLoad = loadRows(sdk, CONSULTANTS, siteId, inEditor);
   const countsLoad = s.showLiveRoles ? loadRows(sdk, JOBS, siteId, inEditor).catch((err) => { console.error('[consultant-card] live roles unavailable', err); return null; }) : Promise.resolve(null);
   const all = normaliseConsultants(await consultantsLoad);
   const items = selectConsultants(all, s);
-  if (items.length === 0) {
-    return { note: all.length === 0 ? 'the Consultants collection has no visible rows.' : `no consultants match the Classification "${s.classification}".` };
-  }
-  return { html: teamHtml(items, s, countsFrom(await countsLoad, all)) };
+  if (items.length === 0) return { note: noMatchNote(all, s) };
+  return { team: items, counts: countsFrom(await countsLoad, all) };
 }
 
 async function ownerOfJob(sdk: Sdk, s: Settings, siteId: string, inEditor: boolean): Promise<{ consultant: Consultant | null; all: Consultant[]; jobRows: unknown }> {
@@ -110,6 +134,26 @@ async function renderJob(sdk: Sdk, s: Settings, siteId: string, inEditor: boolea
   return { html: jobHtml(consultant, s, s.showLiveRoles ? countsFrom(jobRows, everyone) : null) };
 }
 
+/** A photo that fails to load becomes the initials (fallback setting) or the plain placeholder. */
+function photoErrorHandler(s: Settings): (e: Event) => void {
+  return (e: Event) => {
+    const img = e.target as HTMLElement | null;
+    if (!img || img.tagName !== 'IMG' || !img.classList.contains('shm-cc-photo-img')) return;
+    const holder = img.parentElement;
+    if (!holder) return;
+    if (s.avatar === 'photo-with-initials-fallback') {
+      const badge = document.createElement('span');
+      badge.className = 'shm-cc-badge';
+      badge.setAttribute('aria-hidden', 'true');
+      badge.textContent = holder.getAttribute('data-initials') ?? '';
+      holder.replaceWith(badge);
+    } else {
+      holder.classList.add('is-missing');
+      holder.innerHTML = ICONS.person;
+    }
+  };
+}
+
 type Destroyable = HTMLElement & { __shmCcDestroy?: () => void };
 const runs = new WeakMap<HTMLElement, number>();
 
@@ -124,7 +168,14 @@ export default async function consultantCard(ctx: WidgetContext): Promise<void> 
   const { root, stage } = ensureShell(element);
   applyShell(root, s);
   stage.innerHTML = '';
-  element.__shmCcDestroy = () => { stage.innerHTML = ''; };
+  let teardown = (): void => undefined;
+  const onPhotoError = photoErrorHandler(s);
+  stage.addEventListener('error', onPhotoError, true);
+  element.__shmCcDestroy = () => {
+    teardown();
+    stage.removeEventListener('error', onPhotoError, true);
+    stage.innerHTML = '';
+  };
 
   const run = (runs.get(element) ?? 0) + 1;
   runs.set(element, run);
@@ -139,7 +190,10 @@ export default async function consultantCard(ctx: WidgetContext): Promise<void> 
     if (!current()) return;
     const outcome = s.mode === 'job' ? await renderJob(sdk, s, siteId, inEditor) : await renderTeam(sdk, s, siteId, inEditor);
     if (!current()) return;
-    if ('html' in outcome) {
+    if ('team' in outcome) {
+      teardown = mountTeam(stage, outcome.team, s, outcome.counts, inEditor);
+      root.classList.add('is-ready');
+    } else if ('html' in outcome) {
       stage.innerHTML = outcome.html;
       root.classList.add('is-ready');
     } else {

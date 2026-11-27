@@ -496,6 +496,46 @@ function UX() {
         });
 
         this.growWrapper();
+        this.fitCards();
+    };
+
+    // The Design Editor pins .container-card-content to a pixel height. When the
+    // copy runs longer than that box it spills over the buttons below it, so the
+    // boxes grow to the tallest copy. Nothing changes unless a box actually
+    // overflows, and a hidden widget (zero height) is left for the next resize.
+    this.fitCards = () => {
+        const cards = this.el.find('.container-card-content').get();
+
+        cards.forEach( c => c.style.removeProperty('height') );
+
+        const sizes = cards.map( c => {
+            const box = c.getBoundingClientRect();
+            const css = getComputedStyle(c);
+            const num = (v) => parseFloat(v) || 0;
+            const bottom = Array.from(c.children).reduce( (low, k) => Math.max(low, k.getBoundingClientRect().bottom), box.top );
+            const frame = num(css.paddingTop) + num(css.paddingBottom) + num(css.borderTopWidth) + num(css.borderBottomWidth);
+
+            return {
+                c,
+                height: box.height,
+                needed: Math.ceil(bottom - box.top + num(css.paddingBottom) + num(css.borderBottomWidth)),
+                frame: css.boxSizing === 'border-box' ? 0 : frame,
+            };
+        });
+
+        if (sizes.length === 0 || sizes.some( x => x.height === 0 ) || !sizes.some( x => x.needed > x.height + 1 )) return;
+
+        const tallest = Math.max(...sizes.map( x => x.needed ));
+
+        sizes.forEach( x => x.c.style.setProperty('height', `${tallest - x.frame}px`, 'important') );
+    };
+
+    this.watchCards = () => {
+        if (typeof ResizeObserver === 'undefined') return;
+
+        this.cardObserver?.disconnect();
+        this.cardObserver = new ResizeObserver(() => this.fitCards());
+        this.cardObserver.observe(this.el.get(0));
     };
 
     // Duda gives the widget's wrapper a fixed pixel height. Follow the real content so
@@ -746,6 +786,31 @@ function UX() {
     }
 }
 
+// The job page being viewed is not "similar" to itself. boundJobID is the
+// explicit way to exclude it; when a site leaves it unbound the job-details URL
+// still names the job, so the card whose jobURL ends in the same segment is dropped.
+const lastPathSegment = (path) => {
+    const seg = String(path || '').split('?')[0].split('#')[0].split('/').filter(Boolean).pop() || '';
+
+    try {
+        return decodeURIComponent(seg).toLowerCase();
+    } catch {
+        return seg.toLowerCase();
+    }
+}
+
+const isViewedJob = (job, pathname) => {
+    if (!job?.jobURL) return false;
+
+    try {
+        const seg = lastPathSegment(new URL(job.jobURL).pathname);
+
+        return seg !== '' && seg === lastPathSegment(pathname);
+    } catch {
+        return false;
+    }
+}
+
 const ux = new UX();
 
 let main = (w) => {
@@ -787,6 +852,7 @@ let main = (w) => {
                 let container = $('<div />');
                 let jobs = c
                   .filter( j => filteredJob(j, filters) )
+                  .filter( j => data.config.boundJobID || !isViewedJob(j.data, window.location.pathname) )
                   .slice(0, parseInt(data.config.jobLimit || '1'));
                 let hasJobs = jobs.length > 0;
 
@@ -821,6 +887,9 @@ let main = (w) => {
 
                 if (data.config.useSlides && hasJobs) {
                     ux.loadSlides().then( s => slides = s );
+                } else if (hasJobs) {
+                    ux.fitCards();
+                    ux.watchCards();
                 }
             });
         }
